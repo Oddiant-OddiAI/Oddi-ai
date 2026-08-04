@@ -91,7 +91,7 @@ body.dark-mode .logo-box{
     display:flex;
     align-items:center;
     gap:12px;
-    color:#2bbd59;
+    color: #2bbd59;
     font-size:36px;
 }
 
@@ -117,17 +117,15 @@ body.dark-mode .logo-box{
 
 .welcome-message{
 
-    position:absolute;
-
-    inset:0;
+    position:relative;
 
     display:flex;
 
     flex-direction:column;
 
-    justify-content:center;
-
+    
     align-items:center;
+    padding-top: 30px;
 
     pointer-events:none;
     z-index:0;
@@ -327,4 +325,140 @@ body,
 .welcome-message p,
 .logo-box{
     transition:.5s;
+}
+/* ==========================
+   Mobile Responsive
+========================== */
+
+@media (max-width: 768px) {
+    /* Smooth scrolling and prevent body bounce */
+    body {
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    /* Container alignment for mobile viewports */
+    .app {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        width: 100vw;
+        position: fixed;
+        top: 0;
+        left: 0;
+    }
+
+    /* --- UNIFIED PILL INPUT AREA --- */
+    .input-area {
+        position: fixed;
+        bottom: env(safe-area-inset-bottom, 12px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: 94%;
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        padding: 6px 6px 6px 18px; /* Inner spacing for text alignment */
+        border-radius: 40px;        /* Fully rounded pill shape */
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e5e7eb;  /* Clean subtle border */
+        box-sizing: border-box;
+    }
+
+    /* --- INPUT FIELD --- */
+    .input-area input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        font-size: 16px;
+        outline: none;
+        padding: 0;
+        height: 44px;
+        color: #1f2937;
+    }
+
+    .input-area input:focus {
+        outline: none;
+        box-shadow: none;
+    }
+
+    /* Focus glow for the entire wrapper */
+    .input-area:focus-within {
+        border-color: #2bbd59;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08), 0 0 0 2px rgba(43, 189, 89, 0.2);
+    }
+
+    /* --- ROUNDED SEND BUTTON --- */
+    .input-area button,
+    #sendBtn {
+        width: 48px;
+        height: 48px;
+        border: none;
+        border-radius: 50%;
+        background: #2bbd59;
+        color: white;
+        font-size: 18px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: 0.2s ease;
+    }
+
+    .input-area button:hover {
+        background: #24a84d;
+        transform: scale(1.03);
+    }
+
+    .input-area button:active {
+        transform: scale(0.95);
+    }
+
+    /* Dark mode support */
+    body.dark-mode .input-area {
+        background: rgba(35, 35, 41, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* --- CHAT MESSAGES --- */
+    .user-message {
+        align-self: flex-end;
+        margin: 15px 15px 15px 70px;
+        max-width: 83%;
+        padding: 18px 20px;
+        font-size: 17px;
+        line-height: 1.6;
+        border-radius: 18px;
+        background: #dfffe2;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .bot-message {
+        align-self: flex-start;
+        margin: 15px 15px;
+        max-width: 88%;
+        padding: 18px 20px;
+        font-size: 17px;
+        line-height: 1.6;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    
+    .bot-message strong {
+        font-size: 18px;
+        font-weight: 700;
+    }
+    .chatbox{
+        padding-left:16px;
+        padding-right:16px;
+    }
+    .bot-message{
+        background:red !important;
+    }
+    .user-message{
+        margin-right:14px;
+        max-width:68%;
+    }
 }
