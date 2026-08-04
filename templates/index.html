@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>VedAura AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<link rel="icon"
+      type="image/png"
+      href="{{ url_for('static', filename='favicon2.png') }}">
+    <title>VedAura AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- Vertical Line -->
+    <div class="left-line"></div>
+
+    <!-- Header -->
+    <header class="header">
+
+        <div class="logo-box">
+            <img id="logo"
+                src="{{ url_for('static', filename='logo.png') }}"
+                class="logo"
+                alt="VedAura Logo">
+        </div>
+
+        <div class="content-side">
+
+            <div class="title-box">
+                <h1>VedAura AI</h1>
+                <p>Your Personal AI Assistant</p>
+            </div>
+
+        </div>
+
+        <div class="theme-toggle">
+            <button id="themeBtn" title="Switch to Dark Mode">
+                🌙
+            </button>
+        </div>
+
+
+    </header>
+
+    <!-- Main Chat Area -->
+    <main id="chatbox" class="chatbox">
+
+        <div class="welcome-message" id="welcomeContainer">
+
+            <h2>Where should we begin?</h2>
+
+            <p>Hello! 👋 How can I help you today?</p>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="input-area">
+
+        <input
+            type="text"
+            id="message"
+            placeholder="Ask VedAura anything...">
+
+        <button id="sendBtn">
+            Send
+        </button>
+
+    </footer>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<script>
+
+const chat = document.getElementById("chatbox");
+const input = document.getElementById("message");
+const button = document.getElementById("sendBtn");
+
+button.addEventListener("click", sendMessage);
+
+input.addEventListener("keydown", function(e){
+    if(e.key==="Enter"){
+        sendMessage();
+    }
+});
+
+
+async function sendMessage(){
+
+    if(button.disabled) return;
+
+    let message = input.value.trim();
+
+    if(message==="") return;
+
+    // Disable input while AI is thinking
+    input.disabled = true;
+    button.disabled = true;
+    button.innerText = "Thinking...";
+
+    const app = document.querySelector(".app");
+    app.classList.add("chat-started");
+
+    const welcome = document.getElementById("welcomeContainer");
+    if(welcome){
+        welcome.remove();
+    }
+
+    // Show user message
+    chat.innerHTML += `
+    <div class="user-message">
+        <b>You:</b> ${message}
+    </div>
+    `;
+
+    input.value = "";
+
+    chat.scrollTop = chat.scrollHeight;
+
+    // Show loading message
+    chat.innerHTML += `
+        <p id="loadingMessage">
+            <b>VedAura:</b><br>
+            ⏳ Thinking... This may take a few seconds.
+            </p>
+    `;
+
+    chat.scrollTop = chat.scrollHeight;
+
+
+    // Send request to Flask
+    const response = await fetch("/chat",{
+
+        method:"POST",
+
+        headers:{
+            "Content-Type":"application/x-www-form-urlencoded"
+        },
+
+        body:"message="+encodeURIComponent(message)
+
+    });
+
+    const reply = await response.text();
+
+    // Remove loading message
+    const loading = document.getElementById("loadingMessage");
+    if(loading){
+        loading.remove();
+    }
+
+    // Create empty AI message
+    const typingId = "typing-" + Date.now();
+
+    chat.innerHTML += `
+    <div class="bot-message">
+        <b>VedAura:</b><br>
+        <span id="${typingId}"></span>
+    </div>
+    `;
+    const typing = document.getElementById(typingId);
+
+    const formattedReply = reply
+        .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
+        .replace(/\n/g, "<br>");
+
+    let i = 0;
+
+    const interval = setInterval(() => {
+
+        typing.innerHTML = formattedReply.substring(0, i);
+        chat.scrollTop = chat.scrollHeight;
+        i++;
+
+        if(i > formattedReply.length){
+            clearInterval(interval);
+        input.disabled = false;
+        button.disabled = false;
+        button.innerText = "Send";
+        input.focus();
+        
+        }
+
+    }, 12);
+
+    chat.scrollTop = chat.scrollHeight;
+
+    // Remove these lines from below because they're now inside the animation
+    // input.disabled = false;
+    // button.disabled = false;
+    // button.innerText = "Send";
+    // input.focus();
+
+    chat.scrollTop = chat.scrollHeight;
+
+    // Re-enable input
+
+    
+}
+const themeBtn = document.getElementById("themeBtn");
+const logo = document.getElementById("logo");
+
+console.log(themeBtn);
+
+themeBtn.onclick = function () {
+
+    document.body.classList.toggle("dark-mode");
+
+    if(document.body.classList.contains("dark-mode")){
+
+        themeBtn.innerHTML = "☀️";
+        themeBtn.title = "Switch to Light Mode";
+
+        // Change logo
+        logo.src = "{{ url_for('static', filename='logo-dark.png') }}";
+
+    }else{
+
+        themeBtn.innerHTML = "🌙";
+        themeBtn.title = "Switch to Dark Mode";
+
+        // Change logo back
+        logo.src = "{{ url_for('static', filename='logo.png') }}";
+    }
+
+};
+
+</script>
+
+</body>
+
+</html>
