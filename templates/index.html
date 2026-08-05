@@ -6,6 +6,13 @@
     <title>VedAura AI</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
 <link rel="icon"
       type="image/png"
       href="{{ url_for('static', filename='favicon2.png') }}">
@@ -88,7 +95,7 @@
     </main>
 
     <!-- Footer -->
-    <footer class="input-area">
+    <div class="input-area">
 
         <input
             type="text"
@@ -99,7 +106,7 @@
             <span class="send-icon">➤</span>
         </button>
 
-    </footer>
+    </div>
 
 </div>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -130,7 +137,9 @@ async function sendMessage(){
     // Disable input while AI is thinking
     input.disabled = true;
     button.disabled = true;
-    button.innerText = "Thinking...";
+    button.innerHTML = `
+    <span class="send-icon">⌛</span>
+    `;
 
     const app = document.querySelector(".app");
     app.classList.add("chat-started");
@@ -148,16 +157,24 @@ async function sendMessage(){
     `;
 
     input.value = "";
+    
+    chat.innerHTML += `
+    <div id="loadingMessage" class="bot-message">
 
+        <b>VedAura:</b>
+
+        <div class="thinking-animation">
+
+            <span></span>
+            <span></span>
+            <span></span>
+
+        </div>
+
+    </div>
+    `;
     chat.scrollTop = chat.scrollHeight;
 
-    // Show loading message
-    chat.innerHTML += `
-        <p id="loadingMessage">
-            <b>VedAura:</b><br>
-            ⏳ Thinking... This may take a few seconds.
-            </p>
-    `;
 
     chat.scrollTop = chat.scrollHeight;
 
@@ -176,7 +193,8 @@ async function sendMessage(){
     });
 
     const reply = await response.text();
-
+  
+    chat.scrollTop = chat.scrollHeight;
     // Remove loading message
     const loading = document.getElementById("loadingMessage");
     if(loading){
@@ -194,25 +212,32 @@ async function sendMessage(){
     `;
     const typing = document.getElementById(typingId);
 
-    const formattedReply = reply
-        .replace(/\*\*(.*?)\*\*/g, "<b>$1</b>")
-        .replace(/\n/g, "<br>");
+    const formattedReply = marked.parse(reply);
 
     let i = 0;
 
     const interval = setInterval(() => {
 
-        typing.innerHTML = formattedReply.substring(0, i);
+        typing.textContent = reply.substring(0, i);
         chat.scrollTop = chat.scrollHeight;
         i++;
 
-        if(i > formattedReply.length){
+        if(i > reply.length){
+
             clearInterval(interval);
-        input.disabled = false;
-        button.disabled = false;
-        button.innerText = "Send";
-        input.focus();
-        
+            typing.innerHTML = marked.parse(reply);
+            
+           typing.querySelectorAll("pre code").forEach((block) => {
+                hljs.highlightElement(block);
+            });
+            input.disabled = false;
+            button.disabled = false;
+
+            button.innerHTML = `
+                <span class="send-icon">➤</span>
+            `;
+
+            input.focus();
         }
 
     }, 12);
