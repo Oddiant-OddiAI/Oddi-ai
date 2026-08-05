@@ -52,6 +52,10 @@
 
     </header>
 
+    <div id="splash-screen">
+        <img src="{{ url_for('static', filename='splash.png') }}" alt="Splash">
+    </div>
+
     <!-- Main Chat Area -->
     <main id="chatbox" class="chatbox">
 
@@ -225,7 +229,6 @@ async function sendMessage(){
 
     // Re-enable input
 
-    
 }
 const themeBtn = document.getElementById("themeBtn");
 const logo = document.getElementById("logo");
@@ -254,6 +257,21 @@ themeBtn.onclick = function () {
     }
 
 };
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const splash = document.getElementById("splash-screen");
+
+    setTimeout(() => {
+
+        splash.style.opacity = "0";
+
+        setTimeout(() => {
+            splash.remove();
+        }, 1000);
+
+    }, 1000);   // <-- stay for 6 seconds
+});
 
 </script>
 
