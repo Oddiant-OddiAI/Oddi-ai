@@ -12,7 +12,9 @@
     <title>VedAura AI</title>
 
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+            href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet"
+            href="{{ url_for('static', filename='mobile.css') }}">
 </head>
 
 <body>
@@ -58,6 +60,24 @@
             <h2>Where should we begin?</h2>
 
             <p>Hello! 👋 How can I help you today?</p>
+
+            <div class="quick-actions">
+
+                <div class="action-card">
+                    💻 Help me write code
+                </div>
+
+                <div class="action-card">
+                    📄 Summarize a PDF
+                </div>
+
+                <div class="action-card">
+                    🌐 Search the Web
+                </div>
+
+                <div class="action-card">
+                    🧠 Explain difficult topics
+            </div>
 
         </div>
 

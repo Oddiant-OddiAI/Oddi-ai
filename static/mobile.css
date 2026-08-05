@@ -1,0 +1,234 @@
+/* ==========================
+   Mobile Responsive
+========================== */
+
+@media (max-width: 768px) {
+    /* Smooth scrolling and prevent body bounce */
+    body {
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+
+    /* Container alignment for mobile viewports */
+    .app {
+        display: flex;
+        flex-direction: column;
+        height: 100dvh;
+        width: 100vw;
+        position: fixed;
+        top: 0;
+        left: 0;
+    } 
+    .welcome-message{
+
+        margin-top:55px;
+
+        display:flex;
+
+        flex-direction:column;
+
+        align-items:center;
+
+        text-align:center;
+
+    }
+    .welcome-message h2{
+
+        font-size:36px;
+
+        margin-bottom:18px;
+
+    }
+    .welcome-message p{
+
+        font-size:17px;
+        padding:12px 18px;
+        max-width:280px;
+
+    }
+    .quick-actions{
+        display:flex !important;
+        flex-direction:column;
+        gap:14px;
+        width:100%;
+        max-width:420px;
+    }
+
+    .action-card{
+
+        padding:14px 18px;
+
+        background:white;
+
+        border-radius:16px;
+
+        box-shadow:0 2px 8px rgba(0,0,0,.06);
+
+        font-size:16px;
+
+        color:#444;
+
+        user-select:none;
+
+        cursor:default;
+
+        pointer-events:none;
+    }
+    
+
+    /* --- UNIFIED PILL INPUT AREA --- */
+    .input-area {
+        position: fixed;
+        bottom: env(safe-area-inset-bottom, 12px);
+        left: 50%;
+        transform: translateX(-50%);
+        width: 94%;
+        display: flex;
+        align-items: center;
+        background: #ffffff;
+        padding: 6px 6px 6px 18px; /* Inner spacing for text alignment */
+        border-radius: 40px;        /* Fully rounded pill shape */
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e5e7eb;  /* Clean subtle border */
+        box-sizing: border-box;
+    }
+
+    /* --- INPUT FIELD --- */
+    .input-area input {
+        flex: 1;
+        border: none;
+        background: transparent;
+        font-size: 18px;
+        outline: none;
+        padding: 0;
+        height: 52px;
+        color: #1f2937;
+    }
+
+    .input-area input:focus {
+        outline: none;
+        box-shadow: none;
+    }
+
+    /* Focus glow for the entire wrapper */
+    .input-area:focus-within {
+        border-color: #2bbd59;
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08), 0 0 0 2px rgba(43, 189, 89, 0.2);
+    }
+
+    /* --- ROUNDED SEND BUTTON --- */
+    .input-area button,
+    #sendBtn {
+        width: 50px;
+        height: 50px;
+        border: none;
+        border-radius: 50%;
+        background: #2bbd59;
+        color: white;
+        font-size: 18px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: 0.2s ease;
+    }
+
+    .input-area button:hover {
+        background: #24a84d;
+        transform: scale(1.03);
+    }
+
+    .input-area button:active {
+        transform: scale(0.95);
+    }
+
+    /* Dark mode support */
+    body.dark-mode .input-area {
+        background: rgba(35, 35, 41, 0.85);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow:0 8px 25px rgba(0,0,0,.08);
+    }
+
+    /* --- CHAT MESSAGES --- */
+    .user-message {
+        align-self: flex-end;
+        margin: 15px 15px 15px 70px;
+        max-width: 83%;
+        padding: 18px 20px;
+        font-size: 17px;
+        line-height: 1.6;
+        border-radius: 18px;
+        background: #dfffe2;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+
+    .bot-message {
+        align-self: flex-start;
+        margin: 15px 15px;
+        max-width: 88%;
+        padding: 18px 20px;
+        font-size: 17px;
+        line-height: 1.6;
+        border-radius: 18px;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    }
+    
+    .bot-message strong {
+        font-size: 18px;
+        font-weight: 700;
+    }
+    .chatbox{
+
+        flex:1;
+
+        padding:25px;
+
+        padding-bottom:110px;
+
+        overflow-y:auto;
+
+    }
+    .user-message{
+        margin-right:14px;
+        max-width:68%;
+    }
+    /* ================= HEADER ================= */
+
+    .header{
+        padding:18px 18px;
+        display:flex;
+        align-items:center;
+    }
+
+    .logo-box{
+        padding:8px;
+        border-radius:0 0 10px 0;
+    }
+
+    .logo{
+        width:50px;
+    }
+
+    .title-box h1{
+        font-size:30px;
+    }
+
+    .title-box p{
+        font-size:13px;
+    }
+
+    .theme-toggle{
+        margin-left:auto;
+    }
+
+    #themeBtn{
+        width:42px;
+        height:42px;
+        font-size:20px;
+    }
+    .left-line{
+        display:none;
+    }
+}
