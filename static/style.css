@@ -778,3 +778,72 @@ body.dark-mode .rename-box input{
 .delete-confirm:hover{
     background:#dc2626;
 }
+.attach-btn{
+
+    border:none;
+
+    background:transparent;
+
+    font-size:24px;
+
+    cursor:pointer;
+
+    padding:10px;
+
+}
+.attachment-preview{
+    position:fixed;
+
+    transform:translateX(-50%);
+
+    left:50%;
+
+    width:760px;
+
+    bottom:53px;
+
+    margin:auto;
+
+    width:760px;
+
+    z-index:99;
+
+    margin-bottom:12px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    padding:10px 14px;
+
+    border-radius:12px;
+
+    background:white;
+
+    box-shadow:0 4px 15px rgba(0,0,0,.08);
+
+}
+
+.attachment-preview button{
+
+    border:none;
+
+    background:transparent;
+
+    cursor:pointer;
+
+    font-size:18px;
+
+}
+
+.attachment-preview span{
+
+    overflow:hidden;
+
+    white-space:nowrap;
+
+    text-overflow:ellipsis;
+
+}

@@ -25,7 +25,7 @@
 </head>
 
 <body>
-let currentConversation = 0;
+
 
 <div class="app">
 
@@ -118,7 +118,21 @@ let currentConversation = 0;
     </main>
 
     <!-- Footer -->
+     <div id="attachmentPreview" class="attachment-preview" style="display:none;">
+
+        <span id="attachmentName"></span>
+
+        <button id="removeAttachment">✖</button>
+
+    </div>
     <div class="input-area">
+        <button id="attachBtn" class="attach-btn">
+            📎
+        </button>
+        <input
+            type="file"
+            id="fileInput"
+            hidden>
 
         <input
             type="text"
@@ -130,6 +144,7 @@ let currentConversation = 0;
         </button>
 
     </div>
+
 
 </div>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -179,7 +194,8 @@ let currentConversation = 0;
 </div>
 
 <script>
-
+let currentConversation = 0;
+let selectedFile = null;
 const chat = document.getElementById("chatbox");
 const input = document.getElementById("message");
 const button = document.getElementById("sendBtn");
@@ -345,6 +361,37 @@ function newChat(){
 
     input.focus();
 }
+const attachBtn = document.getElementById("attachBtn");
+const fileInput = document.getElementById("fileInput");
+const attachmentPreview = document.getElementById("attachmentPreview");
+
+
+const attachmentName = document.getElementById("attachmentName");
+
+const removeAttachment = document.getElementById("removeAttachment");
+attachBtn.onclick = () => {
+    fileInput.click();
+};
+fileInput.onchange = (e) => {
+
+    if(fileInput.files.length === 0) return;
+
+    selectedFile = fileInput.files[0];
+
+    attachmentName.textContent = "📎 " + fileInput.files[0].name;
+
+    attachmentPreview.style.display = "flex";
+    
+
+};
+removeAttachment.onclick = () => {
+
+    fileInput.value = "";
+
+    attachmentPreview.style.display = "none";
+    selectedFile = null;
+
+};
 
 async function sendMessage(){
 
@@ -412,16 +459,18 @@ async function sendMessage(){
 
 
     // Send request to Flask
-    const response = await fetch("/chat",{
+    const formData = new FormData();
 
-        method:"POST",
+    formData.append("message", message);
 
-        headers:{
-            "Content-Type":"application/x-www-form-urlencoded"
-        },
+    console.log(selectedFile);
+    if (selectedFile) {
+        formData.append("file", selectedFile);
+    }
 
-        body:"message="+encodeURIComponent(message)
-
+    const response = await fetch("/chat", {
+        method: "POST",
+        body: formData
     });
 
     const reply = await response.text();
@@ -487,7 +536,9 @@ async function sendMessage(){
         }
 
     }, 12);
-
+    selectedFile = null;
+    fileInput.value = "";
+    attachmentPreview.style.display = "none";
     chat.scrollTop = chat.scrollHeight;
 
     // Remove these lines from below because they're now inside the animation
@@ -547,6 +598,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }, 3000);   // <-- stay for 6 seconds
 });
+
 const menuBtn = document.getElementById("menuBtn");
 const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("overlay");
