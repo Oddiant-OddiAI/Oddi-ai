@@ -25,6 +25,7 @@
 </head>
 
 <body>
+let currentConversation = 0;
 
 <div class="app">
 
@@ -217,7 +218,11 @@ function addHistory(title, index){
 
     item.innerHTML = `
         <span class="history-title">${title}</span>
-        <button class="rename-btn">✏️</button>
+
+        <div class="history-actions">
+            <button class="rename-btn">✏️</button>
+            <button class="delete-btn">🗑️</button>
+        </div>
     `;
     const renameBtn = item.querySelector(".rename-btn");
 
@@ -286,7 +291,7 @@ function renderHistory(){
 renderHistory();
 
 function openConversation(index){
-
+    currentConversation = index;
     const conversation = conversations[index];
 
     chat.innerHTML = "";
@@ -322,11 +327,23 @@ function openConversation(index){
 function newChat(){
 
     chat.innerHTML = "";
-
     input.value = "";
 
-    input.focus();
+    conversations.unshift({
+        title: "New Chat",
+        messages: []
+    });
 
+    currentConversation = 0;
+
+    localStorage.setItem(
+        "conversations",
+        JSON.stringify(conversations)
+    );
+
+    renderHistory();
+
+    input.focus();
 }
 
 async function sendMessage(){
@@ -334,15 +351,7 @@ async function sendMessage(){
     if(button.disabled) return;
 
     let message = input.value.trim();
-    if(chat.querySelector(".user-message") === null){
 
-        let title = message.length > 30
-            ? message.substring(0,30) + "..."
-            : message;
-
-        addHistory(title);
-
-    }
     if(message==="") return;
 
     // Disable input while AI is thinking
@@ -367,7 +376,8 @@ async function sendMessage(){
     </div>
     `;
 
-    conversations[0].messages.push({
+
+    conversations[currentConversation].messages.push({
     role: "user",
     text: message
     });
@@ -448,7 +458,13 @@ async function sendMessage(){
 
             clearInterval(interval);
             typing.innerHTML = marked.parse(reply);
-            conversations[0].messages.push({
+            if(
+                conversations[currentConversation].messages.length === 0
+            ){
+                conversations[currentConversation].title = message;
+                renderHistory();
+            }
+            conversations[currentConversation].messages.push({
                 role: "assistant",
                 text: reply
             });
@@ -529,7 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
             splash.remove();
         }, 1000);
 
-    }, 2000);   // <-- stay for 6 seconds
+    }, 3000);   // <-- stay for 6 seconds
 });
 const menuBtn = document.getElementById("menuBtn");
 const sidebar = document.getElementById("sidebar");
@@ -593,15 +609,7 @@ confirmDelete.onclick = () => {
     renderHistory();
 
 };
-deleteBtn.onclick = (e) => {
 
-    e.stopPropagation();
-
-    deleteIndex = index;
-
-    deleteModal.classList.add("show");
-
-};
 
 </script>
 
