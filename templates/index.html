@@ -30,6 +30,19 @@
 
     <!-- Vertical Line -->
     <div class="left-line"></div>
+    <!-- Sidebar -->
+
+   <div id="sidebar" class="sidebar">
+        <button id="newChatBtn" class="new-chat-btn">
+            ＋ New Chat
+        </button>
+
+        <div id="chatHistory" class="chat-history">
+        </div>
+        
+    </div>
+
+    <div id="overlay" class="overlay"></div>
 
     <!-- Header -->
     <header class="header">
@@ -40,6 +53,7 @@
                 class="logo"
                 alt="VedAura Logo">
         </div>
+        
 
         <div class="content-side">
 
@@ -58,6 +72,14 @@
 
 
     </header>
+
+    <button id="menuBtn" class="menu-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M4 6H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+    </button>
 
     <div id="splash-screen">
         <img src="{{ url_for('static', filename='splash.png') }}" alt="Splash">
@@ -110,6 +132,50 @@
 
 </div>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<div id="renameModal" class="rename-modal">
+
+    <div class="rename-box">
+
+        <h3>Rename Conversation</h3>
+
+        <input
+            type="text"
+            id="renameInput"
+            placeholder="Conversation name">
+
+        <div class="rename-buttons">
+
+            <button id="cancelRename">Cancel</button>
+
+            <button id="saveRename">Save</button>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div id="deleteModal" class="rename-modal">
+
+    <div class="rename-box">
+
+        <h3>Delete Conversation?</h3>
+
+        <p>This action cannot be undone.</p>
+
+        <div class="rename-buttons">
+
+            <button id="cancelDelete">Cancel</button>
+
+            <button id="confirmDelete" class="delete-confirm">
+                Delete
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
 
 <script>
 
@@ -124,14 +190,159 @@ input.addEventListener("keydown", function(e){
         sendMessage();
     }
 });
+const historyContainer = document.getElementById("chatHistory");
 
+
+
+let conversations = JSON.parse(localStorage.getItem("conversations")) || [];
+
+
+const renameModal = document.getElementById("renameModal");
+const renameInput = document.getElementById("renameInput");
+const saveRename = document.getElementById("saveRename");
+const cancelRename = document.getElementById("cancelRename");
+
+let renameIndex = -1;
+
+const deleteModal = document.getElementById("deleteModal");
+const confirmDelete = document.getElementById("confirmDelete");
+const cancelDelete = document.getElementById("cancelDelete");
+
+let deleteIndex = -1;
+
+function addHistory(title, index){
+
+    const item = document.createElement("div");
+    item.className = "history-item";
+
+    item.innerHTML = `
+        <span class="history-title">${title}</span>
+        <button class="rename-btn">✏️</button>
+    `;
+    const renameBtn = item.querySelector(".rename-btn");
+
+    renameBtn.onclick = () => {
+
+        renameModal.classList.add("show");
+
+        renameInput.value = title;
+
+        renameIndex = Array.from(historyContainer.children).indexOf(item);
+
+    };
+    historyContainer.prepend(item);
+
+}
+function renderHistory(){
+
+    historyContainer.innerHTML = "";
+
+    conversations.forEach((conversation, index)=>{
+
+        const item = document.createElement("div");
+
+        item.className = "history-item";
+
+        item.innerHTML = `
+            <span class="history-title">${conversation.title}</span>
+
+            <div class="history-actions">
+                <button class="rename-btn">✏️</button>
+                <button class="delete-btn">🗑️</button>
+            </div>
+        `;
+        const renameBtn = item.querySelector(".rename-btn");
+        const deleteBtn = item.querySelector(".delete-btn");
+        renameBtn.onclick = (e) => {
+
+        e.stopPropagation();
+
+        renameModal.classList.add("show");
+
+        renameInput.value = conversation.title;
+
+        renameIndex = index;
+
+        };
+        deleteBtn.onclick = (e) => {
+
+            e.stopPropagation();
+
+            deleteIndex = index;
+
+            deleteModal.classList.add("show");
+
+        renderHistory();
+
+        };
+
+        item.onclick = () => openConversation(index);
+
+        historyContainer.appendChild(item);
+
+    });
+
+}
+renderHistory();
+
+function openConversation(index){
+
+    const conversation = conversations[index];
+
+    chat.innerHTML = "";
+
+    conversation.messages.forEach(msg => {
+
+        if(msg.role === "user"){
+
+            chat.innerHTML += `
+            <div class="user-message">
+                <b>You:</b> ${msg.text}
+            </div>
+            `;
+
+        }else{
+
+            chat.innerHTML += `
+            <div class="bot-message">
+                <b>VedAura:</b><br>
+                ${marked.parse(msg.text)}
+            </div>
+            `;
+
+        }
+
+    });
+
+    sidebar.classList.remove("open");
+    overlay.classList.remove("show");
+
+}
+
+function newChat(){
+
+    chat.innerHTML = "";
+
+    input.value = "";
+
+    input.focus();
+
+}
 
 async function sendMessage(){
 
     if(button.disabled) return;
 
     let message = input.value.trim();
+    if(chat.querySelector(".user-message") === null){
 
+        let title = message.length > 30
+            ? message.substring(0,30) + "..."
+            : message;
+
+        addHistory(title);
+
+    }
     if(message==="") return;
 
     // Disable input while AI is thinking
@@ -156,8 +367,19 @@ async function sendMessage(){
     </div>
     `;
 
+    conversations[0].messages.push({
+    role: "user",
+    text: message
+    });
+
+    localStorage.setItem(
+        "conversations",
+        JSON.stringify(conversations)
+    );
+
+
     input.value = "";
-    
+
     chat.innerHTML += `
     <div id="loadingMessage" class="bot-message">
 
@@ -226,7 +448,15 @@ async function sendMessage(){
 
             clearInterval(interval);
             typing.innerHTML = marked.parse(reply);
-            
+            conversations[0].messages.push({
+                role: "assistant",
+                text: reply
+            });
+
+            localStorage.setItem(
+                "conversations",
+                JSON.stringify(conversations)
+            );
            typing.querySelectorAll("pre code").forEach((block) => {
                 hljs.highlightElement(block);
             });
@@ -256,6 +486,10 @@ async function sendMessage(){
 
 }
 const themeBtn = document.getElementById("themeBtn");
+const newChatBtn = document.getElementById("newChatBtn");
+newChatBtn.onclick = newChat;
+
+
 const logo = document.getElementById("logo");
 
 console.log(themeBtn);
@@ -297,6 +531,77 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }, 2000);   // <-- stay for 6 seconds
 });
+const menuBtn = document.getElementById("menuBtn");
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
+
+menuBtn.onclick = () =>{
+
+    sidebar.classList.add("open");
+
+    overlay.classList.add("show");
+
+};
+
+overlay.onclick = () =>{
+
+    sidebar.classList.remove("open");
+
+    overlay.classList.remove("show");
+
+};
+saveRename.onclick = () => {
+
+    const newName = renameInput.value.trim();
+
+    if(newName === "") return;
+
+    conversations[renameIndex].title = newName;
+
+    localStorage.setItem(
+        "conversations",
+        JSON.stringify(conversations)
+    );
+
+    renameModal.classList.remove("show");
+
+    renderHistory();
+
+};
+
+cancelRename.onclick = () => {
+
+    renameModal.classList.remove("show");
+
+};
+cancelDelete.onclick = () => {
+
+    deleteModal.classList.remove("show");
+
+};
+confirmDelete.onclick = () => {
+
+    conversations.splice(deleteIndex, 1);
+
+    localStorage.setItem(
+        "conversations",
+        JSON.stringify(conversations)
+    );
+
+    deleteModal.classList.remove("show");
+
+    renderHistory();
+
+};
+deleteBtn.onclick = (e) => {
+
+    e.stopPropagation();
+
+    deleteIndex = index;
+
+    deleteModal.classList.add("show");
+
+};
 
 </script>
 

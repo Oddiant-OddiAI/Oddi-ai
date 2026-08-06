@@ -452,3 +452,329 @@ body.dark-mode #splash-screen{
     }
 
 }
+/* ================= SIDEBAR ================= */
+
+.sidebar{
+
+    position:fixed;
+
+    top:0;
+
+    left:-300px;
+
+    width:280px;
+
+    height:100vh;
+
+    background:#ffffff;
+
+    box-shadow:4px 0 20px rgba(0,0,0,.08);
+
+    transition:.35s;
+
+    z-index:1000;
+
+    display:flex;
+
+    flex-direction:column;
+
+    padding:18px;
+
+}
+
+.sidebar.open{
+
+    left:0;
+
+}
+
+body.dark-mode .sidebar{
+
+    background:#18181B;
+
+}
+.menu-btn{
+
+    width:42px;
+
+    height:42px;
+
+    border:none;
+
+    background:transparent;
+
+    font-size:24px;
+
+    cursor:pointer;
+
+    margin-right:10px;
+    margin-left:18px;
+    margin-top:10px;
+    margin-bottom:10px;
+
+}
+
+.new-chat-btn{
+
+    padding:14px;
+
+    border:none;
+
+    border-radius:14px;
+
+    background:#2bbd59;
+
+    color:white;
+
+    font-size:16px;
+
+    cursor:pointer;
+
+    margin-bottom:18px;
+
+}
+
+.chat-history{
+
+    flex:1;
+
+    overflow-y:auto;
+
+}
+.history-item{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+    padding:14px;
+
+    border-radius:12px;
+
+    cursor:pointer;
+
+    margin-bottom:10px;
+
+    transition:.2s;
+
+}
+
+.history-item:hover{
+
+    background:#eeeeee;
+
+}
+
+body.dark-mode .history-item:hover{
+
+    background:#2b2b35;
+
+}
+.overlay{
+    position: fixed;
+    top:0;
+
+    left:280px;      /* same as sidebar width */
+
+    right:0;
+
+    bottom:0;
+
+
+    background:rgba(0,0,0,.35);
+
+    opacity:0;
+    pointer-events:none;
+
+    transition:.3s;
+    z-index:999;
+}
+
+.overlay.show{
+
+    opacity:1;
+
+    pointer-events:auto;
+
+}
+
+.rename-btn{
+
+    border:none;
+
+
+    background:transparent;
+
+    cursor:pointer;
+
+    font-size:16px;
+
+    opacity:.6;
+
+    transition:.2s;
+
+}
+
+.rename-btn:hover{
+
+    opacity:1;
+
+    transform:scale(1.15);
+
+}
+/* ---------- Rename Popup ---------- */
+
+.rename-modal{
+
+    position:fixed;
+
+    inset:0;
+
+    background:rgba(0,0,0,.35);
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    opacity:0;
+
+    pointer-events:none;
+
+    transition:.25s;
+
+    z-index:5000;
+
+}
+
+.rename-modal.show{
+
+    opacity:1;
+
+    pointer-events:auto;
+
+}
+
+.rename-box{
+
+    width:340px;
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:22px;
+
+    box-shadow:0 15px 35px rgba(0,0,0,.15);
+
+}
+
+.rename-box h3{
+
+    margin-bottom:18px;
+
+}
+
+.rename-box input{
+
+    width:100%;
+
+    padding:12px;
+
+    border:1px solid #ddd;
+
+    border-radius:10px;
+
+    font-size:15px;
+
+    margin-bottom:18px;
+
+}
+
+.rename-buttons{
+
+    display:flex;
+
+    justify-content:flex-end;
+
+    gap:10px;
+
+}
+
+.rename-buttons button{
+
+    border:none;
+
+    padding:10px 18px;
+
+    border-radius:10px;
+
+    cursor:pointer;
+
+}
+
+#saveRename{
+
+    background:#2bbd59;
+
+    color:white;
+
+}
+
+body.dark-mode .rename-box{
+
+    background:#232329;
+
+    color:white;
+
+}
+
+body.dark-mode .rename-box input{
+
+    background:#18181B;
+
+    color:white;
+
+    border:1px solid #444;
+
+}
+.history-actions{
+
+    display:flex;
+
+    gap:8px;
+
+}
+.delete-btn{
+
+    border:none;
+
+    background:transparent;
+
+    cursor:pointer;
+
+    opacity:.6;
+
+    transition:.2s;
+
+    font-size:16px;
+
+}
+
+.delete-btn:hover{
+
+    opacity:1;
+
+    transform:scale(1.15);
+
+}
+.delete-confirm{
+    background:#ef4444;
+    color:white;
+}
+
+.delete-confirm:hover{
+    background:#dc2626;
+}
