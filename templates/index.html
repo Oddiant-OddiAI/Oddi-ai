@@ -35,12 +35,17 @@
 
    <div id="sidebar" class="sidebar">
         <button id="newChatBtn" class="new-chat-btn">
-            ＋ New Chat
+            <span class="plus">+</span> New Chat
         </button>
+        
 
         <div id="chatHistory" class="chat-history">
         </div>
-        
+        <div class="chat-list"></div>
+
+        <button id="settingsBtn" class="settings-btn">
+            ⚙️ Settings
+        </button>
     </div>
 
     <div id="overlay" class="overlay"></div>
@@ -59,8 +64,10 @@
         <div class="content-side">
 
             <div class="title-box">
-                <h1>VedAura AI</h1>
-                <p>Your Personal AI Assistant</p>
+                <h1 class="logo-title">VedAura AI</h1>
+                <p class="logo-subtitle">
+                    Your Personal AI Assistant
+                </p>
             </div>
 
         </div>
@@ -75,6 +82,7 @@
     </header>
 
     <button id="menuBtn" class="menu-btn">
+        
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path d="M4 6H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <path d="M4 12H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -114,6 +122,7 @@
             </div>
 
         </div>
+    </div>
 
     </main>
 
@@ -126,9 +135,7 @@
 
     </div>
     <div class="input-area">
-        <button id="attachBtn" class="attach-btn">
-            📎
-        </button>
+        <button id="attach-btn" class="attach-btn">+</button>
         <input
             type="file"
             id="fileInput"
@@ -139,9 +146,7 @@
             id="message"
             placeholder="Ask VedAura anything...">
 
-        <button id="sendBtn">
-            <span class="send-icon">➤</span>
-        </button>
+        <button id="send-btn" class="send-btn">➤</button>
 
     </div>
 
@@ -192,13 +197,36 @@
     </div>
 
 </div>
+<div id="settingsModal" class="rename-modal">
 
+    <div class="rename-box">
+
+        <h3>Settings</h3>
+
+        <div class="setting-item">
+            <span>Theme</span>
+            <button id="themeSettingBtn">Toggle</button>
+        </div>
+
+        <div class="setting-item">
+            <span>Typing Animation</span>
+            <button id="typingBtn">ON</button>
+        </div>
+
+        <div class="setting-item">
+            <span>Close</span>
+            <button id="closeSettings">Close</button>
+        </div>
+
+    </div>
+
+</div>
 <script>
 let currentConversation = 0;
 let selectedFile = null;
 const chat = document.getElementById("chatbox");
 const input = document.getElementById("message");
-const button = document.getElementById("sendBtn");
+const button = document.getElementById("send-btn");
 
 button.addEventListener("click", sendMessage);
 
@@ -224,8 +252,12 @@ let renameIndex = -1;
 const deleteModal = document.getElementById("deleteModal");
 const confirmDelete = document.getElementById("confirmDelete");
 const cancelDelete = document.getElementById("cancelDelete");
+const settingsBtn = document.getElementById("settingsBtn");
+const settingsModal = document.getElementById("settingsModal");
+const closeSettings = document.getElementById("closeSettings");
 
 let deleteIndex = -1;
+let rememberTheme = localStorage.getItem("rememberTheme") === "true";
 
 function addHistory(title, index){
 
@@ -316,8 +348,31 @@ function openConversation(index){
 
         if(msg.role === "user"){
 
+            let fileHTML = "";
+
+            if (msg.file) {
+
+                let icon = "📄";
+
+                if (msg.file.match(/\.(png|jpg|jpeg|webp)$/i))
+                    icon = "🖼️";
+
+                else if (msg.file.match(/\.pdf$/i))
+                    icon = "📕";
+
+                else if (msg.file.match(/\.xlsx$/i))
+                    icon = "📊";
+
+                fileHTML = `
+                    <div class="message-file">
+                        ${icon} ${msg.file}
+                    </div>
+                `;
+            }
+
             chat.innerHTML += `
             <div class="user-message">
+                ${fileHTML}
                 <b>You:</b> ${msg.text}
             </div>
             `;
@@ -361,7 +416,7 @@ function newChat(){
 
     input.focus();
 }
-const attachBtn = document.getElementById("attachBtn");
+const attachBtn = document.getElementById("attach-btn");
 const fileInput = document.getElementById("fileInput");
 const attachmentPreview = document.getElementById("attachmentPreview");
 
@@ -417,16 +472,40 @@ async function sendMessage(){
     }
 
     // Show user message
+    let fileHTML = "";
+
+    if (selectedFile) {
+
+        let icon = "📄";
+
+        if (selectedFile.name.match(/\.(png|jpg|jpeg|webp)$/i))
+            icon = "🖼️";
+
+        else if (selectedFile.name.match(/\.pdf$/i))
+            icon = "📕";
+
+        else if (selectedFile.name.match(/\.xlsx$/i))
+            icon = "📊";
+
+        fileHTML = `
+            <div class="message-file">
+                ${icon} ${selectedFile.name}
+            </div>
+        `;
+    }
+
     chat.innerHTML += `
     <div class="user-message">
+        ${fileHTML}
         <b>You:</b> ${message}
     </div>
     `;
 
 
     conversations[currentConversation].messages.push({
-    role: "user",
-    text: message
+        role: "user",
+        text: message,
+        file: selectedFile ? selectedFile.name : null
     });
 
     localStorage.setItem(
@@ -581,13 +660,28 @@ themeBtn.onclick = function () {
         // Change logo back
         logo.src = "{{ url_for('static', filename='logo.png') }}";
     }
+    if (rememberTheme) {
 
+        localStorage.setItem(
+            "savedTheme",
+            document.body.classList.contains("dark-mode") ? "dark" : "light"
+        );
+
+    }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
 
     const splash = document.getElementById("splash-screen");
+    if (rememberTheme) {
 
+        const savedTheme = localStorage.getItem("savedTheme");
+
+        if (savedTheme === "dark") {
+            themeBtn.click();
+        }
+
+    }
     setTimeout(() => {
 
         splash.style.opacity = "0";
@@ -598,11 +692,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }, 3000);   // <-- stay for 6 seconds
 });
+const themeSettingBtn = document.getElementById("themeSettingBtn");
 
+themeSettingBtn.innerText = rememberTheme ? "ON" : "OFF";
+
+themeSettingBtn.onclick = () => {
+
+    rememberTheme = !rememberTheme;
+
+    localStorage.setItem("rememberTheme", rememberTheme);
+
+    themeSettingBtn.innerText = rememberTheme ? "ON" : "OFF";
+};
 const menuBtn = document.getElementById("menuBtn");
 const sidebar = document.getElementById("sidebar");
 const overlay = document.getElementById("overlay");
-
+settingsBtn.onclick = () => {
+    settingsModal.classList.add("show");
+};
 menuBtn.onclick = () =>{
 
     sidebar.classList.add("open");
@@ -661,7 +768,19 @@ confirmDelete.onclick = () => {
     renderHistory();
 
 };
+    
 
+
+const typingBtn = document.getElementById("typingBtn");
+let typingEnabled = true;
+
+typingBtn.onclick = () => {
+
+    typingEnabled = !typingEnabled;
+
+    typingBtn.innerText = typingEnabled ? "ON" : "OFF";
+
+};
 
 </script>
 
