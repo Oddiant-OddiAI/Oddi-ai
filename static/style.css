@@ -673,6 +673,7 @@ body.dark-mode .menu-btn{
 }
 
 .rename-box{
+    position:relative;
 
     width:340px;
 
@@ -1149,9 +1150,9 @@ body.dark-mode .settings-btn{
 
 }
 .close-settings-btn{
-    position:absolute;
-    top:145px;
-    right:455px;
+    position:relative;
+    top:18px;
+    right:18px;
 
     width:34px;
     height:34px;
@@ -1211,4 +1212,7 @@ body.dark-mode .settings-btn{
 
     box-shadow:0 12px 25px rgba(52,208,88,.45);
 
+}
+.settings-popup{
+    position:relative;
 }

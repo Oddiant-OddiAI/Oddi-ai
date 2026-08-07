@@ -90,7 +90,13 @@ def signup():
     # Save user
     create_user(username, email, password_hash)
 
-    return "Account created successfully!"
+    user = get_user_by_email(email)
+
+    session["user_id"] = user["id"]
+    session["username"] = user["username"]
+    session["email"] = user["email"]
+
+    return redirect("/")
 
 @app.route("/chat", methods=["POST"])
 def chat():

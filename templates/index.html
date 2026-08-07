@@ -807,9 +807,11 @@ typingBtn.onclick = () => {
 };
 const logoutBtn = document.getElementById("logoutBtn");
 
-logoutBtn.onclick = () => {
-    window.location.href = "/logout";
-};
+if (logoutBtn) {
+    logoutBtn.onclick = () => {
+        window.location.href = "/logout";
+    };
+}
 
 const notificationBtn = document.getElementById("notificationBtn")
 let notificationEnabled = true;
