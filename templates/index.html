@@ -350,7 +350,7 @@ function renderHistory(){
             deleteModal.classList.add("show");
 
         renderHistory();
-
+        
         };
 
         item.onclick = () => openConversation(index);
@@ -361,7 +361,9 @@ function renderHistory(){
 
 }
 renderHistory();
-
+if (conversations.length === 0) {
+    newChat();
+}
 function openConversation(index){
     currentConversation = index;
     const conversation = conversations[index];
@@ -582,9 +584,16 @@ async function sendMessage(){
     });
 
     const response = await fetch("/chat", {
-        method: "POST",
-        body: formData
+    method: "POST",
+    body: formData
     });
+
+    console.log(response.status);
+
+    if (!response.ok) {
+        console.log(await response.text());
+        return;
+    }
 
     const reply = await response.text();
     
@@ -654,9 +663,7 @@ async function sendMessage(){
         }
 
     }, 12);
-    selectedFiles = [];
-    fileInput.value = "";
-    attachmentPreview.style.display = "none";
+    
     chat.scrollTop = chat.scrollHeight;
 
     // Remove these lines from below because they're now inside the animation

@@ -1150,7 +1150,8 @@ body.dark-mode .settings-btn{
 
 }
 .close-settings-btn{
-    position:relative;
+    position:absolute;
+
     top:18px;
     right:18px;
 
@@ -1160,13 +1161,15 @@ body.dark-mode .settings-btn{
     border:none;
     border-radius:50%;
 
-    background: linear-gradient(135deg, #ff5a5a, #e31d1d);
+    background:linear-gradient(135deg,#ff5a5a,#e31d1d);
 
+    color:white;
     font-size:22px;
+
     cursor:pointer;
     transition:.2s;
-    color: white;
-    box-shadow: 0 8px 20px rgba(255, 60, 60, .35);
+
+    box-shadow:0 8px 20px rgba(255,60,60,.35);
 }
 
 .close-settings-btn:hover{
@@ -1212,7 +1215,4 @@ body.dark-mode .settings-btn{
 
     box-shadow:0 12px 25px rgba(52,208,88,.45);
 
-}
-.settings-popup{
-    position:relative;
 }
