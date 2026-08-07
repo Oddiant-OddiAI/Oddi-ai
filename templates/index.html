@@ -154,10 +154,11 @@
             multiple
             hidden>
 
-        <input
-            type="text"
-            id="message"
-            placeholder="Ask VedAura anything...">
+        <textarea
+            id="userInput"
+            rows="1"
+            placeholder="Ask VedAura anything..."
+        ></textarea>
 
         <button id="send-btn" class="send-btn">➤</button>
 
@@ -237,6 +238,9 @@
         </div>
 
         <hr class="settings-divider">
+        <button id="clearChatBtn" class="clear-chat-btn">
+            🗑 Clear Chat
+        </button>
 
         {% if logged_in %}
         <button id="logoutBtn" class="logout-btn">
@@ -255,16 +259,25 @@
 let currentConversation = 0;
 let selectedFiles = [];
 const chat = document.getElementById("chatbox");
-const input = document.getElementById("message");
+const input = document.getElementById("userInput");
 const button = document.getElementById("send-btn");
 
 button.addEventListener("click", sendMessage);
 
 input.addEventListener("keydown", function(e){
-    if(e.key==="Enter"){
+
+    if(e.key === "Enter" && !e.shiftKey){
+
+        e.preventDefault();
+
         sendMessage();
+
     }
+
 });
+userInput.style.height = "auto";
+userInput.style.height = userInput.scrollHeight + "px";
+
 const historyContainer = document.getElementById("chatHistory");
 
 
@@ -541,7 +554,7 @@ async function sendMessage(){
         <b>You:</b> ${message}
     </div>
     `;
-
+    chat.scrollTop = chat.scrollHeight;
 
     conversations[currentConversation].messages.push({
         role: "user",
@@ -603,6 +616,8 @@ async function sendMessage(){
     const reply = await response.text();
     
     input.value = "";
+    input.style.height = "auto";
+
     selectedFiles = [];
     fileInput.value = "";
     attachmentPreview.style.display = "none";
@@ -627,6 +642,37 @@ async function sendMessage(){
 
     const formattedReply = marked.parse(reply);
 
+// If typing animation is OFF
+if (!typingEnabled) {
+
+    typing.innerHTML = marked.parse(reply);
+
+    if (conversations[currentConversation].messages.length === 0) {
+        conversations[currentConversation].title = message;
+        renderHistory();
+    }
+
+    conversations[currentConversation].messages.push({
+        role: "assistant",
+        text: reply
+    });
+
+    localStorage.setItem(
+        "conversations",
+        JSON.stringify(conversations)
+    );
+
+    typing.querySelectorAll("pre code").forEach((block) => {
+        hljs.highlightElement(block);
+    });
+
+    input.disabled = false;
+    button.disabled = false;
+    button.innerHTML = `<span class="send-icon">➤</span>`;
+    input.focus();
+
+} else {
+
     let i = 0;
 
     const interval = setInterval(() => {
@@ -638,13 +684,14 @@ async function sendMessage(){
         if(i > reply.length){
 
             clearInterval(interval);
+
             typing.innerHTML = marked.parse(reply);
-            if(
-                conversations[currentConversation].messages.length === 0
-            ){
+
+            if(conversations[currentConversation].messages.length === 0){
                 conversations[currentConversation].title = message;
                 renderHistory();
             }
+
             conversations[currentConversation].messages.push({
                 role: "assistant",
                 text: reply
@@ -654,21 +701,20 @@ async function sendMessage(){
                 "conversations",
                 JSON.stringify(conversations)
             );
-           typing.querySelectorAll("pre code").forEach((block) => {
+
+            typing.querySelectorAll("pre code").forEach((block) => {
                 hljs.highlightElement(block);
             });
+
             input.disabled = false;
             button.disabled = false;
-
-            button.innerHTML = `
-                <span class="send-icon">➤</span>
-            `;
-
+            button.innerHTML = `<span class="send-icon">➤</span>`;
             input.focus();
         }
 
     }, 12);
-    
+
+}
     chat.scrollTop = chat.scrollHeight;
 
     // Remove these lines from below because they're now inside the animation
@@ -832,6 +878,25 @@ notificationBtn.onclick = () => {
     notificationBtn.innerText = notificationEnabled ? "ON" : "OFF";
 }
 
+const clearChatBtn = document.getElementById("clearChatBtn");
+
+clearChatBtn.onclick = () => {
+
+    if (!confirm("Delete ALL conversations?")) {
+        return;
+    }
+
+    conversations = [];
+
+    localStorage.removeItem("conversations");
+
+    chat.innerHTML = "";
+
+    renderHistory();
+
+    newChat();
+
+};
 </script>
 
 </body>
