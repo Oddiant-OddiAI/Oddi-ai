@@ -12,79 +12,93 @@ from app.prompts import SYSTEM_PROMPT
 from pypdf import PdfReader
 from openpyxl import load_workbook
 
-
-def process_message(user_message, uploaded_file=None):
+def process_message(user_message, uploaded_files=None):
+    if uploaded_files:
+        uploaded_file = uploaded_files[0]
+    else:
+        uploaded_file = None
 
     if uploaded_file:
             print("Engine received:", uploaded_file.filename)
+
+    images = []
+    documents = ""
     
-    image_bytes = None
-    file_text = None
+    if uploaded_files:
 
-    if uploaded_file:
+        for uploaded_file in uploaded_files:
 
-        filename = uploaded_file.filename.lower()
-        print("Filename:", filename)
-        print("Mimetype:", uploaded_file.mimetype)
+            filename = uploaded_file.filename.lower()
+            print("Filename:", filename)
+            print("Mimetype:", uploaded_file.mimetype)     
+            print("Reached ChatGPT section")
+            print("Images:", len(images))
+            print("Documents length:", len(documents))
 
-        # ---------- IMAGE ----------
-        if filename.endswith((".png", ".jpg", ".jpeg", ".webp")):
 
-            image_bytes = uploaded_file.read()
+            # ---------- IMAGE ----------
+            if filename.endswith((".png", ".jpg", ".jpeg", ".webp")):
 
-            print("Image detected")
-            print("Image size:", len(image_bytes))
-            print("IMAGE BLOCK")
+                image_bytes = uploaded_file.read()
 
-        # ---------- TXT ----------
-        elif filename.endswith(".txt"):
+                images.append({
+                    "bytes": image_bytes,
+                    "mimetype": uploaded_file.mimetype
+                })
 
-            file_text = uploaded_file.read().decode("utf-8")
+                print("Image detected")
+                print("Image size:", len(image_bytes))
+                print("IMAGE BLOCK")
 
-            print("TXT detected")
-            print(file_text[:200])
-            print("TXT BLOCK")
-        # ---------- PDF ----------
-        elif filename.endswith(".pdf"):
+            # ---------- TXT ----------
+            elif filename.endswith(".txt"):
 
-            reader = PdfReader(uploaded_file)
+                documents += "\n\n===== " + uploaded_file.filename + " =====\n"
+                documents += uploaded_file.read().decode("utf-8")
 
-            file_text = ""
+                print("TXT detected")
+                print(documents[:200])
+                print("TXT BLOCK")
+            # ---------- PDF ----------
+            elif filename.endswith(".pdf"):
 
-            for page in reader.pages:
-                page_text = page.extract_text()
+                reader = PdfReader(uploaded_file)
 
-                if page_text:
-                    file_text += page_text + "\n"
+                documents += "\n\n===== " + uploaded_file.filename + " =====\n"
 
-            print("PDF detected")
-            print(file_text[:200])
-            print("PDF BLOCK")
-        # ---------- EXCEL ----------
-        elif filename.endswith(".xlsx"):
+                for page in reader.pages:
+                    page_text = page.extract_text()
 
-            workbook = load_workbook(uploaded_file)
+                    if page_text:
+                        documents += page_text + "\n"
 
-            sheet = workbook.active
+                print("PDF detected")
+                print(documents[:200])
+                print("PDF BLOCK")
+            # ---------- EXCEL ----------
+            elif filename.endswith(".xlsx"):
 
-            file_text = ""
+                workbook = load_workbook(uploaded_file)
 
-            for row in sheet.iter_rows(values_only=True):
+                sheet = workbook.active
 
-                line = " | ".join(str(cell) if cell is not None else "" for cell in row)
+                documents += "\n\n===== " + uploaded_file.filename + " =====\n"
 
-                file_text += line + "\n"
+                for row in sheet.iter_rows(values_only=True):
 
-            print("EXCEL detected")
-            print(file_text[:300])
-            print("EXCEL BLOCK")
-        else:
+                    line = " | ".join(str(cell) if cell is not None else "" for cell in row)
 
-            print("Unsupported file:", filename)
+                    documents += line + "\n"
 
+                print("EXCEL detected")
+                print(documents[:300])
+                print("EXCEL BLOCK")
+            else:
+
+                print("Unsupported file:", filename)
 
     # 2. Fast Responses
-    if not uploaded_file:
+    if not uploaded_files:
         fast_reply = fast_response(user_message)
         if fast_reply:
             return fast_reply
@@ -105,51 +119,44 @@ def process_message(user_message, uploaded_file=None):
         return remember(user_message)
 
     # 5. Chatgpt
-    if image_bytes:
+    content = [
+        {
+            "type": "input_text",
+            "text": user_message
+        }
+    ]
+    for image in images:
+        print("Building content...")
+        image_base64 = base64.b64encode(
+            image["bytes"]
+        ).decode("utf-8")
 
-        image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+        content.append({
+            "type": "input_image",
+            "image_url":
+            f"data:{image['mimetype']};base64,{image_base64}"
+        })
 
-        chat_history = [
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": user_message
-                    },
-                    {
-                        "type": "input_image",
-                        "image_url": f"data:{uploaded_file.mimetype};base64,{image_base64}"
-                    }
-                ]
-            }
-        ]
+    if documents:
 
-    elif file_text:
+        content.append({
+            "type":"input_text",
+            "text":f"""
+    Attached documents:
 
-        chat_history = [
-            {
-                "role": "user",
-                "content": f"""
-    User message:
-    {user_message}
-
-    Attached file type: {uploaded_file.mimetype}
-    Document content:
-    {file_text}
+    {documents}
     """
-            }
-        ]
-
-    else:
-
-        chat_history = [
-            {
-                "role": "user",
-                "content": user_message
-            }
-        ]
-
-        
-    print(chat_history)
+        })
+    print("Creating content...")
+    chat_history = [
+        {
+            
+            "role":"user",
+            "content":content
+        }
+    ]
+    print("Chat history created")
+    print("Images:", len(images))
+    print("Documents:", len(documents))
+    print("Sending request to OpenAI...")
     return get_response(chat_history)

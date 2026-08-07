@@ -139,6 +139,7 @@
         <input
             type="file"
             id="fileInput"
+            multiple
             hidden>
 
         <input
@@ -223,7 +224,7 @@
 </div>
 <script>
 let currentConversation = 0;
-let selectedFile = null;
+let selectedFiles = [];
 const chat = document.getElementById("chatbox");
 const input = document.getElementById("message");
 const button = document.getElementById("send-btn");
@@ -348,26 +349,31 @@ function openConversation(index){
         if(msg.role === "user"){
 
             let fileHTML = "";
+                if (msg.files) {
 
-            if (msg.file) {
+                    msg.files.forEach(file => {
 
-                let icon = "📄";
+                        let icon = "📄";
 
-                if (msg.file.match(/\.(png|jpg|jpeg|webp)$/i))
-                    icon = "🖼️";
+                        if (file.match(/\.(png|jpg|jpeg|webp)$/i))
+                            icon = "🖼️";
 
-                else if (msg.file.match(/\.pdf$/i))
-                    icon = "📕";
+                        else if (file.match(/\.pdf$/i))
+                            icon = "📕";
 
-                else if (msg.file.match(/\.xlsx$/i))
-                    icon = "📊";
+                        else if (file.match(/\.xlsx$/i))
+                            icon = "📊";
 
-                fileHTML = `
-                    <div class="message-file">
-                        ${icon} ${msg.file}
-                    </div>
-                `;
-            }
+                        fileHTML += `
+                            <div class="message-file">
+                                ${icon} ${file}
+                            </div>
+                        `;
+
+                    });
+
+                }
+                            
 
             chat.innerHTML += `
             <div class="user-message">
@@ -398,6 +404,7 @@ function newChat(){
 
     chat.innerHTML = "";
     input.value = "";
+    selectedFiles = [];
 
     conversations.unshift({
         title: "New Chat",
@@ -430,9 +437,10 @@ fileInput.onchange = (e) => {
 
     if(fileInput.files.length === 0) return;
 
-    selectedFile = fileInput.files[0];
+    selectedFiles = Array.from(fileInput.files);
 
-    attachmentName.textContent = "📎 " + fileInput.files[0].name;
+    attachmentName.textContent =
+    "📎 " + selectedFiles.length + " file(s) selected";
 
     attachmentPreview.style.display = "flex";
     
@@ -443,7 +451,7 @@ removeAttachment.onclick = () => {
     fileInput.value = "";
 
     attachmentPreview.style.display = "none";
-    selectedFile = null;
+    selectedFiles = [];
 
 };
 
@@ -473,24 +481,27 @@ async function sendMessage(){
     // Show user message
     let fileHTML = "";
 
-    if (selectedFile) {
+    if (selectedFiles.length > 0) {
 
-        let icon = "📄";
+        selectedFiles.forEach(file => {
 
-        if (selectedFile.name.match(/\.(png|jpg|jpeg|webp)$/i))
-            icon = "🖼️";
+            let icon = "📄";
 
-        else if (selectedFile.name.match(/\.pdf$/i))
-            icon = "📕";
+            if (file.name.match(/\.(png|jpg|jpeg|webp)$/i))
+                icon = "🖼️";
 
-        else if (selectedFile.name.match(/\.xlsx$/i))
-            icon = "📊";
+            else if (file.name.match(/\.pdf$/i))
+                icon = "📕";
 
-        fileHTML = `
-            <div class="message-file">
-                ${icon} ${selectedFile.name}
-            </div>
-        `;
+            else if (file.name.match(/\.xlsx$/i))
+                icon = "📊";
+
+            fileHTML += `
+                <div class="message-file">
+                    ${icon} ${file.name}
+                </div>
+            `;
+        });
     }
 
     chat.innerHTML += `
@@ -504,7 +515,7 @@ async function sendMessage(){
     conversations[currentConversation].messages.push({
         role: "user",
         text: message,
-        file: selectedFile ? selectedFile.name : null
+        files: selectedFiles.map(file => file.name)
     });
 
     localStorage.setItem(
@@ -513,8 +524,8 @@ async function sendMessage(){
     );
 
 
-    input.value = "";
-
+    
+    
     chat.innerHTML += `
     <div id="loadingMessage" class="bot-message">
 
@@ -541,10 +552,10 @@ async function sendMessage(){
 
     formData.append("message", message);
 
-    console.log(selectedFile);
-    if (selectedFile) {
-        formData.append("file", selectedFile);
-    }
+    console.log(selectedFiles);
+    selectedFiles.forEach(file => {
+        formData.append("files", file);
+    });
 
     const response = await fetch("/chat", {
         method: "POST",
@@ -552,7 +563,12 @@ async function sendMessage(){
     });
 
     const reply = await response.text();
-  
+    
+    input.value = "";
+    selectedFiles = [];
+    fileInput.value = "";
+    attachmentPreview.style.display = "none";
+
     chat.scrollTop = chat.scrollHeight;
     // Remove loading message
     const loading = document.getElementById("loadingMessage");
@@ -614,7 +630,7 @@ async function sendMessage(){
         }
 
     }, 12);
-    selectedFile = null;
+    selectedFiles = [];
     fileInput.value = "";
     attachmentPreview.style.display = "none";
     chat.scrollTop = chat.scrollHeight;

@@ -13,13 +13,14 @@ def home():
 def chat():
 
     message = request.form["message"]
-    uploaded_file = request.files.get("file")
-    if uploaded_file:
-        print("File received:", uploaded_file.filename)
+    uploaded_files = request.files.getlist("files")
+    if uploaded_files:
+        print("Files received:")
+        for file in uploaded_files:
+            print(file.filename)
     else:
-        print("No file uploaded")
-
-    reply = process_message(message, uploaded_file)
+        print("No files uploaded")
+    reply = process_message(message, uploaded_files)
 
     return reply
 
