@@ -25,7 +25,19 @@
 </head>
 
 <body>
+{% if logged_in %}
 
+<div class="user-btn">
+    👤 {{ username }} 
+</div>
+
+{% else %}
+
+<a href="/login" class="login-btn">
+    Sign In
+</a>
+
+{% endif %}
 
 <div class="app">
 
@@ -199,7 +211,8 @@
 
 </div>
 <div id="settingsModal" class="rename-modal">
-
+    <h2>Settings</h2>
+    <button id="closeSettings" class="close-settings-btn">✕</button>
     <div class="rename-box">
 
         <h3>Settings</h3>
@@ -213,11 +226,22 @@
             <span>Typing Animation</span>
             <button id="typingBtn">ON</button>
         </div>
-
         <div class="setting-item">
-            <span>Close</span>
-            <button id="closeSettings">Close</button>
+            <span>Notifications</span>
+            <button id="notificationBtn">ON</button>
         </div>
+
+        <hr class="settings-divider">
+
+        {% if logged_in %}
+        <button id="logoutBtn" class="logout-btn">
+            Logout
+        </button>
+        {% else %}
+        <a href="/signup" class="signup-btn">
+            Sign Up
+        </a>
+        {% endif %}
 
     </div>
 
@@ -781,6 +805,18 @@ typingBtn.onclick = () => {
     typingBtn.innerText = typingEnabled ? "ON" : "OFF";
 
 };
+const logoutBtn = document.getElementById("logoutBtn");
+
+logoutBtn.onclick = () => {
+    window.location.href = "/logout";
+};
+
+const notificationBtn = document.getElementById("notificationBtn")
+let notificationEnabled = true;
+notificationBtn.onclick = () => {
+    notificationEnabled =  !notificationEnabled;
+    notificationBtn.innerText = notificationEnabled ? "ON" : "OFF";
+}
 
 </script>
 
