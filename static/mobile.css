@@ -5,13 +5,13 @@
 @media (max-width: 600px) {
 
     /* ---------- BASE ---------- */
-
     html,
     body {
         width: 100%;
         height: 100%;
         margin: 0;
         overflow: hidden;
+        background: #f8f9fa;
     }
 
     body {
@@ -23,27 +23,24 @@
         inset: 0;
         width: 100%;
         height: 100dvh;
-
         display: flex;
         flex-direction: column;
-
         overflow: hidden;
         background: #f8f9fa;
     }
 
 
     /* ---------- HEADER ---------- */
-
     .header {
-        height: 68px;
-        min-height: 68px;
-
-        padding: 8px 12px;
-
+        height: 60px;
+        min-height: 60px;
+        padding: 6px 12px;
         display: flex;
         align-items: center;
-
         box-sizing: border-box;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        background: inherit;
+        z-index: 10;
     }
 
     .logo-box {
@@ -53,7 +50,7 @@
     }
 
     .logo {
-        width: 42px;
+        width: 36px;
         height: auto;
     }
 
@@ -63,13 +60,14 @@
 
     .title-box h1 {
         margin: 0;
-        font-size: 22px;
-        line-height: 1.05;
+        font-size: 18px;
+        line-height: 1.1;
     }
 
     .title-box p {
-        margin: 3px 0 0;
+        margin: 2px 0 0;
         font-size: 10px;
+        opacity: 0.7;
     }
 
     .theme-toggle {
@@ -77,304 +75,228 @@
     }
 
     #themeBtn {
-        width: 42px;
-        height: 42px;
-
-        font-size: 20px;
+        width: 38px;
+        height: 38px;
+        font-size: 18px;
         border-radius: 50%;
+        border: none;
+        background: transparent;
     }
 
 
     /* ---------- MENU ---------- */
-
     .menu-btn {
-        width: 44px;
-        height: 44px;
-
-        margin: 8px 12px;
-
-        border-radius: 12px;
+        width: 38px;
+        height: 38px;
+        margin: 0 8px 0 0;
+        border-radius: 10px;
+        border: none;
+        background: transparent;
     }
 
 
     /* ---------- LEFT LINE ---------- */
-
     .left-line {
         display: none;
     }
 
 
     /* ---------- CHAT AREA ---------- */
-
     .chatbox {
         flex: 1;
-
         width: 100%;
         box-sizing: border-box;
-
         overflow-y: auto;
-
-        padding: 12px 10px 100px;
-
+        padding: 12px 12px 20px;
         scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
     }
 
 
     /* ---------- WELCOME ---------- */
-
     .welcome-message {
         width: 100%;
         box-sizing: border-box;
-
         display: flex;
         flex-direction: column;
         align-items: center;
-
-        margin: 45px auto 0;
-        padding: 0 14px;
-
+        margin: 20px auto 0;
+        padding: 0 10px;
         text-align: center;
     }
 
     .welcome-message h2 {
-        margin: 0 0 14px;
-
-        font-size: 30px;
-        line-height: 1.15;
-
+        margin: 0 0 10px;
+        font-size: 24px;
+        line-height: 1.2;
         font-weight: 700;
-
-        text-align: center;
     }
 
+    /* Bubble text wrapper for "Hello! How can I help..." */
     .welcome-message p {
-        margin: 0 0 18px;
-
-        padding: 12px 16px;
-
-        max-width: 300px;
-
-        font-size: 15px;
+        margin: 0 0 16px;
+        padding: 10px 14px;
+        max-width: 280px;
+        font-size: 14px;
         line-height: 1.4;
-
-        border-radius: 16px;
-
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-
+        border-radius: 14px;
+        background: #ffffff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         box-sizing: border-box;
     }
 
 
     /* ---------- QUICK ACTIONS ---------- */
-
     .quick-actions {
         width: 100%;
-        max-width: 360px;
-
+        max-width: 340px;
         padding: 0;
-
         display: flex !important;
         flex-direction: column;
-
-        gap: 10px;
-
+        gap: 8px;
         box-sizing: border-box;
     }
 
     .action-card {
         width: 100%;
-        max-width: none;
-
-        min-height: 44px;
-
+        min-height: 40px;
         margin: 0;
-
-        padding: 11px 14px;
-
+        padding: 10px 12px;
         box-sizing: border-box;
-
-        border-radius: 12px;
-
-        font-size: 14px;
-
+        border-radius: 10px;
+        font-size: 13px;
         display: flex;
         align-items: center;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.06);
     }
 
 
     /* ---------- USER MESSAGE ---------- */
-
     .user-message {
         align-self: flex-end;
-
-        max-width: 78%;
-
-        margin: 10px 4px;
-
-        padding: 10px 13px;
-
-        font-size: 15px;
-        line-height: 1.45;
-
-        border-radius: 15px;
-
+        max-width: 80%;
+        margin: 8px 4px;
+        padding: 10px 12px;
+        font-size: 14px;
+        line-height: 1.4;
+        border-radius: 14px;
         box-sizing: border-box;
+        background: #007aff;
+        color: #ffffff;
     }
 
 
     /* ---------- BOT MESSAGE ---------- */
-
     .bot-message {
         align-self: flex-start;
-
         max-width: 88%;
-
-        margin: 10px 4px;
-
-        padding: 12px 14px;
-
-        font-size: 15px;
-        line-height: 1.5;
-
-        border-radius: 15px;
-
+        margin: 8px 4px;
+        padding: 10px 12px;
+        font-size: 14px;
+        line-height: 1.45;
+        border-radius: 14px;
         box-sizing: border-box;
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.05);
     }
 
     .bot-message strong {
-        font-size: 15px;
+        font-size: 14px;
     }
 
 
-    /* ---------- INPUT AREA ---------- */
-
+    /* ---------- INPUT AREA (FIXED OVERLAP & SAFE AREA) ---------- */
     .input-area {
-        position: fixed;
-
-        left: 0;
-        bottom: 0;
-
         width: 100%;
-
-        padding: 8px 10px 10px;
-
+        padding: 8px 10px;
+        /* Added safe-area padding for modern phones */
+        padding-bottom: max(10px, env(safe-area-inset-bottom));
         box-sizing: border-box;
-
         display: flex;
         align-items: center;
-
-        gap: 8px;
-
+        gap: 6px;
+        background: #ffffff;
+        border-top: 1px solid rgba(0, 0, 0, 0.06);
         z-index: 999;
     }
 
 
     /* ---------- PLUS / ATTACH BUTTON ---------- */
-
     .input-area button:first-child {
-        width: 48px;
-        height: 48px;
-
-        min-width: 48px;
-
+        width: 42px;
+        height: 42px;
+        min-width: 42px;
         border-radius: 50%;
-
         flex-shrink: 0;
+        border: none;
+        background: #f1f3f5;
     }
 
 
     /* ---------- TEXT INPUT ---------- */
-
     .input-area input {
         flex: 1;
-
         min-width: 0;
-
-        height: 48px;
-
-        padding: 0 16px;
-
-        border-radius: 24px;
-
-        font-size: 15px;
-
+        height: 42px;
+        padding: 0 14px;
+        border-radius: 21px;
+        font-size: 14px;
+        border: 1px solid #ced4da;
+        background: #f8f9fa;
         box-sizing: border-box;
+        outline: none;
+    }
+
+    .input-area input:focus {
+        border-color: #007aff;
+        background: #ffffff;
     }
 
 
     /* ---------- SEND BUTTON ---------- */
-
     #sendBtn {
-        width: 52px;
-        height: 48px;
-
-        min-width: 52px;
-
-        border-radius: 24px;
-
+        width: 44px;
+        height: 42px;
+        min-width: 44px;
+        border-radius: 21px;
         flex-shrink: 0;
+        border: none;
+        background: #10b981;
+        color: #ffffff;
     }
 
 
     /* ---------- DARK MODE ---------- */
-
     body.dark-mode .app {
-        background: #18181b;
+        background: #121212;
+    }
+
+    body.dark-mode .header {
+        border-bottom-color: rgba(255, 255, 255, 0.08);
+    }
+
+    body.dark-mode .welcome-message p,
+    body.dark-mode .action-card,
+    body.dark-mode .bot-message {
+        background: #1e1e24;
+        color: #e4e4e7;
+        border-color: rgba(255, 255, 255, 0.06);
     }
 
     body.dark-mode .input-area {
-        background: rgba(24, 24, 27, 0.94);
-    }
-}
-
-
-/* =========================================================
-   VERY SMALL PHONES
-   ========================================================= */
-
-@media (max-width: 360px) {
-
-    .title-box h1 {
-        font-size: 19px;
+        background: #18181b;
+        border-top-color: rgba(255, 255, 255, 0.08);
     }
 
-    .welcome-message {
-        margin-top: 30px;
+    body.dark-mode .input-area button:first-child {
+        background: #27272a;
+        color: #e4e4e7;
     }
 
-    .welcome-message h2 {
-        font-size: 27px;
-    }
-
-    .welcome-message p {
-        font-size: 14px;
-    }
-
-    .action-card {
-        min-height: 42px;
-        font-size: 13px;
-    }
-
-    .input-area {
-        padding-left: 7px;
-        padding-right: 7px;
-        gap: 6px;
-    }
-
-    .input-area button:first-child {
-        width: 44px;
-        min-width: 44px;
-        height: 44px;
-    }
-
-    .input-area input {
-        height: 44px;
-        font-size: 14px;
-    }
-
-    #sendBtn {
-        width: 46px;
-        min-width: 46px;
-        height: 44px;
+    body.dark-mode .input-area input {
+        background: #27272a;
+        border-color: #3f3f46;
+        color: #e4e4e7;
     }
 }
