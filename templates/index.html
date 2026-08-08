@@ -49,7 +49,7 @@
         <button id="newChatBtn" class="new-chat-btn">
             <span class="plus">+</span> New Chat
         </button>
-        
+
         {% if not logged_in %}
         <div class="guest-save-message">
             🔐 <a href="/login">Sign in</a> or
@@ -379,6 +379,13 @@ const closeSettings = document.getElementById("closeSettings");
 
 let deleteIndex = -1;
 
+function escapeUserText(text) {
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
 function addHistory(title, index){
 
     const item = document.createElement("div");
@@ -497,7 +504,8 @@ function openConversation(index){
             chat.innerHTML += `
             <div class="user-message">
                 ${fileHTML}
-                <b>You:</b> ${msg.text}
+                <b>You:</b>
+                <div class="user-text">${escapeUserText(msg.text)}</div>
             </div>
             `;
 
@@ -679,7 +687,8 @@ async function sendMessage(){
     chat.innerHTML += `
     <div class="user-message">
         ${fileHTML}
-        <b>You:</b> ${message}
+        <b>You:</b>
+        <div class="user-text">${escapeUserText(message)}</div>
     </div>
     `;
     chat.scrollTop = chat.scrollHeight;

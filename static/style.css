@@ -285,20 +285,35 @@ body.dark-mode .bot-message{
 }
 
 .user-message {
-    background: #dfffe2;
     margin-left: auto;
     margin-right: 20px;
-    white-space: pre-wrap;
-    padding: 16px;
-    border-radius: 18px;
+
     width: fit-content;
-    max-width: 700px;
-    box-shadow: 0 2px 8px rgba(0,0,0,.06);
+    max-width: min(700px, 68%);
+    box-sizing: border-box;
+
+    padding: 8px 4px;
+
+    text-align: left;
+    line-height: 1.6;
+
+    overflow-wrap: anywhere;
 }
 
+/* User message text */
+.user-message .user-text {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+
+    margin-top: 4px;
+}
+
+/* Keep every continuation line aligned with the message text */
+
+
 body.dark-mode .user-message{
-    background:#2E7D32;
-    color:white;
+    background: transparent;
+    color: white;
 }
 body.dark-mode .bot-message p{
     color:#f5f5f5;
@@ -1285,4 +1300,34 @@ body.dark-mode .settings-btn{
 
 .guest-save-message a:hover {
     text-decoration: underline;
+}
+/* ---------- Final User Message Layout ---------- */
+
+/* ---------- Final User Message Layout ---------- */
+
+.user-message {
+    background: transparent !important;
+    width: fit-content !important;
+    max-width: min(700px, 68%) !important;
+
+    margin-left: auto !important;
+    margin-right: 20px !important;
+
+    padding: 8px 4px !important;
+
+    border-radius: 0 !important;
+    box-shadow: none !important;
+
+    text-align: left;
+    line-height: 1.6;
+
+    box-sizing: border-box;
+}
+
+.user-message .user-text {
+    display: block;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+
+    margin-top: 4px;
 }
