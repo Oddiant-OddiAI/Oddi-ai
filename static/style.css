@@ -110,27 +110,22 @@ body.dark-mode .logo-box{
 /* ---------- Welcome Screen ---------- */
 
 .welcome-message{
-
     position:relative;
-
     display:flex;
-
     flex-direction:column;
-
-    
     align-items:center;
-    padding-top: 30px;
-
-    pointer-events:none;
-    z-index:0;
+    padding-top:30px;
+    transform:translateX(-30px);
 }
+
 body.dark-mode .welcome-message p{
     color:#F5F5F5;
 }
 
-.welcome-message h2{
-    margin:0;
-    font-size:42px;
+.welcome-message h2 {
+    margin: 0;
+    font-size: 42px;
+    transform: translateX(10px);
 }
 
 .welcome-message p{

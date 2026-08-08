@@ -117,7 +117,13 @@
 
         <div class="welcome-message" id="welcomeContainer">
 
-            <h2>Where should we begin?</h2>
+            <h2>
+                {% if logged_in %}
+                    Welcome back, {{ username }}! 👋
+                {% else %}
+                   Where should we begin?
+                {% endif %}
+            </h2>
 
             <p>Hello! 👋 How can I help you today?</p>
 
