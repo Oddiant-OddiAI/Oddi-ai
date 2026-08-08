@@ -24,7 +24,7 @@
             href="{{ url_for('static', filename='mobile.css') }}">
 </head>
 
-<body>
+<body data-logged-in="{{ 'true' if logged_in else 'false' }}"></body>
 {% if logged_in %}
 
 <div class="user-btn">
@@ -50,6 +50,12 @@
             <span class="plus">+</span> New Chat
         </button>
         
+        {% if not logged_in %}
+        <div class="guest-save-message">
+            🔐 <a href="/login">Sign in</a> or
+            <a href="/signup">sign up</a> to save your chats
+        </div>
+        {% endif %}
 
         <div id="chatHistory" class="chat-history">
         </div>
@@ -256,11 +262,12 @@
 
 </div>
 <script>
-let currentConversation = 0;
+let currentConversation = null;
 let selectedFiles = [];
 const chat = document.getElementById("chatbox");
 const input = document.getElementById("userInput");
 const button = document.getElementById("send-btn");
+const isLoggedIn = document.body.dataset.loggedIn === "true";
 
 button.addEventListener("click", sendMessage);
 
@@ -282,8 +289,79 @@ const historyContainer = document.getElementById("chatHistory");
 
 
 
-let conversations = JSON.parse(localStorage.getItem("conversations")) || [];
+let conversations = [];
+async function loadConversations() {
 
+    if (!isLoggedIn) {
+        conversations = [];
+        currentConversation = null;
+        return;
+    }
+
+    try {
+        const response = await fetch("/api/conversations");
+
+        if (!response.ok) {
+            console.log("Could not load conversations");
+            return;
+        }
+
+        conversations = await response.json();
+
+        renderHistory();
+
+        currentConversation = null;
+
+    } catch (error) {
+        console.error("Load conversations error:", error);
+    }
+}
+
+
+async function saveConversation(conversation) {
+    if (!conversation.id) return;
+
+    try {
+        await fetch(`/api/conversations/${conversation.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                title: conversation.title,
+                messages: conversation.messages
+            })
+        });
+    } catch (error) {
+        console.error("Save conversation error:", error);
+    }
+}
+
+
+async function createServerConversation(title = "New Chat") {
+    try {
+        const response = await fetch("/api/conversations", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                title: title
+            })
+        });
+
+        if (!response.ok) {
+            console.error("Could not create conversation");
+            return null;
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error("Create conversation error:", error);
+        return null;
+    }
+}
 
 const renameModal = document.getElementById("renameModal");
 const renameInput = document.getElementById("renameInput");
@@ -378,10 +456,7 @@ function renderHistory(){
     });
 
 }
-renderHistory();
-if (conversations.length === 0) {
-    newChat();
-}
+loadConversations();
 function openConversation(index){
     currentConversation = index;
     const conversation = conversations[index];
@@ -444,25 +519,42 @@ function openConversation(index){
 
 }
 
-function newChat(){
+async function newChat(){
 
     chat.innerHTML = "";
     input.value = "";
     selectedFiles = [];
 
-    conversations.unshift({
-        title: "New Chat",
-        messages: []
-    });
+    // Logged-in user → create database conversation
+    if (isLoggedIn) {
 
-    currentConversation = 0;
+        const serverConversation = await createServerConversation("New Chat");
 
-    localStorage.setItem(
-        "conversations",
-        JSON.stringify(conversations)
-    );
+        if (!serverConversation) {
+            return;
+        }
 
-    renderHistory();
+        conversations.unshift({
+            id: serverConversation.id,
+            title: serverConversation.title,
+            messages: []
+        });
+
+        currentConversation = 0;
+
+        renderHistory();
+
+    } else {
+
+        // Guest user → temporary local conversation
+        conversations = [{
+            id: null,
+            title: "New Chat",
+            messages: []
+        }];
+
+        currentConversation = 0;
+    }
 
     input.focus();
 }
@@ -505,7 +597,43 @@ async function sendMessage(){
 
     let message = input.value.trim();
 
-    if(message==="") return;
+    if(message === "") return;
+
+    // If no conversation is selected
+    if(currentConversation === null){
+
+        // Logged-in user → create server conversation
+        if (isLoggedIn) {
+
+            const serverConversation = await createServerConversation(message);
+
+            if(!serverConversation){
+                console.error("Could not create new conversation.");
+                return;
+            }
+
+            conversations.unshift({
+                id: serverConversation.id,
+                title: message,
+                messages: []
+            });
+
+            currentConversation = 0;
+
+            renderHistory();
+
+        } else {
+
+            // Guest user → temporary local conversation
+            conversations = [{
+                id: null,
+                title: message,
+                messages: []
+            }];
+
+            currentConversation = 0;
+        }
+    }
 
     // Disable input while AI is thinking
     input.disabled = true;
@@ -562,10 +690,7 @@ async function sendMessage(){
         files: selectedFiles.map(file => file.name)
     });
 
-    localStorage.setItem(
-        "conversations",
-        JSON.stringify(conversations)
-    );
+    await saveConversation(conversations[currentConversation]);
 
 
     
@@ -657,10 +782,7 @@ if (!typingEnabled) {
         text: reply
     });
 
-    localStorage.setItem(
-        "conversations",
-        JSON.stringify(conversations)
-    );
+    await saveConversation(conversations[currentConversation]);
 
     typing.querySelectorAll("pre code").forEach((block) => {
         hljs.highlightElement(block);
@@ -675,7 +797,7 @@ if (!typingEnabled) {
 
     let i = 0;
 
-    const interval = setInterval(() => {
+     const interval = setInterval(async () => {
 
         typing.textContent = reply.substring(0, i);
         chat.scrollTop = chat.scrollHeight;
@@ -697,10 +819,7 @@ if (!typingEnabled) {
                 text: reply
             });
 
-            localStorage.setItem(
-                "conversations",
-                JSON.stringify(conversations)
-            );
+            await saveConversation(conversations[currentConversation]);
 
             typing.querySelectorAll("pre code").forEach((block) => {
                 hljs.highlightElement(block);
@@ -794,7 +913,7 @@ overlay.onclick = () =>{
     overlay.classList.remove("show");
 
 };
-saveRename.onclick = () => {
+saveRename.onclick = async () => {
 
     const newName = renameInput.value.trim();
 
@@ -802,10 +921,7 @@ saveRename.onclick = () => {
 
     conversations[renameIndex].title = newName;
 
-    localStorage.setItem(
-        "conversations",
-        JSON.stringify(conversations)
-    );
+    await saveConversation(conversations[renameIndex]);
 
     renameModal.classList.remove("show");
 
@@ -823,14 +939,17 @@ cancelDelete.onclick = () => {
     deleteModal.classList.remove("show");
 
 };
-confirmDelete.onclick = () => {
+confirmDelete.onclick = async () => {
+
+    const conversation = conversations[deleteIndex];
+
+    if (conversation && conversation.id) {
+        await fetch(`/api/conversations/${conversation.id}`, {
+            method: "DELETE"
+        });
+    }
 
     conversations.splice(deleteIndex, 1);
-
-    localStorage.setItem(
-        "conversations",
-        JSON.stringify(conversations)
-    );
 
     deleteModal.classList.remove("show");
 
@@ -880,23 +999,30 @@ notificationBtn.onclick = () => {
 
 const clearChatBtn = document.getElementById("clearChatBtn");
 
-clearChatBtn.onclick = () => {
+    clearChatBtn.onclick = async () => {
 
-    if (!confirm("Delete ALL conversations?")) {
-        return;
-    }
+        if (!confirm("Delete ALL conversations?")) {
+            return;
+        }
 
-    conversations = [];
+        const response = await fetch("/api/conversations/clear", {
+            method: "DELETE"
+        });
 
-    localStorage.removeItem("conversations");
+        if (!response.ok) {
+            alert("Could not clear conversations.");
+            return;
+        }
 
-    chat.innerHTML = "";
+        conversations = [];
+        currentConversation = null;
+        chat.innerHTML = "";
+        renderHistory();
 
-    renderHistory();
+        newChat();
+    };
 
-    newChat();
-
-};
+    
 </script>
 
 </body>

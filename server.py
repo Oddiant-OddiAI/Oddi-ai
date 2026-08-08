@@ -3,14 +3,23 @@ from flask import (
     render_template,
     request,
     session,
-    redirect
+    redirect,
+    jsonify
 )
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import (
     create_tables,
     create_user,
-    get_user_by_email
+    get_user_by_email,
+    create_conversation,
+    get_conversations,
+    get_conversation,
+    update_conversation,
+    delete_conversation,
+    delete_all_conversations
 )
+
 from app.engine import process_message
 
 app = Flask(__name__)
@@ -98,6 +107,146 @@ def signup():
 
     return redirect("/")
 
+# ==========================================
+# CONVERSATION API
+# ==========================================
+
+@app.route("/api/conversations", methods=["GET"])
+def api_get_conversations():
+
+    if "user_id" not in session:
+        return jsonify({
+            "error": "Not logged in."
+        }), 401
+
+    conversations = get_conversations(session["user_id"])
+
+    return jsonify(conversations)
+
+
+@app.route("/api/conversations", methods=["POST"])
+def api_create_conversation():
+
+    if "user_id" not in session:
+        return jsonify({
+            "error": "Not logged in."
+        }), 401
+
+    data = request.get_json(silent=True) or {}
+
+    title = data.get("title", "New Chat")
+
+    conversation_id = create_conversation(
+        session["user_id"],
+        title
+    )
+
+    return jsonify({
+        "success": True,
+        "id": conversation_id,
+        "title": title
+    }), 201
+
+
+@app.route("/api/conversations/<int:conversation_id>", methods=["GET"])
+def api_get_conversation(conversation_id):
+
+    if "user_id" not in session:
+        return jsonify({
+            "error": "Not logged in."
+        }), 401
+
+    conversation = get_conversation(
+        conversation_id,
+        session["user_id"]
+    )
+
+    if not conversation:
+        return jsonify({
+            "error": "Conversation not found."
+        }), 404
+
+    return jsonify(conversation)
+
+
+@app.route("/api/conversations/<int:conversation_id>", methods=["PUT"])
+def api_update_conversation(conversation_id):
+
+    if "user_id" not in session:
+        return jsonify({
+            "error": "Not logged in."
+        }), 401
+
+    data = request.get_json(silent=True) or {}
+
+    title = data.get("title", "New Chat")
+    messages = data.get("messages", [])
+
+    conversation = get_conversation(
+        conversation_id,
+        session["user_id"]
+    )
+
+    if not conversation:
+        return jsonify({
+            "error": "Conversation not found."
+        }), 404
+
+    update_conversation(
+        conversation_id,
+        session["user_id"],
+        title,
+        messages
+    )
+
+    return jsonify({
+        "success": True
+    })
+
+
+@app.route("/api/conversations/<int:conversation_id>", methods=["DELETE"])
+def api_delete_conversation(conversation_id):
+
+    if "user_id" not in session:
+        return jsonify({
+            "error": "Not logged in."
+        }), 401
+
+    conversation = get_conversation(
+        conversation_id,
+        session["user_id"]
+    )
+
+    if not conversation:
+        return jsonify({
+            "error": "Conversation not found."
+        }), 404
+
+    delete_conversation(
+        conversation_id,
+        session["user_id"]
+    )
+
+    return jsonify({
+        "success": True
+    })
+
+
+@app.route("/api/conversations/clear", methods=["DELETE"])
+def api_clear_conversations():
+
+    if "user_id" not in session:
+        return jsonify({
+            "error": "Not logged in."
+        }), 401
+
+    delete_all_conversations(
+        session["user_id"]
+    )
+
+    return jsonify({
+        "success": True
+    })
 @app.route("/chat", methods=["POST"])
 def chat():
 
