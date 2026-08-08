@@ -1,0 +1,10 @@
+{
+  "name": "VedAura AI",
+  "short_name": "VedAura",
+  "description": "Your Personal AI Assistant",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#20c76b",
+  "orientation": "portrait"
+}

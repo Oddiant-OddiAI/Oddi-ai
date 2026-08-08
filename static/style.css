@@ -929,6 +929,13 @@ body.dark-mode .rename-box input{
     font-weight: 800;
     letter-spacing: -1px;
 }
+.logo-title h1{
+    color:Green;
+    font-size: 46px;
+    font-weight: 800;
+    letter-spacing: -1px;
+}
+
 
 .logo-subtitle{
     font-size: 18px;

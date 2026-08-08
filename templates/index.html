@@ -13,6 +13,11 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#20c76b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon"
       type="image/png"
       href="{{ url_for('static', filename='favicon2.png') }}">
@@ -1039,7 +1044,15 @@ const clearChatBtn = document.getElementById("clearChatBtn");
 
     
 </script>
-
+<script>
+if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/static/sw.js")
+            .then(() => console.log("VedAura AI service worker registered"))
+            .catch(error => console.error("Service worker registration failed:", error));
+    });
+}
+</script>
 </body>
 
 </html>
