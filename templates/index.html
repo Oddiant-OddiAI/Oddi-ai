@@ -1044,15 +1044,7 @@ const clearChatBtn = document.getElementById("clearChatBtn");
 
     
 </script>
-<script>
-if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/static/sw.js")
-            .then(() => console.log("VedAura AI service worker registered"))
-            .catch(error => console.error("Service worker registration failed:", error));
-    });
-}
-</script>
+
 </body>
 
 </html>
