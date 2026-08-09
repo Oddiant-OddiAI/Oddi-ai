@@ -1,302 +1,714 @@
-/* =========================================================
-   VedAura AI — Mobile UI
-   ========================================================= */
-
 @media (max-width: 600px) {
 
-    /* ---------- BASE ---------- */
+    /* =========================================
+        MOBILE BASE
+    ========================================= */
+
     html,
     body {
         width: 100%;
         height: 100%;
         margin: 0;
+        padding: 0;
+
         overflow: hidden;
+        overscroll-behavior: none;
+
         background: #f8f9fa;
     }
 
-    body {
-        overscroll-behavior: none;
+    body.dark-mode {
+        background: #121212;
     }
 
     .app {
         position: fixed;
         inset: 0;
+
         width: 100%;
         height: 100dvh;
+
         display: flex;
         flex-direction: column;
+
         overflow: hidden;
+
         background: #f8f9fa;
     }
 
-
-    /* ---------- HEADER ---------- */
-    .header {
-        height: 60px;
-        min-height: 60px;
-        padding: 6px 12px;
-        display: flex;
-        align-items: center;
-        box-sizing: border-box;
-        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-        background: inherit;
-        z-index: 10;
+    body.dark-mode .app {
+        background: #121212;
     }
 
+
+    /* =========================================
+        REMOVE DESKTOP SIDEBAR SPACE
+    ========================================= */
+
+    .left-line {
+            display: none !important;
+            width: 0 !important;
+            border: none !important;
+        }
+
+        .app {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+        }
+
+        .header,
+        .chatbox {
+            margin-left: 0 !important;
+            border-left: none !important;
+        }
+
+        #chatbox {
+            margin-left: 0 !important;
+            border-left: none !important;
+        }
+    
+
+
+    /* =========================================
+        LOGO
+    ========================================= */
+
     .logo-box {
+        margin: 0;
         padding: 0;
+
         display: flex;
         align-items: center;
     }
 
     .logo {
-        width: 36px;
+        margin-left: 8px;
+        margin-top: 10px;
+
+        width: 38px;
         height: auto;
     }
 
+
+    /* =========================================
+        TITLE
+    ========================================= */
+
     .title-box {
-        margin-left: 8px;
+        margin-left: 7px;
+        margin-top: 10px;
     }
 
     .title-box h1 {
         margin: 0;
+
         font-size: 18px;
         line-height: 1.1;
+
+        white-space: nowrap;
     }
 
     .title-box p {
         margin: 2px 0 0;
-        font-size: 10px;
-        opacity: 0.7;
+
+        font-size: 9px;
+        line-height: 1;
+
+        opacity: 0.65;
+
+        white-space: nowrap;
     }
 
+
+    /* =========================================
+        SIGN IN
+    ========================================= */
+
+    .login-btn,
+    .user-btn {
+        position: absolute;
+
+        top: 14px;
+        right: 56px;
+
+        padding: 7px 11px;
+
+        font-size: 10px;
+
+        border-radius: 8px;
+
+        z-index: 10001;
+    }
+
+
+    /* =========================================
+        THEME BUTTON
+    ========================================= */
+
     .theme-toggle {
-        margin-left: auto;
+        position: absolute;
+
+        top: 5px;
+        right: 8px;
+
+        margin: 0;
+        padding: 0;
+
+        z-index: 10020;
     }
 
     #themeBtn {
         width: 38px;
         height: 38px;
+
+        padding: 0;
+        margin: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
         font-size: 18px;
+
         border-radius: 50%;
         border: none;
+
         background: transparent;
     }
 
 
-    /* ---------- MENU ---------- */
+    /* =========================================
+        MENU BUTTON
+    ========================================= */
+
     .menu-btn {
+        position: absolute;
+
+        top: 64px;
+        left: 10px;
+
         width: 38px;
         height: 38px;
-        margin: 0 8px 0 0;
+
+        margin: 0;
+        padding: 0;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
         border-radius: 10px;
         border: none;
-        background: transparent;
+
+        background: rgba(255, 255, 255, 0.96);
+
+        z-index: 10030;
+
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    body.dark-mode .menu-btn {
+        background: #27272a;
+        color: #fff;
     }
 
 
-    /* ---------- LEFT LINE ---------- */
-    .left-line {
-        display: none;
-    }
+    /* =========================================
+        CHAT AREA
+    ========================================= */
 
-
-    /* ---------- CHAT AREA ---------- */
     .chatbox {
         flex: 1;
+
         width: 100%;
+        min-width: 0;
+
         box-sizing: border-box;
+
         overflow-y: auto;
-        padding: 12px 12px 20px;
+        overflow-x: hidden;
+
+        padding: 10px 10px 80px;
+
         scroll-behavior: smooth;
+
         -webkit-overflow-scrolling: touch;
     }
 
 
-    /* ---------- WELCOME ---------- */
+    /* =========================================
+        WELCOME AREA
+    ========================================= */
+
     .welcome-message {
         width: 100%;
+        max-width: 420px;
+
         box-sizing: border-box;
+
         display: flex;
         flex-direction: column;
         align-items: center;
-        margin: 20px auto 0;
-        padding: 0 10px;
+
+        margin: 42px auto 0;
+
+        padding: 0 12px;
+
         text-align: center;
     }
 
     .welcome-message h2 {
-        margin: 0 0 10px;
-        font-size: 24px;
+        margin: 0 0 12px;
+
+        font-size: 25px;
         line-height: 1.2;
+
         font-weight: 700;
+
+        text-align: center;
     }
 
-    /* Bubble text wrapper for "Hello! How can I help..." */
     .welcome-message p {
-        margin: 0 0 16px;
+        margin: 0 0 20px;
+
         padding: 10px 14px;
-        max-width: 280px;
+
+        max-width: 290px;
+
         font-size: 14px;
         line-height: 1.4;
+
         border-radius: 14px;
+
         background: #ffffff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+
+        box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+
         box-sizing: border-box;
     }
 
+    body.dark-mode .welcome-message p {
+        background: #1e1e24;
+        color: #e4e4e7;
+    }
 
-    /* ---------- QUICK ACTIONS ---------- */
+
+    /* =========================================
+        QUICK ACTIONS
+    ========================================= */
+
     .quick-actions {
         width: 100%;
-        max-width: 340px;
+        max-width: 330px;
+
         padding: 0;
+
         display: flex !important;
         flex-direction: column;
+
         gap: 8px;
+
         box-sizing: border-box;
     }
 
     .action-card {
         width: 100%;
+
         min-height: 40px;
+
         margin: 0;
         padding: 10px 12px;
+
         box-sizing: border-box;
-        border-radius: 10px;
-        font-size: 13px;
+
         display: flex;
         align-items: center;
+
+        border-radius: 10px;
+
+        font-size: 13px;
+
         background: #ffffff;
-        border: 1px solid rgba(0, 0, 0, 0.06);
+
+        border: 1px solid rgba(0, 0, 0, 0.05);
+
+        box-shadow: 0 2px 7px rgba(0, 0, 0, 0.04);
+    }
+
+    body.dark-mode .action-card {
+        background: #1e1e24;
+        color: #e4e4e7;
+
+        border-color: rgba(255, 255, 255, 0.05);
     }
 
 
-    /* ---------- USER MESSAGE ---------- */
+    /* =========================================
+        USER MESSAGE
+    ========================================= */
+
     .user-message {
         align-self: flex-end;
+
         max-width: 80%;
+
         margin: 8px 4px;
+
         padding: 10px 12px;
+
         font-size: 14px;
-        line-height: 1.4;
+        line-height: 1.45;
+
         border-radius: 14px;
+
         box-sizing: border-box;
-        background: #007aff;
-        color: #ffffff;
+
+        background: #dfffe2;
+
+        color: #111827;
+
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    body.dark-mode .user-message {
+        background: #1d4930;
+        color: #f4f4f5;
     }
 
 
-    /* ---------- BOT MESSAGE ---------- */
+    /* =========================================
+        BOT MESSAGE
+    ========================================= */
+
     .bot-message {
         align-self: flex-start;
+
         max-width: 88%;
+
         margin: 8px 4px;
+
         padding: 10px 12px;
+
         font-size: 14px;
         line-height: 1.45;
+
         border-radius: 14px;
+
         box-sizing: border-box;
+
         background: #ffffff;
+
+        color: #111827;
+
         border: 1px solid rgba(0, 0, 0, 0.05);
+
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     .bot-message strong {
         font-size: 14px;
+        font-weight: 700;
+    }
+
+    body.dark-mode .bot-message {
+        background: #1e1e24;
+        color: #e4e4e7;
+
+        border-color: rgba(255, 255, 255, 0.05);
     }
 
 
-    /* ---------- INPUT AREA (FIXED OVERLAP & SAFE AREA) ---------- */
+    /* =========================================
+        INPUT AREA
+    ========================================= */
+
     .input-area {
+        position: fixed;
+
+        left: 0;
+        right: 0;
+        bottom: 0;
+
         width: 100%;
-        padding: 8px 10px;
-        /* Added safe-area padding for modern phones */
-        padding-bottom: max(10px, env(safe-area-inset-bottom));
+
+        padding: 7px 8px;
+
+        padding-bottom: max(
+            8px,
+            env(safe-area-inset-bottom)
+        );
+
         box-sizing: border-box;
+
         display: flex;
         align-items: center;
+
         gap: 6px;
-        background: #ffffff;
-        border-top: 1px solid rgba(0, 0, 0, 0.06);
+
+        background: rgba(248, 249, 250, 0.96);
+
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+
         z-index: 999;
     }
 
+    body.dark-mode .input-area {
+        background: rgba(18, 18, 18, 0.96);
 
-    /* ---------- PLUS / ATTACH BUTTON ---------- */
+        border-top-color: rgba(255, 255, 255, 0.06);
+    }
+
+
+    /* =========================================
+        PLUS BUTTON
+    ========================================= */
+
     .input-area button:first-child {
         width: 42px;
         height: 42px;
+
         min-width: 42px;
+
+        padding: 0;
+
         border-radius: 50%;
+
         flex-shrink: 0;
+
         border: none;
-        background: #f1f3f5;
-    }
 
+        background: #000000;
 
-    /* ---------- TEXT INPUT ---------- */
-    .input-area input {
-        flex: 1;
-        min-width: 0;
-        height: 42px;
-        padding: 0 14px;
-        border-radius: 21px;
-        font-size: 14px;
-        border: 1px solid #ced4da;
-        background: #f8f9fa;
-        box-sizing: border-box;
-        outline: none;
-    }
-
-    .input-area input:focus {
-        border-color: #007aff;
-        background: #ffffff;
-    }
-
-
-    /* ---------- SEND BUTTON ---------- */
-    #sendBtn {
-        width: 44px;
-        height: 42px;
-        min-width: 44px;
-        border-radius: 21px;
-        flex-shrink: 0;
-        border: none;
-        background: #10b981;
         color: #ffffff;
     }
 
 
-    /* ---------- DARK MODE ---------- */
-    body.dark-mode .app {
-        background: #121212;
+    /* =========================================
+        INPUT
+    ========================================= */
+
+    .input-area input {
+        flex: 1;
+
+        width: auto;
+        min-width: 0;
+
+        height: 42px;
+
+        padding: 0 13px;
+
+        box-sizing: border-box;
+
+        border-radius: 21px;
+
+        border: 1px solid #d1d5db;
+
+        background: #ffffff;
+
+        color: #111827;
+
+        font-size: 14px;
+
+        outline: none;
     }
 
-    body.dark-mode .header {
-        border-bottom-color: rgba(255, 255, 255, 0.08);
-    }
+    .input-area input:focus {
+        border-color: #2bbd59;
 
-    body.dark-mode .welcome-message p,
-    body.dark-mode .action-card,
-    body.dark-mode .bot-message {
-        background: #1e1e24;
-        color: #e4e4e7;
-        border-color: rgba(255, 255, 255, 0.06);
-    }
-
-    body.dark-mode .input-area {
-        background: #18181b;
-        border-top-color: rgba(255, 255, 255, 0.08);
-    }
-
-    body.dark-mode .input-area button:first-child {
-        background: #27272a;
-        color: #e4e4e7;
+        box-shadow: 0 0 0 2px rgba(43, 189, 89, 0.12);
     }
 
     body.dark-mode .input-area input {
         background: #27272a;
+
         border-color: #3f3f46;
-        color: #e4e4e7;
+
+        color: #f4f4f5;
+    }
+
+
+    /* =========================================
+        SEND BUTTON
+    ========================================= */
+
+    #sendBtn {
+        width: 48px;
+        height: 42px;
+
+        min-width: 48px;
+
+        padding: 0;
+
+        border-radius: 21px;
+
+        flex-shrink: 0;
+
+        border: none;
+
+        background: #2bbd59;
+
+        color: white;
+    }
+
+
+    /* =========================================
+        PREVENT DESKTOP WIDTH OVERRIDES
+    ========================================= */
+
+    .input-area,
+    .input-area input,
+    #sendBtn {
+        transform: none !important;
+    }
+
+
+    /* =========================================
+        SMALL PHONES
+    ========================================= */
+
+    @media (max-width: 380px) {
+
+        .title-box h1 {
+            font-size: 16px;
+        }
+
+        .title-box p {
+            font-size: 8px;
+        }
+
+        .welcome-message {
+            margin-top: 32px;
+        }
+
+        .welcome-message h2 {
+            font-size: 22px;
+        }
+
+        .quick-actions {
+            max-width: 300px;
+        }
+
+        .input-area button:first-child {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+        }
+
+        .input-area input {
+            height: 40px;
+            font-size: 13px;
+        }
+
+        #sendBtn {
+            width: 44px;
+            height: 40px;
+            min-width: 44px;
+        }
+    }
+
+
+    /* =========================================
+        MOBILE SPLASH SCREEN
+    ========================================= */
+
+    #mobileSplash {
+        position: fixed;
+        inset: 0;
+
+        width: 100%;
+        height: 100dvh;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background: #000;
+
+        z-index: 99999;
+
+        opacity: 1;
+        visibility: visible;
+
+        transition:
+            opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+
+    #mobileSplash img {
+        width: 140%;
+        max-width: none;
+        height: auto;
+        display: block;
+
+        transform: scale(1);
+
+        animation: mobileSplashZoom 5s ease forwards;
+    }
+
+
+    @keyframes mobileSplashZoom {
+
+        from {
+            transform: scale(1);
+        }
+
+        to {
+            transform: scale(1.05);
+        }
+
+    }
+
+
+    /* Same fade-out behaviour as laptop */
+
+    #mobileSplash.hide {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
+
+    /* =========================================
+        HIDE OLD DESKTOP SPLASH ON MOBILE
+    ========================================= */
+
+    #splash-screen {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+
+    /* =========================================
+        SIDEBAR & OVERLAY
+    ========================================= */
+
+    .sidebar {
+        display: flex !important;
+
+        position: fixed;
+
+        top: 0;
+        left: -85vw;
+
+        width: 82vw;
+        max-width: 300px;
+
+        height: 100dvh;
+
+        padding: 14px;
+
+        box-sizing: border-box;
+
+        background: #ffffff;
+
+        border-radius: 0 18px 18px 0;
+
+        box-shadow: 8px 0 30px rgba(0, 0, 0, 0.12);
+
+        z-index: 10050;
+
+        transition: left;
     }
 }

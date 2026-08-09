@@ -44,6 +44,12 @@
 
 {% endif %}
 
+<!-- Mobile Splash Screen -->
+<div id="mobileSplash">
+    <img src="{{ url_for('static', filename='favicon3.png') }}" alt="VedAura AI">
+</div>
+
+
 <div class="app">
 
     <!-- Vertical Line -->
@@ -901,7 +907,14 @@ themeBtn.onclick = function () {
 
 document.addEventListener("DOMContentLoaded", () => {
 
+    // Desktop splash only
+    if (window.matchMedia("(max-width: 600px)").matches) {
+        return;
+    }
+
     const splash = document.getElementById("splash-screen");
+
+    if (!splash) return;
 
     setTimeout(() => {
 
@@ -911,7 +924,7 @@ document.addEventListener("DOMContentLoaded", () => {
             splash.remove();
         }, 1000);
 
-    }, 3000);   // <-- stay for 6 seconds
+    }, 3000);
 });
 
 const menuBtn = document.getElementById("menuBtn");
@@ -1044,7 +1057,24 @@ const clearChatBtn = document.getElementById("clearChatBtn");
 
     
 </script>
+<script>
+window.addEventListener("load", () => {
 
+    setTimeout(() => {
+        const splash = document.getElementById("mobileSplash");
+
+        if (splash) {
+            splash.classList.add("hide");
+
+            setTimeout(() => {
+                splash.remove();
+            }, 700);
+        }
+
+    }, 3000);
+
+});
+</script>
 </body>
 
 </html>
