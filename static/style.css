@@ -1014,7 +1014,7 @@ body.dark-mode .new-chat-btn{
 .settings-btn{
 
     width:90%;
-    margin:18px auto;
+    margin:10px auto 18px;
 
     height:48px;
 
@@ -1334,4 +1334,37 @@ body.dark-mode .settings-btn{
     overflow-wrap: anywhere;
 
     margin-top: 4px;
+}
+.install-btn {
+    width: 90%;
+    height: 48px;
+
+    margin: 10px auto 0;
+
+    border: none;
+    border-radius: 14px;
+
+    background: linear-gradient(135deg, #34C759, #2DBE60);
+    color: white;
+
+    font-size: 15px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: .25s;
+
+    box-shadow: 0 8px 20px rgba(52,199,89,.20);
+}
+
+.install-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(52,199,89,.30);
+}
+
+.install-btn:active {
+    transform: scale(.98);
+}
+.install-btn + .settings-btn {
+    margin-top: 8px;
 }

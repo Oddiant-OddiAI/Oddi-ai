@@ -891,3 +891,13 @@
         line-height: 1.2 !important;
     }
 }
+@media (max-width: 600px) {
+
+    .install-btn {
+        width: 90%;
+        height: 46px;
+        font-size: 14px;
+        margin-top: 8px;
+    }
+
+}
