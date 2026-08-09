@@ -531,25 +531,23 @@
         SEND BUTTON
     ========================================= */
 
+    
     #sendBtn {
-        width: 48px;
-        height: 42px;
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
 
-        min-width: 48px;
+        padding: 0 !important;
 
-        padding: 0;
-
-        border-radius: 21px;
+        border-radius: 50% !important;
 
         flex-shrink: 0;
 
-        border: none;
-
-        background: #2bbd59;
-
-        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-
 
     /* =========================================
         PREVENT DESKTOP WIDTH OVERRIDES
@@ -600,10 +598,22 @@
         }
 
         #sendBtn {
-            width: 44px;
-            height: 40px;
-            min-width: 44px;
+            width: 42px !important;
+            height: 42px !important;
+            min-width: 42px !important;
+            max-width: 42px !important;
+
+            padding: 0 !important;
+
+            border-radius: 50% !important;
+
+            flex-shrink: 0;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+
     }
 
 
@@ -711,4 +721,131 @@
 
         transition: left;
     }
+}
+/* ================================
+   MOBILE ATTACHMENT PREVIEW FIX
+   ================================ */
+
+#attachmentPreview {
+    position: fixed !important;
+    left: 10px !important;
+    right: 10px !important;
+    bottom: 62px !important;
+
+    width: auto !important;
+    max-width: none !important;
+
+    max-height: 38px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+
+    z-index: 998 !important;
+}
+@media (max-width: 600px) {
+
+    .input-area #sendBtn {
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+
+        border-radius: 50% !important;
+
+        flex: 0 0 42px !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        box-sizing: border-box !important;
+    }
+
+}
+/* =========================================
+   FINAL MOBILE INPUT + ATTACHMENT FIX
+========================================= */
+
+@media (max-width: 600px) {
+
+    /* ---------- SEND BUTTON ---------- */
+
+    .input-area .send-btn {
+        width: 42px !important;
+        height: 42px !important;
+        min-width: 42px !important;
+        max-width: 42px !important;
+
+        flex: 0 0 42px !important;
+        flex-shrink: 0 !important;
+
+        padding: 0 !important;
+        margin: 0 !important;
+
+        border-radius: 50% !important;
+
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+
+        box-sizing: border-box !important;
+
+        font-size: 16px !important;
+    }
+
+
+    /* ---------- ATTACHMENT PREVIEW ---------- */
+
+    #attachmentPreview {
+        position: fixed !important;
+
+        left: 8px !important;
+        right: 8px !important;
+
+        bottom: 62px !important;
+
+        width: auto !important;
+        max-width: none !important;
+
+        height: 38px !important;
+        max-height: 38px !important;
+
+        transform: none !important;
+
+        align-items: center !important;
+        justify-content: space-between !important;
+
+        box-sizing: border-box !important;
+
+        padding: 6px 10px !important;
+
+        overflow: hidden !important;
+        white-space: nowrap !important;
+
+        z-index: 998 !important;
+    }
+
+    #attachmentPreview span {
+        min-width: 0 !important;
+        flex: 1 !important;
+
+        overflow: hidden !important;
+        white-space: nowrap !important;
+        text-overflow: ellipsis !important;
+    }
+
+    #attachmentPreview button {
+        flex: 0 0 auto !important;
+
+        margin-left: 8px !important;
+        padding: 0 !important;
+
+        font-size: 16px !important;
+    }
+
 }
