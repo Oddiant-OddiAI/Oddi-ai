@@ -849,3 +849,45 @@
     }
 
 }
+/* =========================================
+   FINAL MOBILE WELCOME TEXT FIX
+========================================= */
+
+@media (max-width: 600px) {
+
+    .welcome-message {
+        width: 100% !important;
+        max-width: 100% !important;
+
+        margin-left: auto !important;
+        margin-right: auto !important;
+
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+
+        box-sizing: border-box !important;
+
+        overflow: visible !important;
+        transform: none !important;
+    }
+
+    .welcome-message h2 {
+        width: 100% !important;
+        max-width: 100% !important;
+
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+
+        box-sizing: border-box !important;
+
+        text-align: center !important;
+        white-space: normal !important;
+        overflow: visible !important;
+
+        font-size: clamp(20px, 6vw, 25px) !important;
+        line-height: 1.2 !important;
+    }
+}

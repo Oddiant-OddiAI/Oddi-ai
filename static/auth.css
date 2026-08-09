@@ -189,3 +189,159 @@ input:hover{
 
     transform:translateY(-50%) scale(1.15);
 }
+/* =========================================
+   MOBILE AUTH UI
+========================================= */
+
+/* =========================================
+   MOBILE AUTH UI
+========================================= */
+
+@media (max-width: 600px) {
+
+    body {
+        width: 100%;
+        min-height: 100dvh;
+        margin: 0;
+        padding: 0;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        overflow-x: hidden;
+        box-sizing: border-box;
+    }
+
+
+    /* ---------- AUTH CONTAINER ---------- */
+
+    .auth-container {
+        width: 100%;
+        min-height: 100dvh;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        padding: 20px;
+        box-sizing: border-box;
+    }
+
+
+    /* ---------- AUTH CARD ---------- */
+
+    .auth-card {
+        width: 86%;
+        max-width: 360px;
+
+        background: white;
+
+        padding: 38px 24px;
+
+        border-radius: 22px;
+
+        box-sizing: border-box;
+    }
+
+
+    /* ---------- LOGO ---------- */
+
+    .auth-logo {
+        width: 70px;
+        height: auto;
+
+        display: block;
+
+        margin: 0 auto 18px;
+    }
+
+
+    /* ---------- MAIN TITLE ---------- */
+
+    .auth-card h1 {
+        margin: 8px 0;
+
+        font-size: 32px;
+        line-height: 1.15;
+
+        color: #22c55e;
+    }
+
+
+    /* ---------- SUBTITLE ---------- */
+
+    .auth-card h2 {
+        margin: 0 0 24px;
+
+        font-size: 17px;
+        line-height: 1.3;
+
+        color: #333;
+    }
+
+
+    /* ---------- INPUTS ---------- */
+
+    .auth-card input {
+        width: 100%;
+        height: 44px;
+
+        padding: 10px 14px;
+        margin-bottom: 14px;
+
+        border-radius: 11px;
+
+        font-size: 13px;
+
+        box-sizing: border-box;
+    }
+
+
+    /* ---------- PASSWORD ---------- */
+
+    .password-box {
+        width: 100%;
+
+        margin-bottom: 14px;
+
+        position: relative;
+    }
+
+    .password-box input {
+        margin-bottom: 0;
+
+        padding-right: 42px;
+    }
+
+    .eye-btn {
+        right: 12px;
+
+        font-size: 15px;
+    }
+
+
+    /* ---------- LOGIN / SIGNUP BUTTON ---------- */
+
+    .auth-card button {
+        width: 100%;
+        height: 44px;
+
+        padding: 9px;
+
+        border-radius: 11px;
+
+        font-size: 14px;
+    }
+
+
+    /* ---------- ACCOUNT LINK ---------- */
+
+    .auth-card a {
+        display: inline-block;
+
+        margin-top: 10px;
+
+        font-size: 10px;
+    }
+}
