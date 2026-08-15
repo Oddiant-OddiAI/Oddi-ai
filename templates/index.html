@@ -2,10 +2,8 @@
 <html>
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VedAura AI</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
+    <title>Oddi AI</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <link rel="stylesheet"
@@ -13,23 +11,585 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
-    <meta name="theme-color" content="#20c76b">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="icon"
       type="image/png"
       href="{{ url_for('static', filename='favicon2.png') }}">
-    <title>VedAura AI</title>
+    <title>Oddi AI</title>
 
     <link rel="stylesheet"
             href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet"
             href="{{ url_for('static', filename='mobile.css') }}">
+
+    <!-- Per-message sound button styles -->
+    <style>
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .bot-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .message-sound-btn {
+            width: 32px;
+            height: 32px;
+            flex: 0 0 32px;
+            padding: 0;
+            border: none;
+            border-radius: 50%;
+            background: #f5f5f5;
+            color: #111;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            vertical-align: middle;
+            position: static;
+            transform: none;
+            margin: 0;
+        }
+
+        .message-sound-btn:hover {
+            transform: scale(1.05);
+            background: #eaeaea;
+        }
+
+        .message-sound-btn.speaking {
+            background: #111;
+            color: #fff;
+        }
+
+        body.dark-mode .message-sound-btn {
+            background: #fffbfb;
+            color: #050505;
+        }
+
+        body.dark-mode .message-sound-btn:hover {
+            background: #333;
+        }
+
+        @media (max-width: 700px) {
+            .message-sound-btn {
+                width: 30px;
+                height: 30px;
+                flex-basis: 30px;
+                font-size: 15px;
+            }
+        }
+    </style>
+
+<style id="oddi-professional-ui">
+/* =========================================================
+   ODDI AI — PROFESSIONAL BLACK & WHITE UI OVERRIDES
+   ========================================================= */
+:root {
+    --oddi-black: #0a0a0a;
+    --oddi-ink: #111111;
+    --oddi-white: #ffffff;
+    --oddi-border: #e5e5e5;
+    --oddi-muted: #6b6b6b;
+    --oddi-soft: #f7f7f7;
+    --oddi-shadow: 0 12px 34px rgba(0,0,0,.08);
+}
+
+html, body {
+    background: var(--oddi-white) !important;
+    color: var(--oddi-ink) !important;
+}
+
+body {
+    overflow: hidden;
+}
+
+.app {
+    background: var(--oddi-white) !important;
+    color: var(--oddi-ink) !important;
+}
+
+/* ---------- Compact professional header ---------- */
+.header {
+    position: relative !important;
+    z-index: 300 !important;
+    flex: 0 0 68px !important;
+    height: 68px !important;
+    min-height: 68px !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+    background: rgba(255,255,255,.96) !important;
+    border-bottom: 1px solid #eeeeee !important;
+    box-shadow: 0 1px 0 rgba(0,0,0,.02) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.logo-box {
+    margin: 0 0 0 16px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 200px !important;
+    height: 54px !important;
+    background: transparent !important;
+}
+
+.logo {
+    width: 200px !important;
+    height: auto !important;
+    object-fit: contain !important;
+}
+
+.content-side {
+    padding-left: 12px !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+.title-box {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+.header-controls {
+    margin-left: auto !important;
+    padding-right: 14px !important;
+}
+
+#themeBtn {
+    width: 40px !important;
+    height: 40px !important;
+    border: 1px solid #e7e7e7 !important;
+    background: #fff !important;
+    color: #111 !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.05) !important;
+    font-size: 18px !important;
+}
+
+.user-btn,
+.login-btn {
+    top: 9px !important;
+    right: 66px !important;
+    z-index: 500 !important;
+    font-size: 13px !important;
+}
+
+.left-line {
+    left: 87px !important;
+    background: #ededed !important;
+}
+
+/* ---------- Menu ---------- */
+.menu-btn {
+    position: fixed !important;
+    top: 84px !important;
+    left: 25px !important;
+    margin: 0 !important;
+    width: 46px !important;
+    height: 46px !important;
+    border: 1px solid #e9e9e9 !important;
+    border-radius: 13px !important;
+    background: #fff !important;
+    color: #111 !important;
+    box-shadow: 0 8px 22px rgba(0,0,0,.07) !important;
+    z-index: 350 !important;
+}
+
+.menu-btn:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 10px 26px rgba(0,0,0,.10) !important;
+}
+
+/* ---------- Chat surface ---------- */
+.chatbox {
+    position: relative !important;
+    box-sizing: border-box !important;
+    padding: 34px 28px 145px !important;
+    scroll-behavior: smooth !important;
+    background: #fff !important;
+}
+
+/* Welcome area is intentionally compact and elegant. */
+.welcome-message {
+    box-sizing: border-box !important;
+    width: min(760px, 100%) !important;
+    margin: 0 auto !important;
+    padding: 62px 20px 20px !important;
+    transform: none !important;
+    transition: opacity .24s ease, transform .24s ease, max-height .28s ease,
+                padding .28s ease, margin .28s ease !important;
+    overflow: hidden !important;
+    max-height: 620px !important;
+}
+
+.welcome-message h2 {
+    margin: 0 0 10px !important;
+    transform: none !important;
+    font-size: clamp(30px, 4vw, 42px) !important;
+    line-height: 1.1 !important;
+    letter-spacing: -1.2px !important;
+    font-weight: 800 !important;
+    color: #0b0b0b !important;
+    text-align: center !important;
+}
+
+.welcome-message > p {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    color: #707070 !important;
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    text-align: center !important;
+}
+
+.quick-actions {
+    width: min(440px, 100%) !important;
+    margin: 28px auto 0 !important;
+    gap: 10px !important;
+}
+
+.action-card {
+    width: 100% !important;
+    min-height: 54px !important;
+    box-sizing: border-box !important;
+    padding: 13px 18px !important;
+    border: 1px solid #e8e8e8 !important;
+    border-radius: 13px !important;
+    background: #fff !important;
+    color: #202020 !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.045) !important;
+    font-size: 15px !important;
+    transition: border-color .18s ease, box-shadow .18s ease,
+                transform .18s ease, background .18s ease !important;
+}
+
+.action-card:hover {
+    transform: translateY(-2px) !important;
+    border-color: #bdbdbd !important;
+    background: #fafafa !important;
+    box-shadow: 0 9px 22px rgba(0,0,0,.08) !important;
+}
+
+/* Smoothly removes the welcome screen once the user scrolls into chat. */
+.chatbox.ui-scrolled .welcome-message {
+    opacity: 0 !important;
+    transform: translateY(-18px) !important;
+    max-height: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    pointer-events: none !important;
+}
+
+/* ---------- Messages ---------- */
+.user-message,
+.bot-message {
+    max-width: min(760px, 88%) !important;
+}
+
+.bot-message {
+    border: 1px solid #ededed !important;
+    border-radius: 16px !important;
+    box-shadow: 0 5px 18px rgba(0,0,0,.045) !important;
+    color: #151515 !important;
+}
+
+.user-message {
+    color: #111 !important;
+}
+
+/* ---------- Bottom composer ---------- */
+.input-area {
+    left: 50% !important;
+    bottom: 16px !important;
+    width: min(900px, calc(100% - 40px)) !important;
+    min-height: 62px !important;
+    padding: 6px !important;
+    gap: 7px !important;
+    box-sizing: border-box !important;
+    border: 1px solid #dfdfdf !important;
+    border-radius: 20px !important;
+    background: rgba(255,255,255,.97) !important;
+    box-shadow: 0 14px 40px rgba(0,0,0,.12) !important;
+    backdrop-filter: blur(18px) !important;
+    -webkit-backdrop-filter: blur(18px) !important;
+    z-index: 600 !important;
+}
+
+.input-area textarea {
+    min-height: 48px !important;
+    padding: 13px 14px !important;
+    border: 0 !important;
+    border-radius: 15px !important;
+    background: transparent !important;
+    color: #111 !important;
+    font-size: 15px !important;
+    box-shadow: none !important;
+}
+
+.input-area textarea:focus {
+    outline: none !important;
+}
+
+.input-area textarea::placeholder {
+    color: #8a8a8a !important;
+}
+
+.attach-btn,
+.dictation-btn,
+.voice-btn,
+.send-btn {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    border-radius: 14px !important;
+    border: 0 !important;
+    flex: 0 0 48px !important;
+}
+
+.attach-btn,
+.dictation-btn,
+.voice-btn {
+    background: #f3f3f3 !important;
+    color: #111 !important;
+}
+
+.attach-btn:hover,
+.dictation-btn:hover,
+.voice-btn:hover {
+    background: #e9e9e9 !important;
+    transform: translateY(-1px) !important;
+}
+
+.send-btn {
+    background: #0a0a0a !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+
+.send-btn:hover {
+    transform: scale(1.04) !important;
+    background: #000 !important;
+}
+
+.action-button-slot {
+    display: flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+
+/* ---------- Sidebar / modals ---------- */
+.sidebar {
+    background: #fff !important;
+    border-right: 1px solid #ededed !important;
+    border-radius: 0 16px 16px 0 !important;
+    box-shadow: 14px 0 35px rgba(0,0,0,.08) !important;
+}
+
+.new-chat-btn {
+    background: #0a0a0a !important;
+    color: #fff !important;
+    border-radius: 12px !important;
+}
+
+.history-item {
+    border: 1px solid #ededed !important;
+    border-radius: 12px !important;
+    box-shadow: none !important;
+}
+
+.rename-box {
+    border: 1px solid #e8e8e8 !important;
+    box-shadow: 0 20px 55px rgba(0,0,0,.16) !important;
+}
+
+/* ---------- Dark mode: strict monochrome ---------- */
+body.dark-mode,
+body.dark-mode .app,
+body.dark-mode .chatbox {
+    background: #0a0a0a !important;
+    color: #f5f5f5 !important;
+}
+
+body.dark-mode .header {
+    background: rgba(10,10,10,.96) !important;
+    border-bottom-color: #242424 !important;
+}
+
+body.dark-mode .logo-title,
+body.dark-mode .title-box h1,
+body.dark-mode .header h1,
+body.dark-mode .welcome-message h2 {
+    color: #fff !important;
+}
+
+body.dark-mode .logo-subtitle,
+body.dark-mode .title-box p,
+body.dark-mode .header p,
+body.dark-mode .welcome-message > p {
+    color: #9b9b9b !important;
+}
+
+body.dark-mode .action-card {
+    background: rgba(139, 139, 139, 0.97) !important;
+    color: #020202 !important;
+    border-color: #fdfdfd !important;
+}
+body.dark-mode .new-chat-btn {
+    background: rgba(139, 139, 139, 0.97) !important;
+    color: #020202 !important;
+    border-color: #fdfdfd !important;
+}
+body.dark-mode .action-card:hover {
+    background: #c7c2c2 !important;
+    border-color: #a8a3a3 !important;
+}
+
+body.dark-mode .input-area {
+    background: rgba(139, 139, 139, 0.97) !important;
+    border-color: #636262 !important;
+}
+
+body.dark-mode .input-area textarea {
+    color: #fff !important;
+}
+
+body.dark-mode .input-area textarea::placeholder {
+    color: #777 !important;
+}
+
+body.dark-mode .attach-btn,
+body.dark-mode .dictation-btn,
+body.dark-mode .voice-btn,
+body.dark-mode #themeBtn,
+body.dark-mode #Send-btn,
+body.dark-mode .menu-btn {
+    background: #171717 !important;
+    color: #fff !important;
+    border-color: #2a2a2a !important;
+}
+
+body.dark-mode .bot-message {
+    background: #111 !important;
+    color: #f5f5f5 !important;
+    border-color: #282828 !important;
+}
+
+body.dark-mode .sidebar,
+body.dark-mode .rename-box {
+    background: #0d0d0d !important;
+    color: #fff !important;
+    border-color: #282828 !important;
+}
+
+body.dark-mode .history-item {
+    background: #111 !important;
+    border-color: #292929 !important;
+}
+.logo-title,
+.logo-subtitle {
+    display: none !important;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 700px) {
+    .header {
+        flex-basis: 60px !important;
+        height: 60px !important;
+        min-height: 60px !important;
+    }
+
+    .logo-box {
+        width: 46px !important;
+        height: 46px !important;
+        margin-left: 10px !important;
+    }
+
+    .logo {
+    width: 80px !important;
+    height: auto !important;
+    object-fit: contain !important;
+    }
+
+    .logo-title,
+    .title-box h1,
+    .header h1 {
+        font-size: 21px !important;
+    }
+
+    .logo-subtitle,
+    .title-box p,
+    .header p {
+        font-size: 10px !important;
+    }
+
+    .header-controls { padding-right: 8px !important; }
+    #themeBtn { width: 38px !important; height: 38px !important; }
+
+    .menu-btn {
+        top: 72px !important;
+        left: 12px !important;
+        width: 42px !important;
+        height: 42px !important;
+    }
+
+    .chatbox {
+        padding: 20px 12px 132px !important;
+    }
+
+    .welcome-message {
+        padding-top: 45px !important;
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    .welcome-message h2 {
+        font-size: 30px !important;
+    }
+
+    .welcome-message > p { font-size: 14px !important; }
+
+    .input-area {
+        width: calc(100% - 20px) !important;
+        bottom: 10px !important;
+        border-radius: 18px !important;
+    }
+
+    .attach-btn,
+    .dictation-btn,
+    .voice-btn,
+    .send-btn {
+        width: 44px !important;
+        height: 44px !important;
+        min-width: 44px !important;
+        min-height: 44px !important;
+        flex-basis: 44px !important;
+        border-radius: 13px !important;
+    }
+
+    .input-area textarea {
+        font-size: 14px !important;
+        padding: 11px 8px !important;
+    }
+}
+</style>
+
 </head>
 
-<body data-logged-in="{{ 'true' if logged_in else 'false' }}"></body>
+<body data-logged-in="{{ 'true' if logged_in else 'false' }}">
 {% if logged_in %}
 
 <div class="user-btn">
@@ -43,11 +603,6 @@
 </a>
 
 {% endif %}
-
-<!-- Mobile Splash Screen -->
-<div id="mobileSplash">
-    <img src="{{ url_for('static', filename='favicon3.png') }}" alt="VedAura AI">
-</div>
 
 <div class="app">
 
@@ -69,12 +624,7 @@
 
         <div id="chatHistory" class="chat-history">
         </div>
-
         <div class="chat-list"></div>
-
-        <button id="installBtn" class="install-btn" style="display:none;">
-            📲 Install VedAura AI
-        </button>
 
         <button id="settingsBtn" class="settings-btn">
             ⚙️ Settings
@@ -90,14 +640,14 @@
             <img id="logo"
                 src="{{ url_for('static', filename='logo.png') }}"
                 class="logo"
-                alt="VedAura Logo">
+                alt="Oddi Logo">
         </div>
         
 
         <div class="content-side">
 
             <div class="title-box">
-                <h1 class="logo-title">VedAura AI</h1>
+                <h1 class="logo-title">Oddi AI</h1>
                 <p class="logo-subtitle">
                     Your Personal AI Assistant
                 </p>
@@ -105,10 +655,14 @@
 
         </div>
 
-        <div class="theme-toggle">
-            <button id="themeBtn" title="Switch to Dark Mode">
-                🌙
-            </button>
+        <div class="header-controls">
+
+            <div class="theme-toggle">
+                <button id="themeBtn" title="Switch to Dark Mode">
+                    🌙
+                </button>
+            </div>
+
         </div>
 
 
@@ -127,6 +681,10 @@
         <img src="{{ url_for('static', filename='splash.png') }}" alt="Splash">
     </div>
 
+    <audio id="splashSound" preload="auto">
+        <source src="{{ url_for('static', filename='mixkit-fairy-sparkle-whoosh-869.wav') }}" type="audio/wav">
+    </audio>
+
     <!-- Main Chat Area -->
     <main id="chatbox" class="chatbox">
 
@@ -144,23 +702,31 @@
 
             <div class="quick-actions">
 
-                <div class="action-card">
-                    💻 Help me write code
-                </div>
+                <button type="button" class="action-card"
+                     data-message="Find jobs for me"
+                    data-prompt="I want to find suitable jobs for me. Ask me for my preferred job role, skills, location, experience and other relevant details, then help me find suitable opportunities.">
+                    💼 Find jobs for me
+                </button>
 
-                <div class="action-card">
-                    📄 Summarize a PDF
-                </div>
+                <button type="button" class="action-card"
+                    data-message="Analyze my resume"
+                    data-prompt="I want you to analyze my resume. Review it for strengths, weaknesses, missing skills, clarity, job suitability and improvements.">
+                    📄 Analyze my resume
+                </button>
 
-                <div class="action-card">
-                    🌐 Search the Web
-                </div>
+                <button type="button" class="action-card"
+                    data-message="Search jobs & companies"
+                    data-prompt="Help me search for suitable jobs and companies. Ask me for my preferred role, location, experience level, skills and other relevant preferences.">
+                    🌐 Search jobs & companies
+                </button>
 
-                <div class="action-card">
-                    🧠 Explain difficult topics
+                <button type="button" class="action-card"
+                    data-message="Prepare me for an interview"
+                    data-prompt="Help me prepare for a job interview. Ask me for the job role, company and relevant details, then begin an interview preparation session.">
+                    🎯 Prepare me for an interview
+                </button>
+
             </div>
-
-        </div>
     </div>
 
     </main>
@@ -184,11 +750,38 @@
         <textarea
             id="userInput"
             rows="1"
-            placeholder="Ask anything..."
+            placeholder="Ask Oddi anything..."
         ></textarea>
+        <button id="dictation-btn" class="dictation-btn" title="Type with your voice" aria-label="Type with your voice">
+            <svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+        </button>
 
-        <button id="send-btn" class="send-btn">➤</button>
+        <div class="action-button-slot">
+            <button id="voice-btn"
+                class="voice-btn"
+                title="Start conversation"
+                aria-label="Start conversation">
 
+            <svg width="26" height="26" viewBox="0 0 24 24" 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2" 
+                stroke-linecap="round" 
+                stroke-linejoin="round">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" />
+                <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+            </svg>
+
+    </button>
+            <button id="send-btn" class="send-btn" aria-label="Send message" title="Send message">
+                <span class="send-icon">➤</span>
+            </button>
+        </div>
+        
     </div>
 
 
@@ -285,364 +878,952 @@
 <script>
 let currentConversation = null;
 let selectedFiles = [];
+
 const chat = document.getElementById("chatbox");
 const input = document.getElementById("userInput");
 const button = document.getElementById("send-btn");
-const isLoggedIn = document.body.dataset.loggedIn === "true";
+const voiceBtn = document.getElementById("voice-btn");
 
-button.addEventListener("click", sendMessage);
+const isLoggedIn =
+    document.body.dataset.loggedIn === "true";
 
-input.addEventListener("keydown", function(e){
+/* =========================================================
+   ACTION BUTTON
+========================================================= */
 
-    if(e.key === "Enter" && !e.shiftKey){
+function updateActionButton() {
+    const hasText = input.value.trim().length > 0;
 
-        e.preventDefault();
+    const slot =
+        document.querySelector(".action-button-slot");
 
-        sendMessage();
+    if (slot) {
+        slot.classList.toggle("has-text", hasText);
+    }
+}
 
+/* =========================================================
+   SPEECH DICTATION
+========================================================= */
+
+const SpeechRecognition =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+const dictationBtn =
+    document.getElementById("dictation-btn");
+
+let dictationRecognition = null;
+let dictationActive = false;
+
+function resizeInputAfterDictation() {
+    input.style.height = "auto";
+    input.style.height =
+        Math.min(input.scrollHeight, 180) + "px";
+
+    updateActionButton();
+}
+
+if (SpeechRecognition) {
+
+    dictationRecognition =
+        new SpeechRecognition();
+
+    dictationRecognition.lang = "en-IN";
+    dictationRecognition.continuous = false;
+    dictationRecognition.interimResults = true;
+
+    dictationBtn.onclick = () => {
+
+        if (voiceModeActive) {
+            stopVoiceMode();
+        }
+
+        if (dictationActive) {
+            try {
+                dictationRecognition.stop();
+            } catch (e) {}
+            return;
+        }
+
+        try {
+            dictationRecognition.start();
+        } catch (error) {
+            if (error.name !== "InvalidStateError") {
+                console.error(
+                    "Could not start dictation:",
+                    error
+                );
+            }
+        }
+    };
+
+    dictationRecognition.onstart = () => {
+
+        dictationActive = true;
+
+        dictationBtn.classList.add("listening");
+
+        dictationBtn.innerHTML = "⏺";
+
+        dictationBtn.title =
+            "Stop voice typing";
+
+        dictationBtn.setAttribute(
+            "aria-label",
+            "Stop voice typing"
+        );
+    };
+
+    dictationRecognition.onresult = (event) => {
+
+        let finalText = "";
+        let interimText = "";
+
+        for (
+            let i = event.resultIndex;
+            i < event.results.length;
+            i++
+        ) {
+
+            const text =
+                event.results[i][0].transcript;
+
+            if (event.results[i].isFinal) {
+                finalText += text;
+            } else {
+                interimText += text;
+            }
+        }
+
+        if (finalText.trim()) {
+
+            const existing =
+                input.value.trim();
+
+            input.value = existing
+                ? existing + " " + finalText.trim()
+                : finalText.trim();
+
+            resizeInputAfterDictation();
+        }
+
+        if (interimText.trim()) {
+            input.placeholder =
+                interimText.trim();
+        }
+    };
+
+    dictationRecognition.onend = () => {
+
+        dictationActive = false;
+
+        dictationBtn.classList.remove(
+            "listening"
+        );
+
+        dictationBtn.innerHTML = `
+            <svg
+                height="24"
+                viewBox="0 0 24 24"
+                width="24"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="currentColor">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39-6-6.92h-2z"/>
+            </svg>
+        `;
+
+        dictationBtn.title =
+            "Type with your voice";
+
+        dictationBtn.setAttribute(
+            "aria-label",
+            "Type with your voice"
+        );
+
+        input.placeholder =
+            "Ask Oddi anything...";
+
+        resizeInputAfterDictation();
+    };
+
+    dictationRecognition.onerror = (event) => {
+
+        console.error(
+            "Speech dictation error:",
+            event.error
+        );
+
+        dictationActive = false;
+
+        dictationBtn.classList.remove(
+            "listening"
+        );
+
+        input.placeholder =
+            "Ask Oddi anything...";
+
+        if (event.error === "not-allowed") {
+            alert(
+                "Microphone permission is required for voice typing."
+            );
+        }
+    };
+
+} else {
+
+    dictationBtn.onclick = () => {
+        alert(
+            "Voice typing is not supported by this browser. Try Chrome or Edge."
+        );
+    };
+}
+
+/* =========================================================
+   VOICE CONVERSATION
+========================================================= */
+
+let voiceModeActive = false;
+let voiceResponseSpeaking = false;
+let recognition = null;
+
+let voicePanel = null;
+let voiceStatus = null;
+
+function createVoicePanel() {
+
+    if (voicePanel) return;
+
+    voicePanel =
+        document.createElement("div");
+
+    voicePanel.id =
+        "voice-mode-panel";
+
+    voicePanel.innerHTML = `
+        <div class="voice-mode-card">
+
+            <button
+                id="voice-close-btn"
+                class="voice-close-btn"
+                aria-label="Close voice mode">
+                ✕
+            </button>
+
+            <div class="voice-orb">
+                <div class="voice-orb-inner"></div>
+            </div>
+
+            <h2>Oddi AI</h2>
+
+            <p id="voice-status">
+                Listening...
+            </p>
+
+            <div
+                id="voice-transcript"
+                class="voice-transcript">
+                Say something...
+            </div>
+
+            <button
+                id="voice-stop-btn"
+                class="voice-stop-btn">
+                Stop voice chat
+            </button>
+
+        </div>
+    `;
+
+    document.body.appendChild(voicePanel);
+
+    voiceStatus =
+        document.getElementById(
+            "voice-status"
+        );
+
+    document.getElementById(
+        "voice-close-btn"
+    ).onclick = stopVoiceMode;
+
+    document.getElementById(
+        "voice-stop-btn"
+    ).onclick = stopVoiceMode;
+}
+
+function cleanSpeechText(text) {
+
+    return text
+        .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
+        .replace(/[\u{1F300}-\u{1FAFF}]/gu, "")
+        .replace(/[\u{2600}-\u{27BF}]/gu, "")
+        .replace(/[\u{2300}-\u{23FF}]/gu, "")
+        .replace(/[\u{2B00}-\u{2BFF}]/gu, "")
+        .replace(/[\u{FE0E}\u{FE0F}\u{200D}\u{20E3}]/gu, "")
+        .replace(/[\u{1F3FB}-\u{1F3FF}]/gu, "")
+        .replace(/\s{2,}/g, " ")
+        .trim();
+}
+
+function updateVoiceStatus(
+    text,
+    transcript = ""
+) {
+
+    if (voiceStatus) {
+        voiceStatus.textContent = text;
     }
 
-});
-userInput.style.height = "auto";
-userInput.style.height = userInput.scrollHeight + "px";
+    const transcriptBox =
+        document.getElementById(
+            "voice-transcript"
+        );
 
-const historyContainer = document.getElementById("chatHistory");
+    if (
+        transcriptBox &&
+        transcript
+    ) {
+        transcriptBox.textContent =
+            transcript;
+    }
+}
 
+function startVoiceRecognition() {
 
-
-let conversations = [];
-async function loadConversations() {
-
-    if (!isLoggedIn) {
-        conversations = [];
-        currentConversation = null;
+    if (
+        !recognition ||
+        !voiceModeActive ||
+        voiceResponseSpeaking
+    ) {
         return;
     }
 
     try {
-        const response = await fetch("/api/conversations");
+        recognition.start();
+    } catch (error) {
+
+        if (
+            error.name !==
+            "InvalidStateError"
+        ) {
+            console.error(
+                "Could not start voice recognition:",
+                error
+            );
+        }
+    }
+}
+
+function startVoiceMode() {
+
+    if (!SpeechRecognition) {
+
+        alert(
+            "Voice conversation is not supported by this browser. Try Chrome or Edge."
+        );
+
+        return;
+    }
+
+    createVoicePanel();
+
+    voiceModeActive = true;
+
+    voicePanel.classList.add("show");
+
+    updateVoiceStatus(
+        "Listening...",
+        "Say something..."
+    );
+
+    startVoiceRecognition();
+}
+
+function stopVoiceMode() {
+
+    voiceModeActive = false;
+    voiceResponseSpeaking = false;
+
+    if (recognition) {
+
+        try {
+            recognition.stop();
+        } catch (e) {}
+    }
+
+    if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+    }
+
+    voiceBtn.classList.remove(
+        "listening"
+    );
+
+    voiceBtn.innerHTML = `
+        <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+            <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" />
+            <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+        </svg>
+    `;
+
+    voiceBtn.title =
+        "Talk to Oddi";
+
+    if (voicePanel) {
+        voicePanel.classList.remove(
+            "show"
+        );
+    }
+
+    updateActionButton();
+}
+
+function speakVoiceReply(text) {
+
+    if (
+        !voiceModeActive ||
+        !("speechSynthesis" in window)
+    ) {
+        return;
+    }
+
+    const cleanText =
+        cleanSpeechText(text);
+
+    if (!cleanText) return;
+
+    voiceResponseSpeaking = true;
+
+    updateVoiceStatus(
+        "Oddi is speaking..."
+    );
+
+    if (recognition) {
+
+        try {
+            recognition.stop();
+        } catch (e) {}
+    }
+
+    window.speechSynthesis.cancel();
+
+    const utterance =
+        new SpeechSynthesisUtterance(
+            cleanText
+        );
+
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onend = () => {
+
+        voiceResponseSpeaking = false;
+
+        if (voiceModeActive) {
+
+            updateVoiceStatus(
+                "Listening...",
+                "Say something..."
+            );
+
+            setTimeout(
+                startVoiceRecognition,
+                250
+            );
+        }
+    };
+
+    utterance.onerror = () => {
+
+        voiceResponseSpeaking = false;
+
+        if (voiceModeActive) {
+
+            updateVoiceStatus(
+                "Listening...",
+                "Say something..."
+            );
+
+            setTimeout(
+                startVoiceRecognition,
+                250
+            );
+        }
+    };
+
+    window.speechSynthesis.speak(
+        utterance
+    );
+}
+
+if (SpeechRecognition) {
+
+    recognition =
+        new SpeechRecognition();
+
+    recognition.lang = "en-IN";
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    voiceBtn.onclick = () => {
+
+        if (voiceModeActive) {
+            stopVoiceMode();
+        } else {
+            startVoiceMode();
+        }
+    };
+
+    recognition.onstart = () => {
+
+        if (!voiceModeActive) return;
+
+        voiceBtn.classList.add(
+            "listening"
+        );
+
+        voiceBtn.innerHTML = "🔴";
+
+        voiceBtn.title =
+            "Listening...";
+
+        updateVoiceStatus(
+            "Listening...",
+            "I'm listening..."
+        );
+    };
+
+    recognition.onresult = event => {
+
+        if (!voiceModeActive) return;
+
+        const transcript =
+            event.results[0][0]
+                .transcript
+                .trim();
+
+        if (!transcript) return;
+
+        updateVoiceStatus(
+            "Thinking...",
+            `You said: "${transcript}"`
+        );
+
+        input.value = transcript;
+
+        sendMessage(
+            null,
+            true
+        );
+    };
+
+    recognition.onend = () => {
+
+        voiceBtn.classList.remove(
+            "listening"
+        );
+
+        if (
+            voiceModeActive &&
+            !voiceResponseSpeaking
+        ) {
+            voiceBtn.innerHTML = "🎤";
+            voiceBtn.title =
+                "Listening...";
+        }
+    };
+
+    recognition.onerror = event => {
+
+        console.error(
+            "Speech recognition error:",
+            event.error
+        );
+
+        voiceBtn.classList.remove(
+            "listening"
+        );
+
+        if (voiceModeActive) {
+
+            updateVoiceStatus(
+                event.error === "not-allowed"
+                    ? "Microphone permission is required."
+                    : "I couldn't hear that. Try again."
+            );
+        }
+    };
+
+} else {
+
+    voiceBtn.onclick = () => {
+
+        alert(
+            "Voice conversation is not supported by this browser. Try Chrome or Edge."
+        );
+    };
+}
+
+/* =========================================================
+   CONVERSATIONS
+========================================================= */
+
+let conversations = [];
+
+const historyContainer =
+    document.getElementById(
+        "chatHistory"
+    );
+
+async function loadConversations() {
+
+    if (!isLoggedIn) {
+
+        conversations = [];
+        currentConversation = null;
+
+        return;
+    }
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/conversations"
+            );
 
         if (!response.ok) {
-            console.log("Could not load conversations");
             return;
         }
 
-        conversations = await response.json();
+        conversations =
+            await response.json();
 
         renderHistory();
 
         currentConversation = null;
 
     } catch (error) {
-        console.error("Load conversations error:", error);
+
+        console.error(
+            "Load conversations error:",
+            error
+        );
     }
 }
 
+async function saveConversation(
+    conversation
+) {
 
-async function saveConversation(conversation) {
     if (!conversation.id) return;
 
     try {
-        await fetch(`/api/conversations/${conversation.id}`, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                title: conversation.title,
-                messages: conversation.messages
-            })
-        });
+
+        await fetch(
+            `/api/conversations/${conversation.id}`,
+            {
+                method: "PUT",
+
+                headers: {
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    title:
+                        conversation.title,
+                    messages:
+                        conversation.messages
+                })
+            }
+        );
+
     } catch (error) {
-        console.error("Save conversation error:", error);
+
+        console.error(
+            "Save conversation error:",
+            error
+        );
     }
 }
 
+async function createServerConversation(
+    title = "New Chat"
+) {
 
-async function createServerConversation(title = "New Chat") {
     try {
-        const response = await fetch("/api/conversations", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                title: title
-            })
-        });
+
+        const response =
+            await fetch(
+                "/api/conversations",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        title
+                    })
+                }
+            );
 
         if (!response.ok) {
-            console.error("Could not create conversation");
             return null;
         }
 
         return await response.json();
 
     } catch (error) {
-        console.error("Create conversation error:", error);
+
+        console.error(
+            "Create conversation error:",
+            error
+        );
+
         return null;
     }
 }
 
-const renameModal = document.getElementById("renameModal");
-const renameInput = document.getElementById("renameInput");
-const saveRename = document.getElementById("saveRename");
-const cancelRename = document.getElementById("cancelRename");
-
-let renameIndex = -1;
-
-const deleteModal = document.getElementById("deleteModal");
-const confirmDelete = document.getElementById("confirmDelete");
-const cancelDelete = document.getElementById("cancelDelete");
-const settingsBtn = document.getElementById("settingsBtn");
-const settingsModal = document.getElementById("settingsModal");
-const closeSettings = document.getElementById("closeSettings");
-
-let deleteIndex = -1;
+/* =========================================================
+   UTILITIES
+========================================================= */
 
 function escapeUserText(text) {
+
     return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+        .replace(
+            /&/g,
+            "&amp;"
+        )
+        .replace(
+            /</g,
+            "&lt;"
+        )
+        .replace(
+            />/g,
+            "&gt;"
+        );
 }
 
-function addHistory(title, index){
+function getFileIcon(
+    filename
+) {
 
-    const item = document.createElement("div");
-    item.className = "history-item";
-
-    item.innerHTML = `
-        <span class="history-title">${title}</span>
-
-        <div class="history-actions">
-            <button class="rename-btn">✏️</button>
-            <button class="delete-btn">🗑️</button>
-        </div>
-    `;
-    const renameBtn = item.querySelector(".rename-btn");
-
-    renameBtn.onclick = () => {
-
-        renameModal.classList.add("show");
-
-        renameInput.value = title;
-
-        renameIndex = Array.from(historyContainer.children).indexOf(item);
-
-    };
-    historyContainer.prepend(item);
-
-}
-function renderHistory(){
-
-    historyContainer.innerHTML = "";
-
-    conversations.forEach((conversation, index)=>{
-
-        const item = document.createElement("div");
-
-        item.className = "history-item";
-
-        item.innerHTML = `
-            <span class="history-title">${conversation.title}</span>
-
-            <div class="history-actions">
-                <button class="rename-btn">✏️</button>
-                <button class="delete-btn">🗑️</button>
-            </div>
-        `;
-        const renameBtn = item.querySelector(".rename-btn");
-        const deleteBtn = item.querySelector(".delete-btn");
-        renameBtn.onclick = (e) => {
-
-        e.stopPropagation();
-
-        renameModal.classList.add("show");
-
-        renameInput.value = conversation.title;
-
-        renameIndex = index;
-
-        };
-        deleteBtn.onclick = (e) => {
-
-            e.stopPropagation();
-
-            deleteIndex = index;
-
-            deleteModal.classList.add("show");
-
-        renderHistory();
-        
-        };
-
-        item.onclick = () => openConversation(index);
-
-        historyContainer.appendChild(item);
-
-    });
-
-}
-loadConversations();
-function openConversation(index){
-    currentConversation = index;
-    const conversation = conversations[index];
-
-    chat.innerHTML = "";
-
-    conversation.messages.forEach(msg => {
-
-        if(msg.role === "user"){
-
-            let fileHTML = "";
-                if (msg.files) {
-
-                    msg.files.forEach(file => {
-
-                        let icon = "📄";
-
-                        if (file.match(/\.(png|jpg|jpeg|webp)$/i))
-                            icon = "🖼️";
-
-                        else if (file.match(/\.pdf$/i))
-                            icon = "📕";
-
-                        else if (file.match(/\.xlsx$/i))
-                            icon = "📊";
-
-                        fileHTML += `
-                            <div class="message-file">
-                                ${icon} ${file}
-                            </div>
-                        `;
-
-                    });
-
-                }
-                            
-
-            chat.innerHTML += `
-            <div class="user-message">
-                ${fileHTML}
-                <b>You:</b>
-                <div class="user-text">${escapeUserText(msg.text)}</div>
-            </div>
-            `;
-
-        }else{
-
-            chat.innerHTML += `
-            <div class="bot-message">
-                <b>VedAura:</b><br>
-                ${marked.parse(msg.text)}
-            </div>
-            `;
-
-        }
-
-    });
-
-    sidebar.classList.remove("open");
-    overlay.classList.remove("show");
-
-}
-
-async function newChat(){
-
-    chat.innerHTML = "";
-    input.value = "";
-    selectedFiles = [];
-
-    // Logged-in user → create database conversation
-    if (isLoggedIn) {
-
-        const serverConversation = await createServerConversation("New Chat");
-
-        if (!serverConversation) {
-            return;
-        }
-
-        conversations.unshift({
-            id: serverConversation.id,
-            title: serverConversation.title,
-            messages: []
-        });
-
-        currentConversation = 0;
-
-        renderHistory();
-
-    } else {
-
-        // Guest user → temporary local conversation
-        conversations = [{
-            id: null,
-            title: "New Chat",
-            messages: []
-        }];
-
-        currentConversation = 0;
+    if (
+        /\.(png|jpg|jpeg|webp)$/i
+            .test(filename)
+    ) {
+        return "🖼️";
     }
 
-    input.focus();
+    if (/\.pdf$/i.test(filename)) {
+        return "📕";
+    }
+
+    if (/\.xlsx$/i.test(filename)) {
+        return "📊";
+    }
+
+    if (/\.docx$/i.test(filename)) {
+        return "📝";
+    }
+
+    return "📄";
 }
-const attachBtn = document.getElementById("attach-btn");
-const fileInput = document.getElementById("fileInput");
-const attachmentPreview = document.getElementById("attachmentPreview");
 
+/* =========================================================
+   COPY
+========================================================= */
 
-const attachmentName = document.getElementById("attachmentName");
+function copyAIResponse(button) {
 
-const removeAttachment = document.getElementById("removeAttachment");
-attachBtn.onclick = () => {
-    fileInput.click();
-};
-fileInput.onchange = (e) => {
+    const message =
+        button
+            .closest(".bot-message")
+            ?.querySelector(".ai-content");
 
-    if(fileInput.files.length === 0) return;
+    if (!message) return;
 
-    selectedFiles = Array.from(fileInput.files);
+    navigator.clipboard
+        .writeText(message.innerText)
+        .then(() => {
 
-    attachmentName.textContent =
-    "📎 " + selectedFiles.length + " file(s) selected";
+            button.innerText =
+                "✅ Copied!";
 
-    attachmentPreview.style.display = "flex";
-    
+            setTimeout(() => {
 
-};
-removeAttachment.onclick = () => {
+                button.innerText =
+                    "📋 Copy";
 
-    fileInput.value = "";
+            }, 1500);
+        });
+}
 
-    attachmentPreview.style.display = "none";
-    selectedFiles = [];
+/* =========================================================
+   MESSAGE SOUND
+========================================================= */
 
-};
+function speakAIMessage(button) {
 
-async function sendMessage(){
+    if (
+        !("speechSynthesis" in window)
+    ) {
+        alert(
+            "Text-to-speech is not supported by this browser."
+        );
+        return;
+    }
 
-    if(button.disabled) return;
+    if (
+        button.classList.contains(
+            "speaking"
+        )
+    ) {
 
-    let message = input.value.trim();
+        window.speechSynthesis.cancel();
 
-    if(message === "") return;
+        button.textContent = "🔊";
 
-    // If no conversation is selected
-    if(currentConversation === null){
+        button.classList.remove(
+            "speaking"
+        );
 
-        // Logged-in user → create server conversation
+        return;
+    }
+
+    window.speechSynthesis.cancel();
+
+    document
+        .querySelectorAll(
+            ".message-sound-btn.speaking"
+        )
+        .forEach(btn => {
+
+            btn.textContent = "🔊";
+
+            btn.classList.remove(
+                "speaking"
+            );
+        });
+
+    const message =
+        button.closest(".bot-message");
+
+    const content =
+        message?.querySelector(
+            ".ai-content"
+        );
+
+    if (!content) return;
+
+    const text =
+        cleanSpeechText(
+            content.innerText
+        );
+
+    if (!text) return;
+
+    const utterance =
+        new SpeechSynthesisUtterance(
+            text
+        );
+
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onstart = () => {
+
+        button.textContent =
+            "⏹️";
+
+        button.classList.add(
+            "speaking"
+        );
+    };
+
+    utterance.onend = () => {
+
+        button.textContent =
+            "🔊";
+
+        button.classList.remove(
+            "speaking"
+        );
+    };
+
+    utterance.onerror = () => {
+
+        button.textContent =
+            "🔊";
+
+        button.classList.remove(
+            "speaking"
+        );
+    };
+
+    window.speechSynthesis.speak(
+        utterance
+    );
+}
+
+/* =========================================================
+   MAIN SEND FUNCTION
+   THIS IS THE IMPORTANT FIX
+========================================================= */
+
+async function sendMessage(
+    displayMessage = null,
+    voiceReply = false
+) {
+
+    if (button.disabled) return;
+
+    const message =
+        input.value.trim();
+
+    const userDisplayMessage =
+        displayMessage || message;
+
+    if (!message) return;
+
+    /* -----------------------------------------
+       CREATE CONVERSATION
+    ----------------------------------------- */
+
+    if (
+        currentConversation === null
+    ) {
+
         if (isLoggedIn) {
 
-            const serverConversation = await createServerConversation(message);
+            const serverConversation =
+                await createServerConversation(
+                    message
+                );
 
-            if(!serverConversation){
-                console.error("Could not create new conversation.");
+            if (!serverConversation) {
                 return;
             }
 
             conversations.unshift({
-                id: serverConversation.id,
+                id:
+                    serverConversation.id,
                 title: message,
                 messages: []
             });
@@ -653,7 +1834,6 @@ async function sendMessage(){
 
         } else {
 
-            // Guest user → temporary local conversation
             conversations = [{
                 id: null,
                 title: message,
@@ -664,459 +1844,1244 @@ async function sendMessage(){
         }
     }
 
-    // Disable input while AI is thinking
+    /* -----------------------------------------
+       LOCK INPUT
+    ----------------------------------------- */
+
     input.disabled = true;
     button.disabled = true;
-    button.innerHTML = `
-    <span class="send-icon">⌛</span>
-    `;
 
-    const app = document.querySelector(".app");
-    app.classList.add("chat-started");
+    const app =
+        document.querySelector(
+            ".app"
+        );
 
-    const welcome = document.getElementById("welcomeContainer");
-    if(welcome){
+    if (app) {
+        app.classList.add(
+            "chat-started"
+        );
+    }
+
+    const welcome =
+        document.getElementById(
+            "welcomeContainer"
+        );
+
+    if (welcome) {
         welcome.remove();
     }
 
-    // Show user message
+    /* -----------------------------------------
+       USER MESSAGE
+    ----------------------------------------- */
+
     let fileHTML = "";
 
-    if (selectedFiles.length > 0) {
+    if (selectedFiles.length) {
 
         selectedFiles.forEach(file => {
 
-            let icon = "📄";
-
-            if (file.name.match(/\.(png|jpg|jpeg|webp)$/i))
-                icon = "🖼️";
-
-            else if (file.name.match(/\.pdf$/i))
-                icon = "📕";
-
-            else if (file.name.match(/\.xlsx$/i))
-                icon = "📊";
-
             fileHTML += `
                 <div class="message-file">
-                    ${icon} ${file.name}
+                    ${getFileIcon(file.name)}
+                    ${escapeUserText(file.name)}
                 </div>
             `;
         });
     }
 
     chat.innerHTML += `
-    <div class="user-message">
-        ${fileHTML}
-        <b>You:</b>
-        <div class="user-text">${escapeUserText(message)}</div>
-    </div>
-    `;
-    chat.scrollTop = chat.scrollHeight;
+        <div class="user-message">
+            ${fileHTML}
 
-    conversations[currentConversation].messages.push({
+            <b>You:</b>
+
+            <div class="user-text">
+                ${escapeUserText(
+                    userDisplayMessage
+                )}
+            </div>
+        </div>
+    `;
+
+    chat.scrollTop =
+        chat.scrollHeight;
+
+    conversations[
+        currentConversation
+    ].messages.push({
         role: "user",
         text: message,
-        files: selectedFiles.map(file => file.name)
+        files:
+            selectedFiles.map(
+                file => file.name
+            )
     });
 
-    await saveConversation(conversations[currentConversation]);
+    await saveConversation(
+        conversations[
+            currentConversation
+        ]
+    );
 
+    /* -----------------------------------------
+       ⭐ CREATE THINKING BUBBLE FIRST
+       ⭐ BEFORE FETCH
+    ----------------------------------------- */
 
-    
-    
+    const typingId =
+        "typing-" +
+        Date.now();
+
     chat.innerHTML += `
-    <div id="loadingMessage" class="bot-message">
+        <div class="bot-message">
 
-        <b>VedAura:</b>
+            <div class="bot-header">
 
-        <div class="thinking-animation">
+                <button
+                    class="message-sound-btn"
+                    onclick="speakAIMessage(this)"
+                    title="Read this AI message aloud"
+                    aria-label="Read this AI message aloud">
+                    🔊
+                </button>
 
-            <span></span>
-            <span></span>
-            <span></span>
+                <b>Oddi AI:</b>
+
+            </div>
+
+            <div
+                class="ai-content"
+                id="${typingId}">
+                <span class="thinking-indicator">
+                    Thinking...
+                </span>
+            </div>
+
+            <button
+                class="copy-btn"
+                onclick="copyAIResponse(this)">
+                📋 Copy
+            </button>
 
         </div>
-
-    </div>
     `;
-    chat.scrollTop = chat.scrollHeight;
 
+    const typing =
+        document.getElementById(
+            typingId
+        );
 
-    chat.scrollTop = chat.scrollHeight;
+    chat.scrollTop =
+        chat.scrollHeight;
 
+    /* -----------------------------------------
+       SEND TO BACKEND
+    ----------------------------------------- */
 
-    // Send request to Flask
-    const formData = new FormData();
+    const formData =
+        new FormData();
 
-    formData.append("message", message);
+    formData.append(
+        "message",
+        message
+    );
 
-    console.log(selectedFiles);
+    formData.append(
+        "history",
+        JSON.stringify(
+            conversations[
+                currentConversation
+            ].messages.slice(-100)
+        )
+    );
+
     selectedFiles.forEach(file => {
-        formData.append("files", file);
+
+        formData.append(
+            "files",
+            file
+        );
     });
 
-    const response = await fetch("/chat", {
-    method: "POST",
-    body: formData
+    /* -----------------------------------------
+       WAIT FOR AI
+    ----------------------------------------- */
+
+    try {
+
+        const response =
+            await fetch(
+                "/chat",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+
+        if (!response.ok) {
+            throw new Error(
+                await response.text()
+            );
+        }
+
+        const reply =
+            await response.text();
+
+        /* -----------------------------------------
+           CLEAR INPUT
+        ----------------------------------------- */
+
+        input.value = "";
+
+        input.style.height =
+            "auto";
+
+        selectedFiles = [];
+
+        fileInput.value = "";
+
+        attachmentPreview.style.display =
+            "none";
+
+        updateActionButton();
+
+        /* -----------------------------------------
+           TYPE INTO THE EXISTING BUBBLE
+        ----------------------------------------- */
+
+        typing.innerHTML = "";
+
+        if (!typingEnabled) {
+
+            typing.innerHTML =
+                marked.parse(reply);
+
+            finishAIMessage(
+                reply,
+                message,
+                typing,
+                voiceReply
+            );
+
+        } else {
+
+            await typeAIResponse(
+                reply,
+                typing
+            );
+
+            finishAIMessage(
+                reply,
+                message,
+                typing,
+                voiceReply
+            );
+        }
+
+    } catch (error) {
+
+        console.error(
+            "Chat error:",
+            error
+        );
+
+        /* -----------------------------------------
+           DO NOT CREATE ANOTHER BUBBLE
+           REUSE THE THINKING BUBBLE
+        ----------------------------------------- */
+
+        if (typing) {
+
+            typing.innerHTML = `
+                ⚠️ Sorry! Something went wrong.
+            `;
+        }
+
+    } finally {
+
+        input.disabled = false;
+        button.disabled = false;
+
+        updateActionButton();
+
+        input.focus();
+
+        chat.scrollTop =
+            chat.scrollHeight;
+    }
+}
+
+/* =========================================================
+   TYPING ANIMATION
+========================================================= */
+
+function typeAIResponse(
+    text,
+    element
+) {
+
+    return new Promise(resolve => {
+
+        let i = 0;
+
+        const interval =
+            setInterval(() => {
+
+                element.textContent =
+                    text.substring(
+                        0,
+                        i
+                    );
+
+                chat.scrollTop =
+                    chat.scrollHeight;
+
+                i++;
+
+                if (
+                    i > text.length
+                ) {
+
+                    clearInterval(
+                        interval
+                    );
+
+                    element.innerHTML =
+                        marked.parse(
+                            text
+                        );
+
+                    element
+                        .querySelectorAll(
+                            "pre code"
+                        )
+                        .forEach(block => {
+
+                            if (
+                                window.hljs
+                            ) {
+                                hljs.highlightElement(
+                                    block
+                                );
+                            }
+                        });
+
+                    resolve();
+                }
+
+            }, 12);
     });
+}
 
-    console.log(response.status);
+/* =========================================================
+   FINISH AI MESSAGE
+========================================================= */
 
-    if (!response.ok) {
-        console.log(await response.text());
-        return;
-    }
+async function finishAIMessage(
+    reply,
+    userMessage,
+    typing,
+    voiceReply
+) {
 
-    const reply = await response.text();
-    
-    input.value = "";
-    input.style.height = "auto";
+    if (
+        conversations[
+            currentConversation
+        ].messages.length === 1
+    ) {
 
-    selectedFiles = [];
-    fileInput.value = "";
-    attachmentPreview.style.display = "none";
+        conversations[
+            currentConversation
+        ].title =
+            userMessage;
 
-    chat.scrollTop = chat.scrollHeight;
-    // Remove loading message
-    const loading = document.getElementById("loadingMessage");
-    if(loading){
-        loading.remove();
-    }
-
-    // Create empty AI message
-    const typingId = "typing-" + Date.now();
-
-    chat.innerHTML += `
-    <div class="bot-message">
-        <b>VedAura:</b><br>
-        <span id="${typingId}"></span>
-    </div>
-    `;
-    const typing = document.getElementById(typingId);
-
-    const formattedReply = marked.parse(reply);
-
-// If typing animation is OFF
-if (!typingEnabled) {
-
-    typing.innerHTML = marked.parse(reply);
-
-    if (conversations[currentConversation].messages.length === 0) {
-        conversations[currentConversation].title = message;
         renderHistory();
     }
 
-    conversations[currentConversation].messages.push({
+    conversations[
+        currentConversation
+    ].messages.push({
         role: "assistant",
         text: reply
     });
 
-    await saveConversation(conversations[currentConversation]);
+    await saveConversation(
+        conversations[
+            currentConversation
+        ]
+    );
 
-    typing.querySelectorAll("pre code").forEach((block) => {
-        hljs.highlightElement(block);
-    });
-
-    input.disabled = false;
-    button.disabled = false;
-    button.innerHTML = `<span class="send-icon">➤</span>`;
-    input.focus();
-
-} else {
-
-    let i = 0;
-
-     const interval = setInterval(async () => {
-
-        typing.textContent = reply.substring(0, i);
-        chat.scrollTop = chat.scrollHeight;
-        i++;
-
-        if(i > reply.length){
-
-            clearInterval(interval);
-
-            typing.innerHTML = marked.parse(reply);
-
-            if(conversations[currentConversation].messages.length === 0){
-                conversations[currentConversation].title = message;
-                renderHistory();
-            }
-
-            conversations[currentConversation].messages.push({
-                role: "assistant",
-                text: reply
-            });
-
-            await saveConversation(conversations[currentConversation]);
-
-            typing.querySelectorAll("pre code").forEach((block) => {
-                hljs.highlightElement(block);
-            });
-
-            input.disabled = false;
-            button.disabled = false;
-            button.innerHTML = `<span class="send-icon">➤</span>`;
-            input.focus();
-        }
-
-    }, 12);
-
-}
-    chat.scrollTop = chat.scrollHeight;
-
-    // Remove these lines from below because they're now inside the animation
-    // input.disabled = false;
-    // button.disabled = false;
-    // button.innerText = "Send";
-    // input.focus();
-
-    chat.scrollTop = chat.scrollHeight;
-
-    // Re-enable input
-
-}
-const themeBtn = document.getElementById("themeBtn");
-const newChatBtn = document.getElementById("newChatBtn");
-newChatBtn.onclick = newChat;
-
-
-const logo = document.getElementById("logo");
-
-console.log(themeBtn);
-
-themeBtn.onclick = function () {
-
-    document.body.classList.toggle("dark-mode");
-
-    if(document.body.classList.contains("dark-mode")){
-
-        themeBtn.innerHTML = "☀️";
-        themeBtn.title = "Switch to Light Mode";
-
-        // Change logo
-        logo.src = "{{ url_for('static', filename='logo-dark.png') }}";
-
-    }else{
-
-        themeBtn.innerHTML = "🌙";
-        themeBtn.title = "Switch to Dark Mode";
-
-        // Change logo back
-        logo.src = "{{ url_for('static', filename='logo.png') }}";
+    if (voiceReply) {
+        speakVoiceReply(reply);
     }
 
+    chat.scrollTop =
+        chat.scrollHeight;
+}
+
+/* =========================================================
+   INPUT
+========================================================= */
+
+button.addEventListener(
+    "click",
+    sendMessage
+);
+
+input.addEventListener(
+    "keydown",
+    event => {
+
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            sendMessage();
+        }
+    }
+);
+
+input.addEventListener(
+    "input",
+    () => {
+
+        input.style.height =
+            "auto";
+
+        input.style.height =
+            Math.min(
+                input.scrollHeight,
+                180
+            ) + "px";
+
+        updateActionButton();
+    }
+);
+
+/* =========================================================
+   FILE UPLOAD
+========================================================= */
+
+const attachBtn =
+    document.getElementById(
+        "attach-btn"
+    );
+
+const fileInput =
+    document.getElementById(
+        "fileInput"
+    );
+
+const attachmentPreview =
+    document.getElementById(
+        "attachmentPreview"
+    );
+
+const attachmentName =
+    document.getElementById(
+        "attachmentName"
+    );
+
+const removeAttachment =
+    document.getElementById(
+        "removeAttachment"
+    );
+
+attachBtn.onclick = () => {
+    fileInput.click();
 };
 
-document.addEventListener("DOMContentLoaded", () => {
+fileInput.onchange = () => {
 
-    // Desktop splash only
-    if (window.matchMedia("(max-width: 600px)").matches) {
+    if (
+        fileInput.files.length === 0
+    ) {
         return;
     }
 
-    const splash = document.getElementById("splash-screen");
+    selectedFiles =
+        Array.from(
+            fileInput.files
+        );
 
-    if (!splash) return;
+    attachmentName.textContent =
+        "📎 " +
+        selectedFiles.length +
+        " file(s) selected";
 
-    setTimeout(() => {
+    attachmentPreview.style.display =
+        "flex";
 
-        splash.style.opacity = "0";
+    if (
+        input.value
+            .trim()
+            .toLowerCase() ===
+        "analyze my resume"
+    ) {
 
-        setTimeout(() => {
-            splash.remove();
-        }, 1000);
+        sendMessage(
+            "Analyze my resume"
+        );
+    }
+};
 
-    }, 3000);
+removeAttachment.onclick = () => {
+
+    fileInput.value = "";
+
+    attachmentPreview.style.display =
+        "none";
+
+    selectedFiles = [];
+};
+
+/* =========================================================
+   HISTORY
+========================================================= */
+
+function renderHistory() {
+
+    historyContainer.innerHTML =
+        "";
+
+    conversations.forEach(
+        (conversation, index) => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+            item.className =
+                "history-item";
+
+            item.innerHTML = `
+                <span class="history-title">
+                    ${escapeUserText(
+                        conversation.title
+                    )}
+                </span>
+
+                <div class="history-actions">
+
+                    <button
+                        class="rename-btn">
+                        ✏️
+                    </button>
+
+                    <button
+                        class="delete-btn">
+                        🗑️
+                    </button>
+
+                </div>
+            `;
+
+            const renameBtn =
+                item.querySelector(
+                    ".rename-btn"
+                );
+
+            const deleteBtn =
+                item.querySelector(
+                    ".delete-btn"
+                );
+
+            renameBtn.onclick =
+                event => {
+
+                    event.stopPropagation();
+
+                    renameModal.classList.add(
+                        "show"
+                    );
+
+                    renameInput.value =
+                        conversation.title;
+
+                    renameIndex =
+                        index;
+                };
+
+            deleteBtn.onclick =
+                event => {
+
+                    event.stopPropagation();
+
+                    deleteIndex =
+                        index;
+
+                    deleteModal.classList.add(
+                        "show"
+                    );
+                };
+
+            item.onclick = () => {
+                openConversation(index);
+            };
+
+            historyContainer.appendChild(
+                item
+            );
+        }
+    );
+}
+
+async function openConversation(
+    index
+) {
+
+    currentConversation = index;
+
+    const conversation =
+        conversations[index];
+
+    chat.innerHTML = "";
+
+    conversation.messages.forEach(
+        msg => {
+
+            if (
+                msg.role === "user"
+            ) {
+
+                let fileHTML = "";
+
+                if (msg.files) {
+
+                    msg.files.forEach(
+                        file => {
+
+                            fileHTML += `
+                                <div class="message-file">
+                                    ${getFileIcon(file)}
+                                    ${escapeUserText(file)}
+                                </div>
+                            `;
+                        }
+                    );
+                }
+
+                chat.innerHTML += `
+                    <div class="user-message">
+
+                        ${fileHTML}
+
+                        <b>You:</b>
+
+                        <div class="user-text">
+                            ${escapeUserText(
+                                msg.text
+                            )}
+                        </div>
+
+                    </div>
+                `;
+
+            } else {
+
+                chat.innerHTML += `
+                    <div class="bot-message">
+
+                        <div class="bot-header">
+
+                            <button
+                                class="message-sound-btn"
+                                onclick="speakAIMessage(this)">
+                                🔊
+                            </button>
+
+                            <b>Oddi AI:</b>
+
+                        </div>
+
+                        <div class="ai-content">
+                            ${marked.parse(
+                                msg.text
+                            )}
+                        </div>
+
+                        <button
+                            class="copy-btn"
+                            onclick="copyAIResponse(this)">
+                            📋 Copy
+                        </button>
+
+                    </div>
+                `;
+            }
+        }
+    );
+
+    chat.scrollTop =
+        chat.scrollHeight;
+
+    sidebar.classList.remove(
+        "open"
+    );
+
+    overlay.classList.remove(
+        "show"
+    );
+}
+
+/* =========================================================
+   NEW CHAT
+========================================================= */
+
+async function newChat() {
+
+    chat.innerHTML = "";
+
+    input.value = "";
+
+    selectedFiles = [];
+
+    if (isLoggedIn) {
+
+        const serverConversation =
+            await createServerConversation(
+                "New Chat"
+            );
+
+        if (!serverConversation) {
+            return;
+        }
+
+        conversations.unshift({
+            id:
+                serverConversation.id,
+            title:
+                serverConversation.title,
+            messages: []
+        });
+
+        currentConversation = 0;
+
+        renderHistory();
+
+    } else {
+
+        conversations = [{
+            id: null,
+            title: "New Chat",
+            messages: []
+        }];
+
+        currentConversation = 0;
+    }
+
+    updateActionButton();
+
+    input.focus();
+}
+
+/* =========================================================
+   QUICK ACTIONS
+========================================================= */
+
+const quickActions =
+    document.querySelectorAll(
+        ".action-card"
+    );
+
+quickActions.forEach(card => {
+
+    card.addEventListener(
+        "click",
+        function () {
+
+            const message =
+                this.getAttribute(
+                    "data-message"
+                );
+
+            const prompt =
+                this.getAttribute(
+                    "data-prompt"
+                );
+
+            if (!message || !prompt) {
+                return;
+            }
+
+            if (
+                message ===
+                "Analyze my resume"
+            ) {
+
+                input.value =
+                    message;
+
+                if (
+                    selectedFiles.length
+                ) {
+
+                    sendMessage(
+                        message
+                    );
+
+                } else {
+
+                    fileInput.click();
+                }
+
+                return;
+            }
+
+            input.value =
+                prompt;
+
+            sendMessage(
+                message
+            );
+        }
+    );
 });
 
-const menuBtn = document.getElementById("menuBtn");
-const sidebar = document.getElementById("sidebar");
-const overlay = document.getElementById("overlay");
+/* =========================================================
+   THEME
+========================================================= */
 
-menuBtn.onclick = () =>{
+const themeBtn =
+    document.getElementById(
+        "themeBtn"
+    );
 
-    sidebar.classList.add("open");
+const logo =
+    document.getElementById(
+        "logo"
+    );
 
-    overlay.classList.add("show");
+themeBtn.onclick = () => {
 
+    document.body.classList.toggle(
+        "dark-mode"
+    );
+
+    if (
+        document.body.classList.contains(
+            "dark-mode"
+        )
+    ) {
+
+        themeBtn.innerHTML =
+            "☀️";
+
+        themeBtn.title =
+            "Switch to Light Mode";
+
+        logo.src =
+            "{{ url_for('static', filename='logo-dark.png') }}";
+
+    } else {
+
+        themeBtn.innerHTML =
+            "🌙";
+
+        themeBtn.title =
+            "Switch to Dark Mode";
+
+        logo.src =
+            "{{ url_for('static', filename='logo.png') }}";
+    }
 };
 
-overlay.onclick = () =>{
+/* =========================================================
+   SIDEBAR
+========================================================= */
 
-    sidebar.classList.remove("open");
+const menuBtn =
+    document.getElementById(
+        "menuBtn"
+    );
 
-    overlay.classList.remove("show");
+const sidebar =
+    document.getElementById(
+        "sidebar"
+    );
 
+const overlay =
+    document.getElementById(
+        "overlay"
+    );
+
+menuBtn.onclick = () => {
+
+    sidebar.classList.add(
+        "open"
+    );
+
+    overlay.classList.add(
+        "show"
+    );
 };
-saveRename.onclick = async () => {
 
-    const newName = renameInput.value.trim();
+overlay.onclick = () => {
 
-    if(newName === "") return;
+    sidebar.classList.remove(
+        "open"
+    );
 
-    conversations[renameIndex].title = newName;
-
-    await saveConversation(conversations[renameIndex]);
-
-    renameModal.classList.remove("show");
-
-    renderHistory();
-
+    overlay.classList.remove(
+        "show"
+    );
 };
+
+/* =========================================================
+   SETTINGS / MODALS
+========================================================= */
+
+const newChatBtn =
+    document.getElementById(
+        "newChatBtn"
+    );
+
+newChatBtn.onclick =
+    newChat;
+
+const renameModal =
+    document.getElementById(
+        "renameModal"
+    );
+
+const renameInput =
+    document.getElementById(
+        "renameInput"
+    );
+
+const saveRename =
+    document.getElementById(
+        "saveRename"
+    );
+
+const cancelRename =
+    document.getElementById(
+        "cancelRename"
+    );
+
+let renameIndex = -1;
+
+const deleteModal =
+    document.getElementById(
+        "deleteModal"
+    );
+
+const confirmDelete =
+    document.getElementById(
+        "confirmDelete"
+    );
+
+const cancelDelete =
+    document.getElementById(
+        "cancelDelete"
+    );
+
+let deleteIndex = -1;
+
+const settingsBtn =
+    document.getElementById(
+        "settingsBtn"
+    );
+
+const settingsModal =
+    document.getElementById(
+        "settingsModal"
+    );
+
+const closeSettings =
+    document.getElementById(
+        "closeSettings"
+    );
+
+saveRename.onclick =
+    async () => {
+
+        const newName =
+            renameInput.value.trim();
+
+        if (!newName) return;
+
+        conversations[
+            renameIndex
+        ].title = newName;
+
+        await saveConversation(
+            conversations[
+                renameIndex
+            ]
+        );
+
+        renameModal.classList.remove(
+            "show"
+        );
+
+        renderHistory();
+    };
 
 cancelRename.onclick = () => {
 
-    renameModal.classList.remove("show");
-
+    renameModal.classList.remove(
+        "show"
+    );
 };
+
 cancelDelete.onclick = () => {
 
-    deleteModal.classList.remove("show");
-
+    deleteModal.classList.remove(
+        "show"
+    );
 };
-confirmDelete.onclick = async () => {
 
-    const conversation = conversations[deleteIndex];
+confirmDelete.onclick =
+    async () => {
 
-    if (conversation && conversation.id) {
-        await fetch(`/api/conversations/${conversation.id}`, {
-            method: "DELETE"
-        });
-    }
+        const conversation =
+            conversations[
+                deleteIndex
+            ];
 
-    conversations.splice(deleteIndex, 1);
+        if (
+            conversation &&
+            conversation.id
+        ) {
 
-    deleteModal.classList.remove("show");
+            await fetch(
+                `/api/conversations/${conversation.id}`,
+                {
+                    method: "DELETE"
+                }
+            );
+        }
 
-    renderHistory();
+        conversations.splice(
+            deleteIndex,
+            1
+        );
 
-};
+        deleteModal.classList.remove(
+            "show"
+        );
+
+        currentConversation =
+            null;
+
+        renderHistory();
+
+        chat.innerHTML = "";
+    };
+
 settingsBtn.onclick = () => {
 
-    settingsModal.classList.add("show");
-
+    settingsModal.classList.add(
+        "show"
+    );
 };
 
 closeSettings.onclick = () => {
 
-    settingsModal.classList.remove("show");
-
+    settingsModal.classList.remove(
+        "show"
+    );
 };
-const themeSettingBtn = document.getElementById("themeSettingBtn");
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+const themeSettingBtn =
+    document.getElementById(
+        "themeSettingBtn"
+    );
 
 themeSettingBtn.onclick = () => {
     themeBtn.click();
 };
-const typingBtn = document.getElementById("typingBtn");
+
+const typingBtn =
+    document.getElementById(
+        "typingBtn"
+    );
+
 let typingEnabled = true;
 
 typingBtn.onclick = () => {
 
-    typingEnabled = !typingEnabled;
+    typingEnabled =
+        !typingEnabled;
 
-    typingBtn.innerText = typingEnabled ? "ON" : "OFF";
-
+    typingBtn.innerText =
+        typingEnabled
+            ? "ON"
+            : "OFF";
 };
-const logoutBtn = document.getElementById("logoutBtn");
+
+const notificationBtn =
+    document.getElementById(
+        "notificationBtn"
+    );
+
+let notificationEnabled = true;
+
+notificationBtn.onclick = () => {
+
+    notificationEnabled =
+        !notificationEnabled;
+
+    notificationBtn.innerText =
+        notificationEnabled
+            ? "ON"
+            : "OFF";
+};
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+const logoutBtn =
+    document.getElementById(
+        "logoutBtn"
+    );
 
 if (logoutBtn) {
+
     logoutBtn.onclick = () => {
-        window.location.href = "/logout";
+
+        window.location.href =
+            "/logout";
     };
 }
 
-let deferredPrompt;
+/* =========================================================
+   CLEAR CHAT
+========================================================= */
 
-const installBtn = document.getElementById("installBtn");
+const clearChatBtn =
+    document.getElementById(
+        "clearChatBtn"
+    );
 
-window.addEventListener("beforeinstallprompt", (event) => {
+clearChatBtn.onclick =
+    async () => {
 
-    event.preventDefault();
-
-    deferredPrompt = event;
-
-    installBtn.style.display = "block";
-});
-
-
-installBtn.addEventListener("click", async () => {
-
-    if (!deferredPrompt) {
-        return;
-    }
-
-    deferredPrompt.prompt();
-
-    const { outcome } = await deferredPrompt.userChoice;
-
-    console.log("Install result:", outcome);
-
-    deferredPrompt = null;
-
-    installBtn.style.display = "none";
-});
-
-
-window.addEventListener("appinstalled", () => {
-
-    console.log("VedAura AI installed successfully!");
-
-    installBtn.style.display = "none";
-});
-const notificationBtn = document.getElementById("notificationBtn")
-let notificationEnabled = true;
-notificationBtn.onclick = () => {
-    notificationEnabled =  !notificationEnabled;
-    notificationBtn.innerText = notificationEnabled ? "ON" : "OFF";
-}
-
-const clearChatBtn = document.getElementById("clearChatBtn");
-
-    clearChatBtn.onclick = async () => {
-
-        if (!confirm("Delete ALL conversations?")) {
+        if (
+            !confirm(
+                "Delete ALL conversations?"
+            )
+        ) {
             return;
         }
 
-        const response = await fetch("/api/conversations/clear", {
-            method: "DELETE"
-        });
+        const response =
+            await fetch(
+                "/api/conversations/clear",
+                {
+                    method: "DELETE"
+                }
+            );
 
         if (!response.ok) {
-            alert("Could not clear conversations.");
+
+            alert(
+                "Could not clear conversations."
+            );
+
             return;
         }
 
         conversations = [];
-        currentConversation = null;
+
+        currentConversation =
+            null;
+
         chat.innerHTML = "";
+
         renderHistory();
 
         newChat();
     };
 
-    
-</script>
-<script>
-window.addEventListener("load", () => {
+/* =========================================================
+   SPLASH SCREEN
+========================================================= */
 
-    setTimeout(() => {
-        const splash = document.getElementById("mobileSplash");
+document.addEventListener(
+    "DOMContentLoaded",
+    () => {
 
-        if (splash) {
-            splash.classList.add("hide");
+        const splash =
+            document.getElementById(
+                "splash-screen"
+            );
 
-            setTimeout(() => {
-                splash.remove();
-            }, 700);
+        const splashSound =
+            document.getElementById(
+                "splashSound"
+            );
+
+        if (splashSound) {
+            splashSound
+                .play()
+                .catch(() => {});
         }
 
-    }, 3000);
+        if (splash) {
 
-});
+            setTimeout(() => {
+
+                splash.style.opacity =
+                    "0";
+
+                setTimeout(() => {
+
+                    splash.remove();
+
+                }, 1000);
+
+            }, 3000);
+        }
+    }
+);
+
+/* =========================================================
+   INITIALIZE
+========================================================= */
+
+input.style.height =
+    "auto";
+
+input.style.height =
+    input.scrollHeight + "px";
+
+updateActionButton();
+
+loadConversations();
+
 </script>
+
+
+<script id="oddi-ui-behavior">
+/* =========================================================
+   ODDI AI — WELCOME SCROLL BEHAVIOR
+   ========================================================= */
+(function () {
+    const chatbox = document.getElementById("chatbox");
+    if (!chatbox) return;
+
+    const updateScrollState = () => {
+        const scrolled = chatbox.scrollTop > 70;
+        chatbox.classList.toggle("ui-scrolled", scrolled);
+    };
+
+    chatbox.addEventListener("scroll", updateScrollState, { passive: true });
+    updateScrollState();
+})();
+</script>
+
 </body>
 
 </html>

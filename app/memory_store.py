@@ -1,7 +1,4 @@
-import json
+# Memory storage is now handled by the SQLite database.
+# This file is kept temporarily so older imports don't break.
 
-try:
-    with open("database/memory.json", "r") as file:
-        memory = json.load(file)
-except:
-    memory = {}
+memory = {}

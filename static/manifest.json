@@ -1,6 +1,6 @@
 {
-  "name": "VedAura AI",
-  "short_name": "VedAura",
+  "name": "Oddi AI",
+  "short_name": "Oddi-AI",
   "description": "Your Personal AI Assistant",
   "start_url": "/",
   "display": "standalone",

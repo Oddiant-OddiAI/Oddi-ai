@@ -168,7 +168,7 @@ while True:
 
     if message.lower() == "/forget all":
         response = clear_all_memory()
-        print(f"VedAura AI: {response}")
+        print(f"Oddi AI: {response}")
         continue   
 
     if message.lower() == "/forget":

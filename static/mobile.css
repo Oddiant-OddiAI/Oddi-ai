@@ -85,7 +85,7 @@
         margin-left: 8px;
         margin-top: 10px;
 
-        width: 38px;
+        width: 64px;
         height: auto;
     }
 
@@ -728,21 +728,22 @@
 
 #attachmentPreview {
     position: fixed !important;
-    left: 10px !important;
-    right: 10px !important;
-    bottom: 62px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
 
-    width: auto !important;
-    max-width: none !important;
+    bottom: 82px !important;
 
-    max-height: 38px !important;
-    overflow-x: auto !important;
-    overflow-y: hidden !important;
+    width: calc(100% - 40px) !important;
+    max-width: 760px !important;
+
+    max-height: none !important;
+    overflow: visible !important;
 
     box-sizing: border-box !important;
-    white-space: nowrap !important;
+    white-space: normal !important;
 
-    z-index: 998 !important;
+    z-index: 999 !important;
 }
 @media (max-width: 600px) {
 

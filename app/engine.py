@@ -1,4 +1,8 @@
 import base64
+import os
+import subprocess
+import tempfile
+import shutil
 from app.fast_responses import fast_response
 from app.memory_handler import (
     is_memory_message,
@@ -8,11 +12,297 @@ from app.memory_handler import (
 from app.chatbot import get_response
 from app.commands import handle_command
 from app.prompts import SYSTEM_PROMPT
-from app.prompts import SYSTEM_PROMPT
 from pypdf import PdfReader
 from openpyxl import load_workbook
+from pptx import Presentation
+from docx import Document
+from app.config import client
+from app.database import (
+    get_vector_store_id,
+    save_vector_store_id
+)
 
-def process_message(user_message, uploaded_files=None):
+RESUME_ANALYSIS_TRIGGERS = {
+    "analyze my resume",
+    "analyse my resume",
+    "analyze my cv",
+    "analyse my cv",
+    "resume analysis",
+    "analyze resume",
+    "analyse resume",
+    "review my resume",
+    "review my cv",
+}
+
+
+def is_resume_analysis_request(message):
+    if not message:
+        return False
+
+    text = message.lower().strip()
+
+    return text in RESUME_ANALYSIS_TRIGGERS
+def is_resume_analysis_request(message):
+    if not message:
+        return False
+
+    text = message.lower().strip()
+
+    return text in RESUME_ANALYSIS_TRIGGERS
+
+
+def extract_docx_text(uploaded_file):
+    document = Document(uploaded_file)
+
+    text = []
+
+    for paragraph in document.paragraphs:
+        if paragraph.text.strip():
+            text.append(paragraph.text.strip())
+
+    # Also read tables because resumes often contain
+    # skills, education, experience, etc. inside tables.
+    for table in document.tables:
+
+        for row in table.rows:
+
+            cells = []
+
+            for cell in row.cells:
+                value = cell.text.strip()
+
+                if value:
+                    cells.append(value)
+
+            if cells:
+                text.append(" | ".join(cells))
+
+    return "\n".join(text)
+
+
+RESUME_ANALYSIS_PROMPT = """
+You are Oddi AI's Resume Intelligence system.
+
+The user has uploaded a resume and explicitly asked you to analyze it.
+
+Analyze ONLY the resume content provided in the attached document.
+Do not invent education, experience, projects, skills, achievements, certifications,
+or other information that is not present.
+
+Give the user a practical and honest resume review.
+
+Your response MUST use this structure:
+
+# 📄 Resume Analysis
+
+## Overall Score
+Give a score out of 100.
+
+## ATS Score
+Give an estimated ATS-readiness score out of 100.
+Explain briefly what affects the score.
+
+## 👤 Profile
+Summarize the candidate's profile based only on the resume.
+
+## 🎓 Education
+Summarize the education shown in the resume.
+
+## 💻 Technical Skills
+List the technical skills actually present.
+
+## 🚀 Projects
+List and briefly evaluate the projects shown.
+
+## 💼 Experience
+Summarize internships, jobs, training, or other experience shown.
+
+If no experience is present, clearly say so.
+
+## ✅ Strengths
+Give the strongest aspects of the resume.
+
+## ⚠️ Weaknesses
+Give specific weaknesses or areas that reduce its effectiveness.
+
+## ❌ Missing / Recommended Sections
+Mention important sections that appear to be missing.
+Do not claim a section is missing if it is actually present.
+
+## 🎯 Suitable Roles
+Suggest suitable job roles based only on the candidate's demonstrated
+education, skills, projects, and experience.
+
+## 📈 Recommended Improvements
+Give specific, actionable improvements.
+Prioritize the most important changes first.
+
+## 📝 Final Verdict
+Give a concise overall assessment.
+
+IMPORTANT RULES:
+
+- Do not invent information.
+- Do not change the candidate's facts.
+- Do not judge the candidate's personality or appearance.
+- Do not make unrealistic promises about getting a job.
+- Scores are estimates, not official ATS scores.
+- Be honest but constructive.
+- Prefer specific feedback over generic advice.
+- Keep the report readable and well formatted.
+"""
+
+
+MAX_KNOWLEDGE_FILES = 20
+
+
+def get_or_create_vector_store(user_id):
+
+    if not user_id:
+        return None
+
+    vector_store_id = get_vector_store_id(user_id)
+
+    if vector_store_id:
+        return vector_store_id
+
+    vector_store = client.vector_stores.create(
+        name=f"Oddi AI User {user_id} Knowledge"
+    )
+
+    save_vector_store_id(
+        user_id,
+        vector_store.id
+    )
+
+    print(
+        f"Created knowledge base for user {user_id}: "
+        f"{vector_store.id}"
+    )
+
+    return vector_store.id
+
+
+def get_knowledge_file_count(vector_store_id):
+
+    files = client.vector_stores.files.list(
+        vector_store_id=vector_store_id
+    )
+
+    return len(files.data)
+
+
+def add_file_to_knowledge_base(
+    uploaded_file,
+    vector_store_id
+):
+
+    if not vector_store_id:
+        return None
+
+    uploaded_file.stream.seek(0)
+
+    print(
+        f"Uploading to knowledge base: "
+        f"{uploaded_file.filename}"
+    )
+
+    # Upload the original file to OpenAI
+    openai_file = client.files.create(
+        file=(
+            uploaded_file.filename,
+            uploaded_file.stream,
+            uploaded_file.mimetype
+        ),
+        purpose="assistants"
+    )
+
+    print(
+        f"OpenAI file created: {openai_file.id}"
+    )
+
+    # Attach it to the user's vector store
+    vector_file = client.vector_stores.files.create_and_poll(
+        vector_store_id=vector_store_id,
+        file_id=openai_file.id
+    )
+
+    if vector_file.status != "completed":
+
+        print(
+            f"Knowledge indexing failed: "
+            f"{vector_file.status}"
+        )
+
+        return None
+
+    print(
+        f"Indexed successfully: "
+        f"{uploaded_file.filename}"
+    )
+
+    return openai_file.id
+def process_message(
+    user_message,
+    uploaded_files=None,
+    conversation_history=None,
+    user_id=None
+    ):
+        # ==========================================
+    # PERSISTENT USER KNOWLEDGE
+    # ==========================================
+
+    vector_store_id = None
+
+    if user_id is not None:
+
+        vector_store_id = get_or_create_vector_store(user_id)
+
+        if uploaded_files:
+
+            current_count = get_knowledge_file_count(
+                vector_store_id
+            )
+
+            remaining_slots = (
+                MAX_KNOWLEDGE_FILES - current_count
+            )
+
+            if remaining_slots <= 0:
+
+                return (
+                    "📚 Your Oddi knowledge base already "
+                    "contains 20 files.\n\n"
+                    "Please remove an existing file before "
+                    "adding another."
+                )
+
+            files_to_index = uploaded_files[
+                :remaining_slots
+            ]
+
+            for uploaded_file in files_to_index:
+
+                try:
+
+                    add_file_to_knowledge_base(
+                        uploaded_file,
+                        vector_store_id
+                    )
+
+                except Exception as e:
+
+                    print(
+                        f"Knowledge upload error "
+                        f"for {uploaded_file.filename}: {e}"
+                    )
+
+                    return (
+                        f"⚠️ I couldn't add "
+                        f"**{uploaded_file.filename}** "
+                        f"to your knowledge base.\n\n"
+                        f"Error: {e}"
+                    )
     if uploaded_files:
         uploaded_file = uploaded_files[0]
     else:
@@ -59,6 +349,25 @@ def process_message(user_message, uploaded_files=None):
                 print("TXT detected")
                 print(documents[:200])
                 print("TXT BLOCK")
+
+                    # ---------- DOCX ----------
+            elif filename.endswith(".docx"):
+
+                print("DOCX detected")
+
+                documents += (
+                    "\n\n===== "
+                    + uploaded_file.filename
+                    + " =====\n"
+                )
+
+                docx_text = extract_docx_text(uploaded_file)
+
+                documents += docx_text
+
+                print("DOCX extracted")
+                print(documents[:500])
+                print("DOCX BLOCK")
             # ---------- PDF ----------
             elif filename.endswith(".pdf"):
 
@@ -93,30 +402,153 @@ def process_message(user_message, uploaded_files=None):
                 print("EXCEL detected")
                 print(documents[:300])
                 print("EXCEL BLOCK")
+
+            elif filename.endswith((".pptx", ".ppt")):
+
+                print("PowerPoint detected")
+
+                with tempfile.TemporaryDirectory() as temp_dir:
+
+                    input_path = os.path.join(
+                        temp_dir,
+                        uploaded_file.filename
+                    )
+
+                    uploaded_file.save(input_path)
+
+                    # Convert old .ppt files to .pptx using LibreOffice
+                    if filename.endswith(".ppt"):
+
+                        print("Converting .ppt to .pptx using LibreOffice...")
+
+                        soffice_path = shutil.which("soffice")
+
+                        if not soffice_path:
+                            soffice_path = r"C:\Program Files\LibreOffice\program\soffice.exe"
+
+                        if not os.path.exists(soffice_path):
+                            raise RuntimeError(
+                                "LibreOffice was installed, but soffice.exe could not be found."
+                            )
+
+                        result = subprocess.run(
+                            [
+                                soffice_path,
+                                "--headless",
+                                "--convert-to",
+                                "pptx",
+                                "--outdir",
+                                temp_dir,
+                                input_path
+                            ],
+                            capture_output=True,
+                            text=True
+                        )
+
+                        print("LibreOffice output:")
+                        print(result.stdout)
+                        print(result.stderr)
+
+                        converted_path = os.path.join(
+                            temp_dir,
+                            os.path.splitext(
+                                uploaded_file.filename
+                            )[0] + ".pptx"
+                        )
+
+                        if not os.path.exists(converted_path):
+
+                            raise RuntimeError(
+                                "LibreOffice could not convert the PowerPoint file."
+                            )
+
+                        presentation = Presentation(converted_path)
+
+                    else:
+
+                        presentation = Presentation(input_path)
+
+                    documents += (
+                        "\n\n===== "
+                        + uploaded_file.filename
+                        + " =====\n"
+                    )
+
+                    for slide_number, slide in enumerate(
+                        presentation.slides,
+                        start=1
+                    ):
+
+                        documents += (
+                            f"\n--- Slide {slide_number} ---\n"
+                        )
+
+                        for shape in slide.shapes:
+
+                            if hasattr(shape, "text") and shape.text.strip():
+
+                                documents += (
+                                    shape.text.strip()
+                                    + "\n"
+                                )
+
+                    print("POWERPOINT detected")
+                    print(documents[:500])
+                    print("POWERPOINT BLOCK")
             else:
 
                 print("Unsupported file:", filename)
+
+            # ---------- POWERPOINT ----------
 
     # 2. Fast Responses
     if not uploaded_files:
         fast_reply = fast_response(user_message)
         if fast_reply:
             return fast_reply
+    # 2.5 Resume Intelligence
+    resume_analysis = is_resume_analysis_request(user_message)
+
+    if resume_analysis:
+
+        if not uploaded_files:
+            return (
+                "📄 **Resume Analysis**\n\n"
+                "Please attach your resume first.\n\n"
+                "I can analyze **PDF, DOCX, or TXT** resume files."
+            )
+
+        if not documents:
+            return (
+                "⚠️ I received the file, but I couldn't extract readable "
+                "resume text from it.\n\n"
+                "Please try a PDF, DOCX, or TXT version of your resume."
+            )
+
+        user_message = RESUME_ANALYSIS_PROMPT + """
+
+    Here is the extracted resume content:
+
+    """ + documents
+
     # 1. Commands
     command_reply = handle_command(user_message)
     if command_reply:
         return command_reply
 
 
+    if user_id is not None:
 
-    # 3. Memory Recall
-    memory_reply = recall_memory(user_message)
-    if memory_reply:
-        return memory_reply
+        memory_reply = recall_memory(user_message, user_id)
+
+        if memory_reply:
+            return memory_reply
+
 
     # 4. Save Memory
-    if is_memory_message(user_message):
-        return remember(user_message)
+    if user_id is not None and is_memory_message(user_message):
+
+        return remember(user_message, user_id)
 
     # 5. Chatgpt
     content = [
@@ -148,15 +580,49 @@ def process_message(user_message, uploaded_files=None):
     """
         })
     print("Creating content...")
-    chat_history = [
-        {
-            
-            "role":"user",
-            "content":content
+
+    chat_history = []
+
+    if conversation_history:
+
+        for message in conversation_history:
+
+            role = message.get("role")
+            text = message.get("text", "")
+
+            if role not in ("user", "assistant"):
+                continue
+
+            if not text:
+                continue
+
+            chat_history.append({
+                "role": role,
+                "content": text
+            })
+    if not chat_history or chat_history[-1]["role"] != "user":
+        chat_history.append({
+            "role": "user",
+            "content": content
+        })
+    else:
+        # Replace the current user's plain text entry
+        # with the richer content containing files.
+        chat_history[-1] = {
+            "role": "user",
+            "content": content
         }
-    ]
+
+    chat_history = chat_history[-100:]
+
     print("Chat history created")
+    print("Messages in memory:", len(chat_history))
     print("Images:", len(images))
     print("Documents:", len(documents))
+
     print("Sending request to OpenAI...")
-    return get_response(chat_history)
+
+    return get_response(
+        chat_history,
+        vector_store_id
+    )

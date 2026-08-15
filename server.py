@@ -1,3 +1,4 @@
+import json
 from flask import (
     Flask,
     render_template,
@@ -24,9 +25,10 @@ from app.engine import process_message
 
 app = Flask(__name__)
 
-app.secret_key = "VedAura_AI_2026_SuperSecretKey"
+app.secret_key = "Oddi-AI_AI_2026_SuperSecretKey"
 
 create_tables()
+
 
 @app.route("/")
 def home():
@@ -251,15 +253,33 @@ def api_clear_conversations():
 def chat():
 
     message = request.form["message"]
+
     uploaded_files = request.files.getlist("files")
+
+    # Get conversation history from frontend
+    history_json = request.form.get("history", "[]")
+
+    try:
+        conversation_history = json.loads(history_json)
+    except (json.JSONDecodeError, TypeError):
+        conversation_history = []
+
+    # Keep only the latest 100 messages
+    conversation_history = conversation_history[-100:]
+
     if uploaded_files:
         print("Files received:")
         for file in uploaded_files:
             print(file.filename)
     else:
         print("No files uploaded")
-    reply = process_message(message, uploaded_files)
 
+    reply = process_message(
+        message,
+        uploaded_files,
+        conversation_history,
+        session.get("user_id")
+    )
     return reply
 
 

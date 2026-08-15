@@ -5,7 +5,7 @@ from app import state
 
 def show_stats():
     return f"""
-📊 VedAura AI Statistics
+📊 Oddi AI Statistics
 
 🚀 Version          : {VERSION}
 🧠 Stored Memories  : {len(memory)}

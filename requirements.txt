@@ -4,3 +4,4 @@ python-dotenv
 gunicorn
 pypdf
 openpyxl
+python-pptx

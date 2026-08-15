@@ -1,7 +1,7 @@
 def show_help():
     return """
 ==================================================
-📚 VedAura AI Commands
+📚 Oddi AI Commands
 ==================================================
 
 /study       ➜ Enable Study Mode 📚
@@ -9,10 +9,10 @@ def show_help():
 /memory      ➜ Show all stored memories 🧠
 /forget      ➜ Forget one memory 🗑️
 /forget all  ➜ Clear every memory 💥
-/rename      ➜ Rename VedAura 🤖
+/rename      ➜ Rename Oddi-AI 🤖
 /clear       ➜ Clear the terminal 🧹
 /help        ➜ Show this menu ❓
-/exit        ➜ Close VedAura 👋
+/exit        ➜ Close Oddi-AI 👋
 
 ==================================================
 """

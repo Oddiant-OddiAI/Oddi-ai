@@ -1,3 +1,3 @@
 study_mode = False
-current_name = "VedAura AI"
+current_name = "Oddi AI"
 pending_update = None

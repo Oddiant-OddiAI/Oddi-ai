@@ -1,7 +1,11 @@
-from app.memory_store import memory
-import json
 from app import state
-import string
+
+from app.database import (
+    get_memory,
+    save_memory,
+    delete_memory,
+    clear_memory
+)
 
 
 MEMORY_RULES = {
@@ -26,6 +30,22 @@ MEMORY_RULES = {
     "my favorite book is": "favorite_book",
     "my favorite game is": "favorite_game",
     "my favorite tv show is": "favorite_show",
+    "my preferred job role is": "preferred_job_role",
+    "i want to work as": "preferred_job_role",
+    "my skills are": "skills",
+    "my experience is": "experience",
+    "i have experience in": "experience",
+    "my preferred location is": "preferred_location",
+    "i want to work in": "preferred_location",
+    "my preferred work mode is": "work_mode",
+    "i prefer": "work_preference",
+    "my employment type is": "employment_type",
+    "my expected salary is": "expected_salary",
+    "my notice period is": "notice_period",
+    "my industry is": "industry",
+    "my preferred industry is": "industry",
+    "my preferred company is": "preferred_company",
+    "my education is": "education",
 }
 
 MEMORY_KEYS = {
@@ -50,6 +70,18 @@ MEMORY_KEYS = {
     "favorite_book": "📖 Your favorite book is",
     "favorite_game": "🎮 Your favorite game is",
     "favorite_show": "📺 Your favorite TV show is",
+    "preferred_job_role": "💼 Your preferred job role is",
+    "skills": "🛠️ Your skills are",
+    "experience": "📈 Your experience is",
+    "preferred_location": "📍 Your preferred job location is",
+    "work_mode": "🏠 Your preferred work mode is",
+    "work_preference": "💼 Your work preference is",
+    "employment_type": "📋 Your preferred employment type is",
+    "expected_salary": "💰 Your expected salary is",
+    "notice_period": "📅 Your notice period is",
+    "industry": "🏢 Your preferred industry is",
+    "preferred_company": "⭐ Your preferred company is",
+    "education": "🎓 Your education is",
 }
 MEMORY_RESPONSES = {
     "name": {
@@ -131,33 +163,102 @@ MEMORY_RESPONSES = {
     "favorite_show": {
         "remember": "Binge-worthy! 🍿 I'll remember your favorite TV show is {value}.",
         "recall": "Your favorite TV show is {value}. 🍿"
-    }
+    },
+    "preferred_job_role": {
+        "remember": "Got it! 💼 I'll remember that you're looking for {value} roles.",
+        "recall": "You're looking for {value} roles. 💼"
+    },
+
+    "skills": {
+        "remember": "Great! 🛠️ I'll remember your skills: {value}.",
+        "recall": "Your skills are {value}. 🛠️"
+    },
+
+    "experience": {
+        "remember": "Got it! 📈 I'll remember that your experience is {value}.",
+        "recall": "Your experience is {value}. 📈"
+    },
+
+    "preferred_location": {
+        "remember": "Got it! 📍 I'll remember that you prefer jobs in {value}.",
+        "recall": "You prefer jobs in {value}. 📍"
+    },
+
+    "work_mode": {
+        "remember": "Understood! 🏠 I'll remember that you prefer {value} work.",
+        "recall": "You prefer {value} work. 🏠"
+    },
+
+    "work_preference": {
+        "remember": "Got it! 💼 I'll remember your work preference: {value}.",
+        "recall": "Your work preference is {value}. 💼"
+    },
+
+    "employment_type": {
+        "remember": "Got it! 📋 I'll remember that you prefer {value} employment.",
+        "recall": "You prefer {value} employment. 📋"
+    },
+
+    "expected_salary": {
+        "remember": "Understood! 💰 I'll remember your expected salary is {value}.",
+        "recall": "Your expected salary is {value}. 💰"
+    },
+
+    "notice_period": {
+        "remember": "Got it! 📅 I'll remember your notice period is {value}.",
+        "recall": "Your notice period is {value}. 📅"
+    },
+
+    "industry": {
+        "remember": "Great! 🏢 I'll remember that you're interested in {value}.",
+        "recall": "You're interested in the {value} industry. 🏢"
+    },
+
+    "preferred_company": {
+        "remember": "Nice! ⭐ I'll remember that you're interested in {value}.",
+        "recall": "You're interested in {value}. ⭐"
+    },
+
+    "education": {
+        "remember": "Got it! 🎓 I'll remember your education is {value}.",
+        "recall": "Your education is {value}. 🎓"
+    },
 }
 
-def remember(data):
+def remember(data, user_id):
+
     text = data.lower().strip()
 
     for phrase, key in MEMORY_RULES.items():
+
         if text.startswith(phrase):
+
             value = data[len(phrase):].strip()
-            if key in memory and memory[key] != value:
+
+            old_value = get_memory(user_id, key)
+
+            if old_value is not None and old_value != value:
+
                 state.pending_update = {
+                    "user_id": user_id,
                     "key": key,
-                    "old": memory[key],
+                    "old": old_value,
                     "new": value
                 }
+
                 return (
-                    f"🤔 Earlier you told me your {key.replace('_',' ')} "
-                    f"is '{memory[key]}'.\n"
+                    f"🤔 Earlier you told me your "
+                    f"{key.replace('_', ' ')} is '{old_value}'.\n"
                     f"Do you want to update it to '{value}'? (Y/N)"
                 )
-            memory[key] = value
 
-            with open("database/memory.json", "w") as file:
-                json.dump(memory, file, indent=4)
+            save_memory(user_id, key, value)
 
-            return MEMORY_RESPONSES[key]["remember"].format(value=value)
-    memory["note"] = data
+            return MEMORY_RESPONSES[key]["remember"].format(
+                value=value
+            )
+
+    save_memory(user_id, "note", data)
 
     return "🧠 Memory Saved!"
 
@@ -170,52 +271,67 @@ def is_memory_message(data):
 
     return False
 
-def recall_memory(message):
+def recall_memory(message, user_id):
+
     text = message.lower().strip()
-    
+
     text = text.replace("what's", "what is")
     text = text.replace("whats", "what is")
 
     for phrase, replacement in ALIASES.items():
-        text = text.replace(phrase, replacement)   
-    # Only trigger recall if the user is explicitly asking to retrieve info
+        text = text.replace(phrase, replacement)
+
     recall_triggers = [
-    "what is my",
-    "tell me my",
-    "do you remember",
-    "who am i",
-    "where do i",
-    "language",
-    "company"
+        "what is my",
+        "tell me my",
+        "do you remember",
+        "who am i",
+        "where do i",
+        "language",
+        "company"
     ]
-    is_recall_attempt = any(trigger in text for trigger in recall_triggers)
-    
+
+    is_recall_attempt = any(
+        trigger in text
+        for trigger in recall_triggers
+    )
 
     if not is_recall_attempt:
         return None
 
-    # Handle direct identity check
-    if "who am i" in text or "what is my name" in text or "tell me my name" in text:
-        if "name" in memory:
-            return f"👤 Your name is {memory['name']}."
-        else:
-            return "🤖 I don't know your name yet. Try telling me: 'My name is [Your Name]!'"
+    # Direct identity check
+    if (
+        "who am i" in text
+        or "what is my name" in text
+        or "tell me my name" in text
+    ):
 
-    # Standard check for other keys
+        value = get_memory(user_id, "name")
+
+        if value is not None:
+            return f"👤 Your name is {value}."
+
+        return (
+            "🤖 I don't know your name yet. "
+            "Try telling me: 'My name is [Your Name]!'"
+        )
+
+    # Standard memory recall
     for key, reply in MEMORY_KEYS.items():
+
         if key in text or key.replace("_", " ") in text:
-            if key in memory:
-                return f"{reply} {memory[key]}."
-            else:
-                return f"🤖 I don't know your {key.replace('_', ' ')} yet."
+
+            value = get_memory(user_id, key)
+
+            if value is not None:
+                return f"{reply} {value}."
+
+            return (
+                f"🤖 I don't know your "
+                f"{key.replace('_', ' ')} yet."
+            )
 
     return None
-
-def clear_all_memory():
-    memory.clear()
-    with open("database/memory.json", "w") as file:
-        json.dump(memory, file, indent=4)
-    return "🗑️ Done! I've forgotten everything you told me."
 
 CONFIRM_UPDATE = {
     "name",
@@ -232,3 +348,6 @@ ALIASES = {
     "what language do i speak": "language",
     "favorite tv show": "favorite_show",
 }
+def clear_all_memory(user_id):
+    clear_memory(user_id)
+    return "🗑️ Done! I've forgotten everything you told me."

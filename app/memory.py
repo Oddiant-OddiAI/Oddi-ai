@@ -1,4 +1,4 @@
-MAX_HISTORY = 11
+MAX_HISTORY = 100
 
 
 def trim_history(chat_history):
