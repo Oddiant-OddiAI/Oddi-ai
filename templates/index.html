@@ -617,6 +617,33 @@ body.dark-mode .history-item {
     <link rel="stylesheet"
           href="{{ url_for('static', filename='mobile.css') }}?v=20260815-mobilefix">
 
+    <!-- FINAL PHONE-ONLY POLISH: logo clearance + composer bottom clearance -->
+    <style id="final-phone-layout-fix">
+        @media (max-width: 768px) {
+            /* Keep the phone logo clear of Sign In / username. */
+            .logo {
+                width: 120px !important;
+                max-width: 120px !important;
+                height: auto !important;
+                left:1px;
+                top:1px;
+            }
+            .logo-box{
+                left:1px;
+                right:1px;
+            }
+
+            /* Keep the entire composer inside the phone viewport. */
+            .input-area {
+                left: 6px !important;
+                right: 6px !important;
+                bottom: max(6px, env(safe-area-inset-bottom)) !important;
+                width: auto !important;
+                max-width: none !important;
+            }
+        }
+    </style>
+
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}">

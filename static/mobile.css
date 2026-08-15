@@ -120,21 +120,21 @@
     ========================================= */
 
     .logo-box {
-        margin: 0;
-        padding: 0;
+        margin: 0 !important;
+        padding: 0 !important;
 
-        display: flex;
-        align-items: center;
+        display: flex !important;
+        justify-content: flex-start !important;
+        align-items: center !important;
     }
 
     .logo {
-        margin-left: 8px;
-        margin-top: 10px;
+        margin-left: 8px !important;
+        margin-top: 10px !important;
 
-        width: 64px;
-        height: auto;
+        width: 64px !important;
+        height: auto !important;
     }
-
 
     /* =========================================
         TITLE
@@ -1036,5 +1036,56 @@
         display: flex !important;
         align-items: center !important;
         gap: 6px !important;
+    }
+}
+@media (max-width: 768px) {
+
+    /* Keep Sign In BELOW the mobile splash */
+    .header,
+    .header .header-controls,
+    .header .content-side {
+        z-index: 1 !important;
+    }
+
+    #mobileSplash {
+        z-index: 2147483647 !important;
+    }
+}
+/* =====================================================
+   FINAL FIX — MOBILE SIDEBAR MUST COVER HEADER
+   ===================================================== */
+@media (max-width: 768px) {
+
+    /* Sidebar stays above the header */
+    #sidebar {
+        z-index: 2000 !important;
+    }
+
+    /* Sidebar overlay stays below sidebar but above page */
+    #overlay {
+        z-index: 1999 !important;
+    }
+
+    /* Header/buttons must stay below the sidebar */
+    .header {
+        z-index: 100 !important;
+    }
+
+    .header .header-controls,
+    .header .content-side,
+    .header .logo-box,
+    .header .logo {
+        z-index: 100 !important;
+    }
+
+    /* Composer stays below the open sidebar */
+    .input-area {
+        z-index: 100 !important;
+    }
+
+    /* Splash remains the absolute top layer */
+    #mobileSplash,
+    #splash-screen {
+        z-index: 2147483647 !important;
     }
 }
