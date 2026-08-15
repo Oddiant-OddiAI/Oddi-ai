@@ -3,6 +3,11 @@
 
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#20c76b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
     <title>Oddi AI</title>
 
@@ -66,6 +71,41 @@
             #mobileSplash {
                 display: flex !important;
             }
+        }
+    </style>
+
+    <!-- PWA install button — same behavior/style as VedAura AI -->
+    <style id="install-button-fix">
+        .install-btn {
+            display: none;
+            width: calc(100% - 20px);
+            min-height: 48px;
+            margin: auto 10px 8px;
+            padding: 0 16px;
+            border: none;
+            border-radius: 12px;
+            background: #20c76b;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(32,199,107,.22);
+            transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+        }
+
+        .install-btn:hover {
+            background: #19b85f;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 24px rgba(32,199,107,.28);
+        }
+
+        .install-btn:active {
+            transform: scale(.98);
+        }
+
+        body.dark-mode .install-btn {
+            background: #20c76b;
+            color: #fff;
         }
     </style>
 
@@ -546,6 +586,33 @@ body.dark-mode .history-item {
 
 </style>
 
+    <!-- FINAL MOBILE SIDEBAR LAYER FIX — keeps sidebar above header/user/composer -->
+    <style id="mobile-sidebar-layer-fix">
+        @media (max-width: 768px) {
+            /* The open sidebar must sit above the composer and header controls. */
+            .sidebar {
+                z-index: 2147483646 !important;
+            }
+
+            .overlay {
+                z-index: 2147483645 !important;
+            }
+
+            .login-btn,
+            .user-btn {
+                z-index: 2147483640 !important;
+                max-width: 86px !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
+            }
+
+            .input-area {
+                z-index: 2147483000 !important;
+            }
+        }
+    </style>
+
     <!-- Mobile CSS intentionally loaded LAST so it can override desktop/pro UI rules on phones. -->
     <link rel="stylesheet"
           href="{{ url_for('static', filename='mobile.css') }}?v=20260815-mobilefix">
@@ -591,6 +658,10 @@ body.dark-mode .history-item {
         <div id="chatHistory" class="chat-history">
         </div>
         <div class="chat-list"></div>
+
+        <button id="installBtn" class="install-btn" type="button" aria-label="Add Oddi AI to your home screen">
+            📲 Add to Home Screen
+        </button>
 
         <button id="settingsBtn" class="settings-btn">
             ⚙️ Settings
@@ -2659,6 +2730,47 @@ themeBtn.onclick = () => {
             "{{ url_for('static', filename='logo.png') }}";
     }
 };
+
+/* =========================================================
+   PWA INSTALL / ADD TO HOME SCREEN
+========================================================= */
+
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById("installBtn");
+
+window.addEventListener("beforeinstallprompt", event => {
+    event.preventDefault();
+    deferredInstallPrompt = event;
+
+    if (installBtn) {
+        installBtn.style.display = "block";
+    }
+});
+
+if (installBtn) {
+    installBtn.addEventListener("click", async () => {
+        if (!deferredInstallPrompt) return;
+
+        deferredInstallPrompt.prompt();
+
+        try {
+            await deferredInstallPrompt.userChoice;
+        } catch (error) {
+            console.warn("Install prompt result unavailable:", error);
+        }
+
+        deferredInstallPrompt = null;
+        installBtn.style.display = "none";
+    });
+}
+
+window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+
+    if (installBtn) {
+        installBtn.style.display = "none";
+    }
+});
 
 /* =========================================================
    SIDEBAR
