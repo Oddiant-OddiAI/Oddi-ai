@@ -2,13 +2,20 @@
 <html>
 
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Oddi AI</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='mobile.css') }}">
 
     <title>Oddi AI</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <link rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
 <link rel="icon"
@@ -16,11 +23,8 @@
       href="{{ url_for('static', filename='favicon2.png') }}">
     <title>Oddi AI</title>
 
-    <link rel="stylesheet"
-            href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet"
-            href="{{ url_for('static', filename='mobile.css') }}">
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}"></script>
     <!-- Per-message sound button styles -->
     <style>
         .header-controls {
@@ -77,14 +81,6 @@
             background: #333;
         }
 
-        @media (max-width: 700px) {
-            .message-sound-btn {
-                width: 30px;
-                height: 30px;
-                flex-basis: 30px;
-                font-size: 15px;
-            }
-        }
     </style>
 
 <style id="oddi-professional-ui">
@@ -504,87 +500,6 @@ body.dark-mode .history-item {
     display: none !important;
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 700px) {
-    .header {
-        flex-basis: 60px !important;
-        height: 60px !important;
-        min-height: 60px !important;
-    }
-
-    .logo-box {
-        width: 46px !important;
-        height: 46px !important;
-        margin-left: 10px !important;
-    }
-
-    .logo {
-    width: 80px !important;
-    height: auto !important;
-    object-fit: contain !important;
-    }
-
-    .logo-title,
-    .title-box h1,
-    .header h1 {
-        font-size: 21px !important;
-    }
-
-    .logo-subtitle,
-    .title-box p,
-    .header p {
-        font-size: 10px !important;
-    }
-
-    .header-controls { padding-right: 8px !important; }
-    #themeBtn { width: 38px !important; height: 38px !important; }
-
-    .menu-btn {
-        top: 72px !important;
-        left: 12px !important;
-        width: 42px !important;
-        height: 42px !important;
-    }
-
-    .chatbox {
-        padding: 20px 12px 132px !important;
-    }
-
-    .welcome-message {
-        padding-top: 45px !important;
-        padding-left: 8px !important;
-        padding-right: 8px !important;
-    }
-
-    .welcome-message h2 {
-        font-size: 30px !important;
-    }
-
-    .welcome-message > p { font-size: 14px !important; }
-
-    .input-area {
-        width: calc(100% - 20px) !important;
-        bottom: 10px !important;
-        border-radius: 18px !important;
-    }
-
-    .attach-btn,
-    .dictation-btn,
-    .voice-btn,
-    .send-btn {
-        width: 44px !important;
-        height: 44px !important;
-        min-width: 44px !important;
-        min-height: 44px !important;
-        flex-basis: 44px !important;
-        border-radius: 13px !important;
-    }
-
-    .input-area textarea {
-        font-size: 14px !important;
-        padding: 11px 8px !important;
-    }
-}
 </style>
 
 </head>
@@ -680,7 +595,10 @@ body.dark-mode .history-item {
     <div id="splash-screen">
         <img src="{{ url_for('static', filename='splash.png') }}" alt="Splash">
     </div>
-
+    <!-- Mobile Splash Screen -->
+    <div id="mobileSplash">
+        <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
+    </div>
     <audio id="splashSound" preload="auto">
         <source src="{{ url_for('static', filename='mixkit-fairy-sparkle-whoosh-869.wav') }}" type="audio/wav">
     </audio>
@@ -3009,43 +2927,36 @@ clearChatBtn.onclick =
    SPLASH SCREEN
 ========================================================= */
 
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
+document.addEventListener("DOMContentLoaded", () => {
 
-        const splash =
-            document.getElementById(
-                "splash-screen"
-            );
+    const isMobile = window.matchMedia(
+        "(max-width: 600px)"
+    ).matches;
 
-        const splashSound =
-            document.getElementById(
-                "splashSound"
-            );
+    const splash = document.getElementById(
+        isMobile ? "mobileSplash" : "splash-screen"
+    );
 
-        if (splashSound) {
-            splashSound
-                .play()
-                .catch(() => {});
-        }
+    const splashSound =
+        document.getElementById("splashSound");
 
-        if (splash) {
+    if (splashSound) {
+        splashSound.play().catch(() => {});
+    }
+
+    if (splash) {
+
+        setTimeout(() => {
+
+            splash.classList.add("hide");
 
             setTimeout(() => {
+                splash.remove();
+            }, 1500);
 
-                splash.style.opacity =
-                    "0";
-
-                setTimeout(() => {
-
-                    splash.remove();
-
-                }, 1000);
-
-            }, 3000);
-        }
+        }, 3000);
     }
-);
+});
 
 /* =========================================================
    INITIALIZE
