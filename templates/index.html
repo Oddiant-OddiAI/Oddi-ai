@@ -7,10 +7,8 @@
     <title>Oddi AI</title>
 
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}">
+          href="{{ url_for('static', filename='style.css') }}?v=20260815">
 
-    <link rel="stylesheet"
-          href="{{ url_for('static', filename='mobile.css') }}">
 
     <title>Oddi AI</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
@@ -23,7 +21,54 @@
       href="{{ url_for('static', filename='favicon2.png') }}">
     <title>Oddi AI</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Splash mode safety: desktop uses splash.png, phones use splash2.png -->
+    <style id="splash-mode-fix">
+        #mobileSplash {
+            display: none !important;
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100dvh;
+            z-index: 2147483647;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            background: #000;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        #mobileSplash img {
+            width: 100%;
+            height: 100%;
+            max-width: none;
+            max-height: none;
+            display: block;
+            object-fit: cover;
+            object-position: center center;
+        }
+
+        #mobileSplash.hide {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        @media (max-width: 768px) {
+            #splash-screen {
+                display: none !important;
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+            }
+
+            #mobileSplash {
+                display: flex !important;
+            }
+        }
+    </style>
+
     <!-- Per-message sound button styles -->
     <style>
         .header-controls {
@@ -501,6 +546,10 @@ body.dark-mode .history-item {
 
 </style>
 
+    <!-- Mobile CSS intentionally loaded LAST so it can override desktop/pro UI rules on phones. -->
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='mobile.css') }}?v=20260815-mobilefix">
+
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}">
@@ -511,6 +560,9 @@ body.dark-mode .history-item {
 </div>
 
 {% else %}
+<div id="mobileSplash">
+    <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
+</div>
 
 <a href="/login" class="login-btn">
     Sign In
@@ -591,13 +643,13 @@ body.dark-mode .history-item {
         </svg>
     </button>
 
+    <!-- Desktop splash -->
     <div id="splash-screen">
-        <img src="{{ url_for('static', filename='splash.png') }}" alt="Splash">
+        <img src="{{ url_for('static', filename='splash.png') }}" alt="Oddi AI splash screen">
     </div>
-    <!-- Mobile Splash Screen -->
-    <div id="mobileSplash">
-        <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
-    </div>
+
+    <!-- Mobile splash -->
+    
     <audio id="splashSound" preload="auto">
         <source src="{{ url_for('static', filename='mixkit-fairy-sparkle-whoosh-869.wav') }}" type="audio/wav">
     </audio>

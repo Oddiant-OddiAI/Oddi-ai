@@ -815,6 +815,12 @@ body.dark-mode .copy-btn:hover{
    DESKTOP SPLASH SCREEN
    ================================ */
 
+/* Mobile splash is controlled by mobile.css / the HTML safety layer.
+   Keep it out of desktop document flow. */
+#mobileSplash {
+    display: none !important;
+}
+
 #splash-screen {
     position: fixed !important;
     inset: 0 !important;
