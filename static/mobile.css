@@ -691,10 +691,13 @@
 
 
     #mobileSplash img {
-        width: 140%;
-        max-width: none;
-        height: auto;
+        width: 94%;
+        max-width: 94%;
+        height: 94%;
+        max-height: 94%;
         display: block;
+        object-fit: cover;
+        object-position: center center;
 
         transform: scale(1);
 
