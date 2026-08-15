@@ -24,7 +24,6 @@
     <title>Oddi AI</title>
 
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='mobile.css') }}"></script>
     <!-- Per-message sound button styles -->
     <style>
         .header-controls {
@@ -2930,7 +2929,7 @@ clearChatBtn.onclick =
 document.addEventListener("DOMContentLoaded", () => {
 
     const isMobile = window.matchMedia(
-        "(max-width: 600px)"
+        "(max-width: 768px)"
     ).matches;
 
     const splash = document.getElementById(

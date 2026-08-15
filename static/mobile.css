@@ -1,3 +1,6 @@
+#mobileSplash {
+    display:none;
+}
 @media (max-width: 768px) {
 
     /* =========================================
@@ -890,6 +893,23 @@
 
         font-size: clamp(20px, 6vw, 25px) !important;
         line-height: 1.2 !important;
+    }
+        /* Mobile splash is OFF by default */
+    #mobileSplash {
+        display: none !important;
+    }
+
+    /* Only show mobile splash on phones */
+    @media (max-width: 768px) {
+        #mobileSplash {
+            display: block !important;
+        }
+
+        #mobileSplash img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
     }
 }
 @media (max-width: 600px) {
