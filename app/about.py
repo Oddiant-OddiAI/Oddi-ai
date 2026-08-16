@@ -11,7 +11,7 @@ def show_about():
     print("AI Model     : OpenAI")
     print("Memory       : Persistent JSON")
     print("Fast Replies : Enabled ⚡")
-    print("Study Mode   : Available 📚")
+    print("Explanation Mode   : Available 📚")
     print("Version      :", VERSION)
 
     print("-" * 50)

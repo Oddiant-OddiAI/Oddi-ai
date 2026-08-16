@@ -4,7 +4,7 @@ def show_help():
 📚 Oddi AI Commands
 ==================================================
 
-/study       ➜ Enable Study Mode 📚
+/Explanation      ➜ Enable ExplanationMode 📚
 /normal      ➜ Return to Normal Mode ⚪
 /memory      ➜ Show all stored memories 🧠
 /forget      ➜ Forget one memory 🗑️

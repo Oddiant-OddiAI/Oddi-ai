@@ -93,8 +93,8 @@ MEMORY_RESPONSES = {
         "recall": "Your favorite color is {value}. 🎨"
     },
     "college": {
-        "remember": "Got it! 🎓 I'll remember that you study at {value}.",
-        "recall": "You study at {value}. 🎓"
+        "remember": "Got it! 🎓 I'll remember that you Explanationat {value}.",
+        "recall": "You Explanationat {value}. 🎓"
     },
     "university": {
         "remember": "Got it! 🏛️ I'll remember that you attend university at {value}.",

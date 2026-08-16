@@ -9,6 +9,6 @@ def show_stats():
 
 🚀 Version          : {VERSION}
 🧠 Stored Memories  : {len(memory)}
-📚 Study Mode       : {"ON" if state.study_mode else "OFF"}
+📚 ExplanationMode       : {"ON" if state.study_mode else "OFF"}
 🤖 AI Name          : {state.current_name}
 """

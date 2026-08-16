@@ -1,7 +1,7 @@
 from constants import APP_NAME, EXIT_COMMAND, ERROR_MESSAGE
 from utils import response_timer
 from memory import trim_history
-from prompts import SYSTEM_PROMPT, STUDY_MODE_PROMPT
+from prompts import SYSTEM_PROMPT, EXPLANATION_MODE_PROMPT
 from chatbot import get_response
 from config import client
 import time
@@ -67,27 +67,27 @@ while True:
             print("Please reply with Y or N.")
             continue
 
-    if message.lower() == "/study":
-        state.study_mode = True
-        chat_history[0] = SYSTEM_PROMPT + "\n\n" + STUDY_MODE_PROMPT
-        success("Study Mode Activated!")
+    if message.lower() == "/explantion":
+        state.explanation_mode = True
+        chat_history[0] = SYSTEM_PROMPT + "\n\n" + EXPLANATION_MODE_PROMPT
+        success("ExplanationMode Activated!")
         continue
 
     if message.lower() == "/normal":
-        state.study_mode = False
+        state.explanation_mode = False
         chat_history[0] = SYSTEM_PROMPT
         print("😊 Normal Mode Activated!")
         continue
 
     if message.lower() == "/mode":
-        if state.study_mode:
-            print("Current Mode: 📚 Study Mode")
+        if state.explanation_mode:
+            print("Current Mode: 📚 ExplanationMode")
         else:
             print("Current Mode: 😊 Normal Mode")
             continue
 
     if message.lower() == "/clear":
-        state.study_mode = False
+        state.explanation_mode = False
         chat_history.clear()
 
         chat_history.append(SYSTEM_PROMPT)
