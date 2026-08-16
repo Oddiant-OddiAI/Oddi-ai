@@ -1144,3 +1144,63 @@
         font-size:14px !important;
     }
 }
+
+/* =========================================================
+   FINAL MOBILE MESSAGE / PINNED CHAT FIXES
+   ========================================================= */
+@media (max-width: 768px) {
+    .user-message {
+        align-self: flex-end !important;
+        width: min(88%, 760px) !important;
+        max-width: 88% !important;
+        margin: 8px 4px 8px auto !important;
+        padding: 12px 14px !important;
+        border: 1px solid #ededed !important;
+        border-radius: 16px !important;
+        background: #fff !important;
+        color: #111 !important;
+        box-shadow: 0 5px 18px rgba(0,0,0,.045) !important;
+    }
+
+    .user-message .user-text {
+        color: inherit !important;
+        white-space: pre-wrap !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    body.dark-mode .user-message {
+        background: #1e1e24 !important;
+        color: #e4e4e7 !important;
+        border-color: rgba(255,255,255,.08) !important;
+    }
+
+    body.dark-mode .user-message .user-text {
+        color: #e4e4e7 !important;
+    }
+
+    .user-message.pinned-message,
+    .bot-message.pinned-message {
+        border-left: 3px solid #111 !important;
+    }
+
+    body.dark-mode .user-message.pinned-message,
+    body.dark-mode .bot-message.pinned-message {
+        border-left-color: #fff !important;
+    }
+
+    .history-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 3px !important;
+    }
+
+    .chat-pin-btn,
+    .rename-btn,
+    .delete-btn {
+        padding: 5px !important;
+    }
+
+    body.dark-mode .history-item.pinned-chat {
+        border-color: #fff !important;
+    }
+}

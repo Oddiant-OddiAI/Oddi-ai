@@ -689,16 +689,16 @@ body.dark-mode .bot-message p{
     margin:0;
     box-shadow:none;
 }
-
 .user-message{
     width:fit-content !important;
-    max-width:min(700px,68%) !important;
+    max-width:min(760px,68%) !important;
     margin:10px 20px 10px auto !important;
-    padding:9px 5px !important;
-    border-radius:0 !important;
-    background:transparent !important;
-    color:#151515;
-    box-shadow:none !important;
+    padding:16px 18px !important;
+    border:1px solid #ededed !important;
+    border-radius:18px !important;
+    background:#fff !important;
+    color:#222;
+    box-shadow:var(--shadow-soft) !important;
     text-align:left;
     line-height:1.6;
     box-sizing:border-box;
@@ -706,15 +706,17 @@ body.dark-mode .bot-message p{
 
 .user-message .user-text{
     display:block;
-    margin-top:4px;
+    margin-top:8px;
     white-space:pre-wrap !important;
     overflow-wrap:anywhere;
 }
 
 body.dark-mode .user-message{
-    background:transparent !important;
-    color:#fff;
+    background:#151515 !important;
+    border-color:#2a2a2a !important;
+    color:#f2f2f2;
 }
+
 
 .message-file{
     display:flex;
@@ -1773,4 +1775,116 @@ body.dark-mode .send-btn.stop-active {
 
 body.dark-mode .pinned-message {
     border-left-color:#fff !important;
+}
+
+/* =========================================================
+   FINAL MESSAGE / PINNED CHAT FIXES
+   ========================================================= */
+.user-message {
+    width: min(760px, 88%) !important;
+    max-width: min(760px, 88%) !important;
+    margin: 10px 0 10px auto !important;
+    padding: 16px 18px !important;
+    border: 1px solid #ededed !important;
+    border-radius: 18px !important;
+    background: #fff !important;
+    color: #222 !important;
+    box-shadow: var(--shadow-soft) !important;
+    text-align: left !important;
+    line-height: 1.65 !important;
+}
+
+.user-message .user-text {
+    margin-top: 6px !important;
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere !important;
+}
+
+.user-message-header {
+    margin-bottom: 7px !important;
+}
+
+.user-actions {
+    margin-top: 10px !important;
+}
+
+body.dark-mode .user-message {
+    background: #333 !important;
+    border-color: #2a2a2a !important;
+    color: #f2f2f2 !important;
+}
+
+body.dark-mode .user-message .user-text {
+    color: #f2f2f2 !important;
+}
+
+/* Keep the pinned indicator identical on user and AI bubbles. */
+.user-message.pinned-message,
+.bot-message.pinned-message {
+    border-left: 3px solid #111 !important;
+}
+
+body.dark-mode .user-message.pinned-message,
+body.dark-mode .bot-message.pinned-message {
+    border-left-color: #fff !important;
+}
+
+/* Stopped responses remain normal message cards and keep their actions. */
+.stopped-message .ai-content {
+    color: inherit;
+}
+
+/* Sidebar chat pinning. Pinned chats are sorted above all normal chats. */
+.history-item.pinned-chat {
+    border-color: #111 !important;
+    box-shadow: 0 3px 12px rgba(0,0,0,.06) !important;
+}
+
+.history-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.chat-pin-btn,
+.rename-btn,
+.delete-btn {
+    border: 0;
+    background: transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 5px 6px;
+    line-height: 1;
+    opacity: .55;
+    transition: background .16s ease, opacity .16s ease, transform .16s ease;
+}
+
+.chat-pin-btn:hover,
+.rename-btn:hover,
+.delete-btn:hover {
+    opacity: 1;
+    background: #f0f0f0;
+    transform: translateY(-1px);
+}
+
+.chat-pin-btn.active {
+    opacity: 1;
+    background: #111;
+    color: #fff;
+}
+
+body.dark-mode .history-item.pinned-chat {
+    border-color: #fff !important;
+}
+
+body.dark-mode .chat-pin-btn:hover,
+body.dark-mode .rename-btn:hover,
+body.dark-mode .delete-btn:hover {
+    background: #444;
+}
+
+body.dark-mode .chat-pin-btn.active {
+    background: #fff;
+    color: #111;
 }

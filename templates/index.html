@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
 
@@ -12,7 +13,7 @@
     <title>Oddi AI</title>
 
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}?v=20260815">
+          href="{{ url_for('static', filename='style.css') }}?v=20260816-ui-fix">
 
 
     <title>Oddi AI</title>
@@ -387,7 +388,18 @@ body {
 }
 
 .user-message {
-    color: #111 !important;
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
+body.dark-mode .user-message {
+    background: #333 !important;
+    color: #f2f2f2 !important;
+}
+
+body.dark-mode .user-message .user-text {
+    background: transparent !important;
+    color: #f2f2f2 !important;
 }
 
 /* ---------- Bottom composer ---------- */
@@ -615,7 +627,7 @@ body.dark-mode .history-item {
 
     <!-- Mobile CSS intentionally loaded LAST so it can override desktop/pro UI rules on phones. -->
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='mobile.css') }}?v=20260815-mobilefix">
+          href="{{ url_for('static', filename='mobile.css') }}?v=20260816-ui-fix">
 
     <!-- FINAL PHONE-ONLY POLISH: logo clearance + composer bottom clearance -->
     <style id="final-phone-layout-fix">
@@ -638,9 +650,82 @@ body.dark-mode .history-item {
         }
     </style>
 
+    <!-- FINAL FOUR FIXES — user bubble, regenerate draft, mobile splash, pinned chats -->
+    <style id="final-four-fixes">
+        /* 1. User messages should shrink to their content like AI messages. */
+        .user-message {
+            width: fit-content !important;
+            max-width: min(760px, 88%) !important;
+            box-sizing: border-box !important;
+            align-self: flex-end !important;
+            padding: 12px 14px !important;
+            margin: 8px 0 8px auto !important;
+        }
+
+        .user-message .user-text {
+            display: block !important;
+            width: fit-content !important;
+            max-width: 100% !important;
+            margin: 6px 0 !important;
+            padding: 12px 14px !important;
+            background: var(--message-bg, #ffffff) !important;
+            border: 1px solid var(--border-color, #e5e7eb) !important;
+            border-radius: 18px !important;
+            text-align: left !important;
+            white-space: normal !important;
+            overflow-wrap: anywhere !important;
+            word-break: normal !important;
+            line-height: 1.5 !important;
+            margin-top: 0 !important;
+        }
+        /* 2. Pinned chats stay above the scrolling chat-history list. */
+        .pinned-history-section {
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 30 !important;
+            background: #fff !important;
+            padding-bottom: 6px !important;
+        }
+
+        .normal-history-section {
+            position: relative !important;
+        }
+
+        body.dark-mode .pinned-history-section {
+            background: #0d0d0d !important;
+        }
+
+        /* 3. Signed-in phones must still show the mobile splash above everything. */
+        @media (max-width: 768px) {
+            #mobileSplash {
+                display: flex !important;
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100dvh !important;
+                z-index: 2147483647 !important;
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+            }
+
+            #mobileSplash.hide {
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+            }
+        }
+    </style>
+
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}">
+
+<!-- Mobile splash — shown for both signed-in and signed-out users -->
+<div id="mobileSplash">
+    <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
+</div>
+
 {% if logged_in %}
 
 <div class="user-btn">
@@ -648,9 +733,6 @@ body.dark-mode .history-item {
 </div>
 
 {% else %}
-<div id="mobileSplash">
-    <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
-</div>
 
 <a href="/login" class="login-btn">
     Sign In
@@ -1049,6 +1131,8 @@ let generationStopped = false;
 let activeAbortController = null;
 let activeTypingInterval = null;
 let activeTypingResolve = null;
+let activeTypingElement = null;
+let activeGenerationConversation = null;
 
 function setGenerationUI(active) {
     generationActive = active;
@@ -1087,10 +1171,49 @@ function stopGeneration() {
         activeTypingResolve = null;
     }
 
-    const thinking = document.querySelector(".bot-message .thinking-indicator");
-    if (thinking) {
-        thinking.textContent = "Generation stopped.";
+    const conversationIndex = activeGenerationConversation;
+    const botMessage = activeTypingElement?.closest('.bot-message');
+
+    if (
+        botMessage &&
+        conversationIndex !== null &&
+        conversationIndex !== undefined &&
+        conversations[conversationIndex]
+    ) {
+        const conversation = conversations[conversationIndex];
+
+        /* Store the stopped generation so it survives reloads. */
+        const alreadySaved =
+            botMessage.dataset.messageIndex !== undefined &&
+            conversation.messages[Number(botMessage.dataset.messageIndex)]?.stopped;
+
+        if (!alreadySaved) {
+            activeTypingElement.innerHTML = 'Generation stopped.';
+
+            const stoppedIndex = conversation.messages.length;
+
+            conversation.messages.push({
+                role: 'assistant',
+                text: 'Generation stopped.',
+                pinned: false,
+                feedback: null,
+                stopped: true
+            });
+
+            botMessage.dataset.messageIndex = stoppedIndex;
+            botMessage.querySelector('.thinking-actions')?.remove();
+            addBotMessageActions(botMessage, stoppedIndex, conversationIndex);
+
+            saveConversation(conversation);
+        }
+    } else {
+        const thinking = document.querySelector('.bot-message .thinking-indicator');
+        if (thinking) {
+            thinking.textContent = 'Generation stopped.';
+        }
     }
+
+    setGenerationUI(false);
 }
 
 /* =========================================================
@@ -1987,10 +2110,10 @@ async function regenerateResponse(button) {
     messages.splice(result.index, 1);
     await saveConversation(conversations[currentConversation]);
 
-    input.value = userMessage;
     await sendMessage(null, false, {
         skipUserMessage: true,
-        regenerate: true
+        regenerate: true,
+        messageOverride: userMessage
     });
 }
 
@@ -2121,7 +2244,9 @@ async function sendMessage(
     const skipUserMessage = !!options.skipUserMessage;
 
     const message =
-        input.value.trim();
+        options.messageOverride !== undefined
+            ? String(options.messageOverride).trim()
+            : input.value.trim();
 
     const userDisplayMessage =
         displayMessage || message;
@@ -2153,7 +2278,8 @@ async function sendMessage(
                 id:
                     serverConversation.id,
                 title: message,
-                messages: []
+                messages: [],
+                pinned: false
             });
 
             currentConversation = 0;
@@ -2239,12 +2365,7 @@ async function sendMessage(
                     </button>
                 </div>
 
-                <div class="user-text">
-                    ${escapeUserText(
-                        userDisplayMessage
-                    )}
-                </div>
-
+                <div class="user-text">${escapeUserText(userDisplayMessage)}</div>
                 <div class="user-actions">
                     <button
                         class="message-action-btn user-copy-btn"
@@ -2330,6 +2451,9 @@ async function sendMessage(
         document.getElementById(
             typingId
         );
+
+    activeTypingElement = typing;
+    activeGenerationConversation = currentConversation;
 
     chat.scrollTop =
         chat.scrollHeight;
@@ -2481,6 +2605,8 @@ async function sendMessage(
 
         input.disabled = false;
         activeAbortController = null;
+        activeTypingElement = null;
+        activeGenerationConversation = null;
         setGenerationUI(false);
         generationStopped = false;
 
@@ -2554,6 +2680,63 @@ function typeAIResponse(
     });
 }
 
+function addBotMessageActions(botMessage, messageIndex, conversationIndex = currentConversation) {
+    if (!botMessage) return;
+
+    botMessage.querySelector('.thinking-actions')?.remove();
+    botMessage.querySelector('.bot-actions:not(.thinking-actions)')?.remove();
+
+    const message =
+        conversations[conversationIndex]?.messages[messageIndex];
+
+    const feedback = message?.feedback || '';
+    const pinned = !!message?.pinned;
+
+    const actions = document.createElement('div');
+    actions.className = 'bot-actions';
+    actions.innerHTML = `
+        <button
+            class="message-action-btn bot-pin-btn ${pinned ? 'active' : ''}"
+            onclick="togglePinMessage(this)"
+            title="${pinned ? 'Unpin message' : 'Pin important message'}"
+            aria-label="${pinned ? 'Unpin message' : 'Pin important message'}">
+            ${pinned ? '📌 Pinned' : '📌 Pin'}
+        </button>
+        <button
+            class="message-action-btn feedback-btn ${feedback === 'like' ? 'active' : ''}"
+            data-feedback="like"
+            onclick="setMessageFeedback(this, 'like')"
+            title="Like response"
+            aria-label="Like response">
+            👍
+        </button>
+        <button
+            class="message-action-btn feedback-btn ${feedback === 'dislike' ? 'active' : ''}"
+            data-feedback="dislike"
+            onclick="setMessageFeedback(this, 'dislike')"
+            title="Dislike response"
+            aria-label="Dislike response">
+            👎
+        </button>
+        <button
+            class="message-action-btn regenerate-btn"
+            onclick="regenerateResponse(this)"
+            title="Regenerate response"
+            aria-label="Regenerate response">
+            ↻ Regenerate
+        </button>
+        <button
+            class="message-action-btn copy-btn"
+            onclick="copyAIResponse(this)"
+            title="Copy AI response"
+            aria-label="Copy AI response">
+            📋 Copy
+        </button>
+    `;
+
+    botMessage.appendChild(actions);
+}
+
 /* =========================================================
    FINISH AI MESSAGE
 ========================================================= */
@@ -2597,53 +2780,10 @@ async function finishAIMessage(
 
     if (botMessage) {
         botMessage.dataset.messageIndex = assistantIndex;
-        botMessage.querySelector(".thinking-actions")?.remove();
-
-        const actions = document.createElement("div");
-        actions.className = "bot-actions";
-        actions.innerHTML = `
-            <button
-                class="message-action-btn bot-pin-btn"
-                onclick="togglePinMessage(this)"
-                title="Pin important message"
-                aria-label="Pin important message">
-                📌 Pin
-            </button>
-            <button
-                class="message-action-btn feedback-btn"
-                data-feedback="like"
-                onclick="setMessageFeedback(this, 'like')"
-                title="Like response"
-                aria-label="Like response">
-                👍
-            </button>
-            <button
-                class="message-action-btn feedback-btn"
-                data-feedback="dislike"
-                onclick="setMessageFeedback(this, 'dislike')"
-                title="Dislike response"
-                aria-label="Dislike response">
-                👎
-            </button>
-            <button
-                class="message-action-btn regenerate-btn"
-                onclick="regenerateResponse(this)"
-                title="Regenerate response"
-                aria-label="Regenerate response">
-                ↻ Regenerate
-            </button>
-            <button
-                class="message-action-btn copy-btn"
-                onclick="copyAIResponse(this)"
-                title="Copy AI response">
-                📋 Copy
-            </button>
-        `;
-        botMessage.appendChild(actions);
-
-        if (conversations[currentConversation].messages[assistantIndex].pinned) {
-            botMessage.classList.add("pinned-message");
-        }
+        addBotMessageActions(
+            botMessage,
+            assistantIndex
+        );
     }
 
     await saveConversation(
@@ -2817,97 +2957,153 @@ removeAttachment.onclick = () => {
    HISTORY
 ========================================================= */
 
+const PINNED_CHATS_KEY = 'oddi_pinned_chats_v1';
+
+function getPinnedChatIds() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(PINNED_CHATS_KEY) || '[]');
+        return Array.isArray(saved) ? saved.map(String) : [];
+    } catch {
+        return [];
+    }
+}
+
+function savePinnedChatIds(ids) {
+    localStorage.setItem(PINNED_CHATS_KEY, JSON.stringify([...new Set(ids.map(String))]));
+}
+
+function getConversationKey(conversation) {
+    return conversation?.id ? `server:${conversation.id}` : '';
+}
+
+function isConversationPinned(conversation) {
+    const key = getConversationKey(conversation);
+    return !!key && getPinnedChatIds().includes(key);
+}
+
 function renderHistory() {
+    const currentId =
+        currentConversation !== null &&
+        conversations[currentConversation]
+            ? conversations[currentConversation].id
+            : null;
 
-    historyContainer.innerHTML =
-        "";
+    const pinnedIds = getPinnedChatIds();
 
-    conversations.forEach(
-        (conversation, index) => {
+    conversations.sort((a, b) => {
+        const ap = pinnedIds.includes(getConversationKey(a)) ? 1 : 0;
+        const bp = pinnedIds.includes(getConversationKey(b)) ? 1 : 0;
+        return bp - ap;
+    });
 
-            const item =
-                document.createElement(
-                    "div"
-                );
+    if (currentId) {
+        const newIndex = conversations.findIndex(c => c.id === currentId);
+        if (newIndex !== -1) currentConversation = newIndex;
+    }
 
-            item.className =
-                "history-item";
+    historyContainer.innerHTML = '';
 
-            item.innerHTML = `
-                <span class="history-title">
-                    ${escapeUserText(
-                        conversation.title
-                    )}
-                </span>
+    const pinnedSection = document.createElement('div');
+    pinnedSection.className = 'pinned-history-section';
 
-                <div class="history-actions">
+    const normalSection = document.createElement('div');
+    normalSection.className = 'normal-history-section';
 
-                    <button
-                        class="rename-btn">
-                        ✏️
-                    </button>
+    function createHistoryItem(conversation) {
+        const item = document.createElement('div');
+        const pinned = isConversationPinned(conversation);
 
-                    <button
-                        class="delete-btn">
-                        🗑️
-                    </button>
+        item.className = `history-item ${pinned ? 'pinned-chat' : ''}`;
+        item.innerHTML = `
+            <span class="history-title">
+                ${pinned ? '📌 ' : ''}${escapeUserText(conversation.title)}
+            </span>
 
-                </div>
-            `;
+            <div class="history-actions">
+                <button
+                    class="chat-pin-btn ${pinned ? 'active' : ''}"
+                    title="${pinned ? 'Unpin chat' : 'Pin chat'}"
+                    aria-label="${pinned ? 'Unpin chat' : 'Pin chat'}">
+                    📌
+                </button>
+                <button class="rename-btn" title="Rename chat">✏️</button>
+                <button class="delete-btn" title="Delete chat">🗑️</button>
+            </div>
+        `;
 
-            const renameBtn =
-                item.querySelector(
-                    ".rename-btn"
-                );
+        const pinBtn = item.querySelector('.chat-pin-btn');
+        const renameBtn = item.querySelector('.rename-btn');
+        const deleteBtn = item.querySelector('.delete-btn');
 
-            const deleteBtn =
-                item.querySelector(
-                    ".delete-btn"
-                );
+        pinBtn.onclick = event => {
+            event.stopPropagation();
+            togglePinConversation(conversation);
+        };
 
-            renameBtn.onclick =
-                event => {
+        renameBtn.onclick = event => {
+            event.stopPropagation();
+            renameModal.classList.add('show');
+            renameInput.value = conversation.title;
+            renameIndex = conversations.indexOf(conversation);
+        };
 
-                    event.stopPropagation();
+        deleteBtn.onclick = event => {
+            event.stopPropagation();
+            deleteIndex = conversations.indexOf(conversation);
+            deleteModal.classList.add('show');
+        };
 
-                    renameModal.classList.add(
-                        "show"
-                    );
+        item.onclick = () => openConversation(conversations.indexOf(conversation));
+        return item;
+    }
 
-                    renameInput.value =
-                        conversation.title;
-
-                    renameIndex =
-                        index;
-                };
-
-            deleteBtn.onclick =
-                event => {
-
-                    event.stopPropagation();
-
-                    deleteIndex =
-                        index;
-
-                    deleteModal.classList.add(
-                        "show"
-                    );
-                };
-
-            item.onclick = () => {
-                openConversation(index);
-            };
-
-            historyContainer.appendChild(
-                item
-            );
+    conversations.forEach(conversation => {
+        const item = createHistoryItem(conversation);
+        if (isConversationPinned(conversation)) {
+            pinnedSection.appendChild(item);
+        } else {
+            normalSection.appendChild(item);
         }
-    );
+    });
+
+    if (pinnedSection.childElementCount) {
+        historyContainer.appendChild(pinnedSection);
+    }
+
+    historyContainer.appendChild(normalSection);
+}
+
+
+function togglePinConversation(conversation) {
+    const key = getConversationKey(conversation);
+    if (!key) return;
+
+    const ids = getPinnedChatIds();
+    const index = ids.indexOf(key);
+
+    if (index === -1) {
+        ids.push(key);
+    } else {
+        ids.splice(index, 1);
+    }
+
+    savePinnedChatIds(ids);
+    renderHistory();
+}
+
+function removePinnedConversation(conversation) {
+    const key = getConversationKey(conversation);
+    if (!key) return;
+    savePinnedChatIds(getPinnedChatIds().filter(id => id !== key));
 }
 
 async function openConversation(
     index
 ) {
+
+    if (generationActive) {
+        return;
+    }
 
     currentConversation = index;
 
@@ -2949,9 +3145,7 @@ async function openConversation(
                             </button>
                         </div>
 
-                        <div class="user-text">
-                            ${escapeUserText(msg.text)}
-                        </div>
+                        <div class="user-text">${escapeUserText(msg.text)}</div>
 
                         <div class="user-actions">
                             <button
@@ -2970,7 +3164,7 @@ async function openConversation(
                 const feedback = msg.feedback || "";
 
                 chat.innerHTML += `
-                    <div class="bot-message ${msg.pinned ? "pinned-message" : ""}"
+                    <div class="bot-message ${msg.pinned ? "pinned-message" : ""} ${msg.stopped ? "stopped-message" : ""}"
                          data-message-index="${messageIndex}">
 
                         <div class="bot-header">
@@ -3083,7 +3277,8 @@ async function newChat() {
                 serverConversation.id,
             title:
                 serverConversation.title,
-            messages: []
+            messages: [],
+            pinned: false
         });
 
         currentConversation = 0;
@@ -3095,7 +3290,8 @@ async function newChat() {
         conversations = [{
             id: null,
             title: "New Chat",
-            messages: []
+            messages: [],
+            pinned: false
         }];
 
         currentConversation = 0;
@@ -3424,6 +3620,8 @@ confirmDelete.onclick =
                 }
             );
         }
+
+        removePinnedConversation(conversation);
 
         conversations.splice(
             deleteIndex,
