@@ -3,7 +3,7 @@ import os
 import subprocess
 import tempfile
 import shutil
-from app.fast_responses import fast_response
+from app.fast_responses import fast_response, is_job_context_question
 from app.memory_handler import (
     is_memory_message,
     remember,
@@ -507,9 +507,23 @@ def process_message(
 
     # 2. Fast Responses
     if not uploaded_files:
+
         fast_reply = fast_response(user_message)
+
         if fast_reply:
             return fast_reply
+
+
+    # Job-context follow-up questions must still work
+    # even when job files are uploaded.
+    if uploaded_files:
+
+        if is_job_context_question(user_message):
+
+            fast_reply = fast_response(user_message, message)
+
+            if fast_reply:
+                return fast_reply
     # 2.5 Resume Intelligence
     resume_analysis = is_resume_analysis_request(user_message)
 
