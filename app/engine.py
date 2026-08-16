@@ -290,6 +290,10 @@ def process_message(
                         vector_store_id
                     )
 
+                    # Reset the uploaded stream after the knowledge-base
+                    # upload so image/document processing can read it again.
+                    uploaded_file.stream.seek(0)
+
                 except Exception as e:
 
                     print(

@@ -1089,3 +1089,16 @@
         z-index: 2147483647 !important;
     }
 }
+/* =========================================================
+   MOBILE CLICKABLE UPLOADED FILES
+   ========================================================= */
+@media (max-width: 768px) {
+    .message-file[data-file-key] {
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .message-file[data-file-key]:active {
+        transform: scale(.99);
+    }
+}

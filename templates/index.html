@@ -622,15 +622,9 @@ body.dark-mode .history-item {
         @media (max-width: 768px) {
             /* Keep the phone logo clear of Sign In / username. */
             .logo {
-                width: 120px !important;
-                max-width: 120px !important;
+                width: 52px !important;
+                max-width: 52px !important;
                 height: auto !important;
-                left:1px;
-                top:1px;
-            }
-            .logo-box{
-                left:1px;
-                right:1px;
             }
 
             /* Keep the entire composer inside the phone viewport. */
@@ -945,6 +939,107 @@ body.dark-mode .history-item {
 <script>
 let currentConversation = null;
 let selectedFiles = [];
+
+/* =========================================================
+   UPLOADED FILE STORE
+   Keeps the exact uploaded file available for opening again.
+========================================================= */
+const ODDI_FILE_DB = "oddi-file-store";
+const ODDI_FILE_STORE = "files";
+
+function openOddiFileDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(ODDI_FILE_DB, 1);
+
+        request.onupgradeneeded = () => {
+            const db = request.result;
+            if (!db.objectStoreNames.contains(ODDI_FILE_STORE)) {
+                db.createObjectStore(ODDI_FILE_STORE, { keyPath: "id" });
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function storeOddiFile(file) {
+    const id = "file-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+    const db = await openOddiFileDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(ODDI_FILE_STORE, "readwrite");
+        tx.objectStore(ODDI_FILE_STORE).put({
+            id,
+            name: file.name,
+            type: file.type || "application/octet-stream",
+            blob: file
+        });
+        tx.oncomplete = () => { db.close(); resolve(id); };
+        tx.onerror = () => { db.close(); reject(tx.error); };
+    });
+}
+
+async function getOddiStoredFile(id) {
+    const db = await openOddiFileDB();
+
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(ODDI_FILE_STORE, "readonly");
+        const request = tx.objectStore(ODDI_FILE_STORE).get(id);
+        request.onsuccess = () => {
+            db.close();
+            resolve(request.result || null);
+        };
+        request.onerror = () => {
+            db.close();
+            reject(request.error);
+        };
+    });
+}
+
+async function openOddiUploadedFile(fileId) {
+    // Open a blank tab immediately while the click is still a user action.
+    // This avoids mobile/desktop popup blockers after the IndexedDB lookup.
+    const previewWindow = window.open("about:blank", "_blank");
+
+    try {
+        const stored = await getOddiStoredFile(fileId);
+        if (!stored || !stored.blob) {
+            if (previewWindow && !previewWindow.closed) previewWindow.close();
+            alert("This uploaded file is no longer available on this device.");
+            return;
+        }
+
+        const url = URL.createObjectURL(stored.blob);
+
+        if (previewWindow && !previewWindow.closed) {
+            previewWindow.location.href = url;
+        } else {
+            // Fallback if the browser blocks opening a new tab.
+            window.location.href = url;
+        }
+
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (error) {
+        if (previewWindow && !previewWindow.closed) previewWindow.close();
+        console.error("Could not open uploaded file:", error);
+        alert("Could not open this uploaded file.");
+    }
+}
+
+function buildFileHTML(fileName, fileId = "") {
+    const safeName = escapeUserText(fileName);
+    const key = escapeUserText(fileId);
+
+    return `
+        <div class="message-file"
+             ${fileId ? `data-file-key="${key}" role="button" tabindex="0" title="Open ${safeName}"` : ""}>
+            ${getFileIcon(fileName)}
+            <span>${safeName}</span>
+        </div>
+    `;
+}
+
 
 const chat = document.getElementById("chatbox");
 const input = document.getElementById("userInput");
@@ -1943,18 +2038,19 @@ async function sendMessage(
     ----------------------------------------- */
 
     let fileHTML = "";
+    const fileRefs = [];
 
     if (selectedFiles.length) {
-
-        selectedFiles.forEach(file => {
-
-            fileHTML += `
-                <div class="message-file">
-                    ${getFileIcon(file.name)}
-                    ${escapeUserText(file.name)}
-                </div>
-            `;
-        });
+        for (const file of selectedFiles) {
+            try {
+                const fileId = await storeOddiFile(file);
+                fileRefs.push({ id: fileId, name: file.name });
+                fileHTML += buildFileHTML(file.name, fileId);
+            } catch (error) {
+                console.error("Could not store uploaded file:", error);
+                fileHTML += buildFileHTML(file.name);
+            }
+        }
     }
 
     chat.innerHTML += `
@@ -1982,7 +2078,8 @@ async function sendMessage(
         files:
             selectedFiles.map(
                 file => file.name
-            )
+            ),
+        fileRefs
     });
 
     await saveConversation(
@@ -2364,24 +2461,12 @@ attachBtn.onclick = () => {
 
 fileInput.onchange = () => {
 
-    if (
-        fileInput.files.length === 0
-    ) {
+    if (fileInput.files.length === 0) {
         return;
     }
 
-    selectedFiles =
-        Array.from(
-            fileInput.files
-        );
-
-    attachmentName.textContent =
-        "📎 " +
-        selectedFiles.length +
-        " file(s) selected";
-
-    attachmentPreview.style.display =
-        "flex";
+    selectedFiles = Array.from(fileInput.files);
+    updateAttachmentPreview();
 
     if (
         input.value
@@ -2389,12 +2474,57 @@ fileInput.onchange = () => {
             .toLowerCase() ===
         "analyze my resume"
     ) {
-
         sendMessage(
             "Analyze my resume"
         );
     }
 };
+
+function updateAttachmentPreview() {
+    if (!selectedFiles.length) {
+        attachmentPreview.style.display = "none";
+        attachmentName.textContent = "";
+        return;
+    }
+
+    const names = selectedFiles.map(file => file.name);
+    attachmentName.textContent =
+        selectedFiles.length === 1
+            ? "📎 " + names[0]
+            : "📎 " + selectedFiles.length + " file(s) selected";
+
+    attachmentPreview.style.display = "flex";
+}
+
+/* =========================================================
+   CTRL + V / CLIPBOARD SCREENSHOT PASTE
+========================================================= */
+document.addEventListener("paste", event => {
+    const clipboardItems = Array.from(event.clipboardData?.items || []);
+    const imageItems = clipboardItems.filter(item =>
+        item.kind === "file" && item.type.startsWith("image/")
+    );
+
+    if (!imageItems.length) return;
+
+    event.preventDefault();
+
+    imageItems.forEach((item, index) => {
+        const blob = item.getAsFile();
+        if (!blob) return;
+
+        const extension = blob.type.split("/")[1] || "png";
+        const file = new File(
+            [blob],
+            `Screenshot-${new Date().toISOString().replace(/[:.]/g, "-")}-${index + 1}.${extension}`,
+            { type: blob.type, lastModified: Date.now() }
+        );
+
+        selectedFiles.push(file);
+    });
+
+    updateAttachmentPreview();
+});
 
 removeAttachment.onclick = () => {
 
@@ -2404,6 +2534,7 @@ removeAttachment.onclick = () => {
         "none";
 
     selectedFiles = [];
+    updateAttachmentPreview();
 };
 
 /* =========================================================
@@ -2518,19 +2649,14 @@ async function openConversation(
 
                 let fileHTML = "";
 
-                if (msg.files) {
-
-                    msg.files.forEach(
-                        file => {
-
-                            fileHTML += `
-                                <div class="message-file">
-                                    ${getFileIcon(file)}
-                                    ${escapeUserText(file)}
-                                </div>
-                            `;
-                        }
-                    );
+                if (Array.isArray(msg.fileRefs) && msg.fileRefs.length) {
+                    msg.fileRefs.forEach(file => {
+                        fileHTML += buildFileHTML(file.name, file.id);
+                    });
+                } else if (msg.files) {
+                    msg.files.forEach(file => {
+                        fileHTML += buildFileHTML(file);
+                    });
                 }
 
                 chat.innerHTML += `
@@ -2595,6 +2721,23 @@ async function openConversation(
         "show"
     );
 }
+
+/* =========================================================
+   OPEN UPLOADED FILES
+========================================================= */
+chat.addEventListener("click", event => {
+    const fileElement = event.target.closest(".message-file[data-file-key]");
+    if (!fileElement) return;
+    openOddiUploadedFile(fileElement.dataset.fileKey);
+});
+
+chat.addEventListener("keydown", event => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const fileElement = event.target.closest(".message-file[data-file-key]");
+    if (!fileElement) return;
+    event.preventDefault();
+    openOddiUploadedFile(fileElement.dataset.fileKey);
+});
 
 /* =========================================================
    NEW CHAT

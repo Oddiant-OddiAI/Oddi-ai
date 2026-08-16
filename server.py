@@ -1,4 +1,5 @@
 import json
+from datetime import timedelta
 from flask import (
     Flask,
     render_template,
@@ -27,6 +28,11 @@ app = Flask(__name__)
 
 app.secret_key = "Oddi-AI_AI_2026_SuperSecretKey"
 
+# Keep logged-in accounts persistent
+app.permanent_session_lifetime = timedelta(days=30)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 create_tables()
 
 
@@ -54,7 +60,7 @@ def login():
         return "Email not found."
 
     if check_password_hash(user["password_hash"], password):
-
+        session.permanent = True
         session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["email"] = user["email"]
@@ -102,7 +108,7 @@ def signup():
     create_user(username, email, password_hash)
 
     user = get_user_by_email(email)
-
+    session.permanent = True
     session["user_id"] = user["id"]
     session["username"] = user["username"]
     session["email"] = user["email"]
