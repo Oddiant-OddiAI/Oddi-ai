@@ -2,6 +2,11 @@
 <html>
 
 <head>
+        <style>
+    html, body {
+        background: #000 !important;
+    }
+    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#20c76b">
@@ -2977,6 +2982,7 @@ menuBtn.onclick = () => {
     overlay.classList.add(
         "show"
     );
+    document.querySelector(".login-btn, .user-btn")?.style.setProperty("display", "none", "important");
 };
 
 overlay.onclick = () => {
@@ -2988,6 +2994,7 @@ overlay.onclick = () => {
     overlay.classList.remove(
         "show"
     );
+    document.querySelector(".login-btn, .user-btn")?.style.removeProperty("display");
 };
 
 /* =========================================================

@@ -1102,3 +1102,15 @@
         transform: scale(.99);
     }
 }
+@media (max-width: 768px) {
+    .sidebar.open ~ .login-btn,
+    .sidebar.open ~ .user-btn {
+        display: none !important;
+    }
+}
+@media (max-width: 500px) {
+    .sidebar.open ~ .login-btn,
+    .sidebar.open ~ .user-btn {
+        display: none !important;
+    }
+}
