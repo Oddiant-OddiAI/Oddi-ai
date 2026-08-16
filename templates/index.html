@@ -2,11 +2,6 @@
 <html>
 
 <head>
-        <style>
-    html, body {
-        background: #000 !important;
-    }
-    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
     <meta name="theme-color" content="#20c76b">
@@ -646,12 +641,6 @@ body.dark-mode .history-item {
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}">
-
-<!-- Mobile Splash -->
-<div id="mobileSplash">
-    <img src="{{ url_for('static', filename='splash2.png') }}" alt="Oddi AI mobile splash screen">
-</div>
-
 {% if logged_in %}
 
 <div class="user-btn">
@@ -659,7 +648,9 @@ body.dark-mode .history-item {
 </div>
 
 {% else %}
-
+<div id="mobileSplash">
+    <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
+</div>
 
 <a href="/login" class="login-btn">
     Sign In
@@ -1007,30 +998,22 @@ async function getOddiStoredFile(id) {
 }
 
 async function openOddiUploadedFile(fileId) {
-    // Open a blank tab immediately while the click is still a user action.
-    // This avoids mobile/desktop popup blockers after the IndexedDB lookup.
-    const previewWindow = window.open("about:blank", "_blank");
-
     try {
         const stored = await getOddiStoredFile(fileId);
         if (!stored || !stored.blob) {
-            if (previewWindow && !previewWindow.closed) previewWindow.close();
             alert("This uploaded file is no longer available on this device.");
             return;
         }
 
         const url = URL.createObjectURL(stored.blob);
-
-        if (previewWindow && !previewWindow.closed) {
-            previewWindow.location.href = url;
-        } else {
-            // Fallback if the browser blocks opening a new tab.
-            window.location.href = url;
-        }
+        const link = document.createElement("a");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.click();
 
         setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch (error) {
-        if (previewWindow && !previewWindow.closed) previewWindow.close();
         console.error("Could not open uploaded file:", error);
         alert("Could not open this uploaded file.");
     }
@@ -1059,6 +1042,62 @@ const isLoggedIn =
     document.body.dataset.loggedIn === "true";
 
 /* =========================================================
+   GENERATION CONTROL
+========================================================= */
+let generationActive = false;
+let generationStopped = false;
+let activeAbortController = null;
+let activeTypingInterval = null;
+let activeTypingResolve = null;
+
+function setGenerationUI(active) {
+    generationActive = active;
+
+    if (active) {
+        button.disabled = false;
+        button.classList.add("stop-active");
+        button.innerHTML = `<span class="stop-icon">■</span>`;
+        button.title = "Stop generating";
+        button.setAttribute("aria-label", "Stop generating");
+    } else {
+        button.disabled = false;
+        button.classList.remove("stop-active");
+        button.innerHTML = `<span class="send-icon">➤</span>`;
+        button.title = "Send message";
+        button.setAttribute("aria-label", "Send message");
+    }
+}
+
+function stopGeneration() {
+    if (!generationActive) return;
+
+    generationStopped = true;
+
+    if (activeAbortController) {
+        activeAbortController.abort();
+    }
+
+    if (activeTypingInterval) {
+        clearInterval(activeTypingInterval);
+        activeTypingInterval = null;
+    }
+
+    if (activeTypingResolve) {
+        activeTypingResolve();
+        activeTypingResolve = null;
+    }
+
+    const thinking = document.querySelector(".bot-message .thinking-indicator");
+    if (thinking) {
+        thinking.textContent = "Generation stopped.";
+    }
+}
+
+/* =========================================================
+   ACTION BUTTON
+========================================================= */
+
+/* =========================================================
    ACTION BUTTON
 ========================================================= */
 
@@ -1070,6 +1109,10 @@ function updateActionButton() {
 
     if (slot) {
         slot.classList.toggle("has-text", hasText);
+    }
+
+    if (!generationActive) {
+        setGenerationUI(false);
     }
 }
 
@@ -1833,16 +1876,122 @@ function copyAIResponse(button) {
         .writeText(message.innerText)
         .then(() => {
 
-            button.innerText =
-                "✅ Copied!";
+            button.innerText = "✅ Copied!";
 
             setTimeout(() => {
-
-                button.innerText =
-                    "📋 Copy";
-
+                button.innerText = "📋 Copy";
             }, 1500);
         });
+}
+
+function copyUserMessage(button) {
+    const message =
+        button
+            .closest(".user-message")
+            ?.querySelector(".user-text");
+
+    if (!message) return;
+
+    navigator.clipboard
+        .writeText(message.innerText)
+        .then(() => {
+            button.innerText = "✅ Copied!";
+
+            setTimeout(() => {
+                button.innerText = "📋 Copy";
+            }, 1500);
+        });
+}
+
+function getMessageFromButton(button) {
+    const bubble = button.closest(".user-message, .bot-message");
+    if (!bubble || currentConversation === null) return null;
+
+    const index = Number(bubble.dataset.messageIndex);
+    if (!Number.isInteger(index)) return null;
+
+    const conversation = conversations[currentConversation];
+    if (!conversation || !conversation.messages[index]) return null;
+
+    return {
+        bubble,
+        index,
+        message: conversation.messages[index]
+    };
+}
+
+async function togglePinMessage(button) {
+    const result = getMessageFromButton(button);
+    if (!result) return;
+
+    result.message.pinned = !result.message.pinned;
+    result.bubble.classList.toggle("pinned-message", result.message.pinned);
+    button.classList.toggle("active", result.message.pinned);
+    button.textContent = result.message.pinned ? "📌 Pinned" : "📌 Pin";
+    button.title = result.message.pinned ? "Unpin message" : "Pin important message";
+
+    await saveConversation(conversations[currentConversation]);
+}
+
+async function setMessageFeedback(button, type) {
+    const result = getMessageFromButton(button);
+    if (!result || result.message.role !== "assistant") return;
+
+    result.message.feedback =
+        result.message.feedback === type ? null : type;
+
+    const actions = result.bubble.querySelector(".bot-actions");
+    if (actions) {
+        actions.querySelectorAll(".feedback-btn").forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+        if (result.message.feedback) {
+            const active = actions.querySelector(
+                `.feedback-btn[data-feedback="${result.message.feedback}"]`
+            );
+            if (active) active.classList.add("active");
+        }
+    }
+
+    /* Feedback is stored with the message and sent through the existing
+       conversation save endpoint, so the host can inspect it with chat data. */
+    await saveConversation(conversations[currentConversation]);
+}
+
+async function regenerateResponse(button) {
+    if (generationActive) return;
+    if (currentConversation === null) return;
+
+    const result = getMessageFromButton(button);
+    if (!result || result.message.role !== "assistant") return;
+
+    const messages = conversations[currentConversation].messages;
+
+    if (result.index !== messages.length - 1) {
+        alert("Regenerate is available for the latest AI response.");
+        return;
+    }
+
+    let userIndex = result.index - 1;
+
+    while (userIndex >= 0 && messages[userIndex].role !== "user") {
+        userIndex--;
+    }
+
+    if (userIndex < 0) return;
+
+    const userMessage = messages[userIndex].text;
+
+    /* Regenerate the latest answer without duplicating the user's message. */
+    messages.splice(result.index, 1);
+    await saveConversation(conversations[currentConversation]);
+
+    input.value = userMessage;
+    await sendMessage(null, false, {
+        skipUserMessage: true,
+        regenerate: true
+    });
 }
 
 /* =========================================================
@@ -1960,10 +2109,16 @@ function speakAIMessage(button) {
 
 async function sendMessage(
     displayMessage = null,
-    voiceReply = false
+    voiceReply = false,
+    options = {}
 ) {
 
-    if (button.disabled) return;
+    if (generationActive) {
+        stopGeneration();
+        return;
+    }
+
+    const skipUserMessage = !!options.skipUserMessage;
 
     const message =
         input.value.trim();
@@ -1972,6 +2127,8 @@ async function sendMessage(
         displayMessage || message;
 
     if (!message) return;
+
+    generationStopped = false;
 
     /* -----------------------------------------
        CREATE CONVERSATION
@@ -2020,7 +2177,8 @@ async function sendMessage(
     ----------------------------------------- */
 
     input.disabled = true;
-    button.disabled = true;
+    setGenerationUI(true);
+    activeAbortController = new AbortController();
 
     const app =
         document.querySelector(
@@ -2046,56 +2204,80 @@ async function sendMessage(
        USER MESSAGE
     ----------------------------------------- */
 
-    let fileHTML = "";
-    const fileRefs = [];
+    if (!skipUserMessage) {
+        let fileHTML = "";
+        const fileRefs = [];
 
-    if (selectedFiles.length) {
-        for (const file of selectedFiles) {
-            try {
-                const fileId = await storeOddiFile(file);
-                fileRefs.push({ id: fileId, name: file.name });
-                fileHTML += buildFileHTML(file.name, fileId);
-            } catch (error) {
-                console.error("Could not store uploaded file:", error);
-                fileHTML += buildFileHTML(file.name);
+        if (selectedFiles.length) {
+            for (const file of selectedFiles) {
+                try {
+                    const fileId = await storeOddiFile(file);
+                    fileRefs.push({ id: fileId, name: file.name });
+                    fileHTML += buildFileHTML(file.name, fileId);
+                } catch (error) {
+                    console.error("Could not store uploaded file:", error);
+                    fileHTML += buildFileHTML(file.name);
+                }
             }
         }
-    }
 
-    chat.innerHTML += `
-        <div class="user-message">
-            ${fileHTML}
+        const userMessageIndex =
+            conversations[currentConversation].messages.length;
 
-            <b>You:</b>
+        chat.innerHTML += `
+            <div class="user-message" data-message-index="${userMessageIndex}">
+                ${fileHTML}
 
-            <div class="user-text">
-                ${escapeUserText(
-                    userDisplayMessage
-                )}
+                <div class="user-message-header">
+                    <b>You:</b>
+                    <button
+                        class="message-action-btn user-pin-btn"
+                        onclick="togglePinMessage(this)"
+                        title="Pin important message"
+                        aria-label="Pin important message">
+                        📌 Pin
+                    </button>
+                </div>
+
+                <div class="user-text">
+                    ${escapeUserText(
+                        userDisplayMessage
+                    )}
+                </div>
+
+                <div class="user-actions">
+                    <button
+                        class="message-action-btn user-copy-btn"
+                        onclick="copyUserMessage(this)"
+                        title="Copy your message">
+                        📋 Copy
+                    </button>
+                </div>
             </div>
-        </div>
-    `;
+        `;
 
-    chat.scrollTop =
-        chat.scrollHeight;
+        chat.scrollTop =
+            chat.scrollHeight;
 
-    conversations[
-        currentConversation
-    ].messages.push({
-        role: "user",
-        text: message,
-        files:
-            selectedFiles.map(
-                file => file.name
-            ),
-        fileRefs
-    });
-
-    await saveConversation(
         conversations[
             currentConversation
-        ]
-    );
+        ].messages.push({
+            role: "user",
+            text: message,
+            files:
+                selectedFiles.map(
+                    file => file.name
+                ),
+            fileRefs,
+            pinned: false
+        });
+
+        await saveConversation(
+            conversations[
+                currentConversation
+            ]
+        );
+    }
 
     /* -----------------------------------------
        ⭐ CREATE THINKING BUBBLE FIRST
@@ -2131,11 +2313,15 @@ async function sendMessage(
                 </span>
             </div>
 
-            <button
-                class="copy-btn"
-                onclick="copyAIResponse(this)">
-                📋 Copy
-            </button>
+            <div class="bot-actions thinking-actions">
+                <button
+                    class="message-action-btn stop-generation-btn"
+                    onclick="stopGeneration()"
+                    title="Stop generating"
+                    aria-label="Stop generating">
+                    ■ Stop
+                </button>
+            </div>
 
         </div>
     `;
@@ -2188,7 +2374,8 @@ async function sendMessage(
                 "/chat",
                 {
                     method: "POST",
-                    body: formData
+                    body: formData,
+                    signal: activeAbortController?.signal
                 }
             );
 
@@ -2200,6 +2387,10 @@ async function sendMessage(
 
         const reply =
             await response.text();
+
+        if (generationStopped) {
+            return;
+        }
 
         /* -----------------------------------------
            CLEAR INPUT
@@ -2230,6 +2421,10 @@ async function sendMessage(
             typing.innerHTML =
                 marked.parse(reply);
 
+            if (generationStopped) {
+                return;
+            }
+
             finishAIMessage(
                 reply,
                 message,
@@ -2244,6 +2439,10 @@ async function sendMessage(
                 typing
             );
 
+            if (generationStopped) {
+                return;
+            }
+
             finishAIMessage(
                 reply,
                 message,
@@ -2253,6 +2452,13 @@ async function sendMessage(
         }
 
     } catch (error) {
+
+        if (generationStopped || error?.name === "AbortError") {
+            if (typing) {
+                typing.innerHTML = "Generation stopped.";
+            }
+            return;
+        }
 
         console.error(
             "Chat error:",
@@ -2274,7 +2480,9 @@ async function sendMessage(
     } finally {
 
         input.disabled = false;
-        button.disabled = false;
+        activeAbortController = null;
+        setGenerationUI(false);
+        generationStopped = false;
 
         updateActionButton();
 
@@ -2297,53 +2505,52 @@ function typeAIResponse(
     return new Promise(resolve => {
 
         let i = 0;
+        activeTypingResolve = resolve;
 
-        const interval =
-            setInterval(() => {
+        activeTypingInterval = setInterval(() => {
 
-                element.textContent =
-                    text.substring(
-                        0,
-                        i
-                    );
+            if (generationStopped) {
+                clearInterval(activeTypingInterval);
+                activeTypingInterval = null;
+                activeTypingResolve = null;
+                resolve();
+                return;
+            }
 
-                chat.scrollTop =
-                    chat.scrollHeight;
+            element.textContent =
+                text.substring(
+                    0,
+                    i
+                );
 
-                i++;
+            chat.scrollTop =
+                chat.scrollHeight;
 
-                if (
-                    i > text.length
-                ) {
+            i++;
 
-                    clearInterval(
-                        interval
-                    );
+            if (i > text.length) {
 
-                    element.innerHTML =
-                        marked.parse(
-                            text
-                        );
+                clearInterval(
+                    activeTypingInterval
+                );
+                activeTypingInterval = null;
+                activeTypingResolve = null;
 
-                    element
-                        .querySelectorAll(
-                            "pre code"
-                        )
-                        .forEach(block => {
+                element.innerHTML =
+                    marked.parse(text);
 
-                            if (
-                                window.hljs
-                            ) {
-                                hljs.highlightElement(
-                                    block
-                                );
-                            }
-                        });
+                element
+                    .querySelectorAll("pre code")
+                    .forEach(block => {
+                        if (window.hljs) {
+                            hljs.highlightElement(block);
+                        }
+                    });
 
-                    resolve();
-                }
+                resolve();
+            }
 
-            }, 12);
+        }, 12);
     });
 }
 
@@ -2357,6 +2564,8 @@ async function finishAIMessage(
     typing,
     voiceReply
 ) {
+
+    if (generationStopped) return;
 
     if (
         conversations[
@@ -2372,12 +2581,70 @@ async function finishAIMessage(
         renderHistory();
     }
 
+    const assistantIndex =
+        conversations[currentConversation].messages.length;
+
     conversations[
         currentConversation
     ].messages.push({
         role: "assistant",
-        text: reply
+        text: reply,
+        pinned: false,
+        feedback: null
     });
+
+    const botMessage = typing?.closest(".bot-message");
+
+    if (botMessage) {
+        botMessage.dataset.messageIndex = assistantIndex;
+        botMessage.querySelector(".thinking-actions")?.remove();
+
+        const actions = document.createElement("div");
+        actions.className = "bot-actions";
+        actions.innerHTML = `
+            <button
+                class="message-action-btn bot-pin-btn"
+                onclick="togglePinMessage(this)"
+                title="Pin important message"
+                aria-label="Pin important message">
+                📌 Pin
+            </button>
+            <button
+                class="message-action-btn feedback-btn"
+                data-feedback="like"
+                onclick="setMessageFeedback(this, 'like')"
+                title="Like response"
+                aria-label="Like response">
+                👍
+            </button>
+            <button
+                class="message-action-btn feedback-btn"
+                data-feedback="dislike"
+                onclick="setMessageFeedback(this, 'dislike')"
+                title="Dislike response"
+                aria-label="Dislike response">
+                👎
+            </button>
+            <button
+                class="message-action-btn regenerate-btn"
+                onclick="regenerateResponse(this)"
+                title="Regenerate response"
+                aria-label="Regenerate response">
+                ↻ Regenerate
+            </button>
+            <button
+                class="message-action-btn copy-btn"
+                onclick="copyAIResponse(this)"
+                title="Copy AI response">
+                📋 Copy
+            </button>
+        `;
+        botMessage.appendChild(actions);
+
+        if (conversations[currentConversation].messages[assistantIndex].pinned) {
+            botMessage.classList.add("pinned-message");
+        }
+    }
 
     await saveConversation(
         conversations[
@@ -2650,11 +2917,9 @@ async function openConversation(
     chat.innerHTML = "";
 
     conversation.messages.forEach(
-        msg => {
+        (msg, messageIndex) => {
 
-            if (
-                msg.role === "user"
-            ) {
+            if (msg.role === "user") {
 
                 let fileHTML = "";
 
@@ -2669,16 +2934,32 @@ async function openConversation(
                 }
 
                 chat.innerHTML += `
-                    <div class="user-message">
+                    <div class="user-message ${msg.pinned ? "pinned-message" : ""}"
+                         data-message-index="${messageIndex}">
 
                         ${fileHTML}
 
-                        <b>You:</b>
+                        <div class="user-message-header">
+                            <b>You:</b>
+                            <button
+                                class="message-action-btn user-pin-btn ${msg.pinned ? "active" : ""}"
+                                onclick="togglePinMessage(this)"
+                                title="${msg.pinned ? "Unpin message" : "Pin important message"}">
+                                ${msg.pinned ? "📌 Pinned" : "📌 Pin"}
+                            </button>
+                        </div>
 
                         <div class="user-text">
-                            ${escapeUserText(
-                                msg.text
-                            )}
+                            ${escapeUserText(msg.text)}
+                        </div>
+
+                        <div class="user-actions">
+                            <button
+                                class="message-action-btn user-copy-btn"
+                                onclick="copyUserMessage(this)"
+                                title="Copy your message">
+                                📋 Copy
+                            </button>
                         </div>
 
                     </div>
@@ -2686,14 +2967,18 @@ async function openConversation(
 
             } else {
 
+                const feedback = msg.feedback || "";
+
                 chat.innerHTML += `
-                    <div class="bot-message">
+                    <div class="bot-message ${msg.pinned ? "pinned-message" : ""}"
+                         data-message-index="${messageIndex}">
 
                         <div class="bot-header">
 
                             <button
                                 class="message-sound-btn"
-                                onclick="speakAIMessage(this)">
+                                onclick="speakAIMessage(this)"
+                                title="Read this AI message aloud">
                                 🔊
                             </button>
 
@@ -2702,16 +2987,43 @@ async function openConversation(
                         </div>
 
                         <div class="ai-content">
-                            ${marked.parse(
-                                msg.text
-                            )}
+                            ${marked.parse(msg.text)}
                         </div>
 
-                        <button
-                            class="copy-btn"
-                            onclick="copyAIResponse(this)">
-                            📋 Copy
-                        </button>
+                        <div class="bot-actions">
+                            <button
+                                class="message-action-btn bot-pin-btn ${msg.pinned ? "active" : ""}"
+                                onclick="togglePinMessage(this)"
+                                title="${msg.pinned ? "Unpin message" : "Pin important message"}">
+                                ${msg.pinned ? "📌 Pinned" : "📌 Pin"}
+                            </button>
+                            <button
+                                class="message-action-btn feedback-btn ${feedback === "like" ? "active" : ""}"
+                                data-feedback="like"
+                                onclick="setMessageFeedback(this, 'like')"
+                                title="Like response">
+                                👍
+                            </button>
+                            <button
+                                class="message-action-btn feedback-btn ${feedback === "dislike" ? "active" : ""}"
+                                data-feedback="dislike"
+                                onclick="setMessageFeedback(this, 'dislike')"
+                                title="Dislike response">
+                                👎
+                            </button>
+                            <button
+                                class="message-action-btn regenerate-btn"
+                                onclick="regenerateResponse(this)"
+                                title="Regenerate response">
+                                ↻ Regenerate
+                            </button>
+                            <button
+                                class="message-action-btn copy-btn"
+                                onclick="copyAIResponse(this)"
+                                title="Copy AI response">
+                                📋 Copy
+                            </button>
+                        </div>
 
                     </div>
                 `;
@@ -2722,13 +3034,8 @@ async function openConversation(
     chat.scrollTop =
         chat.scrollHeight;
 
-    sidebar.classList.remove(
-        "open"
-    );
-
-    overlay.classList.remove(
-        "show"
-    );
+    sidebar.classList.remove("open");
+    overlay.classList.remove("show");
 }
 
 /* =========================================================
@@ -2979,7 +3286,6 @@ menuBtn.onclick = () => {
     overlay.classList.add(
         "show"
     );
-    document.querySelector(".login-btn, .user-btn")?.style.setProperty("display", "none", "important");
 };
 
 overlay.onclick = () => {
@@ -2991,7 +3297,6 @@ overlay.onclick = () => {
     overlay.classList.remove(
         "show"
     );
-    document.querySelector(".login-btn, .user-btn")?.style.removeProperty("display");
 };
 
 /* =========================================================

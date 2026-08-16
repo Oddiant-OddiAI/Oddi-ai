@@ -1114,3 +1114,33 @@
         display: none !important;
     }
 }
+
+/* =========================================================
+   MOBILE MESSAGE ACTIONS
+   ========================================================= */
+@media (max-width: 600px) {
+    .user-actions,
+    .bot-actions {
+        gap:5px;
+        margin-top:7px;
+    }
+
+    .message-action-btn {
+        min-height:28px;
+        padding:6px 8px;
+        font-size:10px;
+        border-radius:8px;
+    }
+
+    .user-message-header {
+        gap:5px;
+    }
+
+    .bot-actions .copy-btn {
+        margin-top:0 !important;
+    }
+
+    .send-btn.stop-active {
+        font-size:14px !important;
+    }
+}

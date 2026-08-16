@@ -1666,3 +1666,111 @@ body.dark-mode .voice-transcript{
         height:100px;
     }
 }
+
+
+/* =========================================================
+   MESSAGE ACTIONS — PIN / FEEDBACK / REGENERATE / COPY / STOP
+   ========================================================= */
+.user-message-header,
+.bot-header {
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.user-message-header {
+    justify-content:space-between;
+    margin-bottom:6px;
+}
+
+.user-actions,
+.bot-actions {
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:9px;
+}
+
+.message-action-btn {
+    border:1px solid #e1e1e1;
+    border-radius:9px;
+    background:#f7f7f7;
+    color:#222;
+    padding:6px 9px;
+    min-height:30px;
+    font-size:11px;
+    font-weight:600;
+    line-height:1;
+    cursor:pointer;
+    transition:background .16s ease, border-color .16s ease,
+                transform .16s ease, color .16s ease;
+}
+
+.message-action-btn:hover {
+    background:#ececec;
+    border-color:#cfcfcf;
+    transform:translateY(-1px);
+}
+
+.message-action-btn.active {
+    background:#111;
+    border-color:#111;
+    color:#fff;
+}
+
+.pinned-message {
+    border-left:3px solid #111 !important;
+}
+
+.bot-actions .copy-btn {
+    margin-top:0;
+}
+
+.stop-generation-btn {
+    background:#111;
+    border-color:#111;
+    color:#fff;
+}
+
+.stop-generation-btn:hover {
+    background:#2a2a2a;
+    border-color:#2a2a2a;
+}
+
+.send-btn.stop-active {
+    background:#111 !important;
+    color:#fff !important;
+}
+
+.send-btn.stop-active:hover {
+    background:#2a2a2a !important;
+}
+
+.stop-icon {
+    font-size:12px;
+    line-height:1;
+}
+
+body.dark-mode .message-action-btn {
+    background:#1b1b1b;
+    border-color:#353535;
+    color:#eee;
+}
+
+body.dark-mode .message-action-btn:hover {
+    background:#292929;
+    border-color:#505050;
+}
+
+body.dark-mode .message-action-btn.active,
+body.dark-mode .stop-generation-btn,
+body.dark-mode .send-btn.stop-active {
+    background:#fff !important;
+    border-color:#fff !important;
+    color:#111 !important;
+}
+
+body.dark-mode .pinned-message {
+    border-left-color:#fff !important;
+}
