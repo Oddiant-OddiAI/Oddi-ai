@@ -51,7 +51,6 @@ FAST_RESPONSES = {
     "okay": "Got it! What would you like to do next?",
     "great": "Awesome! 😄",
     "sounds good": "Awesome! Let's do it. 👍",
-    "yes": "Got it! Go ahead.",
     "no": "No problem! Let me know if you change your mind.",
     "help": "I'm here! What do you need help with? 💡",
     

@@ -19,8 +19,10 @@ from docx import Document
 from app.config import client
 from app.database import (
     get_vector_store_id,
-    save_vector_store_id
+    save_vector_store_id,
+    save_memory
 )
+from app import state
 
 RESUME_ANALYSIS_TRIGGERS = {
     "analyze my resume",
@@ -557,10 +559,41 @@ def process_message(
 
     if user_id is not None:
 
-        memory_reply = recall_memory(user_message, user_id)
+        if user_id is not None and state.pending_update:
+            pending = state.pending_update
 
-        if memory_reply:
-            return memory_reply
+            # Make sure this pending update belongs to this user
+            if pending.get("user_id") == user_id:
+
+                confirmation = user_message.strip().lower()
+
+                if confirmation in ("y", "yes"):
+                    save_memory(
+                        user_id,
+                        pending["key"],
+                        pending["new"]
+                    )
+
+                    state.pending_update = None
+
+                    return (
+                        f"✅ Updated! I'll remember your "
+                        f"{pending['key'].replace('_', ' ')} "
+                        f"is '{pending['new']}'."
+                    )
+
+                elif confirmation in ("n", "no"):
+                    state.pending_update = None
+
+                    return (
+                        f"👍 Okay, I'll keep your "
+                        f"{pending['key'].replace('_', ' ')} "
+                        f"as '{pending['old']}'."
+                    )
+                memory_reply = recall_memory(user_message, user_id)
+
+                if memory_reply:
+                    return memory_reply
 
 
     # 4. Save Memory

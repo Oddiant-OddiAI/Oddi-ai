@@ -1103,14 +1103,14 @@
     }
 }
 @media (max-width: 768px) {
-    .sidebar.open ~ .login-btn,
-    .sidebar.open ~ .user-btn {
+    body.sidebar-open .login-btn,
+    body.sidebar-open .user-btn {
         display: none !important;
     }
 }
 @media (max-width: 500px) {
-    .sidebar.open ~ .login-btn,
-    .sidebar.open ~ .user-btn {
+    body.sidebar-open .login-btn,
+    body.sidebar-open .user-btn {
         display: none !important;
     }
 }
@@ -1202,5 +1202,17 @@
 
     body.dark-mode .history-item.pinned-chat {
         border-color: #fff !important;
+    }
+}
+/* =========================================================
+   MOBILE SIDEBAR — HIDE LOGIN / USER BUTTON
+   ========================================================= */
+
+@media (max-width: 768px) {
+    body:has(.sidebar.open) .login-btn,
+    body:has(.sidebar.open) .user-btn {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
     }
 }

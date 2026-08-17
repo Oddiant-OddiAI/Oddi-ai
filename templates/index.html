@@ -612,7 +612,7 @@ body.dark-mode .history-item {
 
             .login-btn,
             .user-btn {
-                z-index: 2147483640 !important;
+                z-index: 1000 !important;
                 max-width: 86px !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
@@ -621,6 +621,28 @@ body.dark-mode .history-item {
 
             .input-area {
                 z-index: 2147483000 !important;
+            }
+            @media (max-width: 768px) {
+                body.sidebar-open .login-btn,
+                body.sidebar-open .user-btn {
+                    display: none !important;
+                }
+            }
+            @media (max-width: 500px) {
+                body.sidebar-open .login-btn,
+                body.sidebar-open .user-btn {
+                    display: none !important;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .login-btn, .user-btn {
+                    z-index: 1000 !important;
+                    max-width: 86px !important;
+                    overflow: hidden !important;
+                    text-overflow: ellipsis !important;
+                    white-space: nowrap !important;
+                }
             }
         }
     </style>
@@ -721,15 +743,15 @@ body.dark-mode .history-item {
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}">
 
-<!-- Mobile splash — shown for both signed-in and signed-out users -->
+<!-- Mobile Splash — shown for both signed-in and signed-out users -->
 <div id="mobileSplash">
-    <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
+    <img src="{{ url_for('static', filename='splash2.png') }}" alt="Oddi AI">
 </div>
 
 {% if logged_in %}
 
 <div class="user-btn">
-    👤 {{ username }} 
+    👤 {{ username }}
 </div>
 
 {% else %}
@@ -1238,7 +1260,50 @@ function updateActionButton() {
         setGenerationUI(false);
     }
 }
+/* =========================================================
+   MICROPHONE PERMISSION
+========================================================= */
 
+async function requestMicrophonePermission() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.log("Microphone access is not supported by this browser.");
+        return;
+    }
+
+    try {
+        // Check whether permission is already granted.
+        if (navigator.permissions && navigator.permissions.query) {
+            const permission = await navigator.permissions.query({
+                name: "microphone"
+            });
+
+            if (permission.state === "granted") {
+                console.log("Microphone permission already granted.");
+                return;
+            }
+
+            if (permission.state === "denied") {
+                console.log("Microphone permission is denied.");
+                return;
+            }
+        }
+
+        // First-time permission request.
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true
+        });
+
+        // We only needed permission — don't keep the microphone active.
+        stream.getTracks().forEach(track => track.stop());
+
+        console.log("Microphone permission granted.");
+    } catch (error) {
+        console.log("Microphone permission not granted:", error);
+    }
+}
+
+// Ask when Oddi opens.
+requestMicrophonePermission();
 /* =========================================================
    SPEECH DICTATION
 ========================================================= */
