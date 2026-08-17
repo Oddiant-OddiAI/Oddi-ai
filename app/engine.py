@@ -277,53 +277,73 @@ def process_message(
 
         if uploaded_files:
 
-            current_count = get_knowledge_file_count(
-                vector_store_id
-            )
-
-            remaining_slots = (
-                MAX_KNOWLEDGE_FILES - current_count
-            )
-
-            if remaining_slots <= 0:
-
-                return (
-                    "📚 Your Oddi knowledge base already "
-                    "contains 20 files.\n\n"
-                    "Please remove an existing file before "
-                    "adding another."
-                )
-
-            files_to_index = uploaded_files[
-                :remaining_slots
+            # Audio/video files are temporary media-analysis files.
+            # Do NOT send them to the persistent knowledge base.
+            knowledge_files = [
+                file for file in uploaded_files
+                if not file.filename.lower().endswith((
+                    ".mp3",
+                    ".wav",
+                    ".m4a",
+                    ".aac",
+                    ".ogg",
+                    ".flac",
+                    ".mp4",
+                    ".mov",
+                    ".avi",
+                    ".mkv",
+                    ".webm"
+                ))
             ]
 
-            for uploaded_file in files_to_index:
+            if knowledge_files:
 
-                try:
+                current_count = get_knowledge_file_count(
+                    vector_store_id
+                )
 
-                    add_file_to_knowledge_base(
-                        uploaded_file,
-                        vector_store_id
-                    )
+                remaining_slots = (
+                    MAX_KNOWLEDGE_FILES - current_count
+                )
 
-                    # Reset the uploaded stream after the knowledge-base
-                    # upload so image/document processing can read it again.
-                    uploaded_file.stream.seek(0)
-
-                except Exception as e:
-
-                    print(
-                        f"Knowledge upload error "
-                        f"for {uploaded_file.filename}: {e}"
-                    )
-
+                if remaining_slots <= 0:
                     return (
-                        f"⚠️ I couldn't add "
-                        f"**{uploaded_file.filename}** "
-                        f"to your knowledge base.\n\n"
-                        f"Error: {e}"
+                        "📚 Your Oddi knowledge base already "
+                        "contains 20 files.\n\n"
+                        "Please remove an existing file before "
+                        "adding another."
                     )
+
+                files_to_index = knowledge_files[
+                    :remaining_slots
+                ]
+
+                for uploaded_file in files_to_index:
+
+                    try:
+
+                        add_file_to_knowledge_base(
+                            uploaded_file,
+                            vector_store_id
+                        )
+
+                        # Reset stream so the file can be
+                        # processed again below.
+                        uploaded_file.stream.seek(0)
+
+                    except Exception as e:
+
+                        print(
+                            f"Knowledge upload error "
+                            f"for {uploaded_file.filename}: {e}"
+                        )
+
+                        return (
+                            f"⚠️ I couldn't add "
+                            f"**{uploaded_file.filename}** "
+                            f"to your knowledge base.\n\n"
+                            f"Error: {e}"
+                        )
     if uploaded_files:
         uploaded_file = uploaded_files[0]
     else:
@@ -412,7 +432,7 @@ def process_message(
                     # ---------- EXTRACT AUDIO ----------
                     audio_path = video_path + ".wav"
 
-                    subprocess.run(
+                    ffmpeg_result = subprocess.run(
                         [
                             "ffmpeg",
                             "-y",
@@ -428,6 +448,18 @@ def process_message(
                         capture_output=True,
                         text=True
                     )
+
+                    if ffmpeg_result.returncode != 0:
+
+                        print(
+                            "FFmpeg error:",
+                            ffmpeg_result.stderr
+                        )
+
+                        raise RuntimeError(
+                            "FFmpeg could not extract audio "
+                            "from the video."
+                        )
 
                     if os.path.exists(audio_path):
 
@@ -687,42 +719,7 @@ def process_message(
                 return fast_reply
     # 2.5 Resume Intelligence
     resume_analysis = is_resume_analysis_request(user_message)
-    if documents:
-
-        content.append({
-            "type":"input_text",
-            "text":f"""
-    Attached documents:
-
-    {documents}
-    """
-        })
-    if media_transcripts:
-
-        content.append({
-            "type": "input_text",
-            "text": f"""
-    Attached audio/video transcription:
-
-    {media_transcripts}
-
-    Use this transcription when answering questions
-    about the uploaded audio or video.
-    """
-        })
-
-    # Add extracted video frames
-    for frame in video_frames:
-
-        frame_base64 = base64.b64encode(
-            frame["bytes"]
-        ).decode("utf-8")
-
-        content.append({
-            "type": "input_image",
-            "image_url":
-            f"data:{frame['mimetype']};base64,{frame_base64}"
-        })
+    
     if resume_analysis:
 
         if not uploaded_files:
@@ -802,6 +799,32 @@ def process_message(
             "text": user_message
         }
     ]
+    if media_transcripts:
+
+        content.append({
+            "type": "input_text",
+            "text": f"""
+    Attached audio/video transcription:
+
+    {media_transcripts}
+
+    Use this transcription when answering questions
+    about the uploaded audio or video.
+    """
+        })
+
+    # Add extracted video frames
+    for frame in video_frames:
+
+        frame_base64 = base64.b64encode(
+            frame["bytes"]
+        ).decode("utf-8")
+
+        content.append({
+            "type": "input_image",
+            "image_url":
+            f"data:{frame['mimetype']};base64,{frame_base64}"
+        })
     for image in images:
         print("Building content...")
         image_base64 = base64.b64encode(
