@@ -1489,6 +1489,13 @@ let voiceModeActive = false;
 let voiceResponseSpeaking = false;
 let recognition = null;
 
+// Voice recognition failure tracking
+let voiceMissCount = 0;
+let voiceReceivedResult = false;
+let voiceErrorHandled = false;
+
+const MAX_VOICE_MISSES = 3;
+
 let voicePanel = null;
 let voiceStatus = null;
 
@@ -1630,6 +1637,10 @@ function startVoiceMode() {
     createVoicePanel();
 
     voiceModeActive = true;
+
+    voiceMissCount = 0;
+    voiceReceivedResult = false;
+    voiceErrorHandled = false;
 
     voicePanel.classList.add("show");
 
@@ -1790,6 +1801,10 @@ if (SpeechRecognition) {
 
         if (!voiceModeActive) return;
 
+        // This is a fresh listening attempt.
+        voiceReceivedResult = false;
+        voiceErrorHandled = false;
+
         voiceBtn.classList.add(
             "listening"
         );
@@ -1814,6 +1829,13 @@ if (SpeechRecognition) {
                 .transcript
                 .trim();
 
+        // We successfully heard the user.
+        voiceReceivedResult = true;
+        voiceErrorHandled = false;
+
+        // Reset consecutive failure counter.
+        voiceMissCount = 0;
+
         if (!transcript) return;
 
         updateVoiceStatus(
@@ -1828,6 +1850,66 @@ if (SpeechRecognition) {
             true
         );
     };
+    
+    function handleVoiceMiss() {
+
+        if (
+            !voiceModeActive ||
+            voiceResponseSpeaking
+        ) {
+            return;
+        }
+
+        // Prevent the same recognition attempt
+        // from being counted twice.
+        if (voiceErrorHandled) {
+            return;
+        }
+
+        voiceErrorHandled = true;
+        voiceMissCount++;
+
+        console.log(
+            "Voice recognition miss:",
+            voiceMissCount,
+            "/",
+            MAX_VOICE_MISSES
+        );
+
+        if (
+            voiceMissCount >=
+            MAX_VOICE_MISSES
+        ) {
+
+            updateVoiceStatus(
+                "Voice chat ended",
+                "Sorry, I couldn't hear you."
+            );
+
+            setTimeout(() => {
+
+                if (voiceModeActive) {
+                    stopVoiceMode();
+                }
+
+            }, 1200);
+
+            return;
+        }
+
+        const retryMessage =
+            "Sorry, I couldn't hear what you said. Please try again.";
+
+        updateVoiceStatus(
+            "I couldn't hear you",
+            retryMessage
+        );
+
+        // Speak the retry message.
+        speakVoiceReply(
+            retryMessage
+        );
+    }
 
     recognition.onend = () => {
 
@@ -1835,11 +1917,29 @@ if (SpeechRecognition) {
             "listening"
         );
 
+        if (!voiceModeActive) {
+            return;
+        }
+
+        /*
+        * Chrome can sometimes finish recognition because
+        * no speech was detected without firing onerror.
+        *
+        * If we received no result, treat it as a missed attempt.
+        */
         if (
-            voiceModeActive &&
+            !voiceReceivedResult &&
+            !voiceErrorHandled &&
             !voiceResponseSpeaking
         ) {
+            handleVoiceMiss();
+            return;
+        }
+
+        if (!voiceResponseSpeaking) {
+
             voiceBtn.innerHTML = "🎤";
+
             voiceBtn.title =
                 "Listening...";
         }
@@ -1856,14 +1956,41 @@ if (SpeechRecognition) {
             "listening"
         );
 
-        if (voiceModeActive) {
+        if (!voiceModeActive) {
+            return;
+        }
+
+        // Permission problems are different from
+        // simply not hearing the user.
+        if (
+            event.error ===
+            "not-allowed"
+        ) {
 
             updateVoiceStatus(
-                event.error === "not-allowed"
-                    ? "Microphone permission is required."
-                    : "I couldn't hear that. Try again."
+                "Microphone permission is required.",
+                "Please allow microphone access and try again."
             );
+
+            return;
         }
+
+        // These errors generally mean that
+        // the user's speech was not successfully captured.
+        if (
+            event.error === "no-speech" ||
+            event.error === "audio-capture" ||
+            event.error === "network" ||
+            event.error === "aborted"
+        ) {
+
+            handleVoiceMiss();
+
+            return;
+        }
+
+        // Any other recognition failure.
+        handleVoiceMiss();
     };
 
 } else {
