@@ -6,3 +6,4 @@ pypdf
 openpyxl
 python-pptx
 python-docx
+opencv-python

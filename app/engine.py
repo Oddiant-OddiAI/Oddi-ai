@@ -16,6 +16,9 @@ from pypdf import PdfReader
 from openpyxl import load_workbook
 from pptx import Presentation
 from docx import Document
+
+import cv2
+
 from app.config import client
 from app.database import (
     get_vector_store_id,
@@ -23,6 +26,7 @@ from app.database import (
     save_memory
 )
 from app import state
+
 
 RESUME_ANALYSIS_TRIGGERS = {
     "analyze my resume",
@@ -80,7 +84,18 @@ def extract_docx_text(uploaded_file):
                 text.append(" | ".join(cells))
 
     return "\n".join(text)
+def transcribe_audio(audio_file):
+    """
+    Transcribe an uploaded audio file using OpenAI's audio transcription API.
+    """
+    audio_file.seek(0)
 
+    transcription = client.audio.transcriptions.create(
+        model="gpt-4o-mini-transcribe",
+        file=audio_file
+    )
+
+    return transcription.text
 
 RESUME_ANALYSIS_PROMPT = """
 You are Oddi AI's Resume Intelligence system.
@@ -319,6 +334,10 @@ def process_message(
 
     images = []
     documents = ""
+
+    # Audio/video information
+    media_transcripts = ""
+    video_frames = []
     
     if uploaded_files:
 
@@ -345,7 +364,147 @@ def process_message(
                 print("Image detected")
                 print("Image size:", len(image_bytes))
                 print("IMAGE BLOCK")
+                        # ---------- AUDIO ----------
+            elif filename.endswith((
+                ".mp3",
+                ".wav",
+                ".m4a",
+                ".aac",
+                ".ogg",
+                ".flac"
+            )):
 
+                print("Audio detected")
+
+                transcript = transcribe_audio(uploaded_file)
+
+                media_transcripts += (
+                    "\n\n===== AUDIO: "
+                    + uploaded_file.filename
+                    + " =====\n"
+                )
+
+                media_transcripts += transcript
+
+                print("Audio transcription completed")
+                print("AUDIO BLOCK")
+
+                        # ---------- VIDEO ----------
+            elif filename.endswith((
+                ".mp4",
+                ".mov",
+                ".avi",
+                ".mkv",
+                ".webm"
+            )):
+
+                print("Video detected")
+
+                with tempfile.NamedTemporaryFile(
+                    delete=False,
+                    suffix=os.path.splitext(filename)[1]
+                ) as temp_video:
+
+                    uploaded_file.save(temp_video.name)
+                    video_path = temp_video.name
+
+                try:
+                    # ---------- EXTRACT AUDIO ----------
+                    audio_path = video_path + ".wav"
+
+                    subprocess.run(
+                        [
+                            "ffmpeg",
+                            "-y",
+                            "-i",
+                            video_path,
+                            "-vn",
+                            "-ac",
+                            "1",
+                            "-ar",
+                            "16000",
+                            audio_path
+                        ],
+                        capture_output=True,
+                        text=True
+                    )
+
+                    if os.path.exists(audio_path):
+
+                        with open(audio_path, "rb") as audio_file:
+
+                            transcript = transcribe_audio(audio_file)
+
+                        media_transcripts += (
+                            "\n\n===== VIDEO AUDIO: "
+                            + uploaded_file.filename
+                            + " =====\n"
+                        )
+
+                        media_transcripts += transcript
+
+                    # ---------- EXTRACT VIDEO FRAMES ----------
+                    cap = cv2.VideoCapture(video_path)
+
+                    total_frames = int(
+                        cap.get(cv2.CAP_PROP_FRAME_COUNT)
+                    )
+
+                    fps = cap.get(cv2.CAP_PROP_FPS)
+
+                    if fps <= 0:
+                        fps = 25
+
+                    duration = total_frames / fps
+
+                    # Maximum 8 representative frames
+                    frame_count = min(8, max(1, int(duration)))
+
+                    for i in range(frame_count):
+
+                        timestamp = (
+                            duration * i / frame_count
+                        )
+
+                        cap.set(
+                            cv2.CAP_PROP_POS_MSEC,
+                            timestamp * 1000
+                        )
+
+                        success, frame = cap.read()
+
+                        if not success:
+                            continue
+
+                        success, encoded = cv2.imencode(
+                            ".jpg",
+                            frame
+                        )
+
+                        if success:
+
+                            video_frames.append({
+                                "bytes": encoded.tobytes(),
+                                "mimetype": "image/jpeg"
+                            })
+
+                    cap.release()
+
+                    print(
+                        "Video processing completed:",
+                        len(video_frames),
+                        "frames"
+                    )
+
+                finally:
+
+                    if os.path.exists(video_path):
+                        os.remove(video_path)
+
+                    if os.path.exists(audio_path):
+                        os.remove(audio_path)
+
+                print("VIDEO BLOCK")
             # ---------- TXT ----------
             elif filename.endswith(".txt"):
 
@@ -528,7 +687,42 @@ def process_message(
                 return fast_reply
     # 2.5 Resume Intelligence
     resume_analysis = is_resume_analysis_request(user_message)
+    if documents:
 
+        content.append({
+            "type":"input_text",
+            "text":f"""
+    Attached documents:
+
+    {documents}
+    """
+        })
+    if media_transcripts:
+
+        content.append({
+            "type": "input_text",
+            "text": f"""
+    Attached audio/video transcription:
+
+    {media_transcripts}
+
+    Use this transcription when answering questions
+    about the uploaded audio or video.
+    """
+        })
+
+    # Add extracted video frames
+    for frame in video_frames:
+
+        frame_base64 = base64.b64encode(
+            frame["bytes"]
+        ).decode("utf-8")
+
+        content.append({
+            "type": "input_image",
+            "image_url":
+            f"data:{frame['mimetype']};base64,{frame_base64}"
+        })
     if resume_analysis:
 
         if not uploaded_files:
