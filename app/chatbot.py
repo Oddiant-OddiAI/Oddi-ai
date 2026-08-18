@@ -12,10 +12,6 @@ def get_response(chat_history, vector_store_id=None):
             }
         ]
 
-        # ------------------------------------------
-        # FILE SEARCH
-        # ------------------------------------------
-
         if vector_store_id:
 
             tools.append({

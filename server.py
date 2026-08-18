@@ -28,7 +28,6 @@ app = Flask(__name__)
 
 app.secret_key = "Oddi-AI_AI_2026_SuperSecretKey"
 
-# Keep logged-in accounts persistent
 app.permanent_session_lifetime = timedelta(days=30)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -115,9 +114,7 @@ def signup():
 
     return redirect("/")
 
-# ==========================================
-# CONVERSATION API
-# ==========================================
+
 
 @app.route("/api/conversations", methods=["GET"])
 def api_get_conversations():

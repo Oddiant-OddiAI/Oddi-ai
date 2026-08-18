@@ -439,9 +439,9 @@ def normalize_text(message):
 
 def fast_response(message, history=None):
 
-# -----------------------------------------
+
 # 1. NORMALIZE USER MESSAGE
-# -----------------------------------------
+
     text = normalize_text(message)
 
     global LAST_JOB_CONTEXT
@@ -449,9 +449,9 @@ def fast_response(message, history=None):
 
     if history_context:
         LAST_JOB_CONTEXT = history_context
-# -----------------------------------------
+
 # 1.5 DETECT JOB CONTEXT BEFORE RESPONDING
-# -----------------------------------------
+
 
 # Direct canonical job question
     if text in JOB_CONTEXTS:
@@ -468,21 +468,21 @@ def fast_response(message, history=None):
 
         if context != "__JOB_CONTEXT__":
             LAST_JOB_CONTEXT = context
-# -----------------------------------------
+
 # 2. CHECK NORMAL FAST RESPONSES
-# -----------------------------------------
+
     if text in FAST_RESPONSES:
         return FAST_RESPONSES[text]
 
-# -----------------------------------------
+
 # 3. CHECK JOB FAST RESPONSES
-# -----------------------------------------
+
     if text in JOB_FAST_RESPONSES:
         return JOB_FAST_RESPONSES[text]
 
-# -----------------------------------------
+
 # 4. CHECK QUESTION ALIASES
-# -----------------------------------------
+
     canonical = QUESTION_ALIASES.get(text)
     if canonical in JOB_CONTEXTS:
         LAST_JOB_CONTEXT = JOB_CONTEXTS[canonical]
@@ -508,9 +508,9 @@ def fast_response(message, history=None):
         if canonical in JOB_FAST_RESPONSES:
             return JOB_FAST_RESPONSES[canonical]
 
-# -----------------------------------------
+
 # 5. REMOVE COMMON FILLER WORDS
-# -----------------------------------------
+
     fillers = {
         "bro",
         "buddy",
@@ -532,21 +532,21 @@ def fast_response(message, history=None):
 
     cleaned = " ".join(cleaned_words)
 
-# -----------------------------------------
+
 # 6. CHECK NORMAL RESPONSES AGAIN
-# -----------------------------------------
+
     if cleaned in FAST_RESPONSES:
         return FAST_RESPONSES[cleaned]
 
-# -----------------------------------------
+
 # 7. CHECK JOB RESPONSES AGAIN
-# -----------------------------------------
+
     if cleaned in JOB_FAST_RESPONSES:
         return JOB_FAST_RESPONSES[cleaned]
 
-# -----------------------------------------
+
 # 8. CHECK ALIASES AGAIN
-# -----------------------------------------
+
     canonical = QUESTION_ALIASES.get(cleaned)
 
     if canonical:
@@ -557,7 +557,7 @@ def fast_response(message, history=None):
         if canonical in JOB_FAST_RESPONSES:
             return JOB_FAST_RESPONSES[canonical]
 
-# -----------------------------------------
+
 # 9. UNKNOWN → MAIN AI
-# -----------------------------------------
+
     return None

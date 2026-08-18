@@ -108,10 +108,6 @@ def get_user_by_email(email):
     return user
 
 
-# ==========================================
-# CONVERSATION FUNCTIONS
-# ==========================================
-
 def create_conversation(user_id, title="New Chat"):
 
     conn = get_db()
@@ -243,9 +239,6 @@ def delete_all_conversations(user_id):
     conn.commit()
     conn.close()
 
-# ==========================================
-# MEMORY FUNCTIONS
-# ==========================================
 
 def get_memory(user_id, key=None):
 
@@ -337,9 +330,7 @@ def clear_memory(user_id):
 
     conn.commit()
     conn.close()
-# ==========================================
-# KNOWLEDGE / VECTOR STORE FUNCTIONS
-# ==========================================
+
 
 def create_knowledge_table():
     conn = get_db()
@@ -400,9 +391,6 @@ def save_vector_store_id(user_id, vector_store_id):
 
     conn.commit()
     conn.close()
-# ==========================================
-# TEST DATABASE
-# ==========================================
 
 if __name__ == "__main__":
 
