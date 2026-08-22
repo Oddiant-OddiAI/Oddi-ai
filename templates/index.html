@@ -1822,9 +1822,11 @@ function startVoiceMode() {
 
     createVoicePanel();
 
-    voiceModeActive = true;
+    input.blur();   // ← ADD THIS
 
-    voicePanel.classList.add("show");
+    voiceModeActive = true;
+    voiceMissCount = 0;
+    voiceReceivedResult = false;
 
     updateVoiceStatus(
         "Listening...",
