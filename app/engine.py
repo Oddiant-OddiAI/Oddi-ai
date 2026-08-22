@@ -490,13 +490,17 @@ def process_message(
                     duration = total_frames / fps
 
                     # Maximum 8 representative frames
-                    frame_count = min(8, max(1, int(duration)))
+                    # Extract representative frames across the ENTIRE video
+                    # Maximum 12 frames so the AI can understand the video progression.
+                    frame_count = min(12, max(2, int(duration) + 1))
 
                     for i in range(frame_count):
-
-                        timestamp = (
-                            duration * i / frame_count
-                        )
+                        if frame_count == 1:
+                            timestamp = 0
+                        else:
+                            timestamp = (
+                                duration * i / (frame_count - 1)
+                            )
 
                         cap.set(
                             cv2.CAP_PROP_POS_MSEC,
@@ -514,10 +518,10 @@ def process_message(
                         )
 
                         if success:
-
                             video_frames.append({
                                 "bytes": encoded.tobytes(),
-                                "mimetype": "image/jpeg"
+                                "mimetype": "image/jpeg",
+                                "timestamp": timestamp
                             })
 
                     cap.release()
@@ -814,17 +818,44 @@ def process_message(
         })
 
     # Add extracted video frames
-    for frame in video_frames:
+    # Add extracted video frames in chronological order
+    if video_frames:
+        content.append({
+            "type": "input_text",
+            "text": (
+                "IMPORTANT VIDEO ANALYSIS INSTRUCTION:\n"
+                "The following images are chronological frames extracted "
+                "from ONE uploaded video.\n"
+                "Analyze ALL frames together, from the first frame to the "
+                "last frame.\n"
+                "Do NOT answer based only on the first frame.\n"
+                "Use the progression between frames to determine what "
+                "happens during the video from beginning to end.\n"
+                "When describing actions or changes, consider the order "
+                "and timestamps of the frames."
+            )
+        })
 
+    for frame in video_frames:
         frame_base64 = base64.b64encode(
             frame["bytes"]
         ).decode("utf-8")
+
+        content.append({
+            "type": "input_text",
+            "text": (
+                f"VIDEO FRAME — {frame['timestamp']:.2f} seconds "
+                f"from the beginning"
+            )
+        })
 
         content.append({
             "type": "input_image",
             "image_url":
             f"data:{frame['mimetype']};base64,{frame_base64}"
         })
+
+
     for image in images:
         print("Building content...")
         image_base64 = base64.b64encode(

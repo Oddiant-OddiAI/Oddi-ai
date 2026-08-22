@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html>
 
@@ -73,7 +72,90 @@
                 display: flex !important;
             }
         }
-    </style>
+    
+/* ---------- Selected sidebar chat ---------- */
+.history-item.active-chat {
+    background: #0a0a0a !important;
+    border-color: #0a0a0a !important;
+    color: #fff !important;
+    box-shadow: 0 5px 16px rgba(0,0,0,.12) !important;
+}
+
+.history-item.active-chat .history-title {
+    color: #fff !important;
+}
+
+.history-item.active-chat .history-actions button {
+    color: #fff !important;
+    border-color: rgba(255,255,255,.18) !important;
+}
+
+.history-item.active-chat .history-actions button:hover {
+    background: rgba(255,255,255,.12) !important;
+}
+
+body.dark-mode .history-item.active-chat {
+    background: #000 !important;
+    border-color: #000 !important;
+    color: #fff !important;
+}
+/* ---------- Sidebar chat search ---------- */
+.chat-search-wrap {
+    margin: 10px 10px 8px;
+    position: relative;
+}
+
+.chat-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    height: 40px;
+    padding: 0 12px 0 36px;
+    border: 1px solid #e3e3e3;
+    border-radius: 11px;
+    background: #f7f7f7;
+    color: #111;
+    font-size: 13px;
+    outline: none;
+}
+
+.chat-search-input:focus {
+    border-color: #bdbdbd;
+    background: #fff;
+}
+
+.chat-search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    opacity: .6;
+    font-size: 14px;
+}
+
+.chat-search-empty {
+    padding: 18px 12px;
+    text-align: center;
+    color: #777;
+    font-size: 13px;
+}
+
+body.dark-mode .chat-search-input {
+    background: #171717;
+    border-color: #303030;
+    color: #fff;
+}
+
+body.dark-mode .chat-search-input:focus {
+    background: #111;
+    border-color: #4a4a4a;
+}
+
+body.dark-mode .chat-search-empty {
+    color: #aaa;
+}
+
+</style>
 
     <!-- PWA install button — same behavior/style as VedAura AI -->
     <style id="install-button-fix">
@@ -388,18 +470,7 @@ body {
 }
 
 .user-message {
-    max-width: 100% !important;
-    overflow-wrap: anywhere !important;
-    word-break: break-word !important;
-}
-body.dark-mode .user-message {
-    background: #333 !important;
-    color: #f2f2f2 !important;
-}
-
-body.dark-mode .user-message .user-text {
-    background: transparent !important;
-    color: #f2f2f2 !important;
+    color: #111 !important;
 }
 
 /* ---------- Bottom composer ---------- */
@@ -551,8 +622,8 @@ body.dark-mode .action-card:hover {
 }
 
 body.dark-mode .input-area {
-    background: rgba(139, 139, 139, 0.97) !important;
-    border-color: #636262 !important;
+    background: #111 !important;
+    border-color: #2a2a2a !important;
 }
 
 body.dark-mode .input-area textarea {
@@ -612,7 +683,7 @@ body.dark-mode .history-item {
 
             .login-btn,
             .user-btn {
-                z-index: 1000 !important;
+                z-index: 2147483640 !important;
                 max-width: 86px !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
@@ -621,28 +692,6 @@ body.dark-mode .history-item {
 
             .input-area {
                 z-index: 2147483000 !important;
-            }
-            @media (max-width: 768px) {
-                body.sidebar-open .login-btn,
-                body.sidebar-open .user-btn {
-                    display: none !important;
-                }
-            }
-            @media (max-width: 500px) {
-                body.sidebar-open .login-btn,
-                body.sidebar-open .user-btn {
-                    display: none !important;
-                }
-            }
-
-            @media (max-width: 768px) {
-                .login-btn, .user-btn {
-                    z-index: 1000 !important;
-                    max-width: 86px !important;
-                    overflow: hidden !important;
-                    text-overflow: ellipsis !important;
-                    white-space: nowrap !important;
-                }
             }
         }
     </style>
@@ -680,8 +729,6 @@ body.dark-mode .history-item {
             max-width: min(760px, 88%) !important;
             box-sizing: border-box !important;
             align-self: flex-end !important;
-            padding: 12px 14px !important;
-            margin: 8px 0 8px auto !important;
         }
 
         .user-message .user-text {
@@ -694,11 +741,28 @@ body.dark-mode .history-item {
             border: 1px solid var(--border-color, #e5e7eb) !important;
             border-radius: 18px !important;
             text-align: left !important;
-            white-space: normal !important;
-            overflow-wrap: anywhere !important;
+            white-space: pre-wrap !important;
+            overflow-wrap: break-word !important;
             word-break: normal !important;
             line-height: 1.5 !important;
-            margin-top: 0 !important;
+        }
+        body.dark-mode .user-message {
+            background: #333 !important;
+            color: #f2f2f2 !important;
+        }
+
+        body.dark-mode .user-message .user-text {
+            background: transparent !important;
+            color: #f2f2f2 !important;
+        }
+        body.dark-mode .user-message {
+            background: #333 !important;
+            color: #f2f2f2 !important;
+        }
+
+        body.dark-mode .user-message .user-text {
+            background: transparent !important;
+            color: #f2f2f2 !important;
         }
         /* 2. Pinned chats stay above the scrolling chat-history list. */
         .pinned-history-section {
@@ -739,22 +803,156 @@ body.dark-mode .history-item {
         }
     </style>
 
+    <!-- CONFIRMATION MODALS — styled replacements for browser confirm() dialogs -->
+    <style id="action-confirm-modal-fix">
+        /* Keep action confirmations above the Settings modal. */
+        #actionConfirmModal {
+            z-index: 2147483646 !important;
+        }
+
+        .action-confirm-box {
+            width: min(390px, calc(100vw - 32px)) !important;
+            max-width: 390px !important;
+            padding: 28px !important;
+            border-radius: 16px !important;
+            background: #fff !important;
+            color: #111 !important;
+            border: 1px solid #e8e8e8 !important;
+            box-shadow: 0 20px 55px rgba(0,0,0,.16) !important;
+        }
+
+        .action-confirm-box h3 {
+            margin: 0 0 10px !important;
+            color: #111 !important;
+            font-size: 20px !important;
+            font-weight: 700 !important;
+        }
+
+        .action-confirm-box p {
+            margin: 0 !important;
+            color: #555 !important;
+            font-size: 14px !important;
+            line-height: 1.5 !important;
+        }
+
+        .action-confirm-buttons {
+            margin-top: 24px !important;
+            justify-content: flex-end !important;
+            gap: 10px !important;
+        }
+
+        .action-confirm-buttons button {
+            min-width: 92px !important;
+            height: 42px !important;
+            padding: 0 18px !important;
+            border-radius: 10px !important;
+            font-size: 14px !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            transition: transform .15s ease, background .15s ease !important;
+        }
+
+        #actionConfirmCancel {
+            background: #f2f2f2 !important;
+            color: #111 !important;
+            border: 1px solid #ddd !important;
+        }
+
+        #actionConfirmCancel:hover {
+            background: #e8e8e8 !important;
+        }
+
+        #actionConfirmOk {
+            background: #0a0a0a !important;
+            color: #fff !important;
+            border: 1px solid #0a0a0a !important;
+        }
+
+        #actionConfirmOk:hover {
+            background: #222 !important;
+            transform: translateY(-1px) !important;
+        }
+
+        #actionConfirmOk.danger {
+            background: #ef2b2b !important;
+            border-color: #ef2b2b !important;
+            color: #fff !important;
+        }
+
+        #actionConfirmOk.danger:hover {
+            background: #d92121 !important;
+        }
+
+        body.dark-mode .action-confirm-box {
+            background: #111 !important;
+            color: #fff !important;
+            border-color: #2a2a2a !important;
+            box-shadow: 0 20px 55px rgba(0,0,0,.45) !important;
+        }
+
+        body.dark-mode .action-confirm-box h3 {
+            color: #fff !important;
+        }
+
+        body.dark-mode .action-confirm-box p {
+            color: #aaa !important;
+        }
+
+        body.dark-mode #actionConfirmCancel {
+            background: #f5f5f5 !important;
+            color: #111 !important;
+            border-color: #f5f5f5 !important;
+        }
+
+        body.dark-mode #actionConfirmCancel:hover {
+            background: #ddd !important;
+        }
+
+        body.dark-mode #actionConfirmOk:not(.danger) {
+            background: #f5f5f5 !important;
+            color: #111 !important;
+            border-color: #f5f5f5 !important;
+        }
+
+        body.dark-mode #actionConfirmOk:not(.danger):hover {
+            background: #ddd !important;
+        }
+
+        body.dark-mode #actionConfirmOk.danger {
+            background: #ef2b2b !important;
+            color: #fff !important;
+            border-color: #ef2b2b !important;
+        }
+
+        @media (max-width: 500px) {
+            .action-confirm-box {
+                width: calc(100vw - 28px) !important;
+                padding: 24px !important;
+            }
+
+            .action-confirm-buttons {
+                flex-direction: row !important;
+            }
+
+            .action-confirm-buttons button {
+                flex: 1 !important;
+            }
+        }
+    </style>
+
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}">
-
-<!-- Mobile Splash — shown for both signed-in and signed-out users -->
-<div id="mobileSplash">
-    <img src="{{ url_for('static', filename='splash2.png') }}" alt="Oddi AI">
-</div>
-
 {% if logged_in %}
 
 <div class="user-btn">
-    👤 {{ username }}
+    👤 {{ username }} 
 </div>
 
 {% else %}
+<div id="mobileSplash">
+    <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
+</div>
 
 <a href="/login" class="login-btn">
     Sign In
@@ -779,6 +977,16 @@ body.dark-mode .history-item {
             <a href="/signup">sign up</a> to save your chats
         </div>
         {% endif %}
+
+        <div class="chat-search-wrap">
+            <span class="chat-search-icon">🔍</span>
+            <input
+                id="chatSearchInput"
+                class="chat-search-input"
+                type="search"
+                placeholder="Search chats..."
+                aria-label="Search chats">
+        </div>
 
         <div id="chatHistory" class="chat-history">
         </div>
@@ -996,6 +1204,27 @@ body.dark-mode .history-item {
     </div>
 
 </div>
+
+<div id="actionConfirmModal" class="rename-modal">
+
+    <div class="rename-box action-confirm-box">
+
+        <h3 id="actionConfirmTitle">Confirm Action</h3>
+
+        <p id="actionConfirmMessage"></p>
+
+        <div class="rename-buttons action-confirm-buttons">
+
+            <button id="actionConfirmCancel">Cancel</button>
+
+            <button id="actionConfirmOk" class="action-confirm-ok">Confirm</button>
+
+        </div>
+
+    </div>
+
+</div>
+
 <div id="settingsModal" class="rename-modal">
 
     <div class="rename-box">
@@ -1260,50 +1489,7 @@ function updateActionButton() {
         setGenerationUI(false);
     }
 }
-/* =========================================================
-   MICROPHONE PERMISSION
-========================================================= */
 
-async function requestMicrophonePermission() {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.log("Microphone access is not supported by this browser.");
-        return;
-    }
-
-    try {
-        // Check whether permission is already granted.
-        if (navigator.permissions && navigator.permissions.query) {
-            const permission = await navigator.permissions.query({
-                name: "microphone"
-            });
-
-            if (permission.state === "granted") {
-                console.log("Microphone permission already granted.");
-                return;
-            }
-
-            if (permission.state === "denied") {
-                console.log("Microphone permission is denied.");
-                return;
-            }
-        }
-
-        // First-time permission request.
-        const stream = await navigator.mediaDevices.getUserMedia({
-            audio: true
-        });
-
-        // We only needed permission — don't keep the microphone active.
-        stream.getTracks().forEach(track => track.stop());
-
-        console.log("Microphone permission granted.");
-    } catch (error) {
-        console.log("Microphone permission not granted:", error);
-    }
-}
-
-// Ask when Oddi opens.
-requestMicrophonePermission();
 /* =========================================================
    SPEECH DICTATION
 ========================================================= */
@@ -1638,10 +1824,6 @@ function startVoiceMode() {
 
     voiceModeActive = true;
 
-    voiceMissCount = 0;
-    voiceReceivedResult = false;
-    voiceErrorHandled = false;
-
     voicePanel.classList.add("show");
 
     updateVoiceStatus(
@@ -1910,6 +2092,7 @@ if (SpeechRecognition) {
             retryMessage
         );
     }
+
 
     recognition.onend = () => {
 
@@ -2558,6 +2741,7 @@ async function sendMessage(
                 </div>
 
                 <div class="user-text">${escapeUserText(userDisplayMessage)}</div>
+
                 <div class="user-actions">
                     <button
                         class="message-action-btn user-copy-btn"
@@ -2804,9 +2988,7 @@ async function sendMessage(
 
         updateActionButton();
 
-        if (!voiceReply) {
-            input.focus();
-        }
+        input.focus();
 
         chat.scrollTop =
             chat.scrollHeight;
@@ -3000,7 +3182,7 @@ async function finishAIMessage(
 
 button.addEventListener(
     "click",
-    () => sendMessage()
+    sendMessage
 );
 
 input.addEventListener(
@@ -3153,6 +3335,22 @@ removeAttachment.onclick = () => {
 
 const PINNED_CHATS_KEY = 'oddi_pinned_chats_v1';
 
+let chatSearchQuery = '';
+
+const chatSearchInput =
+    document.getElementById(
+        "chatSearchInput"
+    );
+
+chatSearchInput.addEventListener(
+    "input",
+    () => {
+        chatSearchQuery = chatSearchInput.value.trim().toLowerCase();
+        renderHistory();
+    }
+);
+
+
 function getPinnedChatIds() {
     try {
         const saved = JSON.parse(localStorage.getItem(PINNED_CHATS_KEY) || '[]');
@@ -3204,10 +3402,20 @@ function renderHistory() {
     normalSection.className = 'normal-history-section';
 
     function createHistoryItem(conversation) {
+        if (
+            chatSearchQuery &&
+            !String(conversation.title || '')
+                .toLowerCase()
+                .includes(chatSearchQuery)
+        ) {
+            return null;
+        }
+
         const item = document.createElement('div');
         const pinned = isConversationPinned(conversation);
+        const active = conversations[currentConversation] === conversation;
 
-        item.className = `history-item ${pinned ? 'pinned-chat' : ''}`;
+        item.className = `history-item ${pinned ? 'pinned-chat' : ''} ${active ? 'active-chat' : ''}`;
         item.innerHTML = `
             <span class="history-title">
                 ${pinned ? '📌 ' : ''}${escapeUserText(conversation.title)}
@@ -3253,12 +3461,25 @@ function renderHistory() {
 
     conversations.forEach(conversation => {
         const item = createHistoryItem(conversation);
+        if (!item) return;
         if (isConversationPinned(conversation)) {
             pinnedSection.appendChild(item);
         } else {
             normalSection.appendChild(item);
         }
     });
+
+    if (
+        chatSearchQuery &&
+        !pinnedSection.childElementCount &&
+        !normalSection.childElementCount
+    ) {
+        const empty = document.createElement('div');
+        empty.className = 'chat-search-empty';
+        empty.textContent = 'No chats found.';
+        historyContainer.appendChild(empty);
+        return;
+    }
 
     if (pinnedSection.childElementCount) {
         historyContainer.appendChild(pinnedSection);
@@ -3303,6 +3524,8 @@ async function openConversation(
 
     const conversation =
         conversations[index];
+
+    renderHistory();
 
     chat.innerHTML = "";
 
@@ -3449,9 +3672,37 @@ chat.addEventListener("keydown", event => {
 
 async function newChat() {
 
+    const activeConversation =
+        currentConversation !== null
+            ? conversations[currentConversation]
+            : null;
+
+    if (
+        activeConversation &&
+        Array.isArray(activeConversation.messages) &&
+        activeConversation.messages.length > 0
+    ) {
+        const confirmed =
+            await showActionConfirmation(
+                "Start a New Chat?",
+                "Your current conversation will remain saved.",
+                "Continue",
+                false
+            );
+
+        if (!confirmed) {
+            return;
+        }
+    }
+
     chat.innerHTML = "";
 
     input.value = "";
+
+    if (chatSearchInput.value) {
+        chatSearchInput.value = "";
+        chatSearchQuery = "";
+    }
 
     selectedFiles = [];
 
@@ -3493,9 +3744,7 @@ async function newChat() {
 
     updateActionButton();
 
-    if (!voiceReply) {
-        input.focus();
-    }
+    input.focus();
 }
 
 /* =========================================================
@@ -3742,6 +3991,86 @@ const cancelDelete =
 
 let deleteIndex = -1;
 
+const actionConfirmModal =
+    document.getElementById(
+        "actionConfirmModal"
+    );
+
+const actionConfirmTitle =
+    document.getElementById(
+        "actionConfirmTitle"
+    );
+
+const actionConfirmMessage =
+    document.getElementById(
+        "actionConfirmMessage"
+    );
+
+const actionConfirmCancel =
+    document.getElementById(
+        "actionConfirmCancel"
+    );
+
+const actionConfirmOk =
+    document.getElementById(
+        "actionConfirmOk"
+    );
+
+let actionConfirmResolve = null;
+
+function showActionConfirmation(
+    title,
+    message,
+    confirmText,
+    danger = false
+) {
+    return new Promise(resolve => {
+        actionConfirmResolve = resolve;
+
+        actionConfirmTitle.innerText =
+            title;
+
+        actionConfirmMessage.innerText =
+            message;
+
+        actionConfirmOk.innerText =
+            confirmText;
+
+        actionConfirmOk.classList.toggle(
+            "danger",
+            danger
+        );
+
+        actionConfirmModal.classList.add(
+            "show"
+        );
+    });
+}
+
+function closeActionConfirmation(
+    confirmed
+) {
+    actionConfirmModal.classList.remove(
+        "show"
+    );
+
+    if (actionConfirmResolve) {
+        const resolve =
+            actionConfirmResolve;
+
+        actionConfirmResolve = null;
+        resolve(confirmed);
+    }
+}
+
+actionConfirmCancel.onclick = () => {
+    closeActionConfirmation(false);
+};
+
+actionConfirmOk.onclick = () => {
+    closeActionConfirmation(true);
+};
+
 const settingsBtn =
     document.getElementById(
         "settingsBtn"
@@ -3900,6 +4229,42 @@ notificationBtn.onclick = () => {
 };
 
 /* =========================================================
+   KEYBOARD SHORTCUTS
+========================================================= */
+
+document.addEventListener("keydown", event => {
+
+    if (event.key === "Escape") {
+        renameModal.classList.remove("show");
+        deleteModal.classList.remove("show");
+        settingsModal.classList.remove("show");
+        closeActionConfirmation(false);
+        sidebar.classList.remove("open");
+        overlay.classList.remove("show");
+        return;
+    }
+
+    if (
+        (event.ctrlKey || event.metaKey) &&
+        event.key.toLowerCase() === "k"
+    ) {
+        event.preventDefault();
+        chatSearchInput.focus();
+        chatSearchInput.select();
+        return;
+    }
+
+    if (
+        (event.ctrlKey || event.metaKey) &&
+        event.shiftKey &&
+        event.key.toLowerCase() === "n"
+    ) {
+        event.preventDefault();
+        newChat();
+    }
+});
+
+/* =========================================================
    LOGOUT
 ========================================================= */
 
@@ -3929,11 +4294,15 @@ const clearChatBtn =
 clearChatBtn.onclick =
     async () => {
 
-        if (
-            !confirm(
-                "Delete ALL conversations?"
-            )
-        ) {
+        const confirmed =
+            await showActionConfirmation(
+                "Clear All Conversations?",
+                "This action cannot be undone.",
+                "Clear All",
+                true
+            );
+
+        if (!confirmed) {
             return;
         }
 
