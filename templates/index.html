@@ -943,6 +943,12 @@ body.dark-mode .history-item {
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}">
+
+<!-- Mobile Splash — shown for both signed-in and signed-out users -->
+<div id="mobileSplash">
+    <img src="{{ url_for('static', filename='splash2.png') }}" alt="Oddi AI">
+</div>
+
 {% if logged_in %}
 
 <div class="user-btn">
@@ -950,9 +956,6 @@ body.dark-mode .history-item {
 </div>
 
 {% else %}
-<div id="mobileSplash">
-    <img src="{{ url_for('static', filename='splash2.png') }}" alt="VedAura AI">
-</div>
 
 <a href="/login" class="login-btn">
     Sign In
@@ -2988,7 +2991,9 @@ async function sendMessage(
 
         updateActionButton();
 
-        input.focus();
+        if (!voiceReply) {
+            input.focus();
+        }
 
         chat.scrollTop =
             chat.scrollHeight;
