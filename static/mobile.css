@@ -1216,3 +1216,76 @@
         pointer-events: none !important;
     }
 }
+/* =========================================================
+   BRIGHT MODE — MOBILE ATMOSPHERE
+   Same soft daylight effect, kept lighter on small screens.
+   ========================================================= */
+@media (max-width: 768px) {
+    body:not(.dark-mode) .chatbox {
+        position: relative;
+        isolation: isolate;
+    }
+
+    body:not(.dark-mode) .chatbox::before {
+        content: "";
+        position: absolute;
+        inset: -18%;
+        z-index: 0;
+        pointer-events: none;
+        background:
+            radial-gradient(ellipse 38% 18% at 8% 18%, rgba(214, 239, 255, .26) 0%, transparent 74%),
+            radial-gradient(ellipse 35% 18% at 92% 30%, rgba(232, 224, 255, .24) 0%, transparent 76%),
+            radial-gradient(ellipse 38% 20% at 72% 86%, rgba(225, 250, 239, .22) 0%, transparent 78%),
+            radial-gradient(ellipse 34% 18% at 20% 88%, rgba(255, 244, 199, .20) 0%, transparent 78%),
+            linear-gradient(118deg, transparent 32%, rgba(255, 225, 160, .09) 50%, transparent 68%);
+        background-size: 125% 125%, 125% 125%, 130% 130%, 125% 125%, 150% 150%;
+        filter: blur(20px);
+        opacity: .8;
+        animation: brightAtmosphereDrift 24s ease-in-out infinite;
+    }
+
+    body:not(.dark-mode) .chatbox::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+            radial-gradient(circle at 13% 24%, rgba(91, 214, 236, .30) 0 1.3px, transparent 2.3px),
+            radial-gradient(circle at 31% 70%, rgba(175, 145, 255, .28) 0 1.3px, transparent 2.3px),
+            radial-gradient(circle at 52% 18%, rgba(255, 207, 91, .30) 0 1.3px, transparent 2.3px),
+            radial-gradient(circle at 78% 40%, rgba(122, 220, 196, .28) 0 1.3px, transparent 2.3px),
+            radial-gradient(circle at 90% 76%, rgba(176, 148, 255, .26) 0 1.3px, transparent 2.3px);
+        opacity: .24;
+        animation: brightSparkleFloat 9s ease-in-out infinite;
+    }
+
+    body:not(.dark-mode) .chatbox > * {
+        position: relative;
+        z-index: 1;
+    }
+
+    body.dark-mode .chatbox::before,
+    body.dark-mode .chatbox::after {
+        display: none;
+    }
+}
+
+/* =========================================================
+   DARK MODE ATMOSPHERE — MOBILE SAFETY LAYER
+   Keeps the visual effect behind the existing mobile UI.
+   ========================================================= */
+@media (max-width: 768px){
+    body.dark-mode .app{
+        background:#08090d !important;
+    }
+
+    body.dark-mode .app::before{
+        opacity:.72;
+    }
+
+    body.dark-mode .app::after{
+        opacity:.65;
+        width:140px;
+    }
+}

@@ -12,7 +12,7 @@
     <title>Oddi AI</title>
 
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}?v=20260816-ui-fix">
+          href="{{ url_for('static', filename='style.css') }}?v=20260822-shooting-fix-1">
 
 
     <title>Oddi AI</title>
@@ -698,7 +698,7 @@ body.dark-mode .history-item {
 
     <!-- Mobile CSS intentionally loaded LAST so it can override desktop/pro UI rules on phones. -->
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='mobile.css') }}?v=20260816-ui-fix">
+          href="{{ url_for('static', filename='mobile.css') }}?v=20260822-shooting-fix-1">
 
     <!-- FINAL PHONE-ONLY POLISH: logo clearance + composer bottom clearance -->
     <style id="final-phone-layout-fix">
@@ -3456,8 +3456,7 @@ function renderHistory() {
 
         deleteBtn.onclick = event => {
             event.stopPropagation();
-            deleteIndex = conversations.indexOf(conversation);
-            deleteModal.classList.add('show');
+
         };
 
         item.onclick = () => openConversation(conversations.indexOf(conversation));
