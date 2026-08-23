@@ -1185,6 +1185,25 @@ body.dark-mode .history-item {
     </div>
 
 </div>
+<div id="deleteModal" class="rename-modal">
+
+<div class="rename-box">
+
+    <h3>Delete Conversation?</h3>
+
+    <p>This action cannot be undone.</p>
+
+    <div class="rename-buttons">
+
+        <button id="cancelDelete">Cancel</button>
+
+        <button id="confirmDelete" class="delete-confirm">
+            Delete
+        </button>
+
+    </div>
+
+</div>
 
 <div id="deleteModal" class="rename-modal">
 
@@ -3785,7 +3804,8 @@ function renderHistory() {
 
         deleteBtn.onclick = event => {
             event.stopPropagation();
-
+            deleteIndex = conversations.indexOf(conversation);
+            deleteModal.classList.add('show');
         };
 
         item.onclick = () => openConversation(conversations.indexOf(conversation));
