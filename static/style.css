@@ -2345,3 +2345,162 @@ body.dark-mode #voiceSetting option {
     background: #222;
     color: #fff;
 }
+/* =========================================================
+   VOICE SELECTION
+========================================================= */
+
+.voice-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.voice-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 10px 12px;
+
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+
+    background: #fafafa;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.voice-option:hover {
+    background: #f0f0f0;
+    border-color: #111;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.voice-option.selected {
+    background: #111;
+    color: #fff;
+    border-color: #111;
+}
+
+.voice-name {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.voice-preview-btn {
+    border: 1px solid #ddd;
+    background: #fff;
+    color: #111;
+
+    padding: 6px 10px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        transform 0.15s ease;
+}
+
+.voice-preview-btn:hover {
+    background: #111;
+    color: #fff;
+    transform: scale(1.04);
+}
+
+.voice-option.selected
+.voice-preview-btn {
+    background: #222;
+    color: #fff;
+    border-color: #444;
+}
+
+.voice-option.selected
+.voice-preview-btn:hover {
+    background: #fff;
+    color: #111;
+}
+
+.voice-loading {
+    font-size: 13px;
+    color: #888;
+    margin: 5px 0;
+}
+body.dark-mode .voice-option {
+    background: #151515;
+    border-color: #2d2d2d;
+    color: #fff;
+}
+
+body.dark-mode .voice-option:hover {
+    background: #222;
+    border-color: #fff;
+}
+
+body.dark-mode .voice-option.selected {
+    background: #fff;
+    color: #111;
+    border-color: #fff;
+}
+
+body.dark-mode .voice-preview-btn {
+    background: #222;
+    color: #fff;
+    border-color: #444;
+}
+
+body.dark-mode .voice-preview-btn:hover {
+    background: #fff;
+    color: #111;
+}
+
+body.dark-mode .voice-option.selected
+.voice-preview-btn {
+    background: #eee;
+    color: #111;
+}
+
+/* =========================================================
+   VOICE OPTIONS - SCROLLABLE LIST
+   ========================================================= */
+
+.voice-options {
+    max-height: 190px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+}
+
+/* Smooth scrollbar */
+.voice-options::-webkit-scrollbar {
+    width: 5px;
+}
+
+.voice-options::-webkit-scrollbar-thumb {
+    background: #999;
+    border-radius: 10px;
+}
+
+.voice-options::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* Keep each voice compact */
+.voice-option {
+    min-height: 54px;
+    box-sizing: border-box;
+}

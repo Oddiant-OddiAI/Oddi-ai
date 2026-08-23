@@ -1262,14 +1262,12 @@ body.dark-mode .history-item {
             </select>
         </div>
 
-        <div class="setting-item">
+        <div class="setting-item voice-setting-item">
             <span>Voice</span>
 
-            <select id="voiceSetting">
-                
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-            </select>
+            <div id="voiceOptions" class="voice-options">
+                <p class="voice-loading">Loading voices...</p>
+            </div>
         </div>
 
         <div class="setting-item">
@@ -1936,10 +1934,13 @@ const speechLanguageMap = {
    AI VOICE SELECTION
 ========================================================= */
 
-let availableSpeechVoices = [];
+/* =========================================================
+   AI VOICE SELECTION
+========================================================= */
 
-const voiceSetting =
-    document.getElementById("voiceSetting");
+let availableSpeechVoices = [];
+let selectedVoiceIndex =
+    Number(localStorage.getItem("oddiVoiceIndex")) || 0;
 
 function loadSpeechVoices() {
 
@@ -1949,52 +1950,278 @@ function loadSpeechVoices() {
 
     availableSpeechVoices =
         window.speechSynthesis.getVoices();
+
+    renderVoiceOptions();
 }
 
-loadSpeechVoices();
 
 if ("speechSynthesis" in window) {
+
+    loadSpeechVoices();
+
     window.speechSynthesis.onvoiceschanged =
         loadSpeechVoices;
 }
 
 
-/* Get user's selected voice */
+/* =========================================================
+   VOICE OPTIONS UI
+========================================================= */
 
-function getSelectedVoiceType() {
+function renderVoiceOptions() {
 
-    return (
-        localStorage.getItem(
-            "oddiVoice"
-        ) || "male"
+    const container =
+        document.getElementById("voiceOptions");
+
+    if (!container) return;
+
+    if (!availableSpeechVoices.length) {
+
+        container.innerHTML =
+            `<p class="voice-loading">
+                No voices available
+             </p>`;
+
+        return;
+    }
+
+    const selectedLanguage =
+        speechLanguageMap[
+            getSelectedLanguage()
+        ] || "en-IN";
+
+    /*
+     * Prefer voices matching the
+     * currently selected language.
+     */
+
+    let languageVoices =
+        availableSpeechVoices.filter(voice =>
+            voice.lang
+                .toLowerCase()
+                .startsWith(
+                    selectedLanguage
+                        .toLowerCase()
+                        .split("-")[0]
+                )
+        );
+
+
+    /*
+     * If the device doesn't have
+     * voices for that language,
+     * use available voices.
+     */
+
+    if (!languageVoices.length) {
+        languageVoices =
+            availableSpeechVoices;
+    }
+
+
+    /*
+     * Show maximum 4 voices.
+     */
+
+    const voicesToShow =
+        languageVoices.slice(0, 4);
+
+
+    container.innerHTML = "";
+
+
+    voicesToShow.forEach(
+        (voice, index) => {
+
+            const option =
+                document.createElement("div");
+
+            option.className =
+                "voice-option";
+
+
+            if (index === selectedVoiceIndex) {
+                option.classList.add(
+                    "selected"
+                );
+            }
+
+
+            option.innerHTML = `
+                <span class="voice-name">
+                    Voice ${index + 1}
+                </span>
+
+                <button
+                    type="button"
+                    class="voice-preview-btn"
+                    data-index="${index}">
+                    ▶ Play
+                </button>
+            `;
+
+
+            /*
+             * Selecting the voice.
+             */
+
+            option.addEventListener(
+                "click",
+                () => {
+
+                    selectedVoiceIndex =
+                        index;
+
+                    localStorage.setItem(
+                        "oddiVoiceIndex",
+                        index
+                    );
+
+                    renderVoiceOptions();
+                }
+            );
+
+
+            /*
+             * Preview button.
+             */
+
+            const previewButton =
+                option.querySelector(
+                    ".voice-preview-btn"
+                );
+
+
+            previewButton.addEventListener(
+                "click",
+                (event) => {
+
+                    event.stopPropagation();
+
+                    previewVoice(
+                        voice,
+                        previewButton
+                    );
+                }
+            );
+
+
+            container.appendChild(option);
+        }
     );
 }
 
 
-/* Save user's voice selection */
+/* =========================================================
+   VOICE PREVIEW
+========================================================= */
 
-if (voiceSetting) {
+function previewVoice(
+    voice,
+    button
+) {
 
-    voiceSetting.value =
-        getSelectedVoiceType();
+    if (
+        !("speechSynthesis" in window)
+    ) {
+        return;
+    }
 
-    voiceSetting.addEventListener(
-        "change",
-        () => {
 
-            localStorage.setItem(
-                "oddiVoice",
-                voiceSetting.value
-            );
+    /*
+     * Stop any previous preview.
+     */
 
-            /*
-             * Stop current speech so the
-             * new voice is used immediately.
-             */
-            if ("speechSynthesis" in window) {
-                window.speechSynthesis.cancel();
-            }
-        }
+    window.speechSynthesis.cancel();
+
+
+    const previewText =
+        "Hello! I am Oddi AI. This is a preview of my voice.";
+
+
+    const utterance =
+        new SpeechSynthesisUtterance(
+            previewText
+        );
+
+
+    utterance.voice =
+        voice;
+
+    utterance.lang =
+        voice.lang;
+
+    utterance.rate = 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+
+    button.textContent =
+        "⏹ Stop";
+
+
+    utterance.onend = () => {
+
+        button.textContent =
+            "▶ Play";
+    };
+
+
+    utterance.onerror = () => {
+
+        button.textContent =
+            "▶ Play";
+    };
+
+
+    window.speechSynthesis.speak(
+        utterance
+    );
+}
+
+
+/* =========================================================
+   GET SELECTED VOICE
+========================================================= */
+
+function getSelectedVoice() {
+
+    if (!availableSpeechVoices.length) {
+        loadSpeechVoices();
+    }
+
+
+    const selectedLanguage =
+        speechLanguageMap[
+            getSelectedLanguage()
+        ] || "en-IN";
+
+
+    let languageVoices =
+        availableSpeechVoices.filter(
+            voice =>
+                voice.lang
+                    .toLowerCase()
+                    .startsWith(
+                        selectedLanguage
+                            .toLowerCase()
+                            .split("-")[0]
+                    )
+        );
+
+
+    if (!languageVoices.length) {
+        languageVoices =
+            availableSpeechVoices;
+    }
+
+
+    return (
+        languageVoices[
+            selectedVoiceIndex
+        ] ||
+        languageVoices[0] ||
+        null
     );
 }
 
@@ -2868,19 +3095,30 @@ function speakAIMessage(button) {
             text
         );
 
-    const selectedVoiceType =
-        getSelectedVoiceType();
+    // Get currently selected Voice
+    const selectedVoice =
+        getSelectedVoice();
+
+    if (selectedVoice) {
+
+        utterance.voice =
+            selectedVoice;
+
+        utterance.lang =
+            selectedVoice.lang;
+
+    } else {
+
+        utterance.lang =
+            selectedLanguage;
+    }
 
     const selectedLanguage =
         speechLanguageMap[
             getSelectedLanguage()
         ] || "en-IN";
 
-    const selectedVoice =
-        getBestSpeechVoice(
-            selectedLanguage,
-            selectedVoiceType
-        );
+    
 
     if (selectedVoice) {
         utterance.voice =
