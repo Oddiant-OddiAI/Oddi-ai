@@ -2252,3 +2252,96 @@ body.dark-mode .setting-item select:focus {
     color: #111111;
     padding: 8px;
 }
+/* =========================================================
+   VOICE SELECT — POLISHED UI
+   ========================================================= */
+
+#voiceSetting {
+    min-width: 110px;
+    height: 38px;
+    padding: 0 34px 0 12px;
+
+    border: 1px solid #d8d8d8;
+    border-radius: 10px;
+
+    background: #fff;
+    color: #222;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    cursor: pointer;
+    outline: none;
+
+    transition:
+        background .2s ease,
+        color .2s ease,
+        border-color .2s ease,
+        box-shadow .2s ease,
+        transform .2s ease;
+}
+
+
+/* Mouse is ABOVE the Voice dropdown */
+#voiceSetting:hover {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 6px 16px rgba(0, 0, 0, .18);
+}
+
+
+/* When Voice dropdown is clicked/focused */
+#voiceSetting:focus {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+
+    box-shadow:
+        0 0 0 3px rgba(0, 0, 0, .12);
+}
+
+
+/* Small press animation */
+#voiceSetting:active {
+    transform: translateY(0) scale(.98);
+}
+
+
+/* Dropdown options */
+#voiceSetting option {
+    background: #fff;
+    color: #222;
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+body.dark-mode #voiceSetting {
+    background: #222;
+    color: #fff;
+    border-color: #444;
+}
+
+
+body.dark-mode #voiceSetting:hover,
+body.dark-mode #voiceSetting:focus {
+    background: #000;
+    color: #fff;
+    border-color: #000;
+
+    box-shadow:
+        0 6px 16px rgba(0, 0, 0, .35);
+}
+
+
+body.dark-mode #voiceSetting option {
+    background: #222;
+    color: #fff;
+}

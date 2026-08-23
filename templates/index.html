@@ -1966,7 +1966,7 @@ function getSelectedVoiceType() {
     return (
         localStorage.getItem(
             "oddiVoice"
-        ) || "formal"
+        ) || "male"
     );
 }
 
@@ -2118,21 +2118,7 @@ function getBestSpeechVoice(language, voiceType) {
             }
         }
 
-        /* Formal */
-        if (voiceType === "formal") {
-
-            if (voice.localService) {
-                score += 20;
-            }
-
-            if (name.includes("google")) {
-                score += 15;
-            }
-
-            if (name.includes("microsoft")) {
-                score += 15;
-            }
-        }
+       
 
         return score;
     }
