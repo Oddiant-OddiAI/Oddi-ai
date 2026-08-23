@@ -1263,6 +1263,16 @@ body.dark-mode .history-item {
         </div>
 
         <div class="setting-item">
+            <span>Voice</span>
+
+            <select id="voiceSetting">
+                
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
             <span>Typing Animation</span>
             <button id="typingBtn">ON</button>
         </div>
@@ -1922,6 +1932,222 @@ const speechLanguageMap = {
     pa: "pa-IN"
 };
 
+/* =========================================================
+   AI VOICE SELECTION
+========================================================= */
+
+let availableSpeechVoices = [];
+
+const voiceSetting =
+    document.getElementById("voiceSetting");
+
+function loadSpeechVoices() {
+
+    if (!("speechSynthesis" in window)) {
+        return;
+    }
+
+    availableSpeechVoices =
+        window.speechSynthesis.getVoices();
+}
+
+loadSpeechVoices();
+
+if ("speechSynthesis" in window) {
+    window.speechSynthesis.onvoiceschanged =
+        loadSpeechVoices;
+}
+
+
+/* Get user's selected voice */
+
+function getSelectedVoiceType() {
+
+    return (
+        localStorage.getItem(
+            "oddiVoice"
+        ) || "formal"
+    );
+}
+
+
+/* Save user's voice selection */
+
+if (voiceSetting) {
+
+    voiceSetting.value =
+        getSelectedVoiceType();
+
+    voiceSetting.addEventListener(
+        "change",
+        () => {
+
+            localStorage.setItem(
+                "oddiVoice",
+                voiceSetting.value
+            );
+
+            /*
+             * Stop current speech so the
+             * new voice is used immediately.
+             */
+            if ("speechSynthesis" in window) {
+                window.speechSynthesis.cancel();
+            }
+        }
+    );
+}
+
+
+/* Find the best available voice */
+
+function getBestSpeechVoice(language, voiceType) {
+
+    if (!availableSpeechVoices.length) {
+        loadSpeechVoices();
+    }
+
+    const voices = availableSpeechVoices;
+
+    if (!voices.length) {
+        return null;
+    }
+
+    const languageCode =
+        language.toLowerCase().split("-")[0];
+
+    const languageVoices = voices.filter(voice =>
+        voice.lang
+            .toLowerCase()
+            .startsWith(languageCode)
+    );
+
+    /*
+     * Prefer voices matching the selected language.
+     * If none exist, use all available voices.
+     */
+    const candidates =
+        languageVoices.length
+            ? languageVoices
+            : voices;
+
+    const femaleWords = [
+        "female",
+        "woman",
+        "zira",
+        "samantha",
+        "susan",
+        "karen",
+        "victoria",
+        "hazel",
+        "google hindi",
+        "google español",
+        "google français"
+    ];
+
+    const maleWords = [
+        "male",
+        "man",
+        "david",
+        "mark",
+        "alex",
+        "daniel",
+        "george",
+        "james",
+        "ravi"
+    ];
+
+    function scoreVoice(voice) {
+
+        const name =
+            voice.name.toLowerCase();
+
+        let score = 0;
+
+        /* Language match */
+        if (
+            voice.lang
+                .toLowerCase()
+                .startsWith(languageCode)
+        ) {
+            score += 100;
+        }
+
+        /* Prefer local/system voices */
+        if (voice.localService) {
+            score += 10;
+        }
+
+        /* Male */
+        if (voiceType === "male") {
+
+            if (
+                maleWords.some(word =>
+                    name.includes(word)
+                )
+            ) {
+                score += 100;
+            }
+
+            if (
+                femaleWords.some(word =>
+                    name.includes(word)
+                )
+            ) {
+                score -= 80;
+            }
+        }
+
+        /* Female */
+        if (voiceType === "female") {
+
+            if (
+                femaleWords.some(word =>
+                    name.includes(word)
+                )
+            ) {
+                score += 100;
+            }
+
+            if (
+                maleWords.some(word =>
+                    name.includes(word)
+                )
+            ) {
+                score -= 80;
+            }
+        }
+
+        /* Formal */
+        if (voiceType === "formal") {
+
+            if (voice.localService) {
+                score += 20;
+            }
+
+            if (name.includes("google")) {
+                score += 15;
+            }
+
+            if (name.includes("microsoft")) {
+                score += 15;
+            }
+        }
+
+        return score;
+    }
+
+    return candidates
+        .map(voice => ({
+            voice,
+            score: scoreVoice(voice)
+        }))
+        .sort(
+            (a, b) =>
+                b.score - a.score
+        )[0]?.voice || null;
+}
+
 const languageSetting =
     document.getElementById("languageSetting");
 
@@ -1980,6 +2206,35 @@ function speakVoiceReply(text) {
 
     utterance.lang =
         speechLanguageMap[getSelectedLanguage()] || "en-IN";
+    
+    const selectedVoiceType =
+        getSelectedVoiceType();
+
+    const selectedLanguage =
+        speechLanguageMap[
+            getSelectedLanguage()
+        ] || "en-IN";
+
+    const selectedVoice =
+        getBestSpeechVoice(
+            selectedLanguage,
+            selectedVoiceType
+        );
+
+    if (
+        selectedVoice &&
+        selectedVoice.lang
+            .toLowerCase()
+            .startsWith(
+                selectedLanguage
+                    .toLowerCase()
+                    .split("-")[0]
+            )
+    ) {
+        utterance.voice = selectedVoice;
+    }
+
+    utterance.lang = selectedLanguage;
 
     utterance.rate = 1;
     utterance.pitch = 1;
@@ -2626,9 +2881,32 @@ function speakAIMessage(button) {
         new SpeechSynthesisUtterance(
             text
         );
-        
-    utterance.lang =
-        speechLanguageMap[getSelectedLanguage()] || "en-IN";
+
+    const selectedVoiceType =
+        getSelectedVoiceType();
+
+    const selectedLanguage =
+        speechLanguageMap[
+            getSelectedLanguage()
+        ] || "en-IN";
+
+    const selectedVoice =
+        getBestSpeechVoice(
+            selectedLanguage,
+            selectedVoiceType
+        );
+
+    if (selectedVoice) {
+        utterance.voice =
+            selectedVoice;
+
+        utterance.lang =
+            selectedVoice.lang;
+    } else {
+        utterance.lang =
+            selectedLanguage;
+    }
+
     utterance.rate = 1;
     utterance.pitch = 1;
     utterance.volume = 1;
