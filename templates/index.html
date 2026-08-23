@@ -1246,6 +1246,23 @@ body.dark-mode .history-item {
         </div>
 
         <div class="setting-item">
+            <span>Language</span>
+
+            <select id="languageSetting">
+                <option value="en">English</option>
+                <option value="hi">हिन्दी</option>
+                <option value="bn">বাংলা</option>
+                <option value="mr">मराठी</option>
+                <option value="gu">ગુજરાતી</option>
+                <option value="ta">தமிழ்</option>
+                <option value="te">తెలుగు</option>
+                <option value="kn">ಕನ್ನಡ</option>
+                <option value="ml">മലയാളം</option>
+                <option value="pa">ਪੰਜਾਬੀ</option>
+            </select>
+        </div>
+
+        <div class="setting-item">
             <span>Typing Animation</span>
             <button id="typingBtn">ON</button>
         </div>
@@ -1885,6 +1902,48 @@ function stopVoiceMode() {
     updateActionButton();
 }
 
+function getSelectedLanguage() {
+    const languageSetting =
+        document.getElementById("languageSetting");
+
+    return languageSetting?.value || "en";
+}
+
+const speechLanguageMap = {
+    en: "en-IN",
+    hi: "hi-IN",
+    bn: "bn-IN",
+    mr: "mr-IN",
+    gu: "gu-IN",
+    ta: "ta-IN",
+    te: "te-IN",
+    kn: "kn-IN",
+    ml: "ml-IN",
+    pa: "pa-IN"
+};
+
+const languageSetting =
+    document.getElementById("languageSetting");
+
+if (languageSetting) {
+
+    languageSetting.value =
+        localStorage.getItem("oddiLanguage") || "en";
+
+    languageSetting.addEventListener("change", () => {
+
+        localStorage.setItem(
+            "oddiLanguage",
+            languageSetting.value
+        );
+
+        if (recognition) {
+            recognition.lang =
+                speechLanguageMap[languageSetting.value] || "en-IN";
+        }
+    });
+}
+
 function speakVoiceReply(text) {
 
     if (
@@ -1916,8 +1975,11 @@ function speakVoiceReply(text) {
 
     const utterance =
         new SpeechSynthesisUtterance(
-            cleanText
+            text
         );
+
+    utterance.lang =
+        speechLanguageMap[getSelectedLanguage()] || "en-IN";
 
     utterance.rate = 1;
     utterance.pitch = 1;
@@ -1969,7 +2031,8 @@ if (SpeechRecognition) {
     recognition =
         new SpeechRecognition();
 
-    recognition.lang = "en-IN";
+    recognition.lang =
+        speechLanguageMap[getSelectedLanguage()] || "en-IN";
     recognition.continuous = false;
     recognition.interimResults = false;
 
@@ -2563,7 +2626,9 @@ function speakAIMessage(button) {
         new SpeechSynthesisUtterance(
             text
         );
-
+        
+    utterance.lang =
+        speechLanguageMap[getSelectedLanguage()] || "en-IN";
     utterance.rate = 1;
     utterance.pitch = 1;
     utterance.volume = 1;

@@ -1093,6 +1093,10 @@ body.dark-mode .settings-btn{
     color:#fff;
 }
 
+/* =========================================================
+   SETTINGS ITEMS
+   ========================================================= */
+
 .setting-item{
     display:flex;
     align-items:center;
@@ -1101,6 +1105,7 @@ body.dark-mode .settings-btn{
     margin:16px 0;
 }
 
+/* Settings buttons */
 .setting-item button{
     border:0;
     background:#111;
@@ -1108,6 +1113,100 @@ body.dark-mode .settings-btn{
     padding:8px 13px;
     border-radius:9px;
     cursor:pointer;
+
+    transition:
+        background .2s ease,
+        color .2s ease,
+        transform .2s ease,
+        box-shadow .2s ease;
+}
+
+.setting-item button:hover{
+    background:#000;
+    color:#fff;
+    transform:translateY(-2px);
+    box-shadow:0 5px 14px rgba(0,0,0,.15);
+}
+
+
+/* =========================================================
+   LANGUAGE DROPDOWN
+   ========================================================= */
+
+#languageSetting{
+    min-width:138px;
+    padding:9px 34px 9px 12px;
+
+    border:1px solid #d8d8d8;
+    border-radius:10px;
+
+    background:#fff;
+    color:#222;
+
+    font-size:14px;
+    font-weight:500;
+
+    cursor:pointer;
+    outline:none;
+
+    transition:
+        background .2s ease,
+        color .2s ease,
+        border-color .2s ease,
+        box-shadow .2s ease,
+        transform .2s ease;
+}
+
+
+/* Mouse is ABOVE the dropdown */
+#languageSetting:hover{
+    background:#000;
+    color:#fff;
+    border-color:#000;
+
+    transform:translateY(-1px);
+
+    box-shadow:0 5px 14px rgba(0,0,0,.18);
+}
+
+
+/* When dropdown is actually clicked/focused */
+#languageSetting:focus{
+    background:#000;
+    color:#fff;
+    border-color:#000;
+
+    box-shadow:0 0 0 3px rgba(0,0,0,.12);
+}
+
+
+/* Dropdown options */
+#languageSetting option{
+    background:#fff;
+    color:#222;
+}
+
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+body.dark-mode #languageSetting{
+    background:#222;
+    color:#fff;
+    border-color:#444;
+}
+
+body.dark-mode #languageSetting:hover,
+body.dark-mode #languageSetting:focus{
+    background:#000;
+    color:#fff;
+    border-color:#000;
+}
+
+body.dark-mode #languageSetting option{
+    background:#222;
+    color:#fff;
 }
 
 .settings-divider{
@@ -2031,4 +2130,125 @@ body.dark-mode .app::before{
     body.dark-mode .app::before{
         animation:none;
     }
+}
+
+/* =========================================================
+   LANGUAGE SELECT — PROFESSIONAL SETTINGS UI
+   ========================================================= */
+
+.setting-item select {
+    min-width: 110px;
+    height: 38px;
+    padding: 0 34px 0 12px;
+
+    border: 1px solid #dcdcdc;
+    border-radius: 10px;
+
+    background: #fff;
+    color: #111;
+
+    font-size: 14px;
+    font-weight: 500;
+
+    cursor: pointer;
+    outline: none;
+
+    transition:
+        border-color .18s ease,
+        box-shadow .18s ease,
+        background .18s ease;
+}
+
+.setting-item select:hover {
+    border-color: #bdbdbd;
+    background: #fafafa;
+}
+
+.setting-item select:focus {
+    border-color: #111;
+    box-shadow: 0 0 0 3px rgba(0,0,0,.08);
+}
+
+/* Dark mode */
+body.dark-mode .setting-item select {
+    background: #2f2f2f;
+    color: #fff;
+    border-color: #444;
+}
+
+body.dark-mode .setting-item select:hover {
+    background: #383838;
+    border-color: #555;
+}
+
+body.dark-mode .setting-item select:focus {
+    border-color: #fff;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.08);
+}
+
+/* Language text */
+.setting-item label {
+    font-size: 15px;
+    font-weight: 500;
+}
+/* =========================================
+   LANGUAGE SELECTOR - POLISHED UI
+   ========================================= */
+
+#languageSelect {
+    appearance: auto;
+    min-width: 138px;
+    padding: 9px 34px 9px 12px;
+
+    border: 1px solid #d0d0d0;
+    border-radius: 10px;
+
+    background: #ffffff;
+    color: #111111;
+
+    font-size: 14px;
+    font-family: inherit;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+/* Mouse over */
+#languageSelect:hover {
+    background: #111111;
+    color: #ffffff;
+    border-color: #111111;
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 5px 14px rgba(0, 0, 0, 0.18);
+}
+
+/* When clicked / opened */
+#languageSelect:focus {
+    outline: none;
+    border-color: #111111;
+
+    box-shadow:
+        0 0 0 3px rgba(0, 0, 0, 0.12);
+}
+
+/* Keyboard focus */
+#languageSelect:focus-visible {
+    outline: 2px solid #111111;
+    outline-offset: 2px;
+}
+
+/* Dropdown options */
+#languageSelect option {
+    background: #ffffff;
+    color: #111111;
+    padding: 8px;
 }
