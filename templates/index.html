@@ -373,6 +373,73 @@ body {
     box-shadow: 0 10px 26px rgba(0,0,0,.10) !important;
 }
 
+/* ---------- Sidebar utility buttons ---------- */
+.sidebar-utility-buttons {
+    position: fixed;
+    left: 25px;
+    top: 140px;
+    z-index: 351;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+}
+.sidebar-utility-btn {
+    width: 46px;
+    height: 46px;
+    border: 1px solid #e9e9e9;
+    border-radius: 13px;
+    background: #fff;
+    color: #111;
+    box-shadow: 0 8px 22px rgba(0,0,0,.07);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+}
+.sidebar-utility-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 26px rgba(0,0,0,.11);
+}
+body.dark-mode .sidebar-utility-btn {
+    background:#111; color:#eee; border-color:#333;
+}
+@media (max-width:768px) {
+    .sidebar-utility-buttons { left: 15px; top: 136px; }
+}
+
+/* Bin / shortcuts modal */
+.utility-modal {
+    position: fixed; inset: 0; z-index: 2200;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,.45); backdrop-filter: blur(4px);
+}
+.utility-modal.show { display:flex; }
+.utility-box {
+    width:min(620px, calc(100vw - 30px)); max-height:min(78vh, 680px);
+    overflow:hidden; background:#fff; color:#111; border-radius:18px;
+    box-shadow:0 24px 70px rgba(0,0,0,.25); padding:22px;
+}
+.utility-box h3 { margin:0 0 14px; }
+.utility-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.utility-close { border:0; background:#f2f2f2; border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:18px; }
+.utility-list { overflow:auto; max-height:56vh; display:flex; flex-direction:column; gap:8px; }
+.bin-item { border:1px solid #ddd; border-radius:12px; padding:12px; display:flex; align-items:center; gap:10px; }
+.bin-item-main { min-width:0; flex:1; }
+.bin-item-title { font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.bin-item-meta { font-size:12px; opacity:.65; margin-top:3px; }
+.bin-actions { display:flex; gap:6px; }
+.bin-actions button { border:1px solid #ddd; background:#f7f7f7; border-radius:8px; padding:7px 9px; cursor:pointer; }
+.bin-actions .permanent-delete { background:#e52929; color:#fff; border-color:#e52929; }
+.utility-empty { padding:30px 12px; text-align:center; opacity:.6; }
+.shortcut-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.shortcut-row { border:1px solid #e1e1e1; border-radius:10px; padding:11px 12px; display:flex; justify-content:space-between; gap:12px; }
+.shortcut-key { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-weight:700; }
+body.dark-mode .utility-box { background:#181818; color:#eee; }
+body.dark-mode .utility-close, body.dark-mode .bin-actions button, body.dark-mode .shortcut-row, body.dark-mode .bin-item { background:#222; color:#eee; border-color:#3a3a3a; }
+@media (max-width:600px) { .shortcut-grid{grid-template-columns:1fr;} }
+
 /* ---------- Chat surface ---------- */
 .chatbox {
     position: relative !important;
@@ -937,6 +1004,985 @@ body.dark-mode .history-item {
             .action-confirm-buttons button {
                 flex: 1 !important;
             }
+            .attachment-preview {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .attachment-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+       
+
+
+
+            .attachment-toggle {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+
+                flex: 0 0 30px;
+                width: 30px;
+                height: 30px;
+
+                border: none;
+                background: #f1f1f1;
+                color: #222;
+
+                cursor: pointer;
+                padding: 0;
+                border-radius: 8px;
+
+                font-size: 14px;
+                font-weight: 600;
+            }
+
+            .attachment-toggle:hover {
+                background: #e9e9e9;
+            }
+
+            #attachmentArrow {
+                flex: 0 0 30px;
+                width: 30px;
+                height: 30px;
+
+                display: flex;
+                align-items: center;
+                justify-content: center;
+
+                text-align: center;
+                font-size: 16px;
+                font-weight: 700;
+
+                border-radius: 8px;
+                background: #f1f1f1;
+            }
+
+            
+
+            .attachment-list {
+                flex-direction: column;
+                gap: 5px;
+                width: 100%;
+                max-height: 180px;
+                overflow-y: auto;
+                padding: 4px 0;
+            }
+
+            .attachment-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                padding: 7px 10px;
+                border-radius: 8px;
+                background: rgba(0, 0, 0, 0.04);
+                font-size: 13px;
+            }
+
+            .attachment-file-name {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                flex: 1;
+            }
+
+            .attachment-file-remove {
+                border: none;
+                background: transparent;
+                cursor: pointer;
+                font-size: 12px;
+                opacity: 0.7;
+                padding: 3px 6px;
+            }
+
+            .attachment-file-remove:hover {
+                opacity: 1;
+            }
+        }
+    </style>
+    <style id="attachment-preview-fix">
+
+        .attachment-preview {
+            display: none;
+            flex-direction: column !important;
+            gap: 8px;
+            width: min(760px, calc(100vw - 40px));
+            max-width: 760px;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            border: 1px solid #e2e2e2;
+            border-radius: 14px;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(0,0,0,.08);
+            margin: 0 auto 8px;
+        }
+
+        .attachment-header {
+            display: flex !important;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            min-width: 0;
+        }
+
+        .attachment-toggle {
+            display: flex !important;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: #222;
+            cursor: pointer;
+            padding: 5px 6px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .attachment-toggle:hover {
+            background: #f4f4f4;
+        }
+
+        #attachmentArrow {
+            flex: 0 0 30px;
+            width: 30px;
+            height: 30px;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            text-align: center;
+            font-size: 16px;
+            font-weight: 700;
+
+            border-radius: 8px;
+            background: #f1f1f1;
+        }
+
+        #attachmentName {
+            display: block !important;
+
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
+            color: #222 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+
+            font-size: 14px;
+            font-weight: 500;
+            padding: 0 8px;
+        }
+
+        .attachment-list {
+            display: none;
+            flex-direction: column !important;
+            gap: 5px;
+            width: 100%;
+            max-height: 180px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 4px 2px;
+            box-sizing: border-box;
+        }
+
+        .attachment-item {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            width: 100%;
+            box-sizing: border-box;
+            padding: 7px 10px;
+            border-radius: 8px;
+            background: #f5f5f5;
+            font-size: 13px;
+        }
+
+        .attachment-file-name {
+            min-width: 0;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .attachment-file-remove {
+            flex: 0 0 auto;
+            border: none;
+            background: #e9e9e9;
+            color: #222;
+            cursor: pointer;
+            border-radius: 6px;
+            padding: 3px 7px;
+            font-size: 12px;
+        }
+
+        .attachment-file-remove:hover {
+            background: #dcdcdc;
+        }
+
+        body.dark-mode .attachment-preview {
+            background: #111;
+            border-color: #2a2a2a;
+        }
+
+        body.dark-mode .attachment-toggle {
+            color: #fff;
+        }
+
+        body.dark-mode .attachment-toggle:hover {
+            background: #222;
+        }
+
+        body.dark-mode .attachment-item {
+            background: #1c1c1c;
+        }
+
+        body.dark-mode .attachment-file-remove {
+            background: #292929;
+            color: #fff;
+        }
+
+    </style>
+
+    <style id="sidebar-redesign-v2">
+        /* =====================================================
+           ODDI AI — SIDEBAR REDESIGN V2
+           ===================================================== */
+        .sidebar {
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            padding: 14px 10px 12px !important;
+            box-sizing: border-box !important;
+        }
+
+        .new-chat-btn {
+            flex: 0 0 auto !important;
+            width: 100% !important;
+            min-height: 46px !important;
+            margin: 0 0 8px !important;
+        }
+
+        .sidebar-top-actions {
+            display: flex !important;
+            gap: 7px !important;
+            width: 100% !important;
+            margin: 0 0 8px !important;
+            flex: 0 0 auto !important;
+        }
+
+        .sidebar-top-actions .settings-btn,
+        .sidebar-top-actions .install-btn {
+            position: static !important;
+            display: flex;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 40px !important;
+            margin: 0 !important;
+            padding: 0 10px !important;
+            border-radius: 10px !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            box-sizing: border-box !important;
+            box-shadow: none !important;
+        }
+
+
+        .sidebar-top-actions .install-btn {
+            display: none;
+        }
+
+        .sidebar-top-actions .settings-btn {
+            border: 1px solid #e5e5e5 !important;
+            background: #f7f7f7 !important;
+            color: #222 !important;
+            cursor: pointer !important;
+        }
+
+        .sidebar-top-actions .settings-btn:hover {
+            background: #ededed !important;
+            transform: translateY(-1px);
+        }
+
+        .sidebar-top-actions .install-btn {
+            background: #0a0a0a !important;
+            color: #fff !important;
+            border: 1px solid #0a0a0a !important;
+        }
+
+        .sidebar-top-actions .install-btn:hover {
+            background: #222 !important;
+            transform: translateY(-1px);
+        }
+
+        .chat-search-wrap {
+            flex: 0 0 auto !important;
+            margin: 0 0 9px !important;
+        }
+
+        .chat-history {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow: hidden !important;
+            gap: 8px !important;
+            padding: 2px 0 !important;
+        }
+
+        .pinned-history-section {
+            position: static !important;
+            flex: 0 0 auto !important;
+            max-height: 148px !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            padding: 4px 3px 5px !important;
+            margin: 0 !important;
+            border: 1px solid #e8e8e8 !important;
+            border-radius: 11px !important;
+            background: #fafafa !important;
+            scrollbar-width: thin !important;
+        }
+
+        .pinned-history-section::before {
+            content: "PINNED";
+            display: block;
+            padding: 2px 7px 5px;
+            color: #888;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .08em;
+        }
+
+        .normal-history-section {
+            position: static !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            padding: 0 3px 8px !important;
+            scrollbar-width: thin !important;
+        }
+
+        .normal-history-section::before {
+            content: "RECENT";
+            display: block;
+            padding: 2px 7px 5px;
+            color: #888;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .08em;
+        }
+
+        .history-item {
+            position: relative !important;
+            display: flex !important;
+            align-items: center !important;
+            min-height: 42px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            margin: 2px 0 !important;
+            padding: 8px 8px 8px 10px !important;
+            border: 1px solid transparent !important;
+            border-radius: 10px !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            transition: background .15s ease, border-color .15s ease, transform .15s ease !important;
+        }
+
+        .history-item:hover {
+            background: #f4f4f4 !important;
+            border-color: #e8e8e8 !important;
+            transform: translateX(1px);
+        }
+
+        .history-item.active-chat {
+            background: #0a0a0a !important;
+            border-color: #0a0a0a !important;
+        }
+
+        .history-title {
+            display: block !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+            font-size: 13px !important;
+        }
+
+        .history-actions {
+            display: flex !important;
+            align-items: center !important;
+            gap: 2px !important;
+            margin-left: 5px !important;
+            opacity: 0 !important;
+            transform: translateX(4px) !important;
+            pointer-events: none !important;
+            transition: opacity .15s ease, transform .15s ease !important;
+        }
+
+        .history-item:hover .history-actions,
+        .history-item.active-chat .history-actions {
+            opacity: 1 !important;
+            transform: translateX(0) !important;
+            pointer-events: auto !important;
+        }
+
+        .history-actions button {
+            width: 27px !important;
+            height: 27px !important;
+            padding: 0 !important;
+            border: none !important;
+            border-radius: 7px !important;
+            background: transparent !important;
+            cursor: pointer !important;
+            font-size: 12px !important;
+        }
+
+        .history-actions button:hover {
+            background: rgba(0,0,0,.08) !important;
+        }
+
+        .history-item.active-chat .history-actions button:hover {
+            background: rgba(255,255,255,.14) !important;
+        }
+
+        body.dark-mode .sidebar-top-actions .settings-btn {
+            background: #171717 !important;
+            color: #fff !important;
+            border-color: #2b2b2b !important;
+        }
+
+        body.dark-mode .sidebar-top-actions .settings-btn:hover {
+            background: #222 !important;
+        }
+
+        body.dark-mode .sidebar-top-actions .install-btn {
+            background: #f2f2f2 !important;
+            color: #080808 !important;
+            border-color: #f2f2f2 !important;
+        }
+
+        body.dark-mode .pinned-history-section {
+            background: #111 !important;
+            border-color: #292929 !important;
+        }
+
+        body.dark-mode .history-item:hover {
+            background: #1a1a1a !important;
+            border-color: #2a2a2a !important;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar-top-actions .settings-btn,
+            .sidebar-top-actions .install-btn {
+                min-height: 38px !important;
+                font-size: 11px !important;
+            }
+
+            .pinned-history-section {
+                max-height: 132px !important;
+            }
+        }
+    </style>
+
+
+
+    <!-- FINAL SIDEBAR FEATURE PACK — 9+ improvements, kept inside index.html -->
+    <style id="oddi-sidebar-final-polish">
+        /* 1) Sidebar spacing + stable layout */
+        .sidebar {
+            width: 290px !important;
+            padding: 14px 10px 12px !important;
+            gap: 0 !important;
+        }
+
+        .new-chat-btn {
+            flex: 0 0 auto !important;
+            min-height: 46px !important;
+            margin-bottom: 8px !important;
+        }
+
+        /* 2) Settings + install stay at the very top */
+        .sidebar-top-actions {
+            flex: 0 0 auto !important;
+            display: flex !important;
+            gap: 7px !important;
+            margin-bottom: 8px !important;
+        }
+
+        .sidebar-top-actions > button {
+            min-width: 0 !important;
+            min-height: 40px !important;
+        }
+
+        /* 3) Search is fixed above the scrolling history */
+        .chat-search-wrap {
+            flex: 0 0 auto !important;
+            position: relative !important;
+            margin: 0 0 9px !important;
+        }
+
+        .chat-search-input {
+            height: 40px !important;
+            border-radius: 11px !important;
+            transition: border-color .18s ease, box-shadow .18s ease, background .18s ease !important;
+        }
+
+        .chat-search-input:focus {
+            border-color: #b8b8b8 !important;
+            box-shadow: 0 0 0 3px rgba(0,0,0,.045) !important;
+        }
+
+        /* 4) Pinned chats get their own small scrollable area */
+        .pinned-history-section {
+            flex: 0 0 auto !important;
+            max-height: 142px !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            padding: 4px 3px 5px !important;
+            margin: 0 0 7px !important;
+            border: 1px solid #e8e8e8 !important;
+            border-radius: 11px !important;
+            background: #fafafa !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #b9b9b9 transparent !important;
+        }
+
+        /* 5) Recent chats use the remaining space and scroll independently */
+        .normal-history-section {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            padding: 0 3px 10px !important;
+            scrollbar-width: thin !important;
+            scrollbar-color: #b9b9b9 transparent !important;
+        }
+
+        .pinned-history-section::-webkit-scrollbar,
+        .normal-history-section::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .pinned-history-section::-webkit-scrollbar-track,
+        .normal-history-section::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .pinned-history-section::-webkit-scrollbar-thumb,
+        .normal-history-section::-webkit-scrollbar-thumb {
+            background: #bdbdbd;
+            border-radius: 999px;
+        }
+
+        .pinned-history-section::-webkit-scrollbar-thumb:hover,
+        .normal-history-section::-webkit-scrollbar-thumb:hover {
+            background: #929292;
+        }
+
+        /* 6) Section labels + live counts */
+        .pinned-history-section::before,
+        .normal-history-section::before {
+            display: block !important;
+            padding: 3px 7px 5px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            letter-spacing: .08em !important;
+            color: #888 !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 2 !important;
+        }
+
+        .pinned-history-section::before {
+            content: attr(data-label) !important;
+            background: #fafafa !important;
+        }
+
+        .normal-history-section::before {
+            content: attr(data-label) !important;
+            background: #fff !important;
+        }
+
+        /* 7) Clean chat rows + actions appear only when useful */
+        .history-item {
+            min-height: 42px !important;
+            margin: 2px 0 !important;
+            padding: 8px 8px 8px 10px !important;
+            border-radius: 10px !important;
+            transition: background .15s ease, border-color .15s ease, transform .15s ease !important;
+        }
+
+        .history-item:hover {
+            background: #f3f3f3 !important;
+            border-color: #e6e6e6 !important;
+            transform: translateX(1px) !important;
+        }
+
+        .history-item.active-chat {
+            background: #0a0a0a !important;
+            color: #fff !important;
+            border-color: #0a0a0a !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,.12) !important;
+        }
+
+        .history-item.active-chat .history-title {
+            color: #fff !important;
+        }
+
+        .history-title {
+            min-width: 0 !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            white-space: nowrap !important;
+        }
+
+        .history-actions {
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transform: translateX(4px) !important;
+            transition: opacity .15s ease, transform .15s ease !important;
+        }
+
+        .history-item:hover .history-actions,
+        .history-item:focus-within .history-actions,
+        .history-item.active-chat .history-actions {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            transform: translateX(0) !important;
+        }
+
+        .history-actions button {
+            width: 27px !important;
+            height: 27px !important;
+            border-radius: 7px !important;
+        }
+
+        /* 8) Better empty/search states */
+        .chat-search-empty {
+            padding: 24px 10px !important;
+            border-radius: 10px !important;
+            color: #888 !important;
+            text-align: center !important;
+        }
+
+        .sidebar-history-empty {
+            padding: 22px 10px !important;
+            color: #999 !important;
+            text-align: center !important;
+            font-size: 12px !important;
+        }
+
+        /* 9) Mobile-safe proportions */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: min(290px, 88vw) !important;
+                padding: 12px 9px 10px !important;
+            }
+
+            .pinned-history-section {
+                max-height: 126px !important;
+            }
+
+            .history-actions {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                transform: none !important;
+            }
+        }
+
+        /* 10) Dark mode polish */
+        body.dark-mode .pinned-history-section {
+            background: #111 !important;
+            border-color: #292929 !important;
+            scrollbar-color: #555 transparent !important;
+        }
+
+        body.dark-mode .normal-history-section::before {
+            background: #0d0d0d !important;
+        }
+
+        body.dark-mode .pinned-history-section::before {
+            background: #111 !important;
+        }
+
+        body.dark-mode .history-item:hover {
+            background: #1a1a1a !important;
+            border-color: #2a2a2a !important;
+        }
+
+        body.dark-mode .pinned-history-section::-webkit-scrollbar-thumb,
+        body.dark-mode .normal-history-section::-webkit-scrollbar-thumb {
+            background: #555;
+        }
+
+        /* Slightly stronger visual separation between the two history zones */
+        .pinned-history-section + .normal-history-section {
+            padding-top: 1px !important;
+        }
+    </style>
+
+
+<style id="oddi-sidebar-feature-suite">
+/* =========================================================
+   ODDI AI — SIDEBAR FEATURE SUITE
+   1 Today/Yesterday  2 Preview  3 Hover  4 Open/close
+   5 Empty pinned  6 Scroll memory  7 Dark mode
+   8 PWA behavior  9 Full search  10 Archive
+   11 Shortcuts 12 Keyboard nav 13 Highlight
+   14 Resize 15 Metadata
+   ========================================================= */
+.sidebar {
+    --sidebar-width: 290px;
+    width: var(--sidebar-width) !important;
+    transition: width .24s cubic-bezier(.22,1,.36,1), transform .24s cubic-bezier(.22,1,.36,1), box-shadow .24s ease !important;
+    position: relative !important;
+}
+.sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    width: 8px;
+    height: 100%;
+    cursor: col-resize;
+    z-index: 1000;
+}
+.sidebar-resize-handle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 3px;
+    width: 2px;
+    height: 42px;
+    border-radius: 3px;
+    background: transparent;
+    transform: translateY(-50%);
+    transition: background .18s ease;
+}
+.sidebar-resize-handle:hover::after,
+.sidebar.is-resizing .sidebar-resize-handle::after { background: #c8c8c8; }
+.sidebar.is-resizing { transition: none !important; user-select: none !important; }
+
+/* Sidebar open/close polish */
+@media (min-width: 769px) {
+    .sidebar { transform: translateX(-105%); visibility: hidden; }
+    .sidebar.open { transform: translateX(0); visibility: visible; }
+    .overlay { opacity: 0; pointer-events: none; transition: opacity .24s ease !important; }
+    .overlay.show { opacity: 1; pointer-events: auto; }
+}
+
+/* Rich history rows */
+.history-item {
+    align-items: flex-start !important;
+    min-height: 58px !important;
+    padding: 8px 8px 8px 10px !important;
+    cursor: pointer !important;
+    transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease !important;
+}
+.history-item:hover { transform: translateX(2px) !important; box-shadow: 0 4px 12px rgba(0,0,0,.045) !important; }
+.history-item:focus-visible { outline: 2px solid #888 !important; outline-offset: 1px !important; }
+.history-main { min-width: 0; flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; }
+.history-topline { display:flex; align-items:center; gap:5px; min-width:0; }
+.history-title { font-weight: 600 !important; line-height: 1.25 !important; }
+.history-preview { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#777; font-size:11px; line-height:1.35; }
+.history-meta { display:flex; align-items:center; gap:5px; color:#999; font-size:10px; line-height:1.25; white-space:nowrap; }
+.history-dot { opacity:.55; }
+.history-highlight { background:#fff0a8; color:inherit; border-radius:3px; padding:0 1px; }
+.history-item.active-chat .history-preview,
+.history-item.active-chat .history-meta { color:rgba(255,255,255,.68) !important; }
+.history-item.active-chat .history-highlight { background:rgba(255,255,255,.22); color:#fff; }
+
+/* Date group labels */
+.history-date-group { margin: 2px 0 5px; }
+.history-date-group-label { padding: 6px 8px 3px; color:#999; font-size:9px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+.history-date-group-items { display:flex; flex-direction:column; }
+
+/* Empty pinned state */
+.pinned-empty-state { padding: 10px 8px 11px; text-align:center; color:#aaa; font-size:10px; line-height:1.4; }
+.pinned-empty-state .empty-pin-icon { font-size:14px; display:block; margin-bottom:2px; }
+
+/* Archive section */
+.archived-toggle {
+    flex:0 0 auto; margin: 4px 3px 0; min-height:34px; border:1px solid #e7e7e7; border-radius:9px;
+    background:#fafafa; color:#777; font-size:10px; font-weight:700; cursor:pointer; text-align:left; padding:0 9px;
+    transition:background .16s ease, color .16s ease, border-color .16s ease;
+}
+.archived-toggle:hover { background:#f1f1f1; color:#222; }
+.archived-history-section { flex:0 0 auto; max-height:150px; overflow:auto; margin:5px 3px 0; padding:3px; border:1px solid #e8e8e8; border-radius:10px; }
+.archived-history-section[hidden] { display:none !important; }
+.archived-history-section .history-item { min-height:52px !important; }
+
+/* Dark mode */
+body.dark-mode .sidebar-resize-handle:hover::after,
+body.dark-mode .sidebar.is-resizing .sidebar-resize-handle::after { background:#666; }
+body.dark-mode .history-preview { color:#999; }
+body.dark-mode .history-meta { color:#777; }
+body.dark-mode .history-date-group-label { color:#777; }
+body.dark-mode .history-highlight { background:#665b1d; color:#fff; }
+body.dark-mode .pinned-empty-state { color:#777; }
+body.dark-mode .archived-toggle { background:#151515; color:#999; border-color:#292929; }
+body.dark-mode .archived-toggle:hover { background:#202020; color:#fff; }
+body.dark-mode .archived-history-section { border-color:#292929; background:#101010; }
+
+/* Composer remains above the sidebar on desktop only when closed; open sidebar gets the top layer. */
+@media (max-width:768px) {
+    .sidebar { width:min(var(--sidebar-width),88vw) !important; }
+    .sidebar-resize-handle { display:none !important; }
+    .history-item { min-height:56px !important; }
+    .history-preview { font-size:10px; }
+    .history-meta { font-size:9px; }
+}
+</style>
+
+
+
+    <!-- =========================================================
+         ODDI AI — FINAL LAYOUT SAFETY FIX
+         Keeps the 15 sidebar features isolated from the main app
+         shell so feature CSS cannot collapse/reflow the chat UI.
+         ========================================================= -->
+    <style id="oddi-final-layout-safety-fix">
+        html, body {
+            width: 100% !important;
+            height: 100% !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+        }
+
+        .app {
+            position: relative !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            min-height: 0 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+
+        .header {
+            position: relative !important;
+            flex: 0 0 68px !important;
+            width: 100% !important;
+            height: 68px !important;
+            min-height: 68px !important;
+            max-height: 68px !important;
+            box-sizing: border-box !important;
+            display: flex !important;
+            align-items: center !important;
+            margin: 0 !important;
+            padding: 0 22px 0 16px !important;
+            overflow: visible !important;
+        }
+
+        .chatbox {
+            position: relative !important;
+            flex: 1 1 auto !important;
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            box-sizing: border-box !important;
+        }
+
+        
+
+        .header-controls {
+            margin-left: auto !important;
+            flex: 0 0 auto !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        .menu-btn {
+            z-index: 350 !important;
+        }
+
+        /* Desktop splash must never participate in flex layout. */
+        #splash-screen {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            z-index: 2147483647 !important;
+        }
+
+        /* Sidebar is an overlay panel, not a flex child of .app. */
+        #sidebar.sidebar {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            box-sizing: border-box !important;
+            z-index: 2147483646 !important;
+        }
+
+        #overlay.overlay {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 2147483645 !important;
+        }
+
+        /* The attachment preview must stay above the composer, but inside
+           the app's normal visual layer. */
+        #attachmentPreview {
+            z-index: 590 !important;
+        }
+
+        .input-area {
+            z-index: 600 !important;
+        }
+
+        /* Prevent the advanced sidebar rules from accidentally changing
+           the main content's flex sizing. */
+        .sidebar ~ .header,
+        .sidebar ~ .chatbox {
+            flex-shrink: 1 !important;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-basis: 68px !important;
+                height: 68px !important;
+                min-height: 68px !important;
+                max-height: 68px !important;
+            }
+
+            
+
+            .chatbox {
+                flex: 1 1 auto !important;
+            }
+
+            #sidebar.sidebar {
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+            }
         }
     </style>
 
@@ -981,6 +2027,16 @@ body.dark-mode .history-item {
         </div>
         {% endif %}
 
+        <div class="sidebar-top-actions">
+            <button id="settingsBtn" class="settings-btn" type="button">
+                ⚙️ Settings
+            </button>
+
+            <button id="installBtn" class="install-btn" type="button" aria-label="Add Oddi AI to your home screen">
+                📲 Add to Home Screen
+            </button>
+        </div>
+
         <div class="chat-search-wrap">
             <span class="chat-search-icon">🔍</span>
             <input
@@ -994,14 +2050,7 @@ body.dark-mode .history-item {
         <div id="chatHistory" class="chat-history">
         </div>
         <div class="chat-list"></div>
-
-        <button id="installBtn" class="install-btn" type="button" aria-label="Add Oddi AI to your home screen">
-            📲 Add to Home Screen
-        </button>
-
-        <button id="settingsBtn" class="settings-btn">
-            ⚙️ Settings
-        </button>
+        <div id="sidebarResizeHandle" class="sidebar-resize-handle" title="Resize sidebar" aria-label="Resize sidebar"></div>
     </div>
 
     <div id="overlay" class="overlay"></div>
@@ -1049,6 +2098,11 @@ body.dark-mode .history-item {
             <path d="M4 18H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
     </button>
+
+    <div class="sidebar-utility-buttons" aria-label="Sidebar tools">
+        <button id="binBtn" class="sidebar-utility-btn" type="button" title="Recently deleted chats" aria-label="Recently deleted chats">🗑️</button>
+        <button id="shortcutsBtn" class="sidebar-utility-btn" type="button" title="Keyboard shortcuts" aria-label="Keyboard shortcuts">⌨️</button>
+    </div>
 
     <!-- Desktop splash -->
     <div id="splash-screen">
@@ -1108,13 +2162,38 @@ body.dark-mode .history-item {
     </main>
 
     <!-- Footer -->
-     <div id="attachmentPreview" class="attachment-preview" style="display:none;">
+    <div id="attachmentPreview" class="attachment-preview" style="display:none;">
 
-        <span id="attachmentName"></span>
+        <div class="attachment-header">
 
-        <button id="removeAttachment">✖</button>
+            <button
+                id="attachmentToggle"
+                class="attachment-toggle"
+                type="button"
+                aria-expanded="false"
+                title="Show attached files">
+                <span id="attachmentArrow">▴</span>
+            </button>
+
+            <span id="attachmentName"></span>
+
+            <button
+                id="removeAttachment"
+                type="button"
+                title="Remove all files">
+                ✖
+            </button>
+
+        </div>
+
+        <div
+            id="attachmentList"
+            class="attachment-list"
+            style="display:none;">
+        </div>
 
     </div>
+
     <div class="input-area">
         <button id="attach-btn" class="attach-btn">+</button>
         <input
@@ -1163,6 +2242,34 @@ body.dark-mode .history-item {
 
 </div>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<div id="binModal" class="utility-modal" aria-hidden="true">
+    <div class="utility-box">
+        <div class="utility-header">
+            <h3>🗑️ Recently Deleted</h3>
+            <button id="closeBin" class="utility-close" type="button">✕</button>
+        </div>
+        <p style="opacity:.65;margin:0 0 14px;">Chats stay here until you permanently delete them or restore them.</p>
+        <div id="binList" class="utility-list"></div>
+    </div>
+</div>
+
+<div id="shortcutsModal" class="utility-modal" aria-hidden="true">
+    <div class="utility-box">
+        <div class="utility-header">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <button id="closeShortcuts" class="utility-close" type="button">✕</button>
+        </div>
+        <div class="shortcut-grid">
+            <div class="shortcut-row"><span>Open / close sidebar</span><span class="shortcut-key">Ctrl / ⌘ + B</span></div>
+            <div class="shortcut-row"><span>Focus chat search</span><span class="shortcut-key">Ctrl / ⌘ + K</span></div>
+            <div class="shortcut-row"><span>Focus chat search</span><span class="shortcut-key">/</span></div>
+            <div class="shortcut-row"><span>Move through chats</span><span class="shortcut-key">↑ / ↓</span></div>
+            <div class="shortcut-row"><span>Open selected chat</span><span class="shortcut-key">Enter</span></div>
+            <div class="shortcut-row"><span>Close search / dialogs</span><span class="shortcut-key">Esc</span></div>
+        </div>
+    </div>
+</div>
+
 <div id="renameModal" class="rename-modal">
 
     <div class="rename-box">
@@ -1190,16 +2297,16 @@ body.dark-mode .history-item {
 
     <div class="rename-box">
 
-        <h3>Delete Conversation?</h3>
+        <h3>Move Conversation to Bin?</h3>
 
-        <p>This action cannot be undone.</p>
+        <p>You can restore it later from the Bin.</p>
 
         <div class="rename-buttons">
 
             <button id="cancelDelete">Cancel</button>
 
             <button id="confirmDelete" class="delete-confirm">
-                Delete
+                Move to Bin
             </button>
 
         </div>
@@ -3228,6 +4335,7 @@ async function sendMessage(
             });
 
             currentConversation = 0;
+            touchConversation(conversations[0]);
 
             renderHistory();
 
@@ -3339,11 +4447,17 @@ async function sendMessage(
             pinned: false
         });
 
+        touchConversation(
+            conversations[currentConversation]
+        );
+
         await saveConversation(
             conversations[
                 currentConversation
             ]
         );
+
+        renderHistory();
     }
 
     /* -----------------------------------------
@@ -3401,8 +4515,22 @@ async function sendMessage(
     activeTypingElement = typing;
     activeGenerationConversation = currentConversation;
 
-    chat.scrollTop =
-        chat.scrollHeight;
+    const activeConversation = conversations[currentConversation];
+
+    const scrollKey = activeConversation
+        ? `oddi_chat_scroll_${getConversationKey(activeConversation)}`
+        : '';
+
+    const savedScroll = scrollKey
+        ? Number(localStorage.getItem(scrollKey) || 0)
+        : 0;
+    requestAnimationFrame(() => {
+        if (savedScroll > 0) {
+            chat.scrollTop = Math.min(savedScroll, chat.scrollHeight);
+        } else {
+            chat.scrollTop = chat.scrollHeight;
+        }
+    });
 
     /* -----------------------------------------
        SEND TO BACKEND
@@ -3734,11 +4862,17 @@ async function finishAIMessage(
         );
     }
 
+    touchConversation(
+        conversations[currentConversation]
+    );
+
     await saveConversation(
         conversations[
             currentConversation
         ]
     );
+
+    renderHistory();
 
     if (voiceReply) {
         speakVoiceReply(reply);
@@ -3804,9 +4938,14 @@ const fileInput =
         "fileInput"
     );
 
-const attachmentPreview =
+const attachmentToggle =
     document.getElementById(
-        "attachmentPreview"
+        "attachmentToggle"
+    );
+
+const attachmentArrow =
+    document.getElementById(
+        "attachmentArrow"
     );
 
 const attachmentName =
@@ -3814,9 +4953,9 @@ const attachmentName =
         "attachmentName"
     );
 
-const removeAttachment =
+const attachmentList =
     document.getElementById(
-        "removeAttachment"
+        "attachmentList"
     );
 
 attachBtn.onclick = () => {
@@ -3829,7 +4968,27 @@ fileInput.onchange = () => {
         return;
     }
 
-    selectedFiles = Array.from(fileInput.files);
+    const newFiles =
+        Array.from(fileInput.files);
+
+    // Add new files without deleting previous files
+    newFiles.forEach(file => {
+
+        const alreadyExists =
+            selectedFiles.some(existing =>
+                existing.name === file.name &&
+                existing.size === file.size &&
+                existing.lastModified === file.lastModified
+            );
+
+        if (!alreadyExists) {
+            selectedFiles.push(file);
+        }
+    });
+
+    // Reset input so the same file can be selected again later
+    fileInput.value = "";
+
     updateAttachmentPreview();
 
     if (
@@ -3845,20 +5004,128 @@ fileInput.onchange = () => {
 };
 
 function updateAttachmentPreview() {
+
     if (!selectedFiles.length) {
-        attachmentPreview.style.display = "none";
+
+        attachmentPreview.style.display =
+            "none";
+
         attachmentName.textContent = "";
+
+        attachmentList.innerHTML = "";
+
+        attachmentList.style.display =
+            "none";
+
+        attachmentArrow.textContent = "▴";
+
+        attachmentToggle.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
         return;
     }
 
-    const names = selectedFiles.map(file => file.name);
+    // Header text
     attachmentName.textContent =
         selectedFiles.length === 1
-            ? "📎 " + names[0]
-            : "📎 " + selectedFiles.length + " file(s) selected";
+            ? "📎 " + selectedFiles[0].name
+            : "📎 " +
+              selectedFiles.length +
+              " files attached";
 
-    attachmentPreview.style.display = "flex";
+    // Show preview
+    attachmentPreview.style.display =
+        "flex";
+
+    // Clear old list
+    attachmentList.innerHTML = "";
+
+    // Create one row for every file
+    selectedFiles.forEach((file, index) => {
+
+        const row =
+            document.createElement("div");
+
+        row.className =
+            "attachment-item";
+
+        const name =
+            document.createElement("span");
+
+        name.className =
+            "attachment-file-name";
+
+        name.textContent =
+            "📎 " + file.name;
+
+        const removeBtn =
+            document.createElement("button");
+
+        removeBtn.type = "button";
+
+        removeBtn.className =
+            "attachment-file-remove";
+
+        removeBtn.textContent = "✖";
+
+        removeBtn.title =
+            "Remove this file";
+
+        removeBtn.onclick = event => {
+
+            event.stopPropagation();
+
+            selectedFiles.splice(
+                index,
+                1
+            );
+
+            updateAttachmentPreview();
+        };
+
+        row.appendChild(name);
+
+        row.appendChild(removeBtn);
+
+        attachmentList.appendChild(row);
+    });
 }
+
+attachmentToggle.onclick = () => {
+
+    const isOpen =
+        attachmentToggle.getAttribute(
+            "aria-expanded"
+        ) === "true";
+
+    if (isOpen) {
+
+        attachmentList.style.display =
+            "none";
+
+        attachmentArrow.textContent =
+            "▴";
+
+        attachmentToggle.setAttribute(
+            "aria-expanded",
+            "false"
+        );
+
+    } else {
+
+        attachmentList.style.display =
+            "flex";
+
+        attachmentArrow.textContent = "▾";
+
+        attachmentToggle.setAttribute(
+            "aria-expanded",
+            "true"
+        );
+    }
+};
 
 /* =========================================================
    CTRL + V / CLIPBOARD SCREENSHOT PASTE
@@ -3894,10 +5161,8 @@ removeAttachment.onclick = () => {
 
     fileInput.value = "";
 
-    attachmentPreview.style.display =
-        "none";
-
     selectedFiles = [];
+
     updateAttachmentPreview();
 };
 
@@ -3945,119 +5210,251 @@ function isConversationPinned(conversation) {
     return !!key && getPinnedChatIds().includes(key);
 }
 
+function getConversationActivityKey(conversation) {
+    const key = getConversationKey(conversation);
+    return key ? `oddi_chat_activity_${key}` : '';
+}
+
+function touchConversation(conversation) {
+    const now = Date.now();
+    const key = getConversationActivityKey(conversation);
+    if (key) localStorage.setItem(key, String(now));
+    if (conversation) conversation.__localActivity = now;
+}
+
+function getConversationActivity(conversation) {
+    const key = getConversationActivityKey(conversation);
+    if (!key) return 0;
+    const value = Number(localStorage.getItem(key) || 0);
+    return Number.isFinite(value) ? value : 0;
+}
+
+function getConversationDate(conversation) {
+    const raw = conversation?.updated_at || conversation?.updatedAt || conversation?.created_at || conversation?.createdAt;
+    const parsed = raw ? new Date(raw).getTime() : 0;
+    const activity = getConversationActivity(conversation);
+    return Number.isFinite(parsed) && parsed > 0 ? Math.max(parsed, activity) : activity;
+}
+
+function formatChatTime(timestamp) {
+    if (!timestamp) return '';
+    const d = new Date(timestamp);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+function getDateGroup(timestamp) {
+    const d = new Date(timestamp || Date.now());
+    const now = new Date();
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startYesterday = startToday - 86400000;
+    if (d.getTime() >= startToday) return 'Today';
+    if (d.getTime() >= startYesterday) return 'Yesterday';
+    return 'Earlier';
+}
+
+function getConversationPreview(conversation) {
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        if (!msg) continue;
+        let text = String(msg.text || msg.content || '').replace(/\s+/g, ' ').trim();
+        if (text) return text;
+    }
+    return messages.length ? 'Conversation' : 'No messages yet';
+}
+
+function getConversationMeta(conversation, timestamp) {
+    const count = Array.isArray(conversation?.messages) ? conversation.messages.length : 0;
+    const time = formatChatTime(timestamp);
+    return `${count} ${count === 1 ? 'message' : 'messages'}${time ? ` · ${time}` : ''}`;
+}
+
+function highlightText(text, query) {
+    const safe = escapeUserText(String(text || ''));
+    if (!query) return safe;
+    const escapedQuery = escapeUserText(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (!escapedQuery) return safe;
+    return safe.replace(new RegExp(`(${escapedQuery})`, 'ig'), '<mark class="history-highlight">$1</mark>');
+}
+
+function conversationMatchesQuery(conversation, query) {
+    if (!query) return true;
+    const title = String(conversation?.title || '');
+    if (title.toLowerCase().includes(query)) return true;
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    return messages.some(msg => {
+        const text = String(msg?.text || msg?.content || '');
+        return text.toLowerCase().includes(query);
+    });
+}
+
+function isConversationArchived(conversation) {
+    const key = getConversationKey(conversation);
+    if (!key) return false;
+    try {
+        return JSON.parse(localStorage.getItem('oddi_archived_chats_v1') || '[]').map(String).includes(key);
+    } catch { return false; }
+}
+
+function getArchivedChatIds() {
+    try {
+        const value = JSON.parse(localStorage.getItem('oddi_archived_chats_v1') || '[]');
+        return Array.isArray(value) ? value.map(String) : [];
+    } catch { return []; }
+}
+
+function setArchivedChatIds(ids) {
+    localStorage.setItem('oddi_archived_chats_v1', JSON.stringify([...new Set(ids.map(String))]));
+}
+
+function toggleArchiveConversation(conversation) {
+    const key = getConversationKey(conversation);
+    if (!key) return;
+    const ids = getArchivedChatIds();
+    const index = ids.indexOf(key);
+    if (index === -1) ids.push(key); else ids.splice(index, 1);
+    setArchivedChatIds(ids);
+    renderHistory();
+}
+
+function createHistoryItem(conversation, options = {}) {
+    const { archived = false, searchQuery = '' } = options;
+    const pinned = isConversationPinned(conversation);
+    const active = conversations[currentConversation] === conversation;
+    const timestamp = getConversationDate(conversation);
+    const preview = getConversationPreview(conversation);
+    const item = document.createElement('div');
+    item.className = `history-item ${pinned ? 'pinned-chat' : ''} ${active ? 'active-chat' : ''}`;
+    item.tabIndex = 0;
+    item.setAttribute('role', 'button');
+    item.dataset.conversationId = getConversationKey(conversation);
+    item.dataset.index = String(conversations.indexOf(conversation));
+    item.innerHTML = `
+        <div class="history-main">
+            <div class="history-topline">
+                <span class="history-title">${pinned ? '📌 ' : ''}${highlightText(conversation.title || 'New Chat', searchQuery)}</span>
+            </div>
+            <div class="history-preview">${highlightText(preview, searchQuery)}</div>
+            <div class="history-meta"><span>${getConversationMeta(conversation, timestamp)}</span>${archived ? '<span class="history-dot">·</span><span>Archived</span>' : ''}</div>
+        </div>
+        <div class="history-actions">
+            ${!archived ? `<button class="chat-pin-btn ${pinned ? 'active' : ''}" title="${pinned ? 'Unpin chat' : 'Pin chat'}" aria-label="${pinned ? 'Unpin chat' : 'Pin chat'}">📌</button>` : ''}
+            <button class="archive-btn" title="${archived ? 'Restore chat' : 'Archive chat'}" aria-label="${archived ? 'Restore chat' : 'Archive chat'}">${archived ? '↩️' : '🗄️'}</button>
+            <button class="rename-btn" title="Rename chat" aria-label="Rename chat">✏️</button>
+            <button class="delete-btn" title="Delete chat" aria-label="Delete chat">🗑️</button>
+        </div>`;
+
+    const pinBtn = item.querySelector('.chat-pin-btn');
+    const archiveBtn = item.querySelector('.archive-btn');
+    const renameBtn = item.querySelector('.rename-btn');
+    const deleteBtn = item.querySelector('.delete-btn');
+
+    pinBtn?.addEventListener('click', event => { event.stopPropagation(); togglePinConversation(conversation); });
+    archiveBtn?.addEventListener('click', event => { event.stopPropagation(); toggleArchiveConversation(conversation); });
+    
+    renameBtn?.addEventListener("click", event => {
+        event.stopPropagation();
+
+        closeSidebarForModal();
+
+        renameModal.classList.add("show");
+        renameInput.value = conversation.title || "";
+        renameIndex = conversations.indexOf(conversation);
+    });
+
+    deleteBtn?.addEventListener("click", event => {
+        event.stopPropagation();
+
+        closeSidebarForModal();
+
+        deleteIndex = conversations.indexOf(conversation);
+        deleteModal.classList.add("show");
+    });
+
+    const open = () => openConversation(conversations.indexOf(conversation));
+    item.addEventListener('click', open);
+    item.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); }
+    });
+    return item;
+}
+
 function renderHistory() {
-    const currentId =
-        currentConversation !== null &&
-        conversations[currentConversation]
-            ? conversations[currentConversation].id
-            : null;
-
+    const currentId = currentConversation !== null && conversations[currentConversation] ? conversations[currentConversation].id : null;
     const pinnedIds = getPinnedChatIds();
+    const query = chatSearchQuery.trim().toLowerCase();
+    const includeArchived = window.__oddiShowArchived === true;
+    const archivedIds = getArchivedChatIds();
 
-    conversations.sort((a, b) => {
+    const orderedConversations = [...conversations].sort((a, b) => {
         const ap = pinnedIds.includes(getConversationKey(a)) ? 1 : 0;
         const bp = pinnedIds.includes(getConversationKey(b)) ? 1 : 0;
-        return bp - ap;
+        if (ap !== bp) return bp - ap;
+        const activityDifference = getConversationDate(b) - getConversationDate(a);
+        if (activityDifference !== 0) return activityDifference;
+        return conversations.indexOf(a) - conversations.indexOf(b);
     });
-
-    if (currentId) {
-        const newIndex = conversations.findIndex(c => c.id === currentId);
-        if (newIndex !== -1) currentConversation = newIndex;
-    }
 
     historyContainer.innerHTML = '';
-
     const pinnedSection = document.createElement('div');
     pinnedSection.className = 'pinned-history-section';
-
     const normalSection = document.createElement('div');
     normalSection.className = 'normal-history-section';
+    const archivedSection = document.createElement('div');
+    archivedSection.className = 'archived-history-section';
+    archivedSection.hidden = !includeArchived && !query;
 
-    function createHistoryItem(conversation) {
-        if (
-            chatSearchQuery &&
-            !String(conversation.title || '')
-                .toLowerCase()
-                .includes(chatSearchQuery)
-        ) {
-            return null;
-        }
+    const pinnedMatches = orderedConversations.filter(c => isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
+    const normalMatches = orderedConversations.filter(c => !isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
+    const archivedMatches = orderedConversations.filter(c => isConversationArchived(c) && conversationMatchesQuery(c, query));
 
-        const item = document.createElement('div');
-        const pinned = isConversationPinned(conversation);
-        const active = conversations[currentConversation] === conversation;
-
-        item.className = `history-item ${pinned ? 'pinned-chat' : ''} ${active ? 'active-chat' : ''}`;
-        item.innerHTML = `
-            <span class="history-title">
-                ${pinned ? '📌 ' : ''}${escapeUserText(conversation.title)}
-            </span>
-
-            <div class="history-actions">
-                <button
-                    class="chat-pin-btn ${pinned ? 'active' : ''}"
-                    title="${pinned ? 'Unpin chat' : 'Pin chat'}"
-                    aria-label="${pinned ? 'Unpin chat' : 'Pin chat'}">
-                    📌
-                </button>
-                <button class="rename-btn" title="Rename chat">✏️</button>
-                <button class="delete-btn" title="Delete chat">🗑️</button>
-            </div>
-        `;
-
-        const pinBtn = item.querySelector('.chat-pin-btn');
-        const renameBtn = item.querySelector('.rename-btn');
-        const deleteBtn = item.querySelector('.delete-btn');
-
-        pinBtn.onclick = event => {
-            event.stopPropagation();
-            togglePinConversation(conversation);
-        };
-
-        renameBtn.onclick = event => {
-            event.stopPropagation();
-            renameModal.classList.add('show');
-            renameInput.value = conversation.title;
-            renameIndex = conversations.indexOf(conversation);
-        };
-
-        deleteBtn.onclick = event => {
-            event.stopPropagation();
-            deleteIndex = conversations.indexOf(conversation);
-            deleteModal.classList.add('show');
-        };
-
-        item.onclick = () => openConversation(conversations.indexOf(conversation));
-        return item;
+    if (pinnedMatches.length) {
+        pinnedMatches.forEach(c => pinnedSection.appendChild(createHistoryItem(c, { searchQuery: query })));
+    } else if (!query) {
+        const empty = document.createElement('div');
+        empty.className = 'pinned-empty-state';
+        empty.innerHTML = '<span class="empty-pin-icon">📌</span>No pinned chats yet';
+        pinnedSection.appendChild(empty);
     }
 
-    conversations.forEach(conversation => {
-        const item = createHistoryItem(conversation);
-        if (!item) return;
-        if (isConversationPinned(conversation)) {
-            pinnedSection.appendChild(item);
-        } else {
-            normalSection.appendChild(item);
-        }
+    const groups = { Today: [], Yesterday: [], Earlier: [] };
+    normalMatches.forEach(c => groups[getDateGroup(getConversationDate(c))].push(c));
+    Object.entries(groups).forEach(([label, list]) => {
+        if (!list.length) return;
+        const group = document.createElement('div');
+        group.className = 'history-date-group';
+        group.innerHTML = `<div class="history-date-group-label">${label}</div>`;
+        const items = document.createElement('div');
+        items.className = 'history-date-group-items';
+        list.forEach(c => items.appendChild(createHistoryItem(c, { searchQuery: query })));
+        group.appendChild(items);
+        normalSection.appendChild(group);
     });
 
-    if (
-        chatSearchQuery &&
-        !pinnedSection.childElementCount &&
-        !normalSection.childElementCount
-    ) {
+    if (archivedMatches.length) {
+        archivedMatches.forEach(c => archivedSection.appendChild(createHistoryItem(c, { archived: true, searchQuery: query })));
+    }
+
+    if (pinnedMatches.length || !query) historyContainer.appendChild(pinnedSection);
+    historyContainer.appendChild(normalSection);
+
+    const archiveToggle = document.createElement('button');
+    archiveToggle.className = 'archived-toggle';
+    archiveToggle.type = 'button';
+    archiveToggle.textContent = `${includeArchived ? '▴ Hide' : '▾ Show'} archived${archivedMatches.length ? ` (${archivedMatches.length})` : ''}`;
+    archiveToggle.onclick = () => { window.__oddiShowArchived = !window.__oddiShowArchived; renderHistory(); };
+    historyContainer.appendChild(archiveToggle);
+    historyContainer.appendChild(archivedSection);
+
+    const visibleCount = pinnedMatches.length + normalMatches.length + archivedMatches.length;
+    if (query && !visibleCount) {
         const empty = document.createElement('div');
         empty.className = 'chat-search-empty';
-        empty.textContent = 'No chats found.';
+        empty.textContent = 'No chats or messages found.';
+        historyContainer.innerHTML = '';
         historyContainer.appendChild(empty);
-        return;
     }
-
-    if (pinnedSection.childElementCount) {
-        historyContainer.appendChild(pinnedSection);
-    }
-
-    historyContainer.appendChild(normalSection);
 }
 
 
@@ -4097,6 +5494,7 @@ async function openConversation(
     const conversation =
         conversations[index];
 
+    touchConversation(conversation);
     renderHistory();
 
     chat.innerHTML = "";
@@ -4437,39 +5835,45 @@ themeBtn.onclick = () => {
 let deferredInstallPrompt = null;
 const installBtn = document.getElementById("installBtn");
 
+function isOddiStandalone() {
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+
+function updateInstallButton() {
+    if (!installBtn) return;
+    installBtn.style.display = deferredInstallPrompt && !isOddiStandalone() ? 'flex' : 'none';
+}
+
 window.addEventListener("beforeinstallprompt", event => {
     event.preventDefault();
     deferredInstallPrompt = event;
-
-    if (installBtn) {
-        installBtn.style.display = "block";
-    }
+    updateInstallButton();
 });
 
 if (installBtn) {
     installBtn.addEventListener("click", async () => {
-        if (!deferredInstallPrompt) return;
-
-        deferredInstallPrompt.prompt();
-
+        if (!deferredInstallPrompt) {
+            updateInstallButton();
+            return;
+        }
+        const promptEvent = deferredInstallPrompt;
+        deferredInstallPrompt = null;
         try {
-            await deferredInstallPrompt.userChoice;
+            promptEvent.prompt();
+            await promptEvent.userChoice;
         } catch (error) {
             console.warn("Install prompt result unavailable:", error);
         }
-
-        deferredInstallPrompt = null;
-        installBtn.style.display = "none";
+        updateInstallButton();
     });
 }
 
 window.addEventListener("appinstalled", () => {
     deferredInstallPrompt = null;
-
-    if (installBtn) {
-        installBtn.style.display = "none";
-    }
+    updateInstallButton();
 });
+
+window.addEventListener('load', updateInstallButton);
 
 /* =========================================================
    SIDEBAR
@@ -4489,7 +5893,10 @@ const overlay =
     document.getElementById(
         "overlay"
     );
-
+function closeSidebarForModal() {
+    sidebar.classList.remove("open");
+    overlay.classList.remove("show");
+}
 menuBtn.onclick = () => {
 
     sidebar.classList.add(
@@ -4697,51 +6104,72 @@ cancelDelete.onclick = () => {
     );
 };
 
-confirmDelete.onclick =
-    async () => {
+const TRASH_KEY = "oddi_deleted_chats_v1";
+function getTrash() {
+    try {
+        const value = JSON.parse(localStorage.getItem(TRASH_KEY) || "[]");
+        return Array.isArray(value) ? value : [];
+    } catch { return []; }
+}
+function setTrash(items) { localStorage.setItem(TRASH_KEY, JSON.stringify(items)); }
+function renderBin() {
+    const list = document.getElementById("binList");
+    if (!list) return;
+    const trash = getTrash();
+    list.innerHTML = "";
+    if (!trash.length) {
+        list.innerHTML = '<div class="utility-empty">🗑️ Bin is empty</div>';
+        return;
+    }
+    trash.slice().reverse().forEach((conversation, reverseIndex) => {
+        const realIndex = trash.length - 1 - reverseIndex;
+        const row = document.createElement("div");
+        row.className = "bin-item";
+        const count = Array.isArray(conversation.messages) ? conversation.messages.length : 0;
+        row.innerHTML = `<div class="bin-item-main"><div class="bin-item-title"></div><div class="bin-item-meta">${count} ${count === 1 ? "message" : "messages"}</div></div><div class="bin-actions"><button class="restore-trash" type="button">↩ Restore</button><button class="permanent-delete" type="button">Delete</button></div>`;
+        row.querySelector(".bin-item-title").textContent = conversation.title || "New Chat";
+        row.querySelector(".restore-trash").onclick = async () => {
+            const item = getTrash();
+            const restored = item.splice(realIndex, 1)[0];
+            if (!restored) return;
+            setTrash(item);
+            conversations.push(restored);
+            try { await saveConversation(restored); } catch (e) { console.warn("Could not sync restored chat", e); }
+            renderHistory(); renderBin();
+        };
+        row.querySelector(".permanent-delete").onclick = async () => {
+            const item = getTrash();
+            const doomed = item[realIndex];
+            if (!doomed) return;
+            const ok = await showActionConfirmation("Delete Permanently?", "This chat will be permanently deleted and cannot be restored.", "Delete", true);
+            if (!ok) return;
+            if (doomed.id) {
+                try { await fetch(`/api/conversations/${doomed.id}`, { method: "DELETE" }); } catch (e) { console.warn("Permanent delete sync failed", e); }
+            }
+            item.splice(realIndex, 1); setTrash(item); renderBin();
+        };
+        list.appendChild(row);
+    });
+}
 
-        const conversation =
-            conversations[
-                deleteIndex
-            ];
-
-        if (
-            conversation &&
-            conversation.id
-        ) {
-
-            await fetch(
-                `/api/conversations/${conversation.id}`,
-                {
-                    method: "DELETE"
-                }
-            );
-        }
-
-        removePinnedConversation(conversation);
-
-        conversations.splice(
-            deleteIndex,
-            1
-        );
-
-        deleteModal.classList.remove(
-            "show"
-        );
-
-        currentConversation =
-            null;
-
-        renderHistory();
-
-        chat.innerHTML = "";
-    };
+confirmDelete.onclick = async () => {
+    const conversation = conversations[deleteIndex];
+    if (!conversation) return;
+    const trash = getTrash();
+    trash.push({ ...conversation, deletedAt: Date.now() });
+    setTrash(trash);
+    removePinnedConversation(conversation);
+    conversations.splice(deleteIndex, 1);
+    deleteModal.classList.remove("show");
+    currentConversation = null;
+    renderHistory();
+    chat.innerHTML = "";
+};
 
 settingsBtn.onclick = () => {
 
-    settingsModal.classList.add(
-        "show"
-    );
+    closeSidebarForModal();
+    settingsModal.classList.add("show");
 };
 
 closeSettings.onclick = () => {
@@ -4974,6 +6402,192 @@ loadConversations();
 
     chatbox.addEventListener("scroll", updateScrollState, { passive: true });
     updateScrollState();
+})();
+</script>
+
+
+
+<script id="oddi-sidebar-final-behavior">
+/* =========================================================
+   ODDI AI — SIDEBAR FINAL BEHAVIOR PACK
+   ========================================================= */
+(function () {
+    const history = document.getElementById("chatHistory");
+    const search = document.getElementById("chatSearchInput");
+    if (!history) return;
+
+    /* Keep the sidebar labels/counts synchronized after every render. */
+    const decorateHistory = () => {
+        const pinned = history.querySelector(".pinned-history-section");
+        const recent = history.querySelector(".normal-history-section");
+
+        if (pinned) {
+            const count = pinned.querySelectorAll(":scope > .history-item").length;
+            pinned.dataset.label = `PINNED${count ? `  ${count}` : ""}`;
+        }
+
+        if (recent) {
+            const count = recent.querySelectorAll(":scope > .history-item").length;
+            recent.dataset.label = `RECENT${count ? `  ${count}` : ""}`;
+        }
+    };
+
+    /* renderHistory is called throughout the app, so observe only the sidebar DOM. */
+    const observer = new MutationObserver(() => decorateHistory());
+    observer.observe(history, { childList: true, subtree: true });
+    decorateHistory();
+
+    /* Escape focuses chat search; Ctrl/Cmd+K focuses it as well. */
+    document.addEventListener("keydown", event => {
+        const tag = document.activeElement?.tagName;
+        const typing = tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
+
+        if (event.key === "/" && !typing) {
+            event.preventDefault();
+            search?.focus();
+            search?.select();
+        }
+
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+            event.preventDefault();
+            search?.focus();
+            search?.select();
+        }
+
+        if (event.key === "Escape" && document.activeElement === search) {
+            search.value = "";
+            search.dispatchEvent(new Event("input", { bubbles: true }));
+            search.blur();
+        }
+    });
+
+    /* Make the most recently used chat remain at the top after opening it. */
+    window.addEventListener("storage", event => {
+        if (event.key && event.key.startsWith("oddi_chat_activity_")) {
+            if (typeof window.renderHistory === "function") window.renderHistory();
+        }
+    });
+})();
+</script>
+
+
+<script id="oddi-bin-shortcuts-ui">
+(function () {
+    const binBtn = document.getElementById("binBtn");
+    const binModal = document.getElementById("binModal");
+    const closeBin = document.getElementById("closeBin");
+    const shortcutsBtn = document.getElementById("shortcutsBtn");
+    const shortcutsModal = document.getElementById("shortcutsModal");
+    const closeShortcuts = document.getElementById("closeShortcuts");
+    function openModal(modal) { modal?.classList.add("show"); modal?.setAttribute("aria-hidden", "false"); }
+    function closeModal(modal) { modal?.classList.remove("show"); modal?.setAttribute("aria-hidden", "true"); }
+    binBtn?.addEventListener("click", () => { renderBin(); openModal(binModal); });
+    closeBin?.addEventListener("click", () => closeModal(binModal));
+    shortcutsBtn?.addEventListener("click", () => openModal(shortcutsModal));
+    closeShortcuts?.addEventListener("click", () => closeModal(shortcutsModal));
+    [binModal, shortcutsModal].forEach(modal => modal?.addEventListener("click", e => { if (e.target === modal) closeModal(modal); }));
+    document.addEventListener("keydown", e => {
+        if (e.key === "Escape") { closeModal(binModal); closeModal(shortcutsModal); }
+    });
+})();
+</script>
+
+<script id="oddi-advanced-sidebar-features">
+/* =========================================================
+   ODDI AI — ADVANCED SIDEBAR / CHAT FEATURES
+   ========================================================= */
+(function () {
+    const history = document.getElementById('chatHistory');
+    const search = document.getElementById('chatSearchInput');
+    const resizeHandle = document.getElementById('sidebarResizeHandle');
+    const chatbox = document.getElementById('chatbox');
+    const SIDEBAR_WIDTH_KEY = 'oddi_sidebar_width_v1';
+    const MIN_W = 240, MAX_W = 420;
+
+    /* 6) Remember sidebar/history scroll positions */
+    const PIN_SCROLL_KEY = 'oddi_pinned_scroll_v1';
+    const RECENT_SCROLL_KEY = 'oddi_recent_scroll_v1';
+    function restoreSidebarScroll() {
+        const pin = history?.querySelector('.pinned-history-section');
+        const recent = history?.querySelector('.normal-history-section');
+        if (pin) pin.scrollTop = Number(localStorage.getItem(PIN_SCROLL_KEY) || 0);
+        if (recent) recent.scrollTop = Number(localStorage.getItem(RECENT_SCROLL_KEY) || 0);
+    }
+    function saveSidebarScroll() {
+        const pin = history?.querySelector('.pinned-history-section');
+        const recent = history?.querySelector('.normal-history-section');
+        if (pin) localStorage.setItem(PIN_SCROLL_KEY, String(pin.scrollTop));
+        if (recent) localStorage.setItem(RECENT_SCROLL_KEY, String(recent.scrollTop));
+        if (typeof currentConversation !== 'undefined' && currentConversation !== null && typeof conversations !== 'undefined' && conversations[currentConversation]) {
+            const key = getConversationKey(conversations[currentConversation]);
+            if (key && chatbox) localStorage.setItem(`oddi_chat_scroll_${key}`, String(chatbox.scrollTop));
+        }
+    }
+    history?.addEventListener('scroll', saveSidebarScroll, true);
+    chatbox?.addEventListener('scroll', saveSidebarScroll, { passive: true });
+    window.addEventListener('beforeunload', saveSidebarScroll);
+
+    /* 14) Sidebar resizing */
+    const savedWidth = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY) || 290);
+    if (Number.isFinite(savedWidth)) document.documentElement.style.setProperty('--oddi-sidebar-width', `${Math.max(MIN_W, Math.min(MAX_W, savedWidth))}px`);
+    const sidebarEl = document.getElementById('sidebar');
+    if (sidebarEl && Number.isFinite(savedWidth)) sidebarEl.style.setProperty('--sidebar-width', `${Math.max(MIN_W, Math.min(MAX_W, savedWidth))}px`);
+    let resizing = false;
+    let startX = 0, startW = 290;
+    resizeHandle?.addEventListener('pointerdown', event => {
+        if (window.innerWidth <= 768) return;
+        resizing = true; startX = event.clientX; startW = sidebarEl.getBoundingClientRect().width;
+        sidebarEl.classList.add('is-resizing'); resizeHandle.setPointerCapture?.(event.pointerId); event.preventDefault();
+    });
+    document.addEventListener('pointermove', event => {
+        if (!resizing) return;
+        const width = Math.max(MIN_W, Math.min(MAX_W, startW + (event.clientX - startX)));
+        sidebarEl.style.setProperty('--sidebar-width', `${width}px`);
+        localStorage.setItem(SIDEBAR_WIDTH_KEY, String(Math.round(width)));
+    });
+    document.addEventListener('pointerup', () => { if (resizing) { resizing = false; sidebarEl.classList.remove('is-resizing'); } });
+
+    /* 11/12) Keyboard shortcuts + history navigation */
+    let keyboardHistoryIndex = -1;
+    function focusHistoryItem(index) {
+        const items = [...history.querySelectorAll('.history-item')];
+        if (!items.length) return;
+        keyboardHistoryIndex = Math.max(0, Math.min(items.length - 1, index));
+        items[keyboardHistoryIndex].focus({ preventScroll: false });
+        items[keyboardHistoryIndex].scrollIntoView({ block: 'nearest' });
+    }
+    document.addEventListener('keydown', event => {
+        const tag = document.activeElement?.tagName;
+        const typing = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement?.isContentEditable;
+        const mod = event.ctrlKey || event.metaKey;
+        if (mod && event.key.toLowerCase() === 'b' && !typing) {
+            event.preventDefault();
+            sidebar?.classList.toggle('open'); overlay?.classList.toggle('show', sidebar?.classList.contains('open'));
+            return;
+        }
+        if (mod && event.key.toLowerCase() === 'f') {
+            event.preventDefault(); search?.focus(); search?.select(); return;
+        }
+        if (event.key === 'Escape' && search === document.activeElement) {
+            search.value = ''; search.dispatchEvent(new Event('input', { bubbles:true })); search.blur(); return;
+        }
+        if (!typing && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+            event.preventDefault();
+            focusHistoryItem(keyboardHistoryIndex + (event.key === 'ArrowDown' ? 1 : -1));
+        }
+        if (!typing && event.key === 'Enter' && keyboardHistoryIndex >= 0) {
+            const items = [...history.querySelectorAll('.history-item')];
+            items[keyboardHistoryIndex]?.click();
+        }
+    });
+
+    /* Re-index keyboard selection after each render. */
+    const observer = new MutationObserver(() => {
+        keyboardHistoryIndex = -1;
+        requestAnimationFrame(restoreSidebarScroll);
+    });
+    if (history) observer.observe(history, { childList: true, subtree: true });
+    requestAnimationFrame(restoreSidebarScroll);
 })();
 </script>
 
