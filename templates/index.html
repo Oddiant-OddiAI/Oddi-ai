@@ -406,7 +406,14 @@ body.dark-mode .sidebar-utility-btn {
     background:#111; color:#eee; border-color:#333;
 }
 @media (max-width:768px) {
-    .sidebar-utility-buttons { left: 15px; top: 136px; }
+    /* Phone: keep all three sidebar tools in one horizontal row.
+       Sidebar button = 25px, utility row starts after it. */
+    .sidebar-utility-buttons {
+        left: 80px;
+        top: 84px;
+        flex-direction: row;
+        gap: 9px;
+    }
 }
 
 /* Bin / shortcuts modal */
@@ -427,6 +434,11 @@ body.dark-mode .sidebar-utility-btn {
 .utility-list { overflow:auto; max-height:56vh; display:flex; flex-direction:column; gap:8px; }
 .bin-item { border:1px solid #ddd; border-radius:12px; padding:12px; display:flex; align-items:center; gap:10px; }
 .bin-item-main { min-width:0; flex:1; }
+.bin-toolbar { display:flex; justify-content:flex-end; margin:0 0 12px; }
+.delete-all-bin { border:0; border-radius:10px; padding:9px 13px; background:#181717; color:#fff; font-weight:700; cursor:pointer; transition:transform .18s ease, opacity .18s ease, box-shadow .18s ease; }
+.delete-all-bin:hover { transform:translateY(-1px); box-shadow:0 8px 18px rgba(239,43,43,.22); }
+.delete-all-bin:disabled { opacity:.5; cursor:not-allowed; transform:none; box-shadow:none; }
+body.dark-mode .delete-all-bin { background:#0a0a0a; color:#fff; }
 .bin-item-title { font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .bin-item-meta { font-size:12px; opacity:.65; margin-top:3px; }
 .bin-actions { display:flex; gap:6px; }
@@ -1985,6 +1997,44 @@ body.dark-mode .archived-history-section { border-color:#292929; background:#101
             }
         }
     </style>
+    <style id="final-mobile-sidebar-open-close-fix">
+        @media (max-width: 768px) {
+
+            /* CLOSED STATE */
+            #sidebar.sidebar {
+                transform: translateX(-105%) !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                transition:
+                    transform .24s cubic-bezier(.22,1,.36,1),
+                    visibility .24s ease,
+                    box-shadow .24s ease !important;
+            }
+
+            /* OPEN STATE */
+            #sidebar.sidebar.open {
+                transform: translateX(0) !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+            }
+
+            /* Overlay */
+            #overlay.overlay {
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                transition:
+                    opacity .24s ease,
+                    visibility .24s ease !important;
+            }
+
+            #overlay.overlay.show {
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+            }
+        }
+    </style>
 
 </head>
 
@@ -2249,6 +2299,9 @@ body.dark-mode .archived-history-section { border-color:#292929; background:#101
             <button id="closeBin" class="utility-close" type="button">✕</button>
         </div>
         <p style="opacity:.65;margin:0 0 14px;">Chats stay here until you permanently delete them or restore them.</p>
+        <div class="bin-toolbar">
+            <button id="deleteAllBinBtn" class="delete-all-bin" type="button">🗑️ Delete All Chats</button>
+        </div>
         <div id="binList" class="utility-list"></div>
     </div>
 </div>
@@ -2388,7 +2441,7 @@ body.dark-mode .archived-history-section { border-color:#292929; background:#101
 
         <hr class="settings-divider">
         <button id="clearChatBtn" class="clear-chat-btn">
-            🗑 Clear Chat
+            🗑 Move All to Bin
         </button>
 
         {% if logged_in %}
@@ -3859,8 +3912,24 @@ async function loadConversations() {
             return;
         }
 
-        conversations =
+        const loadedConversations =
             await response.json();
+
+        // Conversations moved to the local Bin stay hidden from the
+        // active history even after a page refresh. They are only
+        // removed from the server when permanently deleted from Bin.
+        const trashedIds = new Set(
+            getTrash()
+                .map(item => item && item.id)
+                .filter(Boolean)
+                .map(String)
+        );
+
+        conversations = Array.isArray(loadedConversations)
+            ? loadedConversations.filter(conversation =>
+                !conversation.id || !trashedIds.has(String(conversation.id))
+            )
+            : [];
 
         renderHistory();
 
@@ -6112,6 +6181,37 @@ function getTrash() {
     } catch { return []; }
 }
 function setTrash(items) { localStorage.setItem(TRASH_KEY, JSON.stringify(items)); }
+async function permanentlyDeleteAllBinChats() {
+    const trash = getTrash();
+    if (!trash.length) {
+        renderBin();
+        return;
+    }
+
+    const confirmed = await showActionConfirmation(
+        "Delete All Chats Permanently?",
+        "Every chat currently in the Bin will be permanently deleted and cannot be restored.",
+        "Delete All",
+        true
+    );
+    if (!confirmed) return;
+
+    /* Remove every deleted conversation from the server when it has an id.
+       Local Bin data is cleared even if one server request fails, because
+       the user explicitly confirmed permanent deletion. */
+    await Promise.all(trash.map(async conversation => {
+        if (!conversation?.id) return;
+        try {
+            await fetch(`/api/conversations/${conversation.id}`, { method: "DELETE" });
+        } catch (e) {
+            console.warn("Permanent delete sync failed", e);
+        }
+    }));
+
+    setTrash([]);
+    renderBin();
+}
+
 function renderBin() {
     const list = document.getElementById("binList");
     if (!list) return;
@@ -6151,6 +6251,9 @@ function renderBin() {
         list.appendChild(row);
     });
 }
+
+const deleteAllBinBtn = document.getElementById("deleteAllBinBtn");
+deleteAllBinBtn?.addEventListener("click", permanentlyDeleteAllBinChats);
 
 confirmDelete.onclick = async () => {
     const conversation = conversations[deleteIndex];
@@ -6283,7 +6386,7 @@ if (logoutBtn) {
 }
 
 /* =========================================================
-   CLEAR CHAT
+   MOVE ALL TO BIN
 ========================================================= */
 
 const clearChatBtn =
@@ -6294,11 +6397,15 @@ const clearChatBtn =
 clearChatBtn.onclick =
     async () => {
 
+        if (!conversations.length) {
+            return;
+        }
+
         const confirmed =
             await showActionConfirmation(
-                "Clear All Conversations?",
-                "This action cannot be undone.",
-                "Clear All",
+                "Move All Conversations to Bin?",
+                "Your chats will be moved to the Bin and can be restored later.",
+                "Move All to Bin",
                 true
             );
 
@@ -6306,32 +6413,41 @@ clearChatBtn.onclick =
             return;
         }
 
-        const response =
-            await fetch(
-                "/api/conversations/clear",
-                {
-                    method: "DELETE"
-                }
-            );
+        const trash = getTrash();
+        const existingIds = new Set(
+            trash
+                .map(item => item && item.id)
+                .filter(Boolean)
+                .map(String)
+        );
+        const now = Date.now();
 
-        if (!response.ok) {
+        conversations.forEach(conversation => {
+            // Avoid duplicate Bin entries if the same conversation is
+            // ever encountered more than once.
+            if (conversation.id && existingIds.has(String(conversation.id))) {
+                return;
+            }
 
-            alert(
-                "Could not clear conversations."
-            );
+            trash.push({
+                ...conversation,
+                deletedAt: now
+            });
 
-            return;
-        }
+            if (conversation.id) {
+                existingIds.add(String(conversation.id));
+            }
 
+            removePinnedConversation(conversation);
+        });
+
+        setTrash(trash);
         conversations = [];
-
-        currentConversation =
-            null;
-
+        currentConversation = null;
         chat.innerHTML = "";
 
         renderHistory();
-
+        renderBin();
         newChat();
     };
 

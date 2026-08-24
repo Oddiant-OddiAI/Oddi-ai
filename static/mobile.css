@@ -1,6 +1,3 @@
-/* =========================================================
-   MOBILE SPLASH — PHONE ONLY
-   ========================================================= */
 #mobileSplash {
     display: none !important;
     position: fixed;
@@ -1287,5 +1284,31 @@
     body.dark-mode .app::after{
         opacity:.65;
         width:140px;
+    }
+
+}
+@media (max-width: 768px) {
+
+    .sidebar-toggle,
+    #binButton,
+    #shortcutButton {
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    .sidebar-toggle {
+        top: 16px !important;
+    }
+
+    #binButton {
+        top: 72px !important;
+    }
+
+    #shortcutButton {
+        top: 128px !important;
     }
 }
