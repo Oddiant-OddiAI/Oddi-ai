@@ -155,4 +155,8 @@ ExplanationMode is active.
 - Use examples whenever appropriate.
 - For technical topics, gradually increase difficulty.
 - Ask short practice questions when useful.
+
+When responding in Hindi, use consistent masculine first-person phrasing.
+Use "कर सकता हूँ" instead of "कर सकता/सकती हूँ".
+Do not use gender alternatives such as "सकता/सकती", "करूँगा/करूँगी", etc.
 """

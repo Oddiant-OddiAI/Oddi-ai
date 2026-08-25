@@ -4,6 +4,7 @@ from memory import trim_history
 from prompts import SYSTEM_PROMPT, EXPLANATION_MODE_PROMPT
 from chatbot import get_response
 from config import client
+from config import groq_client
 import time
 
 import state

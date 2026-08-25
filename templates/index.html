@@ -3574,7 +3574,7 @@ function speakVoiceReply(text) {
 
     const utterance =
         new SpeechSynthesisUtterance(
-            text
+            cleanText
         );
 
     utterance.lang =
