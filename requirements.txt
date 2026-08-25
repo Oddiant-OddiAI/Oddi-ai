@@ -6,4 +6,5 @@ pypdf
 openpyxl
 python-pptx
 python-docx
-opencv-python
+opencv-python   
+groq==1.6.0
