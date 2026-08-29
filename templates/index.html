@@ -2936,15 +2936,181 @@ function createVoicePanel() {
 
 function cleanSpeechText(text) {
 
-    return text
-        .replace(/[\u{1F1E6}-\u{1F1FF}]/gu, "")
-        .replace(/[\u{1F300}-\u{1FAFF}]/gu, "")
-        .replace(/[\u{2600}-\u{27BF}]/gu, "")
-        .replace(/[\u{2300}-\u{23FF}]/gu, "")
-        .replace(/[\u{2B00}-\u{2BFF}]/gu, "")
-        .replace(/[\u{FE0E}\u{FE0F}\u{200D}\u{20E3}]/gu, "")
-        .replace(/[\u{1F3FB}-\u{1F3FF}]/gu, "")
-        .replace(/\s{2,}/g, " ")
+    return String(text)
+
+        /*
+         * Remove emoji / pictographic characters.
+         */
+        .replace(
+            /[\p{Extended_Pictographic}\p{Regional_Indicator}]/gu,
+            ""
+        )
+
+        /*
+         * Remove emoji variation selectors,
+         * zero-width joiners and keycap markers.
+         */
+        .replace(
+            /[\uFE0E\uFE0F\u200D\u20E3]/gu,
+            ""
+        )
+
+        /*
+         * Remove remaining emoji modifiers.
+         */
+        .replace(
+            /[\u{1F3FB}-\u{1F3FF}]/gu,
+            ""
+        )
+
+        /*
+         * Remove fenced code blocks completely.
+         * We don't want code formatting read aloud.
+         */
+        .replace(
+            /```[\s\S]*?```/g,
+            " "
+        )
+
+        /*
+         * Remove Markdown headings.
+         *
+         * ### Heading
+         * becomes:
+         * Heading
+         */
+        .replace(
+            /^\s{0,3}#{1,6}\s*/gm,
+            ""
+        )
+
+        /*
+         * Remove Markdown bullet points.
+         *
+         * - item
+         * * item
+         * + item
+         */
+        .replace(
+            /^\s*[-*+]\s+/gm,
+            ""
+        )
+
+        /*
+         * Remove numbered-list formatting.
+         *
+         * 1. Tell me about yourself?
+         * becomes:
+         * Tell me about yourself?
+         */
+        .replace(
+            /^\s*\d+[\.\)]\s+/gm,
+            ""
+        )
+
+        /*
+         * Remove Markdown blockquotes.
+         */
+        .replace(
+            /^\s*>\s?/gm,
+            ""
+        )
+
+        /*
+         * Remove Markdown horizontal rules.
+         */
+        .replace(
+            /^\s*([-*_])(?:\s*\1){2,}\s*$/gm,
+            ""
+        )
+
+        /*
+         * Remove Markdown bold / italic markers.
+         *
+         * **important**
+         * *important*
+         * becomes:
+         * important
+         */
+        .replace(
+            /(\*\*|__|\*|_)/g,
+            ""
+        )
+
+        /*
+         * Remove inline code markers.
+         */
+        .replace(
+            /`([^`]+)`/g,
+            "$1"
+        )
+
+        /*
+         * Convert Markdown links to their visible text.
+         *
+         * [OpenAI](https://openai.com)
+         * becomes:
+         * OpenAI
+         */
+        .replace(
+            /\[([^\]]+)\]\([^)]+\)/g,
+            "$1"
+        )
+
+        /*
+         * Remove remaining Markdown link brackets.
+         */
+        .replace(
+            /[\[\]]/g,
+            ""
+        )
+
+        /*
+         * Remove table separators and pipes.
+         *
+         * | Question | Answer |
+         * becomes natural speech.
+         */
+        .replace(
+            /\|/g,
+            " "
+        )
+
+        /*
+         * Remove unnecessary slash characters.
+         *
+         * This prevents speech such as:
+         * "slash"
+         */
+        .replace(
+            /\s*\/\s*/g,
+            " "
+        )
+
+        /*
+         * Remove decorative symbols that can be spoken strangely.
+         */
+        .replace(
+            /[~^]+/g,
+            " "
+        )
+
+        /*
+         * Normalize punctuation spacing.
+         */
+        .replace(
+            /\s+([,.!?;:])/g,
+            "$1"
+        )
+
+        /*
+         * Clean excessive whitespace.
+         */
+        .replace(
+            /\s{2,}/g,
+            " "
+        )
+
         .trim();
 }
 
@@ -3145,11 +3311,7 @@ function renderVoiceOptions() {
         return;
     }
 
-    const selectedLanguage =
-        speechLanguageMap[
-            getSelectedLanguage()
-        ] || "en-IN";
-
+    
     /*
      * Prefer voices matching the
      * currently selected language.
@@ -4251,7 +4413,10 @@ function speakAIMessage(button) {
         new SpeechSynthesisUtterance(
             text
         );
-
+    const selectedLanguage =
+        speechLanguageMap[
+            getSelectedLanguage()
+        ] || "en-IN";
     // Get currently selected Voice
     const selectedVoice =
         getSelectedVoice();
@@ -4270,10 +4435,8 @@ function speakAIMessage(button) {
             selectedLanguage;
     }
 
-    const selectedLanguage =
-        speechLanguageMap[
-            getSelectedLanguage()
-        ] || "en-IN";
+    
+
 
     
 
@@ -4757,52 +4920,118 @@ function typeAIResponse(
     return new Promise(resolve => {
 
         let i = 0;
+
         activeTypingResolve = resolve;
 
+        const startTime = performance.now();
+
+        /*
+         * Time-based typing.
+         *
+         * Important:
+         * We do NOT depend on one character per timer tick.
+         * This prevents background-tab timer throttling from
+         * making generation appear to stop.
+         */
         activeTypingInterval = setInterval(() => {
 
             if (generationStopped) {
-                clearInterval(activeTypingInterval);
-                activeTypingInterval = null;
-                activeTypingResolve = null;
-                resolve();
-                return;
-            }
-
-            element.textContent =
-                text.substring(
-                    0,
-                    i
-                );
-
-            chat.scrollTop =
-                chat.scrollHeight;
-
-            i++;
-
-            if (i > text.length) {
 
                 clearInterval(
                     activeTypingInterval
                 );
+
                 activeTypingInterval = null;
                 activeTypingResolve = null;
 
+                resolve();
+
+                return;
+            }
+
+            /*
+             * Calculate where we SHOULD be based on real elapsed time.
+             *
+             * 12ms ~= previous typing speed.
+             */
+            const elapsed =
+                performance.now() - startTime;
+
+            const targetIndex =
+                Math.min(
+                    text.length,
+                    Math.floor(elapsed / 12)
+                );
+
+            if (targetIndex !== i) {
+
+                i = targetIndex;
+
+                /*
+                 * Render Markdown continuously instead of
+                 * showing raw Markdown during typing.
+                 */
+                element.innerHTML =
+                    marked.parse(
+                        text.substring(
+                            0,
+                            i
+                        )
+                    );
+
+                /*
+                 * Highlight code blocks whenever they
+                 * become available.
+                 */
+                element
+                    .querySelectorAll("pre code")
+                    .forEach(block => {
+
+                        if (window.hljs) {
+                            hljs.highlightElement(block);
+                        }
+
+                    });
+
+                chat.scrollTop =
+                    chat.scrollHeight;
+            }
+
+            /*
+             * Finished.
+             */
+            if (i >= text.length) {
+
+                clearInterval(
+                    activeTypingInterval
+                );
+
+                activeTypingInterval = null;
+                activeTypingResolve = null;
+
+                /*
+                 * One final complete Markdown render.
+                 */
                 element.innerHTML =
                     marked.parse(text);
 
                 element
                     .querySelectorAll("pre code")
                     .forEach(block => {
+
                         if (window.hljs) {
                             hljs.highlightElement(block);
                         }
+
                     });
+
+                chat.scrollTop =
+                    chat.scrollHeight;
 
                 resolve();
             }
 
-        }, 12);
+        }, 30);
     });
 }
 
