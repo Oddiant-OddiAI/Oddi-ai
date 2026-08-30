@@ -928,6 +928,12 @@ body.dark-mode .history-item {
                 height: auto !important;
             }
 
+            /* Move the welcome/action group down to match the compact phone layout.
+               This removes the excessive empty space beneath the quick actions. */
+            .welcome-message {
+                margin-top: 70px !important;
+            }
+
             /* Keep the entire composer inside the phone viewport. */
             .input-area {
                 left: 6px !important;
@@ -5236,10 +5242,31 @@ function closeMobileHeaderMenu() {
 
 function positionMobileHeaderMenu() {
     if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return;
-    const r=mobileHeaderMoreBtn.getBoundingClientRect(), w=Math.min(210,Math.max(0,innerWidth-16)), gap=8;
-    let left = Math.max(8, innerWidth - w - 8), top = r.bottom + gap;
-    const h=mobileHeaderMoreMenu.offsetHeight; if(h&&top+h>innerHeight-8) top=Math.max(8,innerHeight-h-8);
-    Object.assign(mobileHeaderMoreMenu.style,{width:w+'px',left:left+'px',right:'auto',top:top+'px'});
+
+    const r = mobileHeaderMoreBtn.getBoundingClientRect();
+    const w = Math.min(210, Math.max(0, innerWidth - 16));
+
+    /*
+       Keep the popover below the header/tool row.  The sidebar utility
+       buttons sit around the same vertical level on phones, so opening
+       the menu directly under the three-dots button used to cover them.
+       A minimum top position gives those buttons their own clear space.
+    */
+    const gap = 8;
+    let left = Math.max(8, innerWidth - w - 8);
+    let top = Math.max(88, r.bottom + gap);
+
+    const h = mobileHeaderMoreMenu.offsetHeight;
+    if (h && top + h > innerHeight - 8) {
+        top = Math.max(88, innerHeight - h - 8);
+    }
+
+    Object.assign(mobileHeaderMoreMenu.style, {
+        width: w + 'px',
+        left: left + 'px',
+        right: 'auto',
+        top: top + 'px'
+    });
 }
 function toggleMobileHeaderMenu() {
     if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return; const open=mobileHeaderMoreMenu.classList.toggle('show'); mobileHeaderMoreMenu.setAttribute('aria-hidden',String(!open)); mobileHeaderMoreBtn.setAttribute('aria-expanded',String(open)); if(open) requestAnimationFrame(positionMobileHeaderMenu);
