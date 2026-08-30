@@ -350,6 +350,129 @@ body {
     font-size: 18px !important;
 }
 
+/* Mobile-only header overflow menu. Desktop layout remains unchanged. */
+.mobile-header-more {
+    display: none;
+    position: relative;
+}
+
+.mobile-header-more-btn {
+    width: 40px !important;
+    height: 40px !important;
+    border: 1px solid #e7e7e7 !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    color: #111 !important;
+    box-shadow: 0 4px 14px rgba(0,0,0,.05) !important;
+    font-size: 24px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+}
+
+.mobile-header-more-menu {
+    position: absolute;
+    top: 47px;
+    right: 0;
+    width: 210px;
+    padding: 7px;
+    border: 1px solid #e5e5e5;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 16px 40px rgba(0,0,0,.14);
+    display: none;
+    z-index: 2147483647;
+}
+
+.mobile-header-more-menu.show { display: block; }
+
+.mobile-header-more-menu .mobile-menu-user {
+    padding: 9px 11px 8px;
+    color: #777;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.mobile-header-more-menu button {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    color: #111;
+    text-align: left;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.mobile-header-more-menu button:hover { background: #f3f3f3; }
+
+body.dark-mode .mobile-header-more-btn,
+body.dark-mode .mobile-header-more-menu {
+    background: #111;
+    color: #fff;
+    border-color: #333;
+}
+
+body.dark-mode .mobile-header-more-menu button { color: #fff; }
+body.dark-mode .mobile-header-more-menu button:hover { background: #222; }
+
+@media (max-width: 768px) {
+    .mobile-header-more {
+        display: block !important;
+        position: relative !important;
+        flex: 0 0 40px !important;
+    }
+
+    /* Phone header: three dots + theme button only. Keep both controls
+       in a fixed, non-overlapping cluster at the far right. */
+    .header-controls {
+        position: absolute !important;
+        top: 14px !important;
+        right: 8px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 88px !important;
+        height: 40px !important;
+        display: flex !important;
+        flex-direction: row-reverse !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 8px !important;
+        box-sizing: border-box !important;
+        z-index: 1000 !important;
+    }
+
+    .theme-toggle {
+        position: static !important;
+        flex: 0 0 40px !important;
+        width: 40px !important;
+        height: 40px !important;
+        margin: 0 !important;
+    }
+
+    #themeBtn {
+        position: static !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+    }
+
+    .mobile-header-more-btn {
+        position: static !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        margin: 0 !important;
+    }
+
+    .export-chat-wrap { display: none !important; }
+    .user-btn, .login-btn { display: none !important; }
+}
+
 .user-btn,
 .login-btn {
     top: 9px !important;
@@ -2601,6 +2724,24 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
                 <button id="themeBtn" title="Switch to Dark Mode">
                     🌙
                 </button>
+            </div>
+
+            <div class="mobile-header-more" id="mobileHeaderMore">
+                <button id="mobileHeaderMoreBtn" class="mobile-header-more-btn" type="button"
+                        title="More options" aria-label="More options" aria-expanded="false">⋮</button>
+                <div id="mobileHeaderMoreMenu" class="mobile-header-more-menu" role="menu" aria-hidden="true">
+                    {% if logged_in %}
+                    <div class="mobile-menu-user">👤 {{ username }}</div>
+                    {% else %}
+                    <div class="mobile-menu-user">👤 Guest</div>
+                    {% endif %}
+                    <button type="button" data-mobile-menu-action="export">↗ Export &amp; Share</button>
+                    {% if logged_in %}
+                    
+                    {% else %}
+                    <button type="button" data-mobile-menu-action="login">🔐 Sign In</button>
+                    {% endif %}
+                </div>
             </div>
 
         </div>
@@ -4902,6 +5043,46 @@ const exportChatBtn = document.getElementById("exportChatBtn");
 const exportChatMenu = document.getElementById("exportChatMenu");
 const exportChatWrap = document.getElementById("exportChatWrap");
 
+
+/* Mobile header menu: keeps username/export out of the cramped phone header. */
+const mobileHeaderMore = document.getElementById("mobileHeaderMore");
+const mobileHeaderMoreBtn = document.getElementById("mobileHeaderMoreBtn");
+const mobileHeaderMoreMenu = document.getElementById("mobileHeaderMoreMenu");
+
+function closeMobileHeaderMenu() {
+    if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return;
+    mobileHeaderMoreMenu.classList.remove("show");
+    mobileHeaderMoreMenu.setAttribute("aria-hidden", "true");
+    mobileHeaderMoreBtn.setAttribute("aria-expanded", "false");
+}
+
+function toggleMobileHeaderMenu() {
+    if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return;
+    const open = mobileHeaderMoreMenu.classList.toggle("show");
+    mobileHeaderMoreMenu.setAttribute("aria-hidden", String(!open));
+    mobileHeaderMoreBtn.setAttribute("aria-expanded", String(open));
+}
+
+mobileHeaderMoreBtn?.addEventListener("click", event => {
+    event.stopPropagation();
+    toggleMobileHeaderMenu();
+});
+
+mobileHeaderMoreMenu?.addEventListener("click", event => {
+    const button = event.target.closest("button[data-mobile-menu-action]");
+    if (!button) return;
+    const action = button.dataset.mobileMenuAction;
+    closeMobileHeaderMenu();
+
+    if (action === "export") {
+        exportChatBtn?.click();
+    } else if (action === "login") {
+        window.location.href = "/login";
+    } else if (action === "profile") {
+        document.querySelector(".user-btn")?.click();
+    }
+});
+
 function getCurrentExportConversation() {
     if (currentConversation === null || currentConversation === undefined) {
         return null;
@@ -5536,12 +5717,16 @@ document.addEventListener("click", event => {
     if (exportChatWrap && !exportChatWrap.contains(event.target)) {
         closeExportMenu();
     }
+    if (mobileHeaderMore && !mobileHeaderMore.contains(event.target)) {
+        closeMobileHeaderMenu();
+    }
 });
 
 document.addEventListener("keydown", event => {
     if (event.key === "Escape") {
         closeExportMenu();
         closeShareModal();
+        closeMobileHeaderMenu();
     }
 });
 
