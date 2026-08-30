@@ -4695,11 +4695,18 @@ async function loadConversations() {
     }
 }
 
+const conversationSaveInFlight = new Set();
+let conversationSyncInFlight = false;
+let conversationSyncTimer = null;
+
 async function saveConversation(
     conversation
 ) {
 
     if (!conversation.id) return;
+
+    const conversationId = String(conversation.id);
+    conversationSaveInFlight.add(conversationId);
 
     try {
 
@@ -4728,7 +4735,178 @@ async function saveConversation(
             "Save conversation error:",
             error
         );
+    } finally {
+        conversationSaveInFlight.delete(conversationId);
     }
+}
+
+/* =========================================================
+   CROSS-DEVICE CONVERSATION SYNC
+   The server/database is the source of truth for logged-in users.
+   This keeps already-open phone/laptop sessions in sync without
+   requiring a logout, login, or page refresh.
+========================================================= */
+
+function conversationsHaveSameData(localConversation, serverConversation) {
+    if (!localConversation || !serverConversation) return false;
+
+    return (localConversation.title || "New Chat") === (serverConversation.title || "New Chat")
+        && JSON.stringify(localConversation.messages || []) === JSON.stringify(serverConversation.messages || []);
+}
+
+function getConversationById(id) {
+    if (id === null || id === undefined) return null;
+    const key = String(id);
+    return conversations.find(conversation =>
+        conversation && conversation.id !== null && conversation.id !== undefined
+        && String(conversation.id) === key
+    ) || null;
+}
+
+async function syncConversationsFromServer(options = {}) {
+    if (!isLoggedIn || conversationSyncInFlight) return;
+
+    conversationSyncInFlight = true;
+
+    try {
+        const response = await fetch("/api/conversations", {
+            method: "GET",
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache" }
+        });
+
+        if (!response.ok) return;
+
+        const loaded = await response.json();
+        if (!Array.isArray(loaded)) return;
+
+        const trashedIds = new Set(
+            getTrash()
+                .map(item => item && item.id)
+                .filter(Boolean)
+                .map(String)
+        );
+
+        const serverConversations = loaded.filter(conversation =>
+            !conversation.id || !trashedIds.has(String(conversation.id))
+        );
+
+        const currentId =
+            currentConversation !== null &&
+            conversations[currentConversation]?.id !== null &&
+            conversations[currentConversation]?.id !== undefined
+                ? String(conversations[currentConversation].id)
+                : null;
+
+        const localById = new Map(
+            conversations
+                .filter(conversation => conversation?.id !== null && conversation?.id !== undefined)
+                .map(conversation => [String(conversation.id), conversation])
+        );
+
+        let listChanged = false;
+        let openConversationChanged = false;
+
+        serverConversations.forEach(serverConversation => {
+            if (serverConversation?.id === null || serverConversation?.id === undefined) return;
+
+            const id = String(serverConversation.id);
+            const localConversation = localById.get(id);
+
+            if (!localConversation) {
+                conversations.push({
+                    ...serverConversation,
+                    pinned: false
+                });
+                listChanged = true;
+                return;
+            }
+
+            // Never overwrite a conversation while this device is currently
+            // saving it. This avoids a polling race with PUT /api/conversations.
+            if (conversationSaveInFlight.has(id)) return;
+
+            if (!conversationsHaveSameData(localConversation, serverConversation)) {
+                const isOpen = currentId === id;
+
+                // While AI is generating, the local conversation is actively
+                // changing. Let that generation finish before accepting a
+                // remote copy.
+                if (isOpen && generationActive) return;
+
+                localConversation.title = serverConversation.title || "New Chat";
+                localConversation.messages = Array.isArray(serverConversation.messages)
+                    ? serverConversation.messages
+                    : [];
+                localConversation.created_at = serverConversation.created_at;
+                if (serverConversation.updated_at !== undefined) {
+                    localConversation.updated_at = serverConversation.updated_at;
+                }
+
+                listChanged = true;
+                if (isOpen) openConversationChanged = true;
+            }
+        });
+
+        // Remove server-backed conversations that disappeared from the server,
+        // unless this device is in the middle of saving that same conversation.
+        const serverIds = new Set(
+            serverConversations
+                .filter(conversation => conversation?.id !== null && conversation?.id !== undefined)
+                .map(conversation => String(conversation.id))
+        );
+
+        const beforeLength = conversations.length;
+        conversations = conversations.filter(conversation => {
+            if (!conversation?.id) return true;
+            const id = String(conversation.id);
+            return serverIds.has(id) || conversationSaveInFlight.has(id);
+        });
+
+        if (conversations.length !== beforeLength) listChanged = true;
+
+        if (currentId !== null) {
+            const restoredIndex = conversations.findIndex(
+                conversation => conversation?.id !== null && String(conversation.id) === currentId
+            );
+            currentConversation = restoredIndex >= 0 ? restoredIndex : null;
+        }
+
+        if (listChanged) renderHistory();
+
+        // If another device changed the currently open chat, redraw it from
+        // the server copy. Never do this while a response is being generated.
+        if (openConversationChanged && options.refreshOpen !== false && !generationActive && currentConversation !== null) {
+            renderCurrentConversationFromState();
+        }
+    } catch (error) {
+        console.debug("Conversation sync skipped:", error);
+    } finally {
+        conversationSyncInFlight = false;
+    }
+}
+
+function startConversationSync() {
+    if (!isLoggedIn) return;
+
+    if (conversationSyncTimer) {
+        clearInterval(conversationSyncTimer);
+    }
+
+    conversationSyncTimer = setInterval(() => {
+        syncConversationsFromServer();
+    }, 4000);
+
+    // Sync immediately when the user returns to the tab/app.
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+            syncConversationsFromServer();
+        }
+    });
+
+    window.addEventListener("focus", () => {
+        syncConversationsFromServer();
+    });
 }
 
 async function createServerConversation(
@@ -7277,6 +7455,18 @@ function removePinnedConversation(conversation) {
     savePinnedChatIds(getPinnedChatIds().filter(id => id !== key));
 }
 
+function renderCurrentConversationFromState() {
+    if (generationActive || currentConversation === null || !conversations[currentConversation]) return;
+
+    const index = currentConversation;
+    const conversation = conversations[index];
+    if (!conversation) return;
+
+    // Reuse the existing conversation renderer so message actions, files,
+    // Markdown, KaTeX, and syntax highlighting remain identical.
+    openConversation(index);
+}
+
 async function openConversation(
     index
 ) {
@@ -8229,7 +8419,9 @@ input.style.height =
 
 updateActionButton();
 
-loadConversations();
+loadConversations().then(() => {
+    startConversationSync();
+});
 
 </script>
 
