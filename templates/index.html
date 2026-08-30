@@ -370,34 +370,39 @@ body {
 }
 
 .mobile-header-more-menu {
-    position: absolute;
-    top: 55px;
-    right: -4px;
-    width: 185px;
+    /* Fixed viewport positioning prevents the menu from being trapped by the header stacking context. */
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: auto;
+    width: 170px;
+    max-width: calc(100vw - 16px);
+    box-sizing: border-box;
     padding: 5px;
     border: 1px solid #e5e5e5;
     border-radius: 14px;
     background: #fff;
-    box-shadow: 0 16px 40px rgba(0,0,0,.14);
+    box-shadow: 0 16px 40px rgba(0,0,0,.18);
     display: none;
-    z-index: 2147483647;
+    z-index: 2147483647 !important;
 }
-
+.mobile-header-more-wrap {
+    position: relative;
+}
 .mobile-header-more-menu.show { display: block; }
 
 .mobile-header-more-menu .mobile-menu-user {
-    padding: 9px 11px 8px;
+    padding: 7px 8px 6px;
     color: #777;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 11px;
 }
 
 .mobile-header-more-menu button {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 10px;
+    gap: 6px;
+    padding: 7px 8px;
     border: 0;
     border-radius: 9px;
     background: transparent;
@@ -2736,11 +2741,6 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
                     <div class="mobile-menu-user">👤 Guest</div>
                     {% endif %}
                     <button type="button" data-mobile-menu-action="export">↗ Export &amp; Share</button>
-                    {% if logged_in %}
-                    
-                    {% else %}
-                    <button type="button" data-mobile-menu-action="login">🔐 Sign In</button>
-                    {% endif %}
                 </div>
             </div>
 
@@ -5056,12 +5056,17 @@ function closeMobileHeaderMenu() {
     mobileHeaderMoreBtn.setAttribute("aria-expanded", "false");
 }
 
-function toggleMobileHeaderMenu() {
+function positionMobileHeaderMenu() {
     if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return;
-    const open = mobileHeaderMoreMenu.classList.toggle("show");
-    mobileHeaderMoreMenu.setAttribute("aria-hidden", String(!open));
-    mobileHeaderMoreBtn.setAttribute("aria-expanded", String(open));
+    const r=mobileHeaderMoreBtn.getBoundingClientRect(), w=Math.min(210,Math.max(0,innerWidth-16)), gap=8;
+    let left = Math.max(8, innerWidth - w - 8), top = r.bottom + gap;
+    const h=mobileHeaderMoreMenu.offsetHeight; if(h&&top+h>innerHeight-8) top=Math.max(8,innerHeight-h-8);
+    Object.assign(mobileHeaderMoreMenu.style,{width:w+'px',left:left+'px',right:'auto',top:top+'px'});
 }
+function toggleMobileHeaderMenu() {
+    if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return; const open=mobileHeaderMoreMenu.classList.toggle('show'); mobileHeaderMoreMenu.setAttribute('aria-hidden',String(!open)); mobileHeaderMoreBtn.setAttribute('aria-expanded',String(open)); if(open) requestAnimationFrame(positionMobileHeaderMenu);
+}
+window.addEventListener('resize',()=>{if(mobileHeaderMoreMenu?.classList.contains('show'))positionMobileHeaderMenu();}); window.addEventListener('scroll',()=>{if(mobileHeaderMoreMenu?.classList.contains('show'))positionMobileHeaderMenu();},true);
 
 mobileHeaderMoreBtn?.addEventListener("click", event => {
     event.stopPropagation();
@@ -5076,10 +5081,6 @@ mobileHeaderMoreMenu?.addEventListener("click", event => {
 
     if (action === "export") {
         exportChatBtn?.click();
-    } else if (action === "login") {
-        window.location.href = "/login";
-    } else if (action === "profile") {
-        document.querySelector(".user-btn")?.click();
     }
 });
 
