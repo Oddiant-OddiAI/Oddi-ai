@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
@@ -13,14 +12,9 @@
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='style.css') }}?v=20260822-shooting-fix-1">
-
-
     <title>Oddi AI</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
     <!-- Rich content: KaTeX for equations, superscripts and subscripts -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
@@ -31,12 +25,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
-
 <link rel="icon"
       type="image/png"
       href="{{ url_for('static', filename='favicon2.png') }}">
     <title>Oddi AI</title>
-
     <!-- Splash mode safety: desktop uses splash.png, phones use splash2.png -->
     <style id="splash-mode-fix">
         #mobileSplash {
@@ -54,7 +46,6 @@
             visibility: visible;
             transition: opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1);
         }
-
         #mobileSplash img {
             width: 100%;
             height: 100%;
@@ -64,13 +55,11 @@
             object-fit: cover;
             object-position: center center;
         }
-
         #mobileSplash.hide {
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
         }
-
         @media (max-width: 768px) {
             #splash-screen {
                 display: none !important;
@@ -78,12 +67,10 @@
                 visibility: hidden !important;
                 pointer-events: none !important;
             }
-
             #mobileSplash {
                 display: flex !important;
             }
         }
-    
 /* ---------- Selected sidebar chat ---------- */
 .history-item.active-chat {
     background: #0a0a0a !important;
@@ -91,20 +78,16 @@
     color: #fff !important;
     box-shadow: 0 5px 16px rgba(0,0,0,.12) !important;
 }
-
 .history-item.active-chat .history-title {
     color: #fff !important;
 }
-
 .history-item.active-chat .history-actions button {
     color: #fff !important;
     border-color: rgba(255,255,255,.18) !important;
 }
-
 .history-item.active-chat .history-actions button:hover {
     background: rgba(255,255,255,.12) !important;
 }
-
 body.dark-mode .history-item.active-chat {
     background: #000 !important;
     border-color: #000 !important;
@@ -115,7 +98,6 @@ body.dark-mode .history-item.active-chat {
     margin: 10px 10px 8px;
     position: relative;
 }
-
 .chat-search-input {
     width: 100%;
     box-sizing: border-box;
@@ -128,12 +110,10 @@ body.dark-mode .history-item.active-chat {
     font-size: 13px;
     outline: none;
 }
-
 .chat-search-input:focus {
     border-color: #bdbdbd;
     background: #fff;
 }
-
 .chat-search-icon {
     position: absolute;
     left: 12px;
@@ -143,31 +123,25 @@ body.dark-mode .history-item.active-chat {
     opacity: .6;
     font-size: 14px;
 }
-
 .chat-search-empty {
     padding: 18px 12px;
     text-align: center;
     color: #777;
     font-size: 13px;
 }
-
 body.dark-mode .chat-search-input {
     background: #171717;
     border-color: #303030;
     color: #fff;
 }
-
 body.dark-mode .chat-search-input:focus {
     background: #111;
     border-color: #4a4a4a;
 }
-
 body.dark-mode .chat-search-empty {
     color: #aaa;
 }
-
 </style>
-
     <!-- PWA install button — same behavior/style as VedAura AI -->
     <style id="install-button-fix">
         .install-btn {
@@ -186,39 +160,55 @@ body.dark-mode .chat-search-empty {
             box-shadow: 0 8px 20px rgba(32,199,107,.22);
             transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
         }
-
         .install-btn:hover {
             background: #19b85f;
             transform: translateY(-1px);
             box-shadow: 0 10px 24px rgba(32,199,107,.28);
         }
-
         .install-btn:active {
             transform: scale(.98);
         }
-
         body.dark-mode .install-btn {
             background: #20c76b;
             color: #fff;
         }
     </style>
-
     <!-- Per-message sound button styles -->
     <style>
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-left: auto;
-        }
-
+         .header-controls {
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .header-more {
+        position: absolute !important;
+        top: 14px !important;
+        right: 62px !important;
+        width: 40px !important;
+        height: 40px !important;
+        z-index: 1000 !important;
+    }
+    .theme-toggle {
+        position: absolute !important;
+        top: 14px !important;
+        right: 14px !important;
+        width: 40px !important;
+        height: 40px !important;
+        z-index: 1000 !important;
+    }
+    .header-more-btn,
+    #themeBtn {
+        width: 40px !important;
+        height: 40px !important;
+    }
         .bot-header {
             display: flex;
             align-items: center;
             gap: 8px;
             margin-bottom: 8px;
         }
-
         .message-sound-btn {
             width: 32px;
             height: 32px;
@@ -239,32 +229,24 @@ body.dark-mode .chat-search-empty {
             transform: none;
             margin: 0;
         }
-
         .message-sound-btn:hover {
             transform: scale(1.05);
             background: #eaeaea;
         }
-
         .message-sound-btn.speaking {
             background: #111;
             color: #fff;
         }
-
         body.dark-mode .message-sound-btn {
             background: #fffbfb;
             color: #050505;
         }
-
         body.dark-mode .message-sound-btn:hover {
             background: #333;
         }
-
     </style>
-
 <style id="oddi-professional-ui">
-/* =========================================================
-   ODDI AI — PROFESSIONAL BLACK & WHITE UI OVERRIDES
-   ========================================================= */
+/* ODDI AI — PROFESSIONAL BLACK & WHITE UI OVERRIDES */
 :root {
     --oddi-black: #0a0a0a;
     --oddi-ink: #111111;
@@ -274,21 +256,17 @@ body.dark-mode .chat-search-empty {
     --oddi-soft: #f7f7f7;
     --oddi-shadow: 0 12px 34px rgba(0,0,0,.08);
 }
-
 html, body {
     background: var(--oddi-white) !important;
     color: var(--oddi-ink) !important;
 }
-
 body {
     overflow: hidden;
 }
-
 .app {
     background: var(--oddi-white) !important;
     color: var(--oddi-ink) !important;
 }
-
 /* ---------- Compact professional header ---------- */
 .header {
     position: relative !important;
@@ -304,7 +282,6 @@ body {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
 }
-
 .logo-box {
     margin: 0 0 0 16px !important;
     padding: 0 !important;
@@ -315,31 +292,26 @@ body {
     height: 54px !important;
     background: transparent !important;
 }
-
 .logo {
     width: 200px !important;
     height: auto !important;
     object-fit: contain !important;
 }
-
 .content-side {
     padding-left: 12px !important;
     margin: 0 !important;
     display: flex !important;
     align-items: center !important;
 }
-
 .title-box {
     display: flex !important;
     flex-direction: column !important;
     justify-content: center !important;
 }
-
 .header-controls {
     margin-left: auto !important;
     padding-right: 14px !important;
 }
-
 #themeBtn {
     width: 40px !important;
     height: 40px !important;
@@ -349,135 +321,6 @@ body {
     box-shadow: 0 4px 14px rgba(0,0,0,.05) !important;
     font-size: 18px !important;
 }
-
-/* Mobile-only header overflow menu. Desktop layout remains unchanged. */
-.mobile-header-more {
-    display: none;
-    position: relative;
-}
-
-.mobile-header-more-btn {
-    width: 40px !important;
-    height: 40px !important;
-    border: 1px solid #e7e7e7 !important;
-    border-radius: 50% !important;
-    background: #fff !important;
-    color: #111 !important;
-    box-shadow: 0 4px 14px rgba(0,0,0,.05) !important;
-    font-size: 24px !important;
-    line-height: 1 !important;
-    cursor: pointer !important;
-}
-
-.mobile-header-more-menu {
-    /* Fixed viewport positioning prevents the menu from being trapped by the header stacking context. */
-    position: fixed !important;
-    top: 0;
-    left: 0;
-    right: auto;
-    width: 170px;
-    max-width: calc(100vw - 16px);
-    box-sizing: border-box;
-    padding: 5px;
-    border: 1px solid #e5e5e5;
-    border-radius: 14px;
-    background: #fff;
-    box-shadow: 0 16px 40px rgba(0,0,0,.18);
-    display: none;
-    z-index: 2147483647 !important;
-}
-.mobile-header-more-wrap {
-    position: relative;
-}
-.mobile-header-more-menu.show { display: block; }
-
-.mobile-header-more-menu .mobile-menu-user {
-    padding: 7px 8px 6px;
-    color: #777;
-    font-size: 11px;
-}
-
-.mobile-header-more-menu button {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 7px 8px;
-    border: 0;
-    border-radius: 9px;
-    background: transparent;
-    color: #111;
-    text-align: left;
-    font-size: 12px;
-    cursor: pointer;
-}
-
-.mobile-header-more-menu button:hover { background: #f3f3f3; }
-
-body.dark-mode .mobile-header-more-btn,
-body.dark-mode .mobile-header-more-menu {
-    background: #111;
-    color: #fff;
-    border-color: #333;
-}
-
-body.dark-mode .mobile-header-more-menu button { color: #fff; }
-body.dark-mode .mobile-header-more-menu button:hover { background: #222; }
-
-@media (max-width: 768px) {
-    .mobile-header-more {
-        display: block !important;
-        position: relative !important;
-        flex: 0 0 40px !important;
-    }
-
-    /* Phone header: three dots + theme button only. Keep both controls
-       in a fixed, non-overlapping cluster at the far right. */
-    .header-controls {
-        position: absolute !important;
-        top: 14px !important;
-        right: 8px !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        width: 88px !important;
-        height: 40px !important;
-        display: flex !important;
-        flex-direction: row-reverse !important;
-        align-items: center !important;
-        justify-content: space-between !important;
-        gap: 8px !important;
-        box-sizing: border-box !important;
-        z-index: 1000 !important;
-    }
-
-    .theme-toggle {
-        position: static !important;
-        flex: 0 0 40px !important;
-        width: 40px !important;
-        height: 40px !important;
-        margin: 0 !important;
-    }
-
-    #themeBtn {
-        position: static !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        margin: 0 !important;
-    }
-
-    .mobile-header-more-btn {
-        position: static !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        margin: 0 !important;
-    }
-
-    .export-chat-wrap { display: none !important; }
-    .user-btn, .login-btn { display: none !important; }
-}
-
 .user-btn,
 .login-btn {
     top: 9px !important;
@@ -485,12 +328,10 @@ body.dark-mode .mobile-header-more-menu button:hover { background: #222; }
     z-index: 500 !important;
     font-size: 13px !important;
 }
-
 .left-line {
     left: 87px !important;
     background: #ededed !important;
 }
-
 /* ---------- Menu ---------- */
 .menu-btn {
     position: fixed !important;
@@ -506,12 +347,10 @@ body.dark-mode .mobile-header-more-menu button:hover { background: #222; }
     box-shadow: 0 8px 22px rgba(0,0,0,.07) !important;
     z-index: 350 !important;
 }
-
 .menu-btn:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 10px 26px rgba(0,0,0,.10) !important;
 }
-
 /* ---------- Sidebar utility buttons ---------- */
 .sidebar-utility-buttons {
     position: fixed;
@@ -590,7 +429,6 @@ body.dark-mode .delete-all-bin { background:#0a0a0a; color:#fff; }
 body.dark-mode .utility-box { background:#181818; color:#eee; }
 body.dark-mode .utility-close, body.dark-mode .bin-actions button, body.dark-mode .shortcut-row, body.dark-mode .bin-item { background:#222; color:#eee; border-color:#3a3a3a; }
 @media (max-width:600px) { .shortcut-grid{grid-template-columns:1fr;} }
-
 /* ---------- Chat surface ---------- */
 .chatbox {
     position: relative !important;
@@ -926,12 +764,6 @@ body.dark-mode .history-item {
                 width: 52px !important;
                 max-width: 52px !important;
                 height: auto !important;
-            }
-
-            /* Move the welcome/action group down to match the compact phone layout.
-               This removes the excessive empty space beneath the quick actions. */
-            .welcome-message {
-                margin-top: 70px !important;
             }
 
             /* Keep the entire composer inside the phone viewport. */
@@ -1900,14 +1732,14 @@ body.dark-mode .history-item {
 
 
 <style id="oddi-sidebar-feature-suite">
-/* =========================================================
+/* 
    ODDI AI — SIDEBAR FEATURE SUITE
    1 Today/Yesterday  2 Preview  3 Hover  4 Open/close
    5 Empty pinned  6 Scroll memory  7 Dark mode
    8 PWA behavior  9 Full search  10 Archive
    11 Shortcuts 12 Keyboard nav 13 Highlight
    14 Resize 15 Metadata
-   ========================================================= */
+    */
 .sidebar {
     --sidebar-width: 290px;
     width: var(--sidebar-width) !important;
@@ -2012,11 +1844,11 @@ body.dark-mode .archived-history-section { border-color:#292929; background:#101
 
 
 
-    <!-- =========================================================
+    <!-- 
          ODDI AI — FINAL LAYOUT SAFETY FIX
          Keeps the 15 sidebar features isolated from the main app
          shell so feature CSS cannot collapse/reflow the chat UI.
-         ========================================================= -->
+          -->
     <style id="oddi-final-layout-safety-fix">
         html, body {
             width: 100% !important;
@@ -2183,10 +2015,10 @@ body.dark-mode .archived-history-section { border-color:#292929; background:#101
 
 
 <style id="oddi-rich-content-renderer">
-/* =========================================================
+/* 
    ODDI AI — RICH CONTENT RENDERER
    Markdown + syntax-highlighted code + copy buttons + KaTeX math
-   ========================================================= */
+    */
 .ai-content {
     line-height: 1.65;
     overflow-wrap: anywhere;
@@ -2326,20 +2158,20 @@ body.dark-mode .ai-content th { background: #202020; }
 
 
 <style id="oddi-export-ui">
-/* =========================================================
+/* 
    ODDI AI — CHAT EXPORT / SHARE
-   ========================================================= */
+    */
 .export-chat-wrap {
     position: fixed;
-    top: 8px;
+    top: 9px;
     right: 195px;
     z-index: 550;
 }
 
 .export-chat-btn {
     height: 50px;
-    min-width: 40px;
-    padding: 0 15px;
+    min-width: 30px;
+    padding: 0 16px;
     border: 1px solid #e7e7e7;
     border-radius: 12px;
     background: #fff;
@@ -2400,7 +2232,16 @@ body.dark-mode .ai-content th { background: #202020; }
     text-transform: uppercase;
     letter-spacing: .06em;
 }
-
+/* Center Export & Share menu */
+#exportChatMenu.export-chat-menu.show {
+    position: fixed !important;
+    left: 50% !important;
+    top: 50% !important;
+    right: auto !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 10000 !important;
+}
 body.dark-mode .export-chat-btn,
 body.dark-mode .export-chat-menu {
     background: #111;
@@ -2585,9 +2426,354 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
 }
 </style>
 
+
+
+<!-- FINAL HEADER MORE MENU — shared desktop + phone implementation -->
+<style id="final-header-more-menu-fix">
+    /* Replace the old always-visible username/export controls with one menu. */
+    .user-btn,
+    .login-btn,
+    #exportChatBtn {
+        display: none !important;
+    }
+
+    .export-chat-wrap {
+        top: 9px !important;
+        right: 14px !important;
+        width: 0 !important;
+        height: 0 !important;
+        pointer-events: none !important;
+    }
+
+    .export-chat-menu {
+        pointer-events: auto !important;
+    }
+
+    .header-controls {
+        gap: 10px !important;
+    }
+
+    .header-more {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .header-more-btn {
+        width: 40px !important;
+        height: 40px !important;
+        padding: 0 !important;
+        border: 1px solid #e7e7e7 !important;
+        border-radius: 50% !important;
+        background: #fff !important;
+        color: #111 !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,.05) !important;
+        font-size: 24px !important;
+        line-height: 1 !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .header-more-overlay {
+        position: fixed !important;
+        inset: 0 !important;
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 20px !important;
+        box-sizing: border-box !important;
+        background: rgba(0,0,0,.32) !important;
+        backdrop-filter: blur(3px) !important;
+        -webkit-backdrop-filter: blur(3px) !important;
+        z-index: 2147483647 !important;
+    }
+
+    .header-more-overlay.show {
+        display: flex !important;
+    }
+
+    .header-more-panel {
+        position: relative !important;
+        width: min(430px, calc(100vw - 32px)) !important;
+        min-height: 245px !important;
+        padding: 30px 24px 24px !important;
+        box-sizing: border-box !important;
+        border: 1px solid #e2e2e2 !important;
+        border-radius: 22px !important;
+        background: #fff !important;
+        color: #111 !important;
+        box-shadow: 0 28px 80px rgba(0,0,0,.25) !important;
+        transform: none !important;
+        z-index: 2147483647 !important;
+    }
+
+    .header-more-close {
+        position: absolute !important;
+        top: 12px !important;
+        right: 12px !important;
+        width: 34px !important;
+        height: 34px !important;
+        border: 1px solid #e5e5e5 !important;
+        border-radius: 50% !important;
+        background: #f5f5f5 !important;
+        color: #111 !important;
+        font-size: 22px !important;
+        line-height: 1 !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .header-more-user {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 10px !important;
+        min-height: 44px !important;
+        padding: 4px 40px 12px !important;
+        text-align: center !important;
+        font-size: 18px !important;
+        font-weight: 800 !important;
+    }
+
+    .header-more-avatar {
+        font-size: 20px !important;
+    }
+
+    .header-more-username {
+        max-width: 260px !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    .header-more-divider {
+        height: 1px !important;
+        margin: 2px 0 12px !important;
+        background: #ededed !important;
+    }
+
+    .header-more-action {
+        width: 100% !important;
+        min-height: 52px !important;
+        margin: 5px 0 !important;
+        padding: 0 14px !important;
+        border: 0 !important;
+        border-radius: 12px !important;
+        background: transparent !important;
+        color: #111 !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 11px !important;
+        text-align: left !important;
+        font-size: 15px !important;
+        font-weight: 650 !important;
+        cursor: pointer !important;
+    }
+
+    .header-more-action:hover {
+        background: #f3f3f3 !important;
+    }
+
+    body.dark-mode .header-more-btn {
+        background: #111 !important;
+        color: #fff !important;
+        border-color: #333 !important;
+    }
+
+    body.dark-mode .header-more-overlay {
+        background: rgba(0,0,0,.58) !important;
+    }
+
+    body.dark-mode .header-more-panel {
+        background: #111 !important;
+        color: #fff !important;
+        border-color: #333 !important;
+    }
+
+    body.dark-mode .header-more-close {
+        background: #1c1c1c !important;
+        color: #fff !important;
+        border-color: #333 !important;
+    }
+
+    body.dark-mode .header-more-divider {
+        background: #333 !important;
+    }
+
+    body.dark-mode .header-more-action {
+        color: #fff !important;
+    }
+
+    body.dark-mode .header-more-action:hover {
+        background: #222 !important;
+    }
+
+   @media (max-width: 768px) {
+
+    .header-controls {
+        position: static !important;
+        width: auto !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+
+    .header-more {
+        position: absolute !important;
+        top: 14px !important;
+        right: 58px !important;
+        width: 40px !important;
+        height: 40px !important;
+        z-index: 1000 !important;
+    }
+
+    .theme-toggle {
+        position: absolute !important;
+        top: 14px !important;
+        right: 10px !important;
+        width: 40px !important;
+        height: 40px !important;
+        z-index: 1000 !important;
+    }
+
+    .header-more-btn,
+    #themeBtn {
+        width: 40px !important;
+        height: 40px !important;
+    }
+}
+</style>
+
+
+
+<style id="oddi-account-settings-ui">
+    /* Account Settings is a separate account-focused dialog.
+       It does not alter the existing desktop settings dialog. */
+    #accountSettingsModal {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483646 !important;
+        display: none !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 20px !important;
+        box-sizing: border-box !important;
+        background: rgba(0,0,0,.42) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+    }
+    #accountSettingsModal.show { display: flex !important; }
+    .account-settings-card {
+        position: relative !important;
+        width: min(520px, calc(100vw - 32px)) !important;
+        max-height: min(760px, calc(100vh - 40px)) !important;
+        overflow-y: auto !important;
+        box-sizing: border-box !important;
+        padding: 26px !important;
+        border: 1px solid #e3e3e3 !important;
+        border-radius: 22px !important;
+        background: #fff !important;
+        color: #111 !important;
+        box-shadow: 0 28px 90px rgba(0,0,0,.28) !important;
+    }
+    .account-settings-card-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 12px !important;
+        margin-bottom: 18px !important;
+    }
+    .account-settings-card-header h3 { margin: 0 !important; font-size: 21px !important; }
+    .account-settings-close {
+        width: 36px !important; height: 36px !important;
+        flex: 0 0 36px !important;
+        border: 1px solid #e4e4e4 !important;
+        border-radius: 50% !important;
+        background: #f5f5f5 !important; color: #111 !important;
+        font-size: 20px !important; cursor: pointer !important;
+    }
+    .account-current-card {
+        display: flex !important; align-items: center !important; gap: 12px !important;
+        padding: 14px !important; margin-bottom: 18px !important;
+        border: 1px solid #e7e7e7 !important; border-radius: 14px !important;
+        background: #fafafa !important;
+    }
+    .account-current-avatar {
+        width: 44px !important; height: 44px !important; flex: 0 0 44px !important;
+        display: flex !important; align-items: center !important; justify-content: center !important;
+        border-radius: 50% !important; background: #eee !important; font-size: 21px !important;
+    }
+    .account-current-name { font-weight: 800 !important; font-size: 16px !important; }
+    .account-current-status { margin-top: 3px !important; color: #777 !important; font-size: 12px !important; }
+    .account-section-title {
+        margin: 18px 0 8px !important; font-size: 12px !important;
+        font-weight: 800 !important; text-transform: uppercase !important;
+        letter-spacing: .06em !important; color: #777 !important;
+    }
+    .account-settings-action {
+        width: 100% !important; min-height: 48px !important;
+        display: flex !important; align-items: center !important; gap: 11px !important;
+        margin: 6px 0 !important; padding: 10px 13px !important;
+        border: 1px solid #e5e5e5 !important; border-radius: 12px !important;
+        background: #fff !important; color: #111 !important;
+        font-size: 14px !important; text-align: left !important; cursor: pointer !important;
+        box-sizing: border-box !important;
+    }
+    .account-settings-action:hover { background: #f6f6f6 !important; }
+    .account-settings-action .account-action-main { flex: 1 !important; }
+    .account-settings-action strong { display: block !important; font-size: 14px !important; }
+    .account-settings-action small { display: block !important; margin-top: 2px !important; color: #777 !important; font-size: 11px !important; }
+    .account-settings-arrow { color: #888 !important; font-size: 18px !important; }
+    .remembered-account-list { display: grid !important; gap: 6px !important; }
+    .remembered-account {
+        display: flex !important; align-items: center !important; gap: 9px !important;
+        padding: 9px 10px !important; border: 1px solid #e9e9e9 !important;
+        border-radius: 10px !important; background: #fff !important;
+    }
+    .remembered-account-name { flex: 1 !important; min-width: 0 !important; font-size: 13px !important; overflow: hidden !important; text-overflow: ellipsis !important; white-space: nowrap !important; }
+    .remembered-account-remove {
+        border: 0 !important; background: transparent !important; color: #888 !important;
+        cursor: pointer !important; padding: 5px !important; border-radius: 6px !important;
+    }
+    .remembered-account-remove:hover { background: #f1f1f1 !important; color: #b42318 !important; }
+    .account-empty { color: #888 !important; font-size: 12px !important; padding: 8px 2px !important; }
+    .app-password-card {
+        padding: 14px !important; border: 1px solid #e7e7e7 !important;
+        border-radius: 13px !important; background: #fafafa !important;
+    }
+    .app-password-row { display: flex !important; align-items: center !important; gap: 8px !important; }
+    .app-password-row input {
+        flex: 1 !important; min-width: 0 !important; padding: 10px 11px !important;
+        border: 1px solid #ddd !important; border-radius: 9px !important;
+        background: #fff !important; color: #111 !important; box-sizing: border-box !important;
+    }
+    .app-password-btn {
+        border: 1px solid #ddd !important; border-radius: 9px !important;
+        padding: 10px 11px !important; background: #fff !important; cursor: pointer !important;
+    }
+    .app-password-note { margin: 8px 0 0 !important; color: #777 !important; font-size: 11px !important; line-height: 1.45 !important; }
+    .account-danger { color: #b42318 !important; border-color: #f0d5d2 !important; }
+    body.dark-mode #accountSettingsModal { background: rgba(0,0,0,.58) !important; }
+    body.dark-mode .account-settings-card { background: #111 !important; color: #fff !important; border-color: #333 !important; }
+    body.dark-mode .account-settings-close, body.dark-mode .account-settings-action, body.dark-mode .remembered-account, body.dark-mode .app-password-btn, body.dark-mode .app-password-row input { background: #171717 !important; color: #fff !important; border-color: #333 !important; }
+    body.dark-mode .account-current-card, body.dark-mode .app-password-card { background: #171717 !important; border-color: #333 !important; }
+    body.dark-mode .account-current-avatar { background: #252525 !important; }
+    body.dark-mode .account-current-status, body.dark-mode .account-settings-action small, body.dark-mode .account-section-title, body.dark-mode .app-password-note { color: #aaa !important; }
+    @media (max-width: 768px) {
+        #accountSettingsModal { padding: 14px !important; }
+        .account-settings-card { width: min(520px, calc(100vw - 28px)) !important; max-height: calc(100vh - 28px) !important; padding: 20px !important; border-radius: 20px !important; }
+        .account-settings-card-header h3 { font-size: 19px !important; }
+    }
+</style>
+
 </head>
 
-<body data-logged-in="{{ 'true' if logged_in else 'false' }}">
+<body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 
 <!-- Mobile Splash — shown for both signed-in and signed-out users -->
 <div id="mobileSplash">
@@ -2647,19 +2833,32 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
     </div>
 </div>
 
-{% if logged_in %}
+<div class="header-more-overlay" id="headerMoreOverlay" aria-hidden="true">
+    <section
+        id="headerMorePanel"
+        class="header-more-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="headerMoreTitle">
+        <button
+            id="headerMoreClose"
+            class="header-more-close"
+            type="button"
+            aria-label="Close menu">
+            ×
+        </button>
 
-<div class="user-btn">
-    👤 {{ username }} 
+        <div id="headerMoreTitle" class="header-more-user">
+            <span class="header-more-avatar">👤</span>
+            <span class="header-more-username">{{ username if logged_in else 'Guest' }}</span>
+        </div>
+
+        <div class="header-more-divider"></div>
+
+        <button type="button" class="header-more-action" id="headerMoreExport">↗ <span>Export &amp; Share Current Chat</span></button>
+        <button type="button" class="header-more-action" id="headerMoreAccount">⚙ <span>Account Settings</span></button>
+    </section>
 </div>
-
-{% else %}
-
-<a href="/login" class="login-btn">
-    Sign In
-</a>
-
-{% endif %}
 
 <div class="app">
 
@@ -2731,23 +2930,23 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
 
         <div class="header-controls">
 
+            <div class="header-more">
+                <button
+                    id="headerMoreBtn"
+                    class="header-more-btn"
+                    type="button"
+                    title="More options"
+                    aria-label="More options"
+                    aria-expanded="false"
+                    aria-controls="headerMorePanel">
+                    ⋮
+                </button>
+            </div>
+
             <div class="theme-toggle">
                 <button id="themeBtn" title="Switch to Dark Mode">
                     🌙
                 </button>
-            </div>
-
-            <div class="mobile-header-more" id="mobileHeaderMore">
-                <button id="mobileHeaderMoreBtn" class="mobile-header-more-btn" type="button"
-                        title="More options" aria-label="More options" aria-expanded="false">⋮</button>
-                <div id="mobileHeaderMoreMenu" class="mobile-header-more-menu" role="menu" aria-hidden="true">
-                    {% if logged_in %}
-                    <div class="mobile-menu-user">👤 {{ username }}</div>
-                    {% else %}
-                    <div class="mobile-menu-user">👤 Guest</div>
-                    {% endif %}
-                    <button type="button" data-mobile-menu-action="export">↗ Export &amp; Share</button>
-                </div>
             </div>
 
         </div>
@@ -3002,6 +3201,64 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
 
 </div>
 
+
+<div id="accountSettingsModal" aria-hidden="true">
+    <section class="account-settings-card" role="dialog" aria-modal="true" aria-labelledby="accountSettingsTitle">
+        <div class="account-settings-card-header">
+            <h3 id="accountSettingsTitle">Account Settings</h3>
+            <button id="closeAccountSettings" class="account-settings-close" type="button" aria-label="Close account settings">×</button>
+        </div>
+
+        <div class="account-current-card">
+            <div class="account-current-avatar">👤</div>
+            <div>
+                <div class="account-current-name">{{ username if logged_in else 'Guest' }}</div>
+                <div class="account-current-status">{{ 'Currently signed in' if logged_in else 'Not signed in' }}</div>
+            </div>
+        </div>
+
+        <div class="account-section-title">Account</div>
+        {% if logged_in %}
+        <button id="switchAccountBtn" class="account-settings-action" type="button">
+            <span>🔄</span><span class="account-action-main"><strong>Switch Account</strong><small>Sign in with another account</small></span><span class="account-settings-arrow">›</span>
+        </button>
+        {% else %}
+        <a href="/login" id="switchAccountLink" class="account-settings-action" style="text-decoration:none;">
+            <span>🔐</span><span class="account-action-main"><strong>Sign In</strong><small>Sign in to use account features</small></span><span class="account-settings-arrow">›</span>
+        </a>
+        {% endif %}
+        <button id="openFullSettingsBtn" class="account-settings-action" type="button">
+            <span>⚙️</span><span class="account-action-main"><strong>App Settings</strong><small>Theme, language, voice, notifications and more</small></span><span class="account-settings-arrow">›</span>
+        </button>
+
+        <div class="account-section-title">Remembered Accounts</div>
+        <div id="rememberedAccountList" class="remembered-account-list"></div>
+        <button id="clearRememberedAccountsBtn" class="account-settings-action account-danger" type="button">
+            <span>🧹</span><span class="account-action-main"><strong>Clear remembered accounts</strong><small>Remove saved account names from this device</small></span>
+        </button>
+
+        <div class="account-section-title">Security</div>
+        <div class="app-password-card">
+            <div class="account-settings-action" style="margin:0 !important; border:0 !important; padding:0 !important; background:transparent !important;">
+                <span>🔑</span><span class="account-action-main"><strong>App Password</strong><small id="appPasswordStatus">Not configured on this device</small></span>
+            </div>
+            <div class="app-password-row" style="margin-top:10px;">
+                <input id="appPasswordInput" type="password" autocomplete="new-password" placeholder="Enter app password" aria-label="App password">
+                <button id="toggleAppPasswordBtn" class="app-password-btn" type="button" aria-label="Show app password">👁</button>
+                <button id="saveAppPasswordBtn" class="app-password-btn" type="button">Save</button>
+            </div>
+            <p class="app-password-note">This UI keeps the app password only on this device. A server-backed password/API credential should be implemented on the backend before using it for authentication or integrations.</p>
+        </div>
+
+        <div class="account-section-title">Session</div>
+        {% if logged_in %}
+        <button id="accountLogoutBtn" class="account-settings-action account-danger" type="button">
+            <span>↪</span><span class="account-action-main"><strong>Log Out</strong><small>Sign out of this account</small></span>
+        </button>
+        {% endif %}
+    </section>
+</div>
+
 <div id="settingsModal" class="rename-modal">
 
     <div class="rename-box">
@@ -3075,10 +3332,10 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
 let currentConversation = null;
 let selectedFiles = [];
 
-/* =========================================================
+/* 
    UPLOADED FILE STORE
    Keeps the exact uploaded file available for opening again.
-========================================================= */
+ */
 const ODDI_FILE_DB = "oddi-file-store";
 const ODDI_FILE_STORE = "files";
 
@@ -3176,9 +3433,9 @@ const voiceBtn = document.getElementById("voice-btn");
 const isLoggedIn =
     document.body.dataset.loggedIn === "true";
 
-/* =========================================================
+/* 
    GENERATION CONTROL
-========================================================= */
+ */
 let generationActive = false;
 let generationStopped = false;
 let activeAbortController = null;
@@ -3269,13 +3526,13 @@ function stopGeneration() {
     setGenerationUI(false);
 }
 
-/* =========================================================
+/* 
    ACTION BUTTON
-========================================================= */
+ */
 
-/* =========================================================
+/* 
    ACTION BUTTON
-========================================================= */
+ */
 
 function updateActionButton() {
     const hasText = input.value.trim().length > 0;
@@ -3292,9 +3549,9 @@ function updateActionButton() {
     }
 }
 
-/* =========================================================
+/* 
    SPEECH DICTATION
-========================================================= */
+ */
 
 const SpeechRecognition =
     window.SpeechRecognition ||
@@ -3469,9 +3726,9 @@ if (SpeechRecognition) {
     };
 }
 
-/* =========================================================
+/* 
    VOICE CONVERSATION
-========================================================= */
+ */
 
 let voiceModeActive = false;
 let voiceResponseSpeaking = false;
@@ -3870,13 +4127,13 @@ const speechLanguageMap = {
     pa: "pa-IN"
 };
 
-/* =========================================================
+/* 
    AI VOICE SELECTION
-========================================================= */
+ */
 
-/* =========================================================
+/* 
    AI VOICE SELECTION
-========================================================= */
+ */
 
 let availableSpeechVoices = [];
 let selectedVoiceIndex =
@@ -3904,9 +4161,9 @@ if ("speechSynthesis" in window) {
 }
 
 
-/* =========================================================
+/* 
    VOICE OPTIONS UI
-========================================================= */
+ */
 
 function renderVoiceOptions() {
 
@@ -4048,9 +4305,9 @@ function renderVoiceOptions() {
 }
 
 
-/* =========================================================
+/* 
    VOICE PREVIEW
-========================================================= */
+ */
 
 function previewVoice(
     voice,
@@ -4116,9 +4373,9 @@ function previewVoice(
 }
 
 
-/* =========================================================
+/* 
    GET SELECTED VOICE
-========================================================= */
+ */
 
 function getSelectedVoice() {
 
@@ -4637,9 +4894,9 @@ if (SpeechRecognition) {
     };
 }
 
-/* =========================================================
+/* 
    CONVERSATIONS
-========================================================= */
+ */
 
 let conversations = [];
 
@@ -4701,18 +4958,11 @@ async function loadConversations() {
     }
 }
 
-const conversationSaveInFlight = new Set();
-let conversationSyncInFlight = false;
-let conversationSyncTimer = null;
-
 async function saveConversation(
     conversation
 ) {
 
     if (!conversation.id) return;
-
-    const conversationId = String(conversation.id);
-    conversationSaveInFlight.add(conversationId);
 
     try {
 
@@ -4741,178 +4991,7 @@ async function saveConversation(
             "Save conversation error:",
             error
         );
-    } finally {
-        conversationSaveInFlight.delete(conversationId);
     }
-}
-
-/* =========================================================
-   CROSS-DEVICE CONVERSATION SYNC
-   The server/database is the source of truth for logged-in users.
-   This keeps already-open phone/laptop sessions in sync without
-   requiring a logout, login, or page refresh.
-========================================================= */
-
-function conversationsHaveSameData(localConversation, serverConversation) {
-    if (!localConversation || !serverConversation) return false;
-
-    return (localConversation.title || "New Chat") === (serverConversation.title || "New Chat")
-        && JSON.stringify(localConversation.messages || []) === JSON.stringify(serverConversation.messages || []);
-}
-
-function getConversationById(id) {
-    if (id === null || id === undefined) return null;
-    const key = String(id);
-    return conversations.find(conversation =>
-        conversation && conversation.id !== null && conversation.id !== undefined
-        && String(conversation.id) === key
-    ) || null;
-}
-
-async function syncConversationsFromServer(options = {}) {
-    if (!isLoggedIn || conversationSyncInFlight) return;
-
-    conversationSyncInFlight = true;
-
-    try {
-        const response = await fetch("/api/conversations", {
-            method: "GET",
-            cache: "no-store",
-            headers: { "Cache-Control": "no-cache" }
-        });
-
-        if (!response.ok) return;
-
-        const loaded = await response.json();
-        if (!Array.isArray(loaded)) return;
-
-        const trashedIds = new Set(
-            getTrash()
-                .map(item => item && item.id)
-                .filter(Boolean)
-                .map(String)
-        );
-
-        const serverConversations = loaded.filter(conversation =>
-            !conversation.id || !trashedIds.has(String(conversation.id))
-        );
-
-        const currentId =
-            currentConversation !== null &&
-            conversations[currentConversation]?.id !== null &&
-            conversations[currentConversation]?.id !== undefined
-                ? String(conversations[currentConversation].id)
-                : null;
-
-        const localById = new Map(
-            conversations
-                .filter(conversation => conversation?.id !== null && conversation?.id !== undefined)
-                .map(conversation => [String(conversation.id), conversation])
-        );
-
-        let listChanged = false;
-        let openConversationChanged = false;
-
-        serverConversations.forEach(serverConversation => {
-            if (serverConversation?.id === null || serverConversation?.id === undefined) return;
-
-            const id = String(serverConversation.id);
-            const localConversation = localById.get(id);
-
-            if (!localConversation) {
-                conversations.push({
-                    ...serverConversation,
-                    pinned: false
-                });
-                listChanged = true;
-                return;
-            }
-
-            // Never overwrite a conversation while this device is currently
-            // saving it. This avoids a polling race with PUT /api/conversations.
-            if (conversationSaveInFlight.has(id)) return;
-
-            if (!conversationsHaveSameData(localConversation, serverConversation)) {
-                const isOpen = currentId === id;
-
-                // While AI is generating, the local conversation is actively
-                // changing. Let that generation finish before accepting a
-                // remote copy.
-                if (isOpen && generationActive) return;
-
-                localConversation.title = serverConversation.title || "New Chat";
-                localConversation.messages = Array.isArray(serverConversation.messages)
-                    ? serverConversation.messages
-                    : [];
-                localConversation.created_at = serverConversation.created_at;
-                if (serverConversation.updated_at !== undefined) {
-                    localConversation.updated_at = serverConversation.updated_at;
-                }
-
-                listChanged = true;
-                if (isOpen) openConversationChanged = true;
-            }
-        });
-
-        // Remove server-backed conversations that disappeared from the server,
-        // unless this device is in the middle of saving that same conversation.
-        const serverIds = new Set(
-            serverConversations
-                .filter(conversation => conversation?.id !== null && conversation?.id !== undefined)
-                .map(conversation => String(conversation.id))
-        );
-
-        const beforeLength = conversations.length;
-        conversations = conversations.filter(conversation => {
-            if (!conversation?.id) return true;
-            const id = String(conversation.id);
-            return serverIds.has(id) || conversationSaveInFlight.has(id);
-        });
-
-        if (conversations.length !== beforeLength) listChanged = true;
-
-        if (currentId !== null) {
-            const restoredIndex = conversations.findIndex(
-                conversation => conversation?.id !== null && String(conversation.id) === currentId
-            );
-            currentConversation = restoredIndex >= 0 ? restoredIndex : null;
-        }
-
-        if (listChanged) renderHistory();
-
-        // If another device changed the currently open chat, redraw it from
-        // the server copy. Never do this while a response is being generated.
-        if (openConversationChanged && options.refreshOpen !== false && !generationActive && currentConversation !== null) {
-            renderCurrentConversationFromState();
-        }
-    } catch (error) {
-        console.debug("Conversation sync skipped:", error);
-    } finally {
-        conversationSyncInFlight = false;
-    }
-}
-
-function startConversationSync() {
-    if (!isLoggedIn) return;
-
-    if (conversationSyncTimer) {
-        clearInterval(conversationSyncTimer);
-    }
-
-    conversationSyncTimer = setInterval(() => {
-        syncConversationsFromServer();
-    }, 4000);
-
-    // Sync immediately when the user returns to the tab/app.
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-            syncConversationsFromServer();
-        }
-    });
-
-    window.addEventListener("focus", () => {
-        syncConversationsFromServer();
-    });
 }
 
 async function createServerConversation(
@@ -4956,9 +5035,9 @@ async function createServerConversation(
 }
 
 
-/* =========================================================
+/* 
    RICH CONTENT RENDERER
-========================================================= */
+ */
 
 function escapeHtml(value) {
     return String(value ?? "")
@@ -5168,9 +5247,9 @@ function renderRichContent(element, source, options = {}) {
 
     enhanceRichContent(element);
 }
-/* =========================================================
+/* 
    UTILITIES
-========================================================= */
+ */
 
 function escapeUserText(text) {
 
@@ -5216,78 +5295,16 @@ function getFileIcon(
 }
 
 
-/* =========================================================
+/* 
    CHAT EXPORT / SHARE
    Exports ONLY the currently selected conversation.
    The visible chat DOM is cloned so rendered KaTeX, tables and code
    formatting are preserved in HTML/print exports.
-========================================================= */
+ */
 
 const exportChatBtn = document.getElementById("exportChatBtn");
 const exportChatMenu = document.getElementById("exportChatMenu");
 const exportChatWrap = document.getElementById("exportChatWrap");
-
-
-/* Mobile header menu: keeps username/export out of the cramped phone header. */
-const mobileHeaderMore = document.getElementById("mobileHeaderMore");
-const mobileHeaderMoreBtn = document.getElementById("mobileHeaderMoreBtn");
-const mobileHeaderMoreMenu = document.getElementById("mobileHeaderMoreMenu");
-
-function closeMobileHeaderMenu() {
-    if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return;
-    mobileHeaderMoreMenu.classList.remove("show");
-    mobileHeaderMoreMenu.setAttribute("aria-hidden", "true");
-    mobileHeaderMoreBtn.setAttribute("aria-expanded", "false");
-}
-
-function positionMobileHeaderMenu() {
-    if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return;
-
-    const r = mobileHeaderMoreBtn.getBoundingClientRect();
-    const w = Math.min(210, Math.max(0, innerWidth - 16));
-
-    /*
-       Keep the popover below the header/tool row.  The sidebar utility
-       buttons sit around the same vertical level on phones, so opening
-       the menu directly under the three-dots button used to cover them.
-       A minimum top position gives those buttons their own clear space.
-    */
-    const gap = 8;
-    let left = Math.max(8, innerWidth - w - 8);
-    let top = Math.max(88, r.bottom + gap);
-
-    const h = mobileHeaderMoreMenu.offsetHeight;
-    if (h && top + h > innerHeight - 8) {
-        top = Math.max(88, innerHeight - h - 8);
-    }
-
-    Object.assign(mobileHeaderMoreMenu.style, {
-        width: w + 'px',
-        left: left + 'px',
-        right: 'auto',
-        top: top + 'px'
-    });
-}
-function toggleMobileHeaderMenu() {
-    if (!mobileHeaderMoreMenu || !mobileHeaderMoreBtn) return; const open=mobileHeaderMoreMenu.classList.toggle('show'); mobileHeaderMoreMenu.setAttribute('aria-hidden',String(!open)); mobileHeaderMoreBtn.setAttribute('aria-expanded',String(open)); if(open) requestAnimationFrame(positionMobileHeaderMenu);
-}
-window.addEventListener('resize',()=>{if(mobileHeaderMoreMenu?.classList.contains('show'))positionMobileHeaderMenu();}); window.addEventListener('scroll',()=>{if(mobileHeaderMoreMenu?.classList.contains('show'))positionMobileHeaderMenu();},true);
-
-mobileHeaderMoreBtn?.addEventListener("click", event => {
-    event.stopPropagation();
-    toggleMobileHeaderMenu();
-});
-
-mobileHeaderMoreMenu?.addEventListener("click", event => {
-    const button = event.target.closest("button[data-mobile-menu-action]");
-    if (!button) return;
-    const action = button.dataset.mobileMenuAction;
-    closeMobileHeaderMenu();
-
-    if (action === "export") {
-        exportChatBtn?.click();
-    }
-});
 
 function getCurrentExportConversation() {
     if (currentConversation === null || currentConversation === undefined) {
@@ -5923,22 +5940,18 @@ document.addEventListener("click", event => {
     if (exportChatWrap && !exportChatWrap.contains(event.target)) {
         closeExportMenu();
     }
-    if (mobileHeaderMore && !mobileHeaderMore.contains(event.target)) {
-        closeMobileHeaderMenu();
-    }
 });
 
 document.addEventListener("keydown", event => {
     if (event.key === "Escape") {
         closeExportMenu();
         closeShareModal();
-        closeMobileHeaderMenu();
     }
 });
 
-/* =========================================================
+/* 
    COPY
-========================================================= */
+ */
 
 function copyAIResponse(button) {
 
@@ -6071,9 +6084,9 @@ async function regenerateResponse(button) {
     });
 }
 
-/* =========================================================
+/* 
    MESSAGE SOUND
-========================================================= */
+ */
 
 function speakAIMessage(button) {
 
@@ -6216,10 +6229,10 @@ function speakAIMessage(button) {
     );
 }
 
-/* =========================================================
+/* 
    MAIN SEND FUNCTION
    THIS IS THE IMPORTANT FIX
-========================================================= */
+ */
 
 async function sendMessage(
     displayMessage = null,
@@ -6633,9 +6646,9 @@ async function sendMessage(
     }
 }
 
-/* =========================================================
+/* 
    TYPING ANIMATION
-========================================================= */
+ */
 
 function typeAIResponse(
     text,
@@ -6814,9 +6827,9 @@ function addBotMessageActions(botMessage, messageIndex, conversationIndex = curr
     botMessage.appendChild(actions);
 }
 
-/* =========================================================
+/* 
    FINISH AI MESSAGE
-========================================================= */
+ */
 
 async function finishAIMessage(
     reply,
@@ -6883,9 +6896,9 @@ async function finishAIMessage(
         chat.scrollHeight;
 }
 
-/* =========================================================
+/* 
    INPUT
-========================================================= */
+ */
 
 button.addEventListener(
     "click",
@@ -6925,9 +6938,9 @@ input.addEventListener(
     }
 );
 
-/* =========================================================
+/* 
    FILE UPLOAD
-========================================================= */
+ */
 
 const attachBtn =
     document.getElementById(
@@ -7128,9 +7141,9 @@ attachmentToggle.onclick = () => {
     }
 };
 
-/* =========================================================
+/* 
    CTRL + V / CLIPBOARD SCREENSHOT PASTE
-========================================================= */
+ */
 document.addEventListener("paste", event => {
     const clipboardItems = Array.from(event.clipboardData?.items || []);
     const imageItems = clipboardItems.filter(item =>
@@ -7167,9 +7180,9 @@ removeAttachment.onclick = () => {
     updateAttachmentPreview();
 };
 
-/* =========================================================
+/* 
    HISTORY
-========================================================= */
+ */
 
 const PINNED_CHATS_KEY = 'oddi_pinned_chats_v1';
 
@@ -7482,18 +7495,6 @@ function removePinnedConversation(conversation) {
     savePinnedChatIds(getPinnedChatIds().filter(id => id !== key));
 }
 
-function renderCurrentConversationFromState() {
-    if (generationActive || currentConversation === null || !conversations[currentConversation]) return;
-
-    const index = currentConversation;
-    const conversation = conversations[index];
-    if (!conversation) return;
-
-    // Reuse the existing conversation renderer so message actions, files,
-    // Markdown, KaTeX, and syntax highlighting remain identical.
-    openConversation(index);
-}
-
 async function openConversation(
     index
 ) {
@@ -7636,9 +7637,9 @@ async function openConversation(
     overlay.classList.remove("show");
 }
 
-/* =========================================================
+/* 
    OPEN UPLOADED FILES
-========================================================= */
+ */
 chat.addEventListener("click", event => {
     const fileElement = event.target.closest(".message-file[data-file-key]");
     if (!fileElement) return;
@@ -7653,9 +7654,9 @@ chat.addEventListener("keydown", event => {
     openOddiUploadedFile(fileElement.dataset.fileKey);
 });
 
-/* =========================================================
+/* 
    NEW CHAT
-========================================================= */
+ */
 
 async function newChat() {
 
@@ -7734,9 +7735,9 @@ async function newChat() {
     input.focus();
 }
 
-/* =========================================================
+/* 
    QUICK ACTIONS
-========================================================= */
+ */
 
 const quickActions =
     document.querySelectorAll(
@@ -7797,9 +7798,9 @@ quickActions.forEach(card => {
     );
 });
 
-/* =========================================================
+/* 
    THEME
-========================================================= */
+ */
 
 const themeBtn =
     document.getElementById(
@@ -7845,9 +7846,9 @@ themeBtn.onclick = () => {
     }
 };
 
-/* =========================================================
+/* 
    PWA INSTALL / ADD TO HOME SCREEN
-========================================================= */
+ */
 
 let deferredInstallPrompt = null;
 const installBtn = document.getElementById("installBtn");
@@ -7892,9 +7893,9 @@ window.addEventListener("appinstalled", () => {
 
 window.addEventListener('load', updateInstallButton);
 
-/* =========================================================
+/* 
    SIDEBAR
-========================================================= */
+ */
 
 const menuBtn =
     document.getElementById(
@@ -7936,9 +7937,9 @@ overlay.onclick = () => {
     );
 };
 
-/* =========================================================
+/* 
    SETTINGS / MODALS
-========================================================= */
+ */
 
 const newChatBtn =
     document.getElementById(
@@ -8230,9 +8231,9 @@ closeSettings.onclick = () => {
     );
 };
 
-/* =========================================================
+/* 
    SETTINGS
-========================================================= */
+ */
 
 const themeSettingBtn =
     document.getElementById(
@@ -8278,13 +8279,8 @@ notificationBtn.onclick = () => {
             ? "ON"
             : "OFF";
 };
-
-/* =========================================================
-   KEYBOARD SHORTCUTS
-========================================================= */
-
+/* KEYBOARD SHORTCUTS*/
 document.addEventListener("keydown", event => {
-
     if (event.key === "Escape") {
         renameModal.classList.remove("show");
         deleteModal.classList.remove("show");
@@ -8294,7 +8290,6 @@ document.addEventListener("keydown", event => {
         overlay.classList.remove("show");
         return;
     }
-
     if (
         (event.ctrlKey || event.metaKey) &&
         event.key.toLowerCase() === "k"
@@ -8304,7 +8299,6 @@ document.addEventListener("keydown", event => {
         chatSearchInput.select();
         return;
     }
-
     if (
         (event.ctrlKey || event.metaKey) &&
         event.shiftKey &&
@@ -8314,41 +8308,27 @@ document.addEventListener("keydown", event => {
         newChat();
     }
 });
-
-/* =========================================================
-   LOGOUT
-========================================================= */
-
+/* LOGOUT*/
 const logoutBtn =
     document.getElementById(
         "logoutBtn"
     );
-
 if (logoutBtn) {
-
     logoutBtn.onclick = () => {
-
         window.location.href =
             "/logout";
     };
 }
-
-/* =========================================================
-   MOVE ALL TO BIN
-========================================================= */
-
+/* MOVE ALL TO BIN*/
 const clearChatBtn =
     document.getElementById(
         "clearChatBtn"
     );
-
 clearChatBtn.onclick =
     async () => {
-
         if (!conversations.length) {
             return;
         }
-
         const confirmed =
             await showActionConfirmation(
                 "Move All Conversations to Bin?",
@@ -8356,11 +8336,9 @@ clearChatBtn.onclick =
                 "Move All to Bin",
                 true
             );
-
         if (!confirmed) {
             return;
         }
-
         const trash = getTrash();
         const existingIds = new Set(
             trash
@@ -8369,26 +8347,21 @@ clearChatBtn.onclick =
                 .map(String)
         );
         const now = Date.now();
-
         conversations.forEach(conversation => {
             // Avoid duplicate Bin entries if the same conversation is
             // ever encountered more than once.
             if (conversation.id && existingIds.has(String(conversation.id))) {
                 return;
             }
-
             trash.push({
                 ...conversation,
                 deletedAt: now
             });
-
             if (conversation.id) {
                 existingIds.add(String(conversation.id));
             }
-
             removePinnedConversation(conversation);
         });
-
         setTrash(trash);
         conversations = [];
         currentConversation = null;
@@ -8398,122 +8371,81 @@ clearChatBtn.onclick =
         renderBin();
         newChat();
     };
-
-/* =========================================================
-   SPLASH SCREEN
-========================================================= */
-
+/* SPLASH SCREEN*/
 document.addEventListener("DOMContentLoaded", () => {
-
     const isMobile = window.matchMedia(
         "(max-width: 768px)"
     ).matches;
-
     const splash = document.getElementById(
         isMobile ? "mobileSplash" : "splash-screen"
     );
-
     const splashSound =
         document.getElementById("splashSound");
-
     if (splashSound) {
         splashSound.play().catch(() => {});
     }
-
     if (splash) {
-
         setTimeout(() => {
-
             splash.classList.add("hide");
-
             setTimeout(() => {
                 splash.remove();
             }, 1500);
-
         }, 3000);
     }
 });
-
-/* =========================================================
-   INITIALIZE
-========================================================= */
-
+/* INITIALIZE*/
 input.style.height =
     "auto";
-
 input.style.height =
     input.scrollHeight + "px";
-
 updateActionButton();
-
-loadConversations().then(() => {
-    startConversationSync();
-});
-
+loadConversations();
 </script>
-
-
 <script id="oddi-ui-behavior">
-/* =========================================================
-   ODDI AI — WELCOME SCROLL BEHAVIOR
-   ========================================================= */
+/* ODDI AI — WELCOME SCROLL BEHAVIOR*/
 (function () {
     const chatbox = document.getElementById("chatbox");
     if (!chatbox) return;
-
     const updateScrollState = () => {
         const scrolled = chatbox.scrollTop > 70;
         chatbox.classList.toggle("ui-scrolled", scrolled);
     };
-
     chatbox.addEventListener("scroll", updateScrollState, { passive: true });
     updateScrollState();
 })();
 </script>
-
-
-
 <script id="oddi-sidebar-final-behavior">
-/* =========================================================
-   ODDI AI — SIDEBAR FINAL BEHAVIOR PACK
-   ========================================================= */
+/* ODDI AI — SIDEBAR FINAL BEHAVIOR PACK */
 (function () {
     const history = document.getElementById("chatHistory");
     const search = document.getElementById("chatSearchInput");
     if (!history) return;
-
     /* Keep the sidebar labels/counts synchronized after every render. */
     const decorateHistory = () => {
         const pinned = history.querySelector(".pinned-history-section");
         const recent = history.querySelector(".normal-history-section");
-
         if (pinned) {
             const count = pinned.querySelectorAll(":scope > .history-item").length;
             pinned.dataset.label = `PINNED${count ? `  ${count}` : ""}`;
         }
-
         if (recent) {
             const count = recent.querySelectorAll(":scope > .history-item").length;
             recent.dataset.label = `RECENT${count ? `  ${count}` : ""}`;
         }
     };
-
     /* renderHistory is called throughout the app, so observe only the sidebar DOM. */
     const observer = new MutationObserver(() => decorateHistory());
     observer.observe(history, { childList: true, subtree: true });
     decorateHistory();
-
     /* Escape focuses chat search; Ctrl/Cmd+K focuses it as well. */
     document.addEventListener("keydown", event => {
         const tag = document.activeElement?.tagName;
         const typing = tag === "INPUT" || tag === "TEXTAREA" || document.activeElement?.isContentEditable;
-
         if (event.key === "/" && !typing) {
             event.preventDefault();
             search?.focus();
             search?.select();
         }
-
         if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
             event.preventDefault();
             search?.focus();
@@ -8526,7 +8458,6 @@ loadConversations().then(() => {
             search.blur();
         }
     });
-
     /* Make the most recently used chat remain at the top after opening it. */
     window.addEventListener("storage", event => {
         if (event.key && event.key.startsWith("oddi_chat_activity_")) {
@@ -8535,8 +8466,6 @@ loadConversations().then(() => {
     });
 })();
 </script>
-
-
 <script id="oddi-bin-shortcuts-ui">
 (function () {
     const binBtn = document.getElementById("binBtn");
@@ -8557,11 +8486,10 @@ loadConversations().then(() => {
     });
 })();
 </script>
-
 <script id="oddi-advanced-sidebar-features">
-/* =========================================================
+/* 
    ODDI AI — ADVANCED SIDEBAR / CHAT FEATURES
-   ========================================================= */
+    */
 (function () {
     const history = document.getElementById('chatHistory');
     const search = document.getElementById('chatSearchInput');
@@ -8592,7 +8520,6 @@ loadConversations().then(() => {
     history?.addEventListener('scroll', saveSidebarScroll, true);
     chatbox?.addEventListener('scroll', saveSidebarScroll, { passive: true });
     window.addEventListener('beforeunload', saveSidebarScroll);
-
     /* 14) Sidebar resizing */
     const savedWidth = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY) || 290);
     if (Number.isFinite(savedWidth)) document.documentElement.style.setProperty('--oddi-sidebar-width', `${Math.max(MIN_W, Math.min(MAX_W, savedWidth))}px`);
@@ -8612,7 +8539,6 @@ loadConversations().then(() => {
         localStorage.setItem(SIDEBAR_WIDTH_KEY, String(Math.round(width)));
     });
     document.addEventListener('pointerup', () => { if (resizing) { resizing = false; sidebarEl.classList.remove('is-resizing'); } });
-
     /* 11/12) Keyboard shortcuts + history navigation */
     let keyboardHistoryIndex = -1;
     function focusHistoryItem(index) {
@@ -8646,7 +8572,6 @@ loadConversations().then(() => {
             items[keyboardHistoryIndex]?.click();
         }
     });
-
     /* Re-index keyboard selection after each render. */
     const observer = new MutationObserver(() => {
         keyboardHistoryIndex = -1;
@@ -8654,7 +8579,6 @@ loadConversations().then(() => {
     });
     if (history) observer.observe(history, { childList: true, subtree: true });
     requestAnimationFrame(restoreSidebarScroll);
-
     /* External rich-content libraries may finish loading after the initial
        history render. Re-run enhancement once the whole page is ready. */
     window.addEventListener("load", () => {
@@ -8665,6 +8589,195 @@ loadConversations().then(() => {
 })();
 </script>
 
-</body>
+<script id="oddi-account-settings-js">
+(function () {
+    const modal = document.getElementById("accountSettingsModal");
+    const closeBtn = document.getElementById("closeAccountSettings");
+    const fullSettingsBtn = document.getElementById("openFullSettingsBtn");
+    const switchBtn = document.getElementById("switchAccountBtn");
+    const logoutBtn = document.getElementById("accountLogoutBtn");
+    const list = document.getElementById("rememberedAccountList");
+    const clearBtn = document.getElementById("clearRememberedAccountsBtn");
+    const appPasswordInput = document.getElementById("appPasswordInput");
+    const togglePasswordBtn = document.getElementById("toggleAppPasswordBtn");
+    const savePasswordBtn = document.getElementById("saveAppPasswordBtn");
+    const passwordStatus = document.getElementById("appPasswordStatus");
+    if (!modal) return;
 
+    const ACCOUNT_KEY = "oddi_remembered_accounts_v1";
+    const PASSWORD_KEY = "oddi_device_app_password_v1";
+    const currentUsername = document.body?.dataset.username || "";
+
+    function closeAccountModal() {
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+    }
+    function readAccounts() {
+        try {
+            const data = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "[]");
+            return Array.isArray(data) ? data.filter(Boolean).map(String) : [];
+        } catch (_) { return []; }
+    }
+    function writeAccounts(accounts) {
+        localStorage.setItem(ACCOUNT_KEY, JSON.stringify([...new Set(accounts)].slice(0, 12)));
+    }
+    function rememberCurrentAccount() {
+        if (!currentUsername) return;
+        writeAccounts([currentUsername, ...readAccounts()]);
+    }
+    function renderAccounts() {
+        if (!list) return;
+        const accounts = readAccounts();
+        list.innerHTML = "";
+        if (!accounts.length) {
+            list.innerHTML = '<div class="account-empty">No remembered accounts yet.</div>';
+            return;
+        }
+        accounts.forEach(name => {
+            const row = document.createElement("div");
+            row.className = "remembered-account";
+            const label = document.createElement("span");
+            label.className = "remembered-account-name";
+            label.textContent = name + (name === currentUsername ? " (current)" : "");
+            const remove = document.createElement("button");
+            remove.className = "remembered-account-remove";
+            remove.type = "button";
+            remove.textContent = "×";
+            remove.title = "Forget this account name";
+            remove.addEventListener("click", () => {
+                writeAccounts(readAccounts().filter(item => item !== name));
+                renderAccounts();
+            });
+            row.append(label, remove);
+            list.appendChild(row);
+        });
+    }
+    function refreshPasswordStatus() {
+        const configured = !!sessionStorage.getItem(PASSWORD_KEY);
+        if (passwordStatus) passwordStatus.textContent = configured ? "Configured for this browser session" : "Not configured on this device";
+    }
+
+    rememberCurrentAccount();
+    renderAccounts();
+    refreshPasswordStatus();
+
+    closeBtn?.addEventListener("click", closeAccountModal);
+    modal.addEventListener("click", event => { if (event.target === modal) closeAccountModal(); });
+    fullSettingsBtn?.addEventListener("click", () => {
+        closeAccountModal();
+        document.getElementById("settingsBtn")?.click();
+    });
+    switchBtn?.addEventListener("click", () => {
+        closeAccountModal();
+        window.location.href = "/login";
+    });
+    logoutBtn?.addEventListener("click", () => {
+        closeAccountModal();
+        window.location.href = "/logout";
+    });
+    clearBtn?.addEventListener("click", () => {
+        writeAccounts([]);
+        renderAccounts();
+    });
+    togglePasswordBtn?.addEventListener("click", () => {
+        if (!appPasswordInput) return;
+        const visible = appPasswordInput.type === "text";
+        appPasswordInput.type = visible ? "password" : "text";
+        togglePasswordBtn.textContent = visible ? "👁" : "🙈";
+    });
+    savePasswordBtn?.addEventListener("click", () => {
+        const value = appPasswordInput?.value.trim() || "";
+        if (!value) {
+            sessionStorage.removeItem(PASSWORD_KEY);
+            refreshPasswordStatus();
+            return;
+        }
+        sessionStorage.setItem(PASSWORD_KEY, "configured");
+        if (appPasswordInput) appPasswordInput.value = "";
+        refreshPasswordStatus();
+    });
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && modal.classList.contains("show")) {
+            event.preventDefault();
+            closeAccountModal();
+        }
+    }, true);
+    window.addEventListener("pageshow", closeAccountModal);
+})();
+</script>
+
+<script id="final-header-more-menu-js">
+(function () {
+    const moreBtn = document.getElementById("headerMoreBtn");
+    const overlayEl = document.getElementById("headerMoreOverlay");
+    const panel = document.getElementById("headerMorePanel");
+    const closeBtn = document.getElementById("headerMoreClose");
+    const exportBtn = document.getElementById("headerMoreExport");
+    const accountBtn = document.getElementById("headerMoreAccount");
+    if (!moreBtn || !overlayEl || !panel || !closeBtn) return;
+    function closeHeaderMore() {
+        overlayEl.classList.remove("show");
+        overlayEl.setAttribute("aria-hidden", "true");
+        moreBtn.setAttribute("aria-expanded", "false");
+    }
+    function openHeaderMore() {
+        /* Always open from a clean state; nothing is persisted across refresh. */
+        overlayEl.classList.add("show");
+        overlayEl.setAttribute("aria-hidden", "false");
+        moreBtn.setAttribute("aria-expanded", "true");
+        requestAnimationFrame(() => closeBtn.focus());
+    }
+    closeHeaderMore();
+    moreBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (overlayEl.classList.contains("show")) closeHeaderMore();
+        else openHeaderMore();
+    });
+    closeBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeHeaderMore();
+    });
+    overlayEl.addEventListener("click", function (event) {
+        if (event.target === overlayEl) closeHeaderMore();
+    });
+    panel.addEventListener("click", function (event) {
+        event.stopPropagation();
+    });
+    document.addEventListener("click", function (event) {
+        if (!overlayEl.classList.contains("show")) return;
+        if (panel.contains(event.target) || moreBtn.contains(event.target)) return;
+        closeHeaderMore();
+    }, true);
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && overlayEl.classList.contains("show")) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeHeaderMore();
+        }
+    }, true);
+    exportBtn?.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeHeaderMore();
+        const existingExport = document.getElementById("exportChatBtn");
+        if (existingExport) existingExport.click();
+    });
+    accountBtn?.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        closeHeaderMore();
+        const accountModal = document.getElementById("accountSettingsModal");
+        if (accountModal) {
+            accountModal.classList.add("show");
+            accountModal.setAttribute("aria-hidden", "false");
+            requestAnimationFrame(() => document.getElementById("closeAccountSettings")?.focus());
+        }
+    });
+    window.addEventListener("pageshow", closeHeaderMore);
+    window.addEventListener("pagehide", closeHeaderMore);
+})();
+</script>
+</body>
 </html>
