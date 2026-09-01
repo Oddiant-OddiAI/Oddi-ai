@@ -3044,9 +3044,10 @@
             }
 
             #oddiAppLockCard {
-                width: 100% !important;
+                width: 100vw !important;
+                max-width: none !important;
                 height: 100dvh !important;
-                min-height: 100%;
+                min-height: 100dvh !important;
                 padding: 28px 24px 24px !important;
                 border: 0 !important;
                 border-radius: 0 !important;
@@ -3138,6 +3139,7 @@
 
             #oddiMobileKeypad button {
                 appearance: none;
+                touch-action: manipulation;
                 -webkit-appearance: none;
                 border: 0;
                 background: transparent;
@@ -3782,9 +3784,12 @@
                     <input
                         id="appLockPasswordInput"
                         type="password"
+                        inputmode="numeric"
+                        pattern="[0-9]*"
+                        maxlength="12"
                         autocomplete="new-password"
-                        placeholder="Set app lock password"
-                        aria-label="App lock password">
+                        placeholder="Set app lock PIN"
+                        aria-label="App lock PIN">
 
                     <button
                         id="toggleAppLockPasswordBtn"
@@ -9339,9 +9344,9 @@
         });
 
         savePasswordBtn?.addEventListener("click", async () => {
-            const value = appPasswordInput?.value || "";
-            if (!value) {
-                if (passwordStatus) passwordStatus.textContent = "Enter a password to enable App Lock";
+            const value = (appPasswordInput?.value || "").trim();
+            if (!/^\d{4,12}$/.test(value)) {
+                if (passwordStatus) passwordStatus.textContent = "Use a 4-12 digit PIN to enable App Lock";
                 return;
             }
             const saved = await window.OddiAppLock?.setPassword(value);
@@ -9399,8 +9404,24 @@
         const mobilePinDots = [...document.querySelectorAll("#oddiMobilePinDisplay .oddi-pin-dot")];
         const LOCK_KEY = "oddi_device_app_lock_v2";
         const LOCKED_KEY = "oddi_device_app_locked_v2";
-        const PBKDF2_ITERATIONS = 150000;
+        const RECOVERY_KEY = "oddi_applock_recovery_v2";
+        /* 60k keeps verification responsive on phone WebViews while still
+           using PBKDF2-SHA-256 instead of storing the PIN itself. */
+        const PBKDF2_ITERATIONS = 60000;
         let unlockInProgress = false;
+        const themeMeta = document.querySelector('meta[name="theme-color"]');
+        const originalThemeColor = themeMeta?.getAttribute("content") || "#20c76b";
+
+        /* One-time recovery from the previous broken/unknown-password state.
+           The owner gets back into the app once, then can configure a new PIN.
+           The flag prevents this from disabling a PIN again on later launches. */
+        try {
+            if (localStorage.getItem(RECOVERY_KEY) !== "1") {
+                localStorage.removeItem(LOCK_KEY);
+                localStorage.removeItem(LOCKED_KEY);
+                localStorage.setItem(RECOVERY_KEY, "1");
+            }
+        } catch (_) {}
 
         function isMobileLockUI() {
             return window.matchMedia?.("(max-width: 768px)").matches === true;
@@ -9445,21 +9466,22 @@
         }
 
         async function setPassword(password) {
-            if (!password || password.length < 4) {
-                if (errorEl) errorEl.textContent = "Use at least 4 characters for your App Lock password.";
+            const value = String(password || "").trim();
+            if (!/^\d{4,12}$/.test(value)) {
+                if (errorEl) errorEl.textContent = "Use a 4-12 digit PIN.";
                 return false;
             }
             try {
                 const salt = crypto.getRandomValues(new Uint8Array(16));
-                const verifier = await deriveVerifier(password, salt);
-                const isNumeric = /^\d+$/.test(password);
+                const verifier = await deriveVerifier(value, salt, PBKDF2_ITERATIONS);
+                const isNumeric = true;
                 localStorage.setItem(LOCK_KEY, JSON.stringify({
                     version: 3,
                     algorithm: "PBKDF2-SHA-256",
                     iterations: PBKDF2_ITERATIONS,
                     salt: bytesToBase64(salt),
                     verifier: bytesToBase64(verifier),
-                    secretLength: password.length,
+                    secretLength: value.length,
                     numeric: isNumeric,
                     createdAt: Date.now()
                 }));
@@ -9506,6 +9528,7 @@
             overlay.classList.add("show");
             overlay.setAttribute("aria-hidden", "false");
             document.documentElement.classList.add("oddi-app-locked");
+            if (isMobileLockUI() && themeMeta) themeMeta.setAttribute("content", "#000000");
             if (passwordInput) passwordInput.value = "";
             setError("");
             prepareMobileInput();
@@ -9530,6 +9553,7 @@
             overlay.classList.remove("show");
             overlay.setAttribute("aria-hidden", "true");
             document.documentElement.classList.remove("oddi-app-locked");
+            if (themeMeta) themeMeta.setAttribute("content", originalThemeColor);
             if (errorEl) errorEl.textContent = "";
             if (passwordInput) passwordInput.value = "";
             renderMobileDots();
@@ -9581,11 +9605,8 @@
             passwordInput.value += digit;
             renderMobileDots();
 
-            const record = readRecord();
-            const length = Number(record?.secretLength) || 0;
-            if (record?.numeric === true && length >= 4 && passwordInput.value.length >= length) {
-                unlock();
-            }
+            /* Do not verify on every tap. The digit is rendered immediately;
+               the user presses Unlock once, so PBKDF2 never blocks keypad taps. */
         }
 
         function deleteDigit() {
@@ -9611,9 +9632,11 @@
         unlockBtn?.addEventListener("click", unlock);
         fallbackUnlockBtn?.addEventListener("click", unlock);
 
-        mobileKeypad?.addEventListener("click", event => {
+        mobileKeypad?.addEventListener("pointerdown", event => {
             const button = event.target.closest("button[data-key]");
             if (!button) return;
+            event.preventDefault();
+            event.stopPropagation();
             const key = button.dataset.key;
             if (key === "backspace") deleteDigit();
             else if (/^\d$/.test(key)) addDigit(key);
