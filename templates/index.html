@@ -9088,8 +9088,8 @@
         if (!modal) return;
 
         const ACCOUNT_KEY = "oddi_remembered_accounts_v1";
-        const LOCK_KEY = "oddi_device_app_lock_v2";
-        const LOCKED_KEY = "oddi_device_app_locked_v2";
+        const LOCK_KEY = "oddi_device_app_lock_v3";
+        const LOCKED_KEY = "oddi_device_app_locked_v3";
         const currentUsername = document.body?.dataset.username || "";
 
         function closeAccountModal() {
@@ -9252,8 +9252,8 @@
         const lockNowBtn = document.getElementById("lockAppNowBtn");
         const statusEl = document.getElementById("appLockStatus");
 
-        const LOCK_KEY = "oddi_device_app_lock_v2";
-        const LOCKED_KEY = "oddi_device_app_locked_v2";
+        const LOCK_KEY = "oddi_device_app_lock_v3";
+        const LOCKED_KEY = "oddi_device_app_locked_v3";
         const PBKDF2_ITERATIONS = 150000;
 
         let busy = false;
