@@ -3069,6 +3069,47 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
         }
     }
 </style>
+
+
+<!-- FINAL ACCOUNT SETTINGS HEADER + INVISIBLE SCROLLBAR FIX -->
+<style id="final-account-settings-scroll-fix">
+    /* Keep the Account Settings content scrollable without showing a scrollbar. */
+    .account-settings-card {
+        overflow-y: auto !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+
+    .account-settings-card::-webkit-scrollbar {
+        width: 0 !important;
+        height: 0 !important;
+        display: none !important;
+    }
+
+    /* The title + close button stay pinned while the account settings body scrolls. */
+    .account-settings-card-header {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 50 !important;
+        box-sizing: border-box !important;
+        margin: -26px -26px 18px !important;
+        padding: 20px 26px 14px !important;
+        background: #fff !important;
+        border-radius: 22px 22px 0 0 !important;
+    }
+
+    body.dark-mode .account-settings-card-header {
+        background: #111 !important;
+    }
+
+    @media (max-width: 768px) {
+        .account-settings-card-header {
+            margin: -20px -20px 18px !important;
+            padding: 16px 20px 14px !important;
+        }
+    }
+</style>
+
 </head>
 
 <!-- ODDI AI APP LOCK -->
