@@ -9282,6 +9282,12 @@
     (function () {
         "use strict";
 
+        /* =============================================================
+           ODDI APP LOCK CORE
+           One source of truth for password / PIN / pattern / biometric.
+           No WebAuthn is used in the packaged mobile app, so this code
+           cannot launch Google Password Manager / passkey UI.
+        ============================================================= */
         const overlay = document.getElementById("oddiAppLock");
         const passwordInput = document.getElementById("oddiUnlockPassword");
         const unlockBtn = document.getElementById("oddiUnlockBtn");
@@ -9289,8 +9295,12 @@
         const closeBtn = document.getElementById("oddiAppLockClose");
         const LOCK_KEY = "oddi_device_app_lock_v2";
         const LOCKED_KEY = "oddi_device_app_locked_v2";
+        const METHOD_KEY = "oddi_mobile_lock_method_v1";
+        const CRED_KEY = "oddi_mobile_biometric_credential_v1";
         const PBKDF2_ITERATIONS = 150000;
+
         let unlockInProgress = false;
+        let biometricPending = false;
 
         function readRecord() {
             try {
@@ -9300,6 +9310,11 @@
                 if (!record || !record.salt || !record.verifier) return null;
                 return record;
             } catch (_) { return null; }
+        }
+
+        function getMethod() {
+            const record = readRecord();
+            return localStorage.getItem(METHOD_KEY) || record?.method || "password";
         }
 
         function bytesToBase64(bytes) {
@@ -9318,42 +9333,72 @@
             return bytes;
         }
 
-        async function deriveVerifier(password, saltBytes) {
+        async function deriveVerifier(secret, saltBytes) {
             if (!window.crypto?.subtle) throw new Error("Web Crypto unavailable");
             const keyMaterial = await crypto.subtle.importKey(
                 "raw",
-                new TextEncoder().encode(password),
+                new TextEncoder().encode(secret),
                 "PBKDF2",
                 false,
                 ["deriveBits"]
             );
             const bits = await crypto.subtle.deriveBits(
-                { name: "PBKDF2", salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+                {
+                    name: "PBKDF2",
+                    salt: saltBytes,
+                    iterations: PBKDF2_ITERATIONS,
+                    hash: "SHA-256"
+                },
                 keyMaterial,
                 256
             );
             return new Uint8Array(bits);
         }
 
-        async function setPassword(password) {
-            if (!password || password.length < 4) {
-                if (errorEl) errorEl.textContent = "Use at least 4 characters for your App Lock password.";
-                return false;
+        function constantTimeEqual(a, b) {
+            if (!a || !b || a.length !== b.length) return false;
+            let diff = 0;
+            for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+            return diff === 0;
+        }
+
+        async function saveSecret(secret, method) {
+            const clean = String(secret ?? "");
+            const normalizedMethod = String(method || "password");
+
+            if (normalizedMethod === "pin" && !/^\d{4,}$/.test(clean)) {
+                throw new Error("PIN must contain only numbers and be at least 4 digits.");
             }
+            if (normalizedMethod === "pattern" && clean.split("-").filter(Boolean).length < 4) {
+                throw new Error("Pattern must contain at least 4 dots.");
+            }
+            if (normalizedMethod !== "pattern" && clean.length < 4) {
+                throw new Error("Use at least 4 characters for your App Lock.");
+            }
+
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const verifier = await deriveVerifier(clean, salt);
+            localStorage.setItem(LOCK_KEY, JSON.stringify({
+                version: 3,
+                algorithm: "PBKDF2-SHA-256",
+                iterations: PBKDF2_ITERATIONS,
+                salt: bytesToBase64(salt),
+                verifier: bytesToBase64(verifier),
+                createdAt: Date.now(),
+                method: normalizedMethod
+            }));
+            localStorage.setItem(METHOD_KEY, normalizedMethod);
+            localStorage.removeItem(LOCKED_KEY);
+            return true;
+        }
+
+        async function setPassword(password) {
             try {
-                const salt = crypto.getRandomValues(new Uint8Array(16));
-                const verifier = await deriveVerifier(password, salt);
-                localStorage.setItem(LOCK_KEY, JSON.stringify({
-                    version: 2,
-                    algorithm: "PBKDF2-SHA-256",
-                    iterations: PBKDF2_ITERATIONS,
-                    salt: bytesToBase64(salt),
-                    verifier: bytesToBase64(verifier),
-                    createdAt: Date.now()
-                }));
-                localStorage.removeItem(LOCKED_KEY);
+                await saveSecret(password, "password");
+                if (errorEl) errorEl.textContent = "";
                 return true;
-            } catch (_) {
+            } catch (e) {
+                if (errorEl) errorEl.textContent = e.message || "Could not configure App Lock.";
                 return false;
             }
         }
@@ -9362,20 +9407,10 @@
             try {
                 localStorage.removeItem(LOCK_KEY);
                 localStorage.removeItem(LOCKED_KEY);
+                localStorage.removeItem(METHOD_KEY);
+                localStorage.removeItem(CRED_KEY);
             } catch (_) {}
             hideLock();
-        }
-
-        function showLock() {
-            if (!overlay || !readRecord()) return;
-            localStorage.setItem(LOCKED_KEY, "1");
-            overlay.classList.add("show");
-            overlay.setAttribute("aria-hidden", "false");
-            document.documentElement.classList.add("oddi-app-locked");
-            if (passwordInput) {
-                passwordInput.value = "";
-                setTimeout(() => passwordInput.focus(), 0);
-            }
         }
 
         function hideLock() {
@@ -9386,386 +9421,532 @@
             if (errorEl) errorEl.textContent = "";
         }
 
-        async function unlock() {
-            if (unlockInProgress || !passwordInput) return;
+        function showLock() {
+            const record = readRecord();
+            if (!overlay || !record) return;
+
+            localStorage.setItem(LOCKED_KEY, "1");
+            overlay.classList.add("show");
+            overlay.setAttribute("aria-hidden", "false");
+            document.documentElement.classList.add("oddi-app-locked");
+            if (errorEl) errorEl.textContent = "";
+
+            /* Let the mobile-method script refresh the correct UI. */
+            window.dispatchEvent(new CustomEvent("oddi-app-lock-shown", {
+                detail: { method: getMethod() }
+            }));
+
+            /* Biometrics should start automatically when selected. */
+            if (getMethod() === "biometric") {
+                setTimeout(() => {
+                    window.dispatchEvent(new CustomEvent("oddi-app-lock-biometric-request"));
+                }, 120);
+            } else if (passwordInput) {
+                setTimeout(() => passwordInput.focus(), 80);
+            }
+        }
+
+        async function unlockSecret(secret) {
+            if (unlockInProgress) return false;
             const record = readRecord();
             if (!record) {
                 hideLock();
-                return;
+                return true;
             }
-            const password = passwordInput.value;
-            if (!password) {
-                if (errorEl) errorEl.textContent = "Enter your App Lock password.";
-                passwordInput.focus();
-                return;
+            const value = String(secret ?? "");
+            if (!value) {
+                if (errorEl) errorEl.textContent = getMethod() === "pattern"
+                    ? "Draw your pattern."
+                    : getMethod() === "pin" ? "Enter your PIN." : "Enter your App Lock password.";
+                return false;
             }
+
             unlockInProgress = true;
-            unlockBtn?.setAttribute("disabled", "disabled");
-            if (errorEl) errorEl.textContent = "";
             try {
-                const verifier = await deriveVerifier(password, base64ToBytes(record.salt));
+                const verifier = await deriveVerifier(value, base64ToBytes(record.salt));
                 const expected = base64ToBytes(record.verifier);
-                let matches = verifier.length === expected.length;
-                if (matches) {
-                    let diff = 0;
-                    for (let i = 0; i < verifier.length; i++) diff |= verifier[i] ^ expected[i];
-                    matches = diff === 0;
+                if (!constantTimeEqual(verifier, expected)) {
+                    if (errorEl) {
+                        errorEl.textContent = record.method === "pin"
+                            ? "Incorrect PIN."
+                            : record.method === "pattern"
+                                ? "Incorrect pattern."
+                                : "Incorrect App Lock password.";
+                    }
+                    return false;
                 }
-                if (!matches) {
-                    if (errorEl) errorEl.textContent = "Incorrect App Lock password.";
-                    passwordInput.select();
-                    return;
-                }
-                localStorage.removeItem(LOCKED_KEY);
-                hideLock();
-                window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
+                completeUnlock();
+                return true;
             } catch (_) {
-                if (errorEl) errorEl.textContent = "Unable to verify the App Lock password on this browser.";
+                if (errorEl) errorEl.textContent = "Unable to verify the App Lock on this device.";
+                return false;
             } finally {
                 unlockInProgress = false;
-                unlockBtn?.removeAttribute("disabled");
             }
         }
+
+        function completeUnlock() {
+            localStorage.removeItem(LOCKED_KEY);
+            hideLock();
+            window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
+        }
+
+        /* -------------------------------------------------------------
+           Native biometric adapter.
+           IMPORTANT: WebAuthn / navigator.credentials is intentionally NOT
+           used. A packaged Android WebView must call its native biometric
+           API through a JS bridge (Android BiometricPrompt / iOS Face ID or
+           Touch ID). This prevents Google Password Manager from appearing.
+        ------------------------------------------------------------- */
+        function getNativeBiometricBridge() {
+            const candidates = [window.OddiNative, window.Android, window.OddiBiometric];
+            const names = [
+                "biometricAuthenticate",
+                "authenticateBiometric",
+                "authenticateFingerprint",
+                "fingerprintAuthenticate",
+                "authenticate"
+            ];
+            for (const bridge of candidates) {
+                if (!bridge) continue;
+                for (const name of names) {
+                    if (typeof bridge[name] === "function") return bridge[name].bind(bridge);
+                }
+            }
+            return null;
+        }
+
+        function hasNativeBiometricBridge() {
+            return !!getNativeBiometricBridge();
+        }
+
+        function showBiometricUnavailable() {
+            if (errorEl) {
+                errorEl.textContent = "Fingerprint is unavailable here. Use PIN, password, or pattern.";
+            }
+        }
+
+        async function authenticateBiometric() {
+            if (biometricPending) return false;
+            biometricPending = true;
+            if (errorEl) errorEl.textContent = "";
+
+            const fn = getNativeBiometricBridge();
+            if (!fn) {
+                biometricPending = false;
+                showBiometricUnavailable();
+                return false;
+            }
+
+            try {
+                const result = fn();
+                if (result && typeof result.then === "function") {
+                    const success = await result;
+                    if (success !== undefined) completeBiometricUnlock(success !== false);
+                } else if (typeof result === "boolean") {
+                    completeBiometricUnlock(result);
+                }
+                /* Native callback can also call window.OddiAppBiometricResult. */
+                return true;
+            } catch (e) {
+                console.warn("Native biometric authentication failed", e);
+                completeBiometricUnlock(false);
+                return false;
+            }
+        }
+
+        function completeBiometricUnlock(success) {
+            if (!biometricPending) return;
+            biometricPending = false;
+            if (success) {
+                completeUnlock();
+            } else if (errorEl) {
+                errorEl.textContent = "Fingerprint verification failed or was cancelled.";
+            }
+        }
+
+        /* Public native callback. The Android/iOS wrapper calls this after
+           BiometricPrompt / LocalAuthentication finishes. */
+        window.OddiAppBiometricResult = completeBiometricUnlock;
+        window.OddiAppLockNativeBiometric = authenticateBiometric;
 
         window.OddiAppLock = {
             setPassword,
             removePassword,
-            lock(options) {
-                if (!readRecord()) return;
-                showLock();
-                if (options?.playSplashAfterUnlock) {
-                    window.__oddiPlaySplashAfterUnlock = true;
+            configure: async function (secret, method) {
+                try {
+                    await saveSecret(secret, method);
+                    return true;
+                } catch (e) {
+                    if (errorEl) errorEl.textContent = e.message || "Could not configure App Lock.";
+                    return false;
                 }
             },
+            lock(options) {
+                if (!readRecord()) return false;
+                if (options?.playSplashAfterUnlock) window.__oddiPlaySplashAfterUnlock = true;
+                showLock();
+                return true;
+            },
             isConfigured() { return !!readRecord(); },
-            isLocked() { return overlay?.classList.contains("show") || false; }
+            isLocked() { return overlay?.classList.contains("show") || false; },
+            getMethod,
+            hasNativeBiometricBridge,
+            unlock: unlockSecret
         };
 
-        unlockBtn?.addEventListener("click", unlock);
+        unlockBtn?.addEventListener("click", async event => {
+            event.preventDefault();
+            if (getMethod() === "pattern") {
+                window.dispatchEvent(new CustomEvent("oddi-pattern-unlock-request"));
+                return;
+            }
+            if (getMethod() === "biometric") {
+                authenticateBiometric();
+                return;
+            }
+            await unlockSecret(passwordInput?.value || "");
+            if (passwordInput) passwordInput.select();
+        });
+
         passwordInput?.addEventListener("keydown", event => {
             if (event.key === "Enter") {
                 event.preventDefault();
-                unlock();
+                unlockBtn?.click();
             }
         });
 
-        /* App Lock must never be dismissible without the password. */
+        /* App Lock can never be dismissed with X or by tapping outside. */
         closeBtn?.addEventListener("click", event => {
             event.preventDefault();
             event.stopPropagation();
-            passwordInput?.focus();
+            if (getMethod() === "biometric") authenticateBiometric();
+            else passwordInput?.focus();
         });
         overlay?.addEventListener("click", event => {
-            if (event.target === overlay) passwordInput?.focus();
+            if (event.target === overlay) {
+                if (getMethod() === "biometric") authenticateBiometric();
+                else passwordInput?.focus();
+            }
         });
 
-        /* Start locked immediately when a password has been configured. This runs
-        before DOMContentLoaded, so the normal splash cannot flash first. */
-        if (readRecord()) {
-            showLock();
-        }
+        /* Lock immediately on page/app start if configured. */
+        if (readRecord()) showLock();
     })();
     </script>
 
     <script id="oddi-mobile-lock-methods-js">
     (function () {
         "use strict";
+
+        /* =============================================================
+           ODDI MOBILE LOCK METHODS
+           Password / PIN / Pattern setup + native fingerprint trigger.
+           Face lock is deliberately not implemented here.
+        ============================================================= */
         const LOCK_KEY = "oddi_device_app_lock_v2";
         const METHOD_KEY = "oddi_mobile_lock_method_v1";
-        const CRED_KEY = "oddi_mobile_biometric_credential_v1";
         const methodButtons = [...document.querySelectorAll("[data-lock-method]")];
         const methodSelect = document.getElementById("mobileLockMethodSetting");
+        const setupPatternPad = document.getElementById("mobilePatternSetupPad");
         const patternPad = document.getElementById("oddiPatternPad");
         const unlockInput = document.getElementById("oddiUnlockPassword");
         const unlockBtn = document.getElementById("oddiUnlockBtn");
         const biometricBtn = document.getElementById("oddiBiometricBtn");
         const biometricSetupBtn = document.getElementById("mobileBiometricSetupBtn");
         const errorEl = document.getElementById("oddiUnlockError");
+        const saveBtn = document.getElementById("saveAppLockPasswordBtn");
+        const settingsInput = document.getElementById("appLockPasswordInput");
+
         let currentMethod = localStorage.getItem(METHOD_KEY) || "password";
-        let pattern = [];
+        let unlockPattern = [];
+        let setupPattern = [];
+        let nativeSetupPending = false;
 
-        function configuredRecord(){ try { return JSON.parse(localStorage.getItem(LOCK_KEY)||"null"); } catch(_) { return null; } }
-        function setMethod(m){ currentMethod=m; localStorage.setItem(METHOD_KEY,m); methodButtons.forEach(b=>b.classList.toggle("active",b.dataset.lockMethod===m)); if(methodSelect) methodSelect.value=m; updateUnlockUI(); }
-        function updateUnlockUI(){
-            const isPattern=currentMethod==="pattern", isBio=currentMethod==="biometric";
-            if(unlockInput){ unlockInput.style.display=isPattern||isBio?"none":"block"; unlockInput.type=currentMethod==="pin"?"tel":"password"; unlockInput.inputMode=currentMethod==="pin"?"numeric":"text"; unlockInput.pattern=currentMethod==="pin"?"[0-9]*":""; unlockInput.placeholder=currentMethod==="pin"?"Enter PIN":"Enter App Lock password"; }
-            if(patternPad) patternPad.style.display=isPattern?"grid":"none";
-            const setup=document.getElementById("mobilePatternSetup"); if(setup) setup.style.display=isPattern?"block":"none";
-            if(biometricBtn) biometricBtn.style.display=isBio?"block":"none";
-            if(unlockBtn) unlockBtn.style.display=isBio?"none":"block";
+        function record() {
+            try { return JSON.parse(localStorage.getItem(LOCK_KEY) || "null"); }
+            catch (_) { return null; }
         }
-        function clearPattern(){ pattern=[]; patternPad?.querySelectorAll("button").forEach(b=>b.classList.remove("selected")); }
-        patternPad?.querySelectorAll("button").forEach(btn=>btn.addEventListener("click",()=>{ const n=btn.dataset.patternDot; if(!pattern.includes(n)){ pattern.push(n); btn.classList.add("selected"); } }));
-        methodButtons.forEach(b=>b.addEventListener("click",()=>setMethod(b.dataset.lockMethod)));
-        methodSelect?.addEventListener("change",()=>setMethod(methodSelect.value));
-        updateUnlockUI();
 
-        async function derive(password,salt){
-            const km=await crypto.subtle.importKey("raw",new TextEncoder().encode(password),"PBKDF2",false,["deriveBits"]);
-            return new Uint8Array(await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations:150000,hash:"SHA-256"},km,256));
+        function setMethod(method) {
+            currentMethod = String(method || "password");
+            localStorage.setItem(METHOD_KEY, currentMethod);
+            methodButtons.forEach(btn => {
+                btn.classList.toggle("active", btn.dataset.lockMethod === currentMethod);
+            });
+            if (methodSelect) methodSelect.value = currentMethod;
+            updateUnlockUI();
         }
-        function b64(a){ let x=""; for(const c of a)x+=String.fromCharCode(c); return btoa(x); }
-        function fromB64(x){ const b=atob(x); const a=new Uint8Array(b.length); for(let i=0;i<b.length;i++)a[i]=b.charCodeAt(i); return a; }
-        async function saveVerifier(secret,method){
-            const salt=crypto.getRandomValues(new Uint8Array(16)); const v=await derive(secret,salt);
-            localStorage.setItem(LOCK_KEY,JSON.stringify({version:2,algorithm:"PBKDF2-SHA-256",iterations:150000,salt:b64(salt),verifier:b64(v),createdAt:Date.now(),method}));
-            localStorage.setItem(METHOD_KEY,method);
+
+        function updateUnlockUI() {
+            const isPattern = currentMethod === "pattern";
+            const isBiometric = currentMethod === "biometric";
+            if (unlockInput) {
+                unlockInput.style.display = isPattern || isBiometric ? "none" : "block";
+                unlockInput.type = currentMethod === "pin" ? "tel" : "password";
+                unlockInput.inputMode = currentMethod === "pin" ? "numeric" : "text";
+                unlockInput.pattern = currentMethod === "pin" ? "[0-9]*" : "";
+                unlockInput.placeholder = currentMethod === "pin"
+                    ? "Enter PIN"
+                    : "Enter App Lock password";
+            }
+            if (patternPad) patternPad.style.display = isPattern ? "grid" : "none";
+            if (unlockBtn) unlockBtn.style.display = isBiometric ? "none" : "block";
+            if (biometricBtn) biometricBtn.style.display = isBiometric ? "block" : "none";
+            const setup = document.getElementById("mobilePatternSetup");
+            if (setup) setup.style.display = isPattern ? "block" : "none";
+            if (biometricSetupBtn) biometricSetupBtn.style.display = isBiometric ? "block" : "none";
         }
-        /*
-         * Native mobile biometrics adapter.
-         *
-         * IMPORTANT: Do NOT use navigator.credentials/WebAuthn for the
-         * packaged Android app here. In an Android WebView that can open the
-         * Google passkey/password UI instead of the device biometric prompt.
-         * The packaged app should expose a tiny JS bridge and let Android/iOS
-         * use its native biometric API (BiometricPrompt / LocalAuthentication).
-         *
-         * Supported bridge shapes (any one is enough):
-         *   window.OddiNative.biometricRegister()
-         *   window.OddiNative.biometricAuthenticate()
-         *   window.Android.biometricRegister()
-         *   window.Android.biometricAuthenticate()
-         *   window.OddiBiometric.register()
-         *   window.OddiBiometric.authenticate()
-         *
-         * Native code can call the callbacks below when its prompt finishes:
-         *   window.OddiAppBiometricSetupResult(true/false)
-         *   window.OddiAppBiometricResult(true/false)
-         */
-        const isAndroidWebView = /;\s*wv\)|\bwv\b/i.test(navigator.userAgent || "") ||
-            (window.Android && typeof window.Android === "object");
-        const isLikelyNativeApp = isAndroidWebView ||
-            !!window.OddiNative || !!window.OddiBiometric || !!window.Android;
 
-        let biometricSetupPending = false;
-        let biometricUnlockPending = false;
+        function paintSetupPattern() {
+            setupPatternPad?.querySelectorAll("[data-setup-pattern-dot]").forEach(btn => {
+                const selected = setupPattern.includes(btn.dataset.setupPatternDot);
+                btn.style.background = selected ? "#111" : "transparent";
+                btn.style.boxShadow = selected ? "inset 0 0 0 8px #fff" : "none";
+            });
+        }
 
-        function getNativeBiometricBridge(action) {
-            const candidates = [
-                window.OddiNative,
-                window.Android,
-                window.OddiBiometric
-            ];
-            const names = action === "register"
-                ? ["biometricRegister", "registerBiometric", "register"]
-                : ["biometricAuthenticate", "authenticateBiometric", "authenticate"];
+        function clearSetupPattern() {
+            setupPattern = [];
+            paintSetupPattern();
+        }
+
+        function clearUnlockPattern() {
+            unlockPattern = [];
+            patternPad?.querySelectorAll("[data-pattern-dot]").forEach(btn => btn.classList.remove("selected"));
+        }
+
+        setupPatternPad?.querySelectorAll("[data-setup-pattern-dot]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const n = btn.dataset.setupPatternDot;
+                if (!setupPattern.includes(n)) {
+                    setupPattern.push(n);
+                    paintSetupPattern();
+                }
+            });
+        });
+
+        patternPad?.querySelectorAll("[data-pattern-dot]").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const n = btn.dataset.patternDot;
+                if (!unlockPattern.includes(n)) {
+                    unlockPattern.push(n);
+                    btn.classList.add("selected");
+                }
+            });
+        });
+
+        async function saveSelectedMethod() {
+            const method = methodSelect?.value || currentMethod || "password";
+            setMethod(method);
+
+            let secret = settingsInput?.value || "";
+            if (method === "pattern") {
+                if (setupPattern.length < 4) {
+                    alert("Connect at least 4 dots to set your pattern.");
+                    return false;
+                }
+                secret = setupPattern.join("-");
+            } else if (method === "pin") {
+                if (!/^\d{4,}$/.test(secret)) {
+                    alert("PIN must contain only numbers and be at least 4 digits.");
+                    return false;
+                }
+            } else if (method === "password") {
+                if (secret.length < 4) {
+                    alert("Use at least 4 characters for your App Lock password.");
+                    return false;
+                }
+            } else {
+                return registerFingerprint();
+            }
+
+            const ok = await window.OddiAppLock?.configure(secret, method);
+            if (!ok) return false;
+            if (settingsInput) settingsInput.value = "";
+            clearSetupPattern();
+            alert(method === "pin" ? "PIN App Lock enabled."
+                : method === "pattern" ? "Pattern App Lock enabled."
+                : "Password App Lock enabled.");
+            window.dispatchEvent(new CustomEvent("oddi-app-lock-configured", { detail: { method } }));
+            return true;
+        }
+
+        /* This listener is capture-phase so the older account-settings
+           password handler cannot overwrite PIN/pattern/biometric setup. */
+        saveBtn?.addEventListener("click", async event => {
+            const method = methodSelect?.value || currentMethod;
+            if (method === "password") return; // existing password handler handles it
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            await saveSelectedMethod();
+        }, true);
+
+        methodButtons.forEach(btn => {
+            btn.addEventListener("click", () => {
+                setMethod(btn.dataset.lockMethod);
+                if (errorEl) errorEl.textContent = "";
+            });
+        });
+
+        methodSelect?.addEventListener("change", () => {
+            setMethod(methodSelect.value);
+            if (errorEl) errorEl.textContent = "";
+        });
+
+        function fromB64(x){ const b=atob(x); const a=new Uint8Array(b.length); for(let i=0;i<b.length;i++) a[i]=b.charCodeAt(i); return a; }
+
+        async function unlockPatternNow() {
+            if (currentMethod !== "pattern") return false;
+            if (unlockPattern.length < 4) {
+                if (errorEl) errorEl.textContent = "Connect at least 4 dots.";
+                return false;
+            }
+            const secret = unlockPattern.join("-");
+            /* Use the core's public unlock hook if available. */
+            const core = window.OddiAppLock;
+            if (core && typeof core.unlock === "function") {
+                const result = await core.unlock(secret);
+                clearUnlockPattern();
+                return result;
+            }
+            /* Compatibility path: verify directly against the stored record. */
+            try {
+                const r = record();
+                if (!r) return false;
+                const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), "PBKDF2", false, ["deriveBits"]);
+                const bits = await crypto.subtle.deriveBits({name:"PBKDF2",salt:fromB64(r.salt),iterations:r.iterations||150000,hash:"SHA-256"},km,256);
+                const got = new Uint8Array(bits);
+                const expected = fromB64(r.verifier);
+                let diff = got.length === expected.length ? 0 : 1;
+                for(let i=0;i<Math.min(got.length,expected.length);i++) diff |= got[i]^expected[i];
+                if(diff===0) {
+                    localStorage.removeItem("oddi_device_app_locked_v2");
+                    document.getElementById("oddiAppLock")?.classList.remove("show");
+                    document.getElementById("oddiAppLock")?.setAttribute("aria-hidden","true");
+                    document.documentElement.classList.remove("oddi-app-locked");
+                    window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
+                    clearUnlockPattern();
+                    return true;
+                }
+            } catch (_) {}
+            if (errorEl) errorEl.textContent = "Incorrect pattern.";
+            clearUnlockPattern();
+            return false;
+        }
+
+        /* Add a small public unlock method to the core without creating a
+           second verifier implementation for password/PIN. */
+        if (window.OddiAppLock && !window.OddiAppLock.unlock) {
+            window.OddiAppLock.unlock = async secret => {
+                const r = record();
+                if (!r) return true;
+                try {
+                    const km = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(secret)), "PBKDF2", false, ["deriveBits"]);
+                    const bits = await crypto.subtle.deriveBits({name:"PBKDF2",salt:fromB64(r.salt),iterations:r.iterations||150000,hash:"SHA-256"},km,256);
+                    const got = new Uint8Array(bits);
+                    const expected = fromB64(r.verifier);
+                    let diff = got.length === expected.length ? 0 : 1;
+                    for(let i=0;i<Math.min(got.length,expected.length);i++) diff |= got[i]^expected[i];
+                    if(diff===0) {
+                        localStorage.removeItem("oddi_device_app_locked_v2");
+                        document.getElementById("oddiAppLock")?.classList.remove("show");
+                        document.getElementById("oddiAppLock")?.setAttribute("aria-hidden","true");
+                        document.documentElement.classList.remove("oddi-app-locked");
+                        if(errorEl) errorEl.textContent="";
+                        window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
+                        return true;
+                    }
+                } catch (_) {}
+                if(errorEl) errorEl.textContent = r.method === "pin" ? "Incorrect PIN." : r.method === "pattern" ? "Incorrect pattern." : "Incorrect App Lock password.";
+                return false;
+            };
+        }
+
+        window.addEventListener("oddi-pattern-unlock-request", unlockPatternNow);
+
+        async function registerFingerprint() {
+            if (nativeSetupPending) return false;
+            nativeSetupPending = true;
+            if (errorEl) errorEl.textContent = "";
+
+            /* Fingerprint setup is native-only. Never use WebAuthn here. */
+            const candidates = [window.OddiNative, window.Android, window.OddiBiometric];
+            const names = ["biometricRegister", "registerBiometric", "registerFingerprint", "setupBiometric", "register"];
+            let fn = null;
             for (const bridge of candidates) {
                 if (!bridge) continue;
                 for (const name of names) {
-                    if (typeof bridge[name] === "function") {
-                        return bridge[name].bind(bridge);
-                    }
+                    if (typeof bridge[name] === "function") { fn = bridge[name].bind(bridge); break; }
                 }
+                if (fn) break;
             }
-            return null;
-        }
-
-        function showBiometricError(message) {
-            if (errorEl) errorEl.textContent = message;
-        }
-
-        function completeBiometricSetup(success) {
-            if (!biometricSetupPending) return;
-            biometricSetupPending = false;
-            if (success) {
-                setMethod("biometric");
-                if (!configuredRecord()) {
-                    /* Keep a verifier record so the existing App Lock state
-                       remains compatible with the rest of the app. */
-                    saveVerifier("native-biometric-fallback", "biometric").catch(() => {});
-                }
-                showBiometricError("");
-            } else {
-                showBiometricError("Fingerprint/Face setup was cancelled or failed.");
+            if (!fn) {
+                nativeSetupPending = false;
+                if (errorEl) errorEl.textContent = "Fingerprint setup is available only in the native app build.";
+                return false;
             }
-        }
-
-        function completeBiometricUnlock(success) {
-            if (!biometricUnlockPending) return;
-            biometricUnlockPending = false;
-            if (!success) {
-                showBiometricError("Biometric verification failed or was cancelled.");
-                return;
-            }
-            localStorage.removeItem("oddi_device_app_locked_v2");
-            const lock = document.getElementById("oddiAppLock");
-            lock?.classList.remove("show");
-            lock?.setAttribute("aria-hidden", "true");
-            document.documentElement.classList.remove("oddi-app-locked");
-            window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
-        }
-
-        /* Public callbacks for the native Android/iOS wrapper. */
-        window.OddiAppBiometricSetupResult = completeBiometricSetup;
-        window.OddiAppBiometricResult = completeBiometricUnlock;
-
-        async function callNativeBiometric(action) {
-            const fn = getNativeBiometricBridge(action);
-            if (!fn) return false;
             try {
                 const result = fn();
-                /* Support native bridges that return a Promise/boolean. */
                 if (result && typeof result.then === "function") {
-                    const value = await result;
-                    if (action === "register") completeBiometricSetup(value !== false);
-                    else completeBiometricUnlock(value !== false);
+                    const success = await result;
+                    if (success !== undefined) completeFingerprintSetup(success !== false);
                 } else if (typeof result === "boolean") {
-                    if (action === "register") completeBiometricSetup(result);
-                    else completeBiometricUnlock(result);
+                    completeFingerprintSetup(result);
                 }
                 return true;
             } catch (e) {
-                console.warn("Native biometric bridge failed", e);
-                if (action === "register") completeBiometricSetup(false);
-                else completeBiometricUnlock(false);
-                return true;
-            }
-        }
-
-        async function registerBiometric(){
-            if (biometricSetupPending) return false;
-            biometricSetupPending = true;
-            showBiometricError("");
-
-            /* Packaged Android/iOS app: use native biometric prompt. */
-            if (isLikelyNativeApp) {
-                const handled = await callNativeBiometric("register");
-                if (!handled) {
-                    biometricSetupPending = false;
-                    showBiometricError("Native fingerprint/face support is not connected in this app build yet.");
-                    return false;
-                }
-                return true;
-            }
-
-            /* Normal browser: WebAuthn is allowed here. This branch is never
-               used by a standard Android WebView, so it cannot launch the
-               unwanted Google passkey screen in the packaged app. */
-            if (!window.PublicKeyCredential || !navigator.credentials) {
-                biometricSetupPending = false;
-                showBiometricError("Biometric App Lock is not supported by this browser.");
-                return false;
-            }
-            try {
-                const challenge = crypto.getRandomValues(new Uint8Array(32));
-                const userId = crypto.getRandomValues(new Uint8Array(16));
-                const cred = await navigator.credentials.create({
-                    publicKey: {
-                        challenge,
-                        rp: { name: "Oddi AI" },
-                        user: { id: userId, name: "oddi-app-lock", displayName: "Oddi AI App Lock" },
-                        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-                        authenticatorSelection: {
-                            authenticatorAttachment: "platform",
-                            userVerification: "required",
-                            residentKey: "preferred"
-                        },
-                        timeout: 60000
-                    }
-                });
-                if (!cred) {
-                    completeBiometricSetup(false);
-                    return false;
-                }
-                localStorage.setItem(CRED_KEY, b64(new Uint8Array(cred.rawId)));
-                completeBiometricSetup(true);
-                return true;
-            } catch (e) {
-                console.warn("Browser biometric registration failed", e);
-                completeBiometricSetup(false);
+                console.warn("Native fingerprint setup failed", e);
+                completeFingerprintSetup(false);
                 return false;
             }
         }
-        biometricSetupBtn?.addEventListener("click", registerBiometric);
 
-        async function biometricUnlock(){
-            if (biometricUnlockPending) return;
-            biometricUnlockPending = true;
-            showBiometricError("");
-
-            /* Packaged Android/iOS app: NEVER call WebAuthn here. */
-            if (isLikelyNativeApp) {
-                const handled = await callNativeBiometric("authenticate");
-                if (!handled) {
-                    biometricUnlockPending = false;
-                    showBiometricError("Native fingerprint/face support is not connected in this app build yet.");
-                }
-                return;
-            }
-
-            const id = localStorage.getItem(CRED_KEY);
-            if (!id) {
-                completeBiometricUnlock(false);
-                showBiometricError("Set up fingerprint/face in Account Settings first.");
-                return;
-            }
-            try {
-                await navigator.credentials.get({
-                    publicKey: {
-                        challenge: crypto.getRandomValues(new Uint8Array(32)),
-                        allowCredentials: [{ type: "public-key", id: fromB64(id) }],
-                        userVerification: "required",
-                        timeout: 60000
-                    }
-                });
-                completeBiometricUnlock(true);
-            } catch (e) {
-                console.warn("Browser biometric unlock failed", e);
-                completeBiometricUnlock(false);
+        async function completeFingerprintSetup(success) {
+            if (!nativeSetupPending) return;
+            nativeSetupPending = false;
+            if (success) {
+                /* A biometric lock still needs a local App Lock record so the
+                   normal startup/Lock Now logic knows that the device is locked.
+                   The random fallback secret is never shown or used for unlock. */
+                try {
+                    const fallback = "native-biometric-" + crypto.randomUUID();
+                    await window.OddiAppLock?.configure(fallback, "biometric");
+                } catch (_) {}
+                setMethod("biometric");
+                if (settingsInput) settingsInput.value = "";
+                if (errorEl) errorEl.textContent = "Fingerprint App Lock enabled.";
+                window.dispatchEvent(new CustomEvent("oddi-app-lock-configured", { detail: { method: "biometric" } }));
+            } else if (errorEl) {
+                errorEl.textContent = "Fingerprint setup was cancelled or failed.";
             }
         }
-        biometricBtn?.addEventListener("click", biometricUnlock);
 
-        let setupPattern = [];
-        const setupPad = document.getElementById("mobilePatternSetupPad");
-        setupPad?.querySelectorAll("[data-setup-pattern-dot]").forEach(btn=>btn.addEventListener("click",()=>{
-            const n=btn.dataset.setupPatternDot;
-            if(!setupPattern.includes(n)){ setupPattern.push(n); btn.style.background="#111"; btn.style.boxShadow="inset 0 0 0 8px #fff"; }
-        }));
-        function clearSetupPattern(){ setupPattern=[]; setupPad?.querySelectorAll("[data-setup-pattern-dot]").forEach(b=>{b.style.background="transparent";b.style.boxShadow="none";}); }
+        window.OddiAppBiometricSetupResult = completeFingerprintSetup;
+        biometricSetupBtn?.addEventListener("click", registerFingerprint);
 
-        /* Capture Save so PIN/pattern can use the same secure PBKDF2 record. */
-        document.getElementById("saveAppLockPasswordBtn")?.addEventListener("click",async function(e){
-            const method=methodSelect?.value||currentMethod; setMethod(method);
-            const input=document.getElementById("appLockPasswordInput");
-            if(method==="password") return;
-            e.stopImmediatePropagation();
-            if(method==="pin"){
-                const value=input?.value||""; if(!/^\\d{4,}$/.test(value)){ alert("PIN must contain only numbers and be at least 4 digits."); return; }
-                await saveVerifier(value,"pin"); if(input)input.value=""; alert("PIN App Lock enabled."); return;
+        async function requestFingerprintUnlock() {
+            if (currentMethod !== "biometric") return;
+            if (typeof window.OddiAppLockNativeBiometric === "function") {
+                await window.OddiAppLockNativeBiometric();
+            } else if (errorEl) {
+                errorEl.textContent = "Fingerprint is unavailable here. Use PIN, password, or pattern.";
             }
-            if(method==="pattern"){
-                if(setupPattern.length<4){ alert("Connect at least 4 dots to set your pattern."); return; }
-                await saveVerifier(setupPattern.join("-"),"pattern");
-                clearSetupPattern();
-                if(input)input.value="";
-                alert("Pattern App Lock enabled.");
-                return;
-            }
-            if(method==="biometric"){ await registerBiometric(); if(input)input.value=""; return; }
-        },true);
-
-        /* Pattern setup: first pattern entered after selecting Pattern becomes the verifier. */
-        async function tryPatternUnlock(){
-            const record=configuredRecord(); if(!record||currentMethod!=="pattern") return false;
-            if(pattern.length<4){ if(errorEl)errorEl.textContent="Connect at least 4 dots."; return true; }
-            const secret=pattern.join("-"); const v=await derive(secret,fromB64(record.salt)); const expected=fromB64(record.verifier); let diff=v.length===expected.length?0:1; for(let i=0;i<Math.min(v.length,expected.length);i++)diff|=v[i]^expected[i];
-            if(diff===0){ localStorage.removeItem("oddi_device_app_locked_v2"); document.getElementById("oddiAppLock")?.classList.remove("show"); document.getElementById("oddiAppLock")?.setAttribute("aria-hidden","true"); document.documentElement.classList.remove("oddi-app-locked"); clearPattern(); window.dispatchEvent(new CustomEvent("oddi-app-unlocked")); }
-            else { if(errorEl)errorEl.textContent="Incorrect pattern."; clearPattern(); }
-            return true;
         }
-        unlockBtn?.addEventListener("click",async function(e){ if(currentMethod!=="pattern") return; e.preventDefault(); e.stopImmediatePropagation(); await tryPatternUnlock(); },true);
 
-        /* If Pattern was selected but no pattern exists yet, turn the next 4+ dots into setup. */
-        methodSelect?.addEventListener("change",async()=>{ if(methodSelect.value!=="pattern")return; });
-        patternPad?.addEventListener("click",async()=>{
-            if(currentMethod!=="pattern" || pattern.length<4) return;
-            if(configuredRecord()?.method!=="pattern"){
-                await saveVerifier(pattern.join("-"),"pattern");
-                if(errorEl) errorEl.textContent="Pattern saved. Use the same pattern to unlock.";
-                clearPattern();
-            }
+        biometricBtn?.addEventListener("click", requestFingerprintUnlock);
+        window.addEventListener("oddi-app-lock-biometric-request", requestFingerprintUnlock);
+        window.addEventListener("oddi-app-lock-shown", event => {
+            setMethod(event.detail?.method || currentMethod);
+            if (currentMethod === "biometric") requestFingerprintUnlock();
         });
+
+        window.addEventListener("oddi-app-unlocked", () => {
+            clearUnlockPattern();
+            if (unlockInput) unlockInput.value = "";
+        });
+
+        setMethod(currentMethod);
     })();
     </script>
 
