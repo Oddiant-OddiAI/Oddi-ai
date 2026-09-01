@@ -3048,8 +3048,7 @@
                 max-width: none !important;
                 height: 100dvh !important;
                 min-height: 100dvh !important;
-                padding: 20px 18px 22px !important;
-                justify-content: center !important;
+                padding: 28px 24px 24px !important;
                 border: 0 !important;
                 border-radius: 0 !important;
                 background: #000 !important;
@@ -3066,22 +3065,22 @@
             #oddiAppLockClose { display: none !important; }
 
             .oddi-app-lock-icon {
-                font-size: 30px;
+                font-size: 24px;
                 line-height: 1;
-                margin: 0 0 10px;
+                margin: 8px 0 8px;
             }
 
             #oddiAppLockCard h2 {
                 margin: 0;
-                font-size: 22px;
+                font-size: 18px;
                 line-height: 1.2;
                 font-weight: 700;
             }
 
             #oddiAppLockCard p {
-                margin: 6px 0 0;
+                margin: 5px 0 0;
                 color: #aaa !important;
-                font-size: 12px;
+                font-size: 10px;
                 line-height: 1.2;
             }
 
@@ -3090,16 +3089,16 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                gap: 10px;
-                min-height: 22px;
-                margin: 24px 0 0;
+                gap: 8px;
+                min-height: 18px;
+                margin: 16px 0 0;
                 pointer-events: none;
             }
 
             .oddi-pin-dot {
-                width: 10px;
-                height: 10px;
-                border: 1.5px solid #fff;
+                width: 7px;
+                height: 7px;
+                border: 1px solid #fff;
                 border-radius: 50%;
                 box-sizing: border-box;
                 background: transparent;
@@ -3128,13 +3127,13 @@
             #oddiUnlockBtn { display: none; }
 
             #oddiMobileKeypad {
-                width: min(330px, 88vw);
-                margin-top: 42px;
+                width: min(270px, 78vw);
+                margin-top: 34px;
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                grid-auto-rows: 68px;
-                column-gap: 34px;
-                row-gap: 22px;
+                grid-auto-rows: 58px;
+                column-gap: 30px;
+                row-gap: 18px;
                 flex: 0 0 auto;
             }
 
@@ -3147,13 +3146,16 @@
                 color: #fff;
                 border-radius: 50%;
                 font: inherit;
-                font-size: 32px;
+                font-size: 27px;
                 font-weight: 400;
                 line-height: 1;
                 padding: 0;
                 margin: 0;
                 touch-action: manipulation;
                 -webkit-tap-highlight-color: transparent;
+                -webkit-user-select: none;
+                user-select: none;
+                -webkit-touch-callout: none;
             }
 
             #oddiMobileKeypad button:active {
@@ -3167,35 +3169,12 @@
                 min-height: 8px;
                 margin-top: 3px;
                 color: #888;
-                font-size: 7px;
+                font-size: 6px;
                 letter-spacing: .3px;
             }
 
             #oddiMobileKeypad button[data-key="backspace"] {
-                font-size: 28px;
-            }
-
-            #oddiMobileUnlockBtn {
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                width: 132px;
-                height: 44px;
-                margin-top: 34px;
-                border: 1px solid #3a3a3a;
-                border-radius: 24px;
-                background: #111;
-                color: #fff;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                touch-action: manipulation;
-                -webkit-tap-highlight-color: transparent;
-            }
-
-            #oddiMobileUnlockBtn:active {
-                background: #222;
-                transform: scale(.97);
+                font-size: 22px;
             }
 
             #oddiMobileKeypad button[data-key="empty"] { pointer-events: none; }
@@ -3222,14 +3201,13 @@
         @media (max-width: 380px) {
             #oddiAppLockCard { padding-top: 20px !important; }
             #oddiMobileKeypad {
-                width: min(300px, 86vw);
-                grid-auto-rows: 60px;
-                column-gap: 28px;
-                row-gap: 16px;
-                margin-top: 34px;
+                width: min(250px, 76vw);
+                grid-auto-rows: 52px;
+                column-gap: 26px;
+                row-gap: 13px;
+                margin-top: 28px;
             }
-            #oddiMobileKeypad button { font-size: 29px; }
-            #oddiMobileUnlockBtn { margin-top: 24px; }
+            #oddiMobileKeypad button { font-size: 24px; }
         }
     </style>
 
@@ -3323,8 +3301,6 @@
             </div>
 
             <button id="oddiMobileFallbackUnlock" type="button">Unlock</button>
-
-            <button id="oddiMobileUnlockBtn" type="button" aria-label="Unlock Oddi AI">Unlock</button>
 
             <button id="oddiUnlockBtn" type="button">
                 Unlock
@@ -9425,7 +9401,6 @@
         const passwordInput = document.getElementById("oddiUnlockPassword");
         const unlockBtn = document.getElementById("oddiUnlockBtn");
         const fallbackUnlockBtn = document.getElementById("oddiMobileFallbackUnlock");
-        const mobileUnlockBtn = document.getElementById("oddiMobileUnlockBtn");
         const errorEl = document.getElementById("oddiUnlockError");
         const closeBtn = document.getElementById("oddiAppLockClose");
         const mobileKeypad = document.getElementById("oddiMobileKeypad");
@@ -9561,15 +9536,18 @@
             setError("");
             prepareMobileInput();
             renderMobileDots();
-            updateMobileUnlockState();
 
             /* Existing records from before this UI update may not contain a
                secret length. Keep the normal Unlock fallback for those. */
             const legacyNumeric = isMobileLockUI() && record.numeric === true && Number(record.secretLength) >= 4;
             const legacyRecord = isMobileLockUI() && !(record.numeric === true && Number(record.secretLength) >= 4);
             if (fallbackUnlockBtn) fallbackUnlockBtn.style.display = legacyRecord ? "block" : "none";
-            if (!isMobileLockUI()) {
-                passwordInput?.focus({ preventScroll: true });
+            if (isMobileLockUI() && legacyNumeric) {
+                setTimeout(() => mobileKeypad?.querySelector('[data-key="1"]')?.focus(), 80);
+            } else if (isMobileLockUI()) {
+                setTimeout(() => mobileKeypad?.querySelector('[data-key="1"]')?.focus(), 80);
+            } else {
+                setTimeout(() => passwordInput?.focus(), 0);
             }
         }
 
@@ -9582,7 +9560,6 @@
             if (errorEl) errorEl.textContent = "";
             if (passwordInput) passwordInput.value = "";
             renderMobileDots();
-            updateMobileUnlockState();
         }
 
         async function unlock() {
@@ -9621,24 +9598,30 @@
             } finally {
                 unlockInProgress = false;
                 unlockBtn?.removeAttribute("disabled");
-                updateMobileUnlockState();
             }
-        }
-
-        function updateMobileUnlockState() {
-            if (!mobileUnlockBtn || !passwordInput) return;
-            const length = passwordInput.value.length;
-            mobileUnlockBtn.disabled = length < 4 || unlockInProgress;
-            mobileUnlockBtn.style.opacity = mobileUnlockBtn.disabled ? "0.45" : "1";
         }
 
         function addDigit(digit) {
             if (!passwordInput || unlockInProgress) return;
             if (passwordInput.value.length >= 12) return;
+
+            /* Update the field/dots synchronously. No crypto work happens here,
+               so every keypad press stays instant on Android WebViews. */
             setError("");
             passwordInput.value += digit;
             renderMobileDots();
-            updateMobileUnlockState();
+
+            /* Auto-submit only after the complete configured PIN has been
+               entered. requestAnimationFrame lets the final dot paint first. */
+            const record = readRecord();
+            const requiredLength = Number(record?.secretLength) || 0;
+            if (requiredLength >= 4 && passwordInput.value.length === requiredLength) {
+                requestAnimationFrame(() => {
+                    if (!unlockInProgress && passwordInput?.value.length === requiredLength) {
+                        unlock();
+                    }
+                });
+            }
         }
 
         function deleteDigit() {
@@ -9646,7 +9629,25 @@
             passwordInput.value = passwordInput.value.slice(0, -1);
             setError("");
             renderMobileDots();
-            updateMobileUnlockState();
+        }
+
+        function handleMobileKey(event) {
+            const button = event.target?.closest?.("button[data-key]");
+            if (!button) return;
+            const key = button.dataset.key;
+            if (key === "empty") return;
+
+            /* Android WebView can delay click/pointer dispatch. Handle the
+               touchstart path immediately and suppress the duplicate event. */
+            const now = performance.now();
+            const lastHandled = Number(button.dataset.oddiHandledAt || 0);
+            if (now - lastHandled < 120) return;
+            button.dataset.oddiHandledAt = String(now);
+
+            event.preventDefault();
+            event.stopPropagation();
+            if (key === "backspace") deleteDigit();
+            else if (/^\d$/.test(key)) addDigit(key);
         }
 
         window.OddiAppLock = {
@@ -9664,26 +9665,19 @@
 
         unlockBtn?.addEventListener("click", unlock);
         fallbackUnlockBtn?.addEventListener("click", unlock);
-        mobileUnlockBtn?.addEventListener("click", unlock);
 
+        /* Use touchstart as the primary mobile path: it fires at touch time
+           instead of waiting for the WebView's delayed click synthesis.
+           pointerdown remains as a fallback for non-touch devices. */
+        mobileKeypad?.addEventListener("touchstart", handleMobileKey, { passive: false });
         mobileKeypad?.addEventListener("pointerdown", event => {
-            const button = event.target.closest("button[data-key]");
-            if (!button) return;
-            event.preventDefault();
-            event.stopPropagation();
-            const key = button.dataset.key;
-            if (key === "backspace") deleteDigit();
-            else if (/^\d$/.test(key)) addDigit(key);
-        });
+            if (event.pointerType === "touch") return;
+            handleMobileKey(event);
+        }, { passive: false });
 
         passwordInput?.addEventListener("keydown", event => {
             if (isMobileLockUI()) {
-                if (event.key === "Enter") {
-                    event.preventDefault();
-                    unlock();
-                } else {
-                    event.preventDefault();
-                }
+                event.preventDefault();
                 return;
             }
             if (event.key === "Enter") {
