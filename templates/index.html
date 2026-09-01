@@ -30,47 +30,7 @@
       href="{{ url_for('static', filename='favicon2.png') }}">
     <title>Oddi AI</title>
     <!-- Splash mode safety: desktop uses splash.png, phones use splash2.png -->
-    <style id="splash-mode-fix">
-        #mobileSplash {
-            display: none !important;
-            position: fixed;
-            inset: 0;
-            width: 100vw;
-            height: 100dvh;
-            z-index: 2147483647;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            background: #000;
-            opacity: 1;
-            visibility: visible;
-            transition: opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        #mobileSplash img {
-            width: 100%;
-            height: 100%;
-            max-width: none;
-            max-height: none;
-            display: block;
-            object-fit: cover;
-            object-position: center center;
-        }
-        #mobileSplash.hide {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-        @media (max-width: 768px) {
-            #splash-screen {
-                display: none !important;
-                opacity: 0 !important;
-                visibility: hidden !important;
-                pointer-events: none !important;
-            }
-            #mobileSplash {
-                display: flex !important;
-            }
-        }
+    <style>
 /* ---------- Selected sidebar chat ---------- */
 .history-item.active-chat {
     background: #0a0a0a !important;
@@ -2771,9 +2731,375 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
     }
 </style>
 
+
+<!-- FINAL UI CENTERING + VOICE VISIBILITY FIX -->
+<style id="final-ui-centering-and-voice-fix">
+    /* Keep the three-dot glyph optically centered inside its circular button. */
+    .header-more-btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        text-align: center !important;
+        vertical-align: middle !important;
+        box-sizing: border-box !important;
+    }
+
+    /* Keep the × glyph exactly centered in the More panel close button. */
+    .header-more-close {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        font-family: Arial, sans-serif !important;
+    }
+
+    /* Keep the × glyph exactly centered in Account Settings. */
+    .account-settings-close {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+        line-height: 1 !important;
+        text-align: center !important;
+        box-sizing: border-box !important;
+        font-family: Arial, sans-serif !important;
+    }
+
+    /* Export menu is centered in the viewport, not relative to its old header wrapper. */
+    #exportChatMenu.export-chat-menu.show {
+        position: fixed !important;
+        left: 50vw !important;
+        right: auto !important;
+        top: 50vh !important;
+        bottom: auto !important;
+        width: min(360px, calc(100vw - 32px)) !important;
+        max-height: min(70vh, 560px) !important;
+        overflow-y: auto !important;
+        transform: translate(-50%, -50%) !important;
+        z-index: 2147483646 !important;
+        box-sizing: border-box !important;
+    }
+
+    /* The voice area must have room for all four choices. */
+    .voice-setting-item {
+        align-items: flex-start !important;
+    }
+
+    #voiceOptions.voice-options {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+        gap: 7px !important;
+        box-sizing: border-box !important;
+    }
+
+    #voiceOptions .voice-option {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 10px !important;
+        width: 100% !important;
+        min-height: 40px !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+    }
+
+    #voiceOptions .voice-name {
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+    }
+
+    #voiceOptions .voice-preview-btn {
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+    }
+
+    @media (max-width: 768px) {
+        /* Same centering on phones; the header buttons remain independent. */
+        .header-more-btn,
+        .header-more-close,
+        .account-settings-close {
+            padding: 0 !important;
+            line-height: 1 !important;
+        }
+
+        .account-settings-card .voice-setting-item {
+            display: block !important;
+        }
+
+        #voiceOptions.voice-options {
+            margin-top: 8px !important;
+        }
+    }
+</style>
+
+
+
+<style id="oddi-settings-scroll-voice-box-fix">
+/* Account Settings: keep the whole settings card compact and scrollable. */
+#settingsModal .rename-box {
+    max-height: calc(100dvh - 24px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #999 transparent !important;
+}
+
+#settingsModal .rename-box::-webkit-scrollbar {
+    width: 7px !important;
+}
+
+#settingsModal .rename-box::-webkit-scrollbar-track {
+    background: transparent !important;
+}
+
+#settingsModal .rename-box::-webkit-scrollbar-thumb {
+    background: #999 !important;
+    border-radius: 10px !important;
+}
+
+/* Voice gets its own compact marginal box instead of making Settings huge. */
+#settingsModal .voice-setting-item {
+    display: grid !important;
+    grid-template-columns: 62px minmax(0, 1fr) !important;
+    align-items: start !important;
+    column-gap: 12px !important;
+}
+
+#settingsModal #voiceOptions.voice-options {
+    width: 100% !important;
+    max-height: 100px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 6px !important;
+    margin: 0 !important;
+    border: 1px solid #e3e3e3 !important;
+    border-radius: 10px !important;
+    background: #fafafa !important;
+    box-sizing: border-box !important;
+    gap: 6px !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #aaa transparent !important;
+}
+
+#settingsModal #voiceOptions.voice-options::-webkit-scrollbar {
+    width: 5px !important;
+}
+
+#settingsModal #voiceOptions.voice-options::-webkit-scrollbar-thumb {
+    background: #aaa !important;
+    border-radius: 10px !important;
+}
+
+#settingsModal #voiceOptions .voice-option {
+    min-height: 38px !important;
+    flex: 0 0 auto !important;
+}
+
+@media (max-width: 768px) {
+    /* On phones the Voice label stays on the left and the compact box sits beside it. */
+    #settingsModal .voice-setting-item {
+        grid-template-columns: 44px minmax(0, 1fr) !important;
+        column-gap: 10px !important;
+    }
+    #settingsModal #voiceOptions.voice-options {
+        max-height: 100px !important;
+        padding: 5px !important;
+    }
+    #settingsModal .rename-box {
+        max-height: calc(100dvh - 16px) !important;
+    }
+}
+</style>
+<style id="oddi-app-lock-css">
+    #oddiAppLock {
+        position: fixed;
+        inset: 0;
+        z-index: 2147483647;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        box-sizing: border-box;
+        background: rgba(0,0,0,.55);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+    }
+
+    #oddiAppLock.show {
+        display: flex;
+    }
+
+    /* When App Lock is active, the splash stays completely hidden until the
+       correct password is entered. */
+    html.oddi-app-locked #splash-screen,
+    html.oddi-app-locked #mobileSplash {
+        display: none !important;
+    }
+
+    #oddiAppLockCard {
+        position: relative;
+        width: min(390px, calc(100vw - 32px));
+        padding: 32px 28px;
+        box-sizing: border-box;
+        border-radius: 22px;
+        background: #fff;
+        color: #111;
+        border: 1px solid #e5e5e5;
+        box-shadow: 0 25px 80px rgba(0,0,0,.28);
+        text-align: center;
+    }
+
+    #oddiAppLockClose {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        background: #f7f7f7;
+        color: #111;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        line-height: 1;
+        cursor: pointer;
+    }
+
+    .oddi-app-lock-icon {
+        font-size: 42px;
+        margin-bottom: 10px;
+    }
+
+    #oddiAppLockCard h2 {
+        margin: 0 0 6px;
+        font-size: 25px;
+    }
+
+    #oddiAppLockCard p {
+        margin: 0 0 22px;
+        color: #777;
+        font-size: 14px;
+    }
+
+    #oddiUnlockPassword {
+        width: 100%;
+        height: 48px;
+        box-sizing: border-box;
+        padding: 0 14px;
+        border: 1px solid #ddd;
+        border-radius: 11px;
+        outline: none;
+        font-size: 15px;
+        background: #fff;
+        color: #111;
+    }
+
+    #oddiUnlockPassword:focus {
+        border-color: #111;
+    }
+
+    #oddiUnlockBtn {
+        width: 100%;
+        height: 48px;
+        margin-top: 12px;
+        border: 0;
+        border-radius: 11px;
+        background: #111;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    #oddiUnlockError {
+        min-height: 20px;
+        margin-top: 10px;
+        color: #c62828;
+        font-size: 13px;
+    }
+
+    body.dark-mode #oddiAppLockCard {
+        background: #111;
+        color: #fff;
+        border-color: #333;
+    }
+
+    body.dark-mode #oddiAppLockClose {
+        background: #1b1b1b;
+        color: #fff;
+        border-color: #333;
+    }
+
+    body.dark-mode #oddiUnlockPassword {
+        background: #171717;
+        color: #fff;
+        border-color: #333;
+    }
+
+    body.dark-mode #oddiUnlockBtn {
+        background: #fff;
+        color: #111;
+    }
+
+    @media (max-width: 768px) {
+        #oddiAppLock {
+            padding: 16px;
+        }
+
+        #oddiAppLockCard {
+            width: min(360px, calc(100vw - 28px));
+            padding: 30px 22px;
+            border-radius: 20px;
+        }
+    }
+</style>
 </head>
 
-<body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
+<!-- ODDI AI APP LOCK -->
+<div id="oddiAppLock" aria-hidden="true">
+    <div id="oddiAppLockCard">
+        <button
+            id="oddiAppLockClose"
+            type="button"
+            aria-label="Close">
+            ×
+        </button>
+
+        <div class="oddi-app-lock-icon">🔒</div>
+
+        <h2>Oddi AI</h2>
+        <p>This app is locked</p>
+
+        <input
+            id="oddiUnlockPassword"
+            type="password"
+            autocomplete="current-password"
+            placeholder="Enter app password"
+            aria-label="Enter app password">
+
+        <button id="oddiUnlockBtn" type="button">
+            Unlock
+        </button>
+
+        <div id="oddiUnlockError" aria-live="polite"></div>
+    </div>
+</div>
 
 <!-- Mobile Splash — shown for both signed-in and signed-out users -->
 <div id="mobileSplash">
@@ -3238,16 +3564,63 @@ body.dark-mode .oddi-share-options button:hover { background:#252525; }
         </button>
 
         <div class="account-section-title">Security</div>
+
         <div class="app-password-card">
             <div class="account-settings-action" style="margin:0 !important; border:0 !important; padding:0 !important; background:transparent !important;">
-                <span>🔑</span><span class="account-action-main"><strong>App Password</strong><small id="appPasswordStatus">Not configured on this device</small></span>
+                <span>🔒</span>
+                <span class="account-action-main">
+                    <strong>App Lock</strong>
+                    <small id="appLockStatus">Not configured on this device</small>
+                </span>
             </div>
+
             <div class="app-password-row" style="margin-top:10px;">
-                <input id="appPasswordInput" type="password" autocomplete="new-password" placeholder="Enter app password" aria-label="App password">
-                <button id="toggleAppPasswordBtn" class="app-password-btn" type="button" aria-label="Show app password">👁</button>
-                <button id="saveAppPasswordBtn" class="app-password-btn" type="button">Save</button>
+                <input
+                    id="appLockPasswordInput"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="Set app lock password"
+                    aria-label="App lock password">
+
+                <button
+                    id="toggleAppLockPasswordBtn"
+                    class="app-password-btn"
+                    type="button"
+                    aria-label="Show app lock password">👁</button>
+
+                <button
+                    id="saveAppLockPasswordBtn"
+                    class="app-password-btn"
+                    type="button">Save</button>
             </div>
-            <p class="app-password-note">This UI keeps the app password only on this device. A server-backed password/API credential should be implemented on the backend before using it for authentication or integrations.</p>
+
+            <button
+                id="removeAppLockBtn"
+                class="account-settings-action account-danger"
+                type="button"
+                style="margin-top:8px !important;">
+                <span>🔓</span>
+                <span class="account-action-main">
+                    <strong>Remove App Lock</strong>
+                    <small>Disable the password required when opening Oddi AI</small>
+                </span>
+            </button>
+
+            <button
+                id="lockAppNowBtn"
+                class="account-settings-action"
+                type="button">
+                <span>🔒</span>
+                <span class="account-action-main">
+                    <strong>Lock App Now</strong>
+                    <small>Immediately lock Oddi AI</small>
+                </span>
+            </button>
+
+            <p class="app-password-note">
+                App Lock protects this device. Your password is stored only as a
+                cryptographic verifier on this device and is not your account password.
+            </p>
         </div>
 
         <div class="account-section-title">Session</div>
@@ -4142,12 +4515,25 @@ let selectedVoiceIndex =
 function loadSpeechVoices() {
 
     if (!("speechSynthesis" in window)) {
+        availableSpeechVoices = [];
+        renderVoiceOptions();
         return;
     }
 
-    availableSpeechVoices =
-        window.speechSynthesis.getVoices();
+    const voices = window.speechSynthesis.getVoices();
 
+    if (Array.isArray(voices) && voices.length) {
+        availableSpeechVoices = voices;
+        renderVoiceOptions();
+        return;
+    }
+
+    /*
+     * Some browsers (especially mobile Chrome/Android) populate the
+     * speech-voice list asynchronously. Ask again a few times instead of
+     * permanently showing “No voices available”. The onvoiceschanged event
+     * below remains the primary update mechanism.
+     */
     renderVoiceOptions();
 }
 
@@ -4158,6 +4544,17 @@ if ("speechSynthesis" in window) {
 
     window.speechSynthesis.onvoiceschanged =
         loadSpeechVoices;
+
+    /* Fallback polling for browsers that do not reliably fire
+       onvoiceschanged. Stop as soon as voices become available. */
+    let voiceLoadAttempts = 0;
+    const voiceLoadTimer = setInterval(() => {
+        voiceLoadAttempts += 1;
+        loadSpeechVoices();
+        if (availableSpeechVoices.length || voiceLoadAttempts >= 20) {
+            clearInterval(voiceLoadTimer);
+        }
+    }, 250);
 }
 
 
@@ -4176,7 +4573,7 @@ function renderVoiceOptions() {
 
         container.innerHTML =
             `<p class="voice-loading">
-                No voices available
+                Loading voices...
              </p>`;
 
         return;
@@ -4184,16 +4581,20 @@ function renderVoiceOptions() {
 
     
     /*
-     * Prefer voices matching the
-     * currently selected language.
+     * Prefer voices matching the language selected in Settings.
+     * Use the language map here rather than the old undefined
+     * `selectedLanguage` variable (which caused a ReferenceError when
+     * voices finally loaded).
      */
+    const selectedSpeechLanguage =
+        speechLanguageMap[getSelectedLanguage()] || "en-IN";
 
     let languageVoices =
         availableSpeechVoices.filter(voice =>
-            voice.lang
+            String(voice.lang || "")
                 .toLowerCase()
                 .startsWith(
-                    selectedLanguage
+                    selectedSpeechLanguage
                         .toLowerCase()
                         .split("-")[0]
                 )
@@ -4573,6 +4974,9 @@ if (languageSetting) {
             recognition.lang =
                 speechLanguageMap[languageSetting.value] || "en-IN";
         }
+
+        /* Refresh the visible voice choices for the new language. */
+        loadSpeechVoices();
     });
 }
 
@@ -8372,27 +8776,27 @@ clearChatBtn.onclick =
         newChat();
     };
 /* SPLASH SCREEN*/
-document.addEventListener("DOMContentLoaded", () => {
-    const isMobile = window.matchMedia(
-        "(max-width: 768px)"
-    ).matches;
-    const splash = document.getElementById(
-        isMobile ? "mobileSplash" : "splash-screen"
-    );
-    const splashSound =
-        document.getElementById("splashSound");
-    if (splashSound) {
-        splashSound.play().catch(() => {});
-    }
-    if (splash) {
+(function () {
+    function playOddiSplash() {
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+        const splash = document.getElementById(isMobile ? "mobileSplash" : "splash-screen");
+        const splashSound = document.getElementById("splashSound");
+        if (splashSound) splashSound.play().catch(() => {});
+        if (!splash) return;
         setTimeout(() => {
             splash.classList.add("hide");
-            setTimeout(() => {
-                splash.remove();
-            }, 1500);
+            setTimeout(() => splash.remove(), 1500);
         }, 3000);
     }
-});
+
+    function startWhenReady() {
+        if (window.OddiAppLock?.isLocked()) return;
+        playOddiSplash();
+    }
+
+    document.addEventListener("DOMContentLoaded", startWhenReady, { once: true });
+    window.addEventListener("oddi-app-unlocked", startWhenReady, { once: true });
+})();
 /* INITIALIZE*/
 input.style.height =
     "auto";
@@ -8589,6 +8993,28 @@ loadConversations();
 })();
 </script>
 
+
+<script id="final-voice-load-retry">
+(function () {
+    function retryVoiceLoad() {
+        try {
+            if ("speechSynthesis" in window && typeof loadSpeechVoices === "function") {
+                loadSpeechVoices();
+            }
+        } catch (_) {}
+    }
+    document.addEventListener("DOMContentLoaded", function () {
+        retryVoiceLoad();
+        [250, 750, 1500, 2500].forEach(function (delay) {
+            setTimeout(retryVoiceLoad, delay);
+        });
+    });
+    if ("speechSynthesis" in window) {
+        window.speechSynthesis.addEventListener?.("voiceschanged", retryVoiceLoad);
+    }
+})();
+</script>
+
 <script id="oddi-account-settings-js">
 (function () {
     const modal = document.getElementById("accountSettingsModal");
@@ -8598,33 +9024,40 @@ loadConversations();
     const logoutBtn = document.getElementById("accountLogoutBtn");
     const list = document.getElementById("rememberedAccountList");
     const clearBtn = document.getElementById("clearRememberedAccountsBtn");
-    const appPasswordInput = document.getElementById("appPasswordInput");
-    const togglePasswordBtn = document.getElementById("toggleAppPasswordBtn");
-    const savePasswordBtn = document.getElementById("saveAppPasswordBtn");
-    const passwordStatus = document.getElementById("appPasswordStatus");
+    const appPasswordInput = document.getElementById("appLockPasswordInput");
+    const togglePasswordBtn = document.getElementById("toggleAppLockPasswordBtn");
+    const savePasswordBtn = document.getElementById("saveAppLockPasswordBtn");
+    const removeLockBtn = document.getElementById("removeAppLockBtn");
+    const lockNowBtn = document.getElementById("lockAppNowBtn");
+    const passwordStatus = document.getElementById("appLockStatus");
     if (!modal) return;
 
     const ACCOUNT_KEY = "oddi_remembered_accounts_v1";
-    const PASSWORD_KEY = "oddi_device_app_password_v1";
+    const LOCK_KEY = "oddi_device_app_lock_v2";
+    const LOCKED_KEY = "oddi_device_app_locked_v2";
     const currentUsername = document.body?.dataset.username || "";
 
     function closeAccountModal() {
         modal.classList.remove("show");
         modal.setAttribute("aria-hidden", "true");
     }
+
     function readAccounts() {
         try {
             const data = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || "[]");
             return Array.isArray(data) ? data.filter(Boolean).map(String) : [];
         } catch (_) { return []; }
     }
+
     function writeAccounts(accounts) {
         localStorage.setItem(ACCOUNT_KEY, JSON.stringify([...new Set(accounts)].slice(0, 12)));
     }
+
     function rememberCurrentAccount() {
         if (!currentUsername) return;
         writeAccounts([currentUsername, ...readAccounts()]);
     }
+
     function renderAccounts() {
         if (!list) return;
         const accounts = readAccounts();
@@ -8652,9 +9085,17 @@ loadConversations();
             list.appendChild(row);
         });
     }
+
+    function hasAppLock() {
+        try { return !!localStorage.getItem(LOCK_KEY); } catch (_) { return false; }
+    }
+
     function refreshPasswordStatus() {
-        const configured = !!sessionStorage.getItem(PASSWORD_KEY);
-        if (passwordStatus) passwordStatus.textContent = configured ? "Configured for this browser session" : "Not configured on this device";
+        if (passwordStatus) {
+            passwordStatus.textContent = hasAppLock()
+                ? "Configured on this device"
+                : "Not configured on this device";
+        }
     }
 
     rememberCurrentAccount();
@@ -8662,47 +9103,270 @@ loadConversations();
     refreshPasswordStatus();
 
     closeBtn?.addEventListener("click", closeAccountModal);
-    modal.addEventListener("click", event => { if (event.target === modal) closeAccountModal(); });
+    modal.addEventListener("click", event => {
+        if (event.target === modal) closeAccountModal();
+    });
+
     fullSettingsBtn?.addEventListener("click", () => {
         closeAccountModal();
         document.getElementById("settingsBtn")?.click();
     });
+
     switchBtn?.addEventListener("click", () => {
         closeAccountModal();
         window.location.href = "/login";
     });
+
     logoutBtn?.addEventListener("click", () => {
         closeAccountModal();
         window.location.href = "/logout";
     });
+
     clearBtn?.addEventListener("click", () => {
         writeAccounts([]);
         renderAccounts();
     });
+
     togglePasswordBtn?.addEventListener("click", () => {
         if (!appPasswordInput) return;
         const visible = appPasswordInput.type === "text";
         appPasswordInput.type = visible ? "password" : "text";
         togglePasswordBtn.textContent = visible ? "👁" : "🙈";
     });
-    savePasswordBtn?.addEventListener("click", () => {
-        const value = appPasswordInput?.value.trim() || "";
+
+    savePasswordBtn?.addEventListener("click", async () => {
+        const value = appPasswordInput?.value || "";
         if (!value) {
-            sessionStorage.removeItem(PASSWORD_KEY);
+            if (passwordStatus) passwordStatus.textContent = "Enter a password to enable App Lock";
+            return;
+        }
+        const saved = await window.OddiAppLock?.setPassword(value);
+        if (saved) {
+            if (appPasswordInput) appPasswordInput.value = "";
+            refreshPasswordStatus();
+        } else if (passwordStatus) {
+            passwordStatus.textContent = "Could not configure App Lock";
+        }
+    });
+
+    removeLockBtn?.addEventListener("click", () => {
+        if (!hasAppLock()) {
             refreshPasswordStatus();
             return;
         }
-        sessionStorage.setItem(PASSWORD_KEY, "configured");
+        const confirmed = window.confirm("Remove App Lock from this device?");
+        if (!confirmed) return;
+        window.OddiAppLock?.removePassword();
         if (appPasswordInput) appPasswordInput.value = "";
         refreshPasswordStatus();
     });
+
+    lockNowBtn?.addEventListener("click", () => {
+        if (!hasAppLock()) {
+            if (passwordStatus) passwordStatus.textContent = "Set an App Lock password first";
+            return;
+        }
+        closeAccountModal();
+        window.OddiAppLock?.lock({ playSplashAfterUnlock: false });
+    });
+
     document.addEventListener("keydown", event => {
         if (event.key === "Escape" && modal.classList.contains("show")) {
             event.preventDefault();
             closeAccountModal();
         }
     }, true);
+
     window.addEventListener("pageshow", closeAccountModal);
+})();
+</script>
+
+<script id="oddi-app-lock-js">
+(function () {
+    "use strict";
+
+    const overlay = document.getElementById("oddiAppLock");
+    const passwordInput = document.getElementById("oddiUnlockPassword");
+    const unlockBtn = document.getElementById("oddiUnlockBtn");
+    const errorEl = document.getElementById("oddiUnlockError");
+    const closeBtn = document.getElementById("oddiAppLockClose");
+    const LOCK_KEY = "oddi_device_app_lock_v2";
+    const LOCKED_KEY = "oddi_device_app_locked_v2";
+    const PBKDF2_ITERATIONS = 150000;
+    let unlockInProgress = false;
+
+    function readRecord() {
+        try {
+            const raw = localStorage.getItem(LOCK_KEY);
+            if (!raw) return null;
+            const record = JSON.parse(raw);
+            if (!record || !record.salt || !record.verifier) return null;
+            return record;
+        } catch (_) { return null; }
+    }
+
+    function bytesToBase64(bytes) {
+        let binary = "";
+        const chunk = 0x8000;
+        for (let i = 0; i < bytes.length; i += chunk) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+        }
+        return btoa(binary);
+    }
+
+    function base64ToBytes(value) {
+        const binary = atob(value);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        return bytes;
+    }
+
+    async function deriveVerifier(password, saltBytes) {
+        if (!window.crypto?.subtle) throw new Error("Web Crypto unavailable");
+        const keyMaterial = await crypto.subtle.importKey(
+            "raw",
+            new TextEncoder().encode(password),
+            "PBKDF2",
+            false,
+            ["deriveBits"]
+        );
+        const bits = await crypto.subtle.deriveBits(
+            { name: "PBKDF2", salt: saltBytes, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+            keyMaterial,
+            256
+        );
+        return new Uint8Array(bits);
+    }
+
+    async function setPassword(password) {
+        if (!password || password.length < 4) {
+            if (errorEl) errorEl.textContent = "Use at least 4 characters for your App Lock password.";
+            return false;
+        }
+        try {
+            const salt = crypto.getRandomValues(new Uint8Array(16));
+            const verifier = await deriveVerifier(password, salt);
+            localStorage.setItem(LOCK_KEY, JSON.stringify({
+                version: 2,
+                algorithm: "PBKDF2-SHA-256",
+                iterations: PBKDF2_ITERATIONS,
+                salt: bytesToBase64(salt),
+                verifier: bytesToBase64(verifier),
+                createdAt: Date.now()
+            }));
+            localStorage.removeItem(LOCKED_KEY);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
+    function removePassword() {
+        try {
+            localStorage.removeItem(LOCK_KEY);
+            localStorage.removeItem(LOCKED_KEY);
+        } catch (_) {}
+        hideLock();
+    }
+
+    function showLock() {
+        if (!overlay || !readRecord()) return;
+        localStorage.setItem(LOCKED_KEY, "1");
+        overlay.classList.add("show");
+        overlay.setAttribute("aria-hidden", "false");
+        document.documentElement.classList.add("oddi-app-locked");
+        if (passwordInput) {
+            passwordInput.value = "";
+            setTimeout(() => passwordInput.focus(), 0);
+        }
+    }
+
+    function hideLock() {
+        if (!overlay) return;
+        overlay.classList.remove("show");
+        overlay.setAttribute("aria-hidden", "true");
+        document.documentElement.classList.remove("oddi-app-locked");
+        if (errorEl) errorEl.textContent = "";
+    }
+
+    async function unlock() {
+        if (unlockInProgress || !passwordInput) return;
+        const record = readRecord();
+        if (!record) {
+            hideLock();
+            return;
+        }
+        const password = passwordInput.value;
+        if (!password) {
+            if (errorEl) errorEl.textContent = "Enter your App Lock password.";
+            passwordInput.focus();
+            return;
+        }
+        unlockInProgress = true;
+        unlockBtn?.setAttribute("disabled", "disabled");
+        if (errorEl) errorEl.textContent = "";
+        try {
+            const verifier = await deriveVerifier(password, base64ToBytes(record.salt));
+            const expected = base64ToBytes(record.verifier);
+            let matches = verifier.length === expected.length;
+            if (matches) {
+                let diff = 0;
+                for (let i = 0; i < verifier.length; i++) diff |= verifier[i] ^ expected[i];
+                matches = diff === 0;
+            }
+            if (!matches) {
+                if (errorEl) errorEl.textContent = "Incorrect App Lock password.";
+                passwordInput.select();
+                return;
+            }
+            localStorage.removeItem(LOCKED_KEY);
+            hideLock();
+            window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
+        } catch (_) {
+            if (errorEl) errorEl.textContent = "Unable to verify the App Lock password on this browser.";
+        } finally {
+            unlockInProgress = false;
+            unlockBtn?.removeAttribute("disabled");
+        }
+    }
+
+    window.OddiAppLock = {
+        setPassword,
+        removePassword,
+        lock(options) {
+            if (!readRecord()) return;
+            showLock();
+            if (options?.playSplashAfterUnlock) {
+                window.__oddiPlaySplashAfterUnlock = true;
+            }
+        },
+        isConfigured() { return !!readRecord(); },
+        isLocked() { return overlay?.classList.contains("show") || false; }
+    };
+
+    unlockBtn?.addEventListener("click", unlock);
+    passwordInput?.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            unlock();
+        }
+    });
+
+    /* App Lock must never be dismissible without the password. */
+    closeBtn?.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        passwordInput?.focus();
+    });
+    overlay?.addEventListener("click", event => {
+        if (event.target === overlay) passwordInput?.focus();
+    });
+
+    /* Start locked immediately when a password has been configured. This runs
+       before DOMContentLoaded, so the normal splash cannot flash first. */
+    if (readRecord()) {
+        showLock();
+    }
 })();
 </script>
 

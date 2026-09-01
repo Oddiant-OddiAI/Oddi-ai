@@ -2534,3 +2534,32 @@ body.dark-mode .voice-option.selected
 #voiceOptions::-webkit-scrollbar-thumb {
     border-radius: 10px !important;
 }
+/* FULL SETTINGS MODAL SCROLL */
+#settingsModal {
+    max-height: calc(100vh - 20px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
+}
+
+/* Keep the complete settings content inside the scroll area */
+#settingsModal .rename-box {
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    #settingsModal {
+        max-height: calc(100vh - 12px) !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    #settingsModal .rename-box {
+        max-height: none !important;
+        overflow: visible !important;
+    }
+}
