@@ -3036,7 +3036,7 @@
             #oddiAppLock {
                 padding: 0 !important;
                 align-items: stretch;
-                justify-content: center !important;
+                justify-content: stretch;
                 background: #000 !important;
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
@@ -3048,7 +3048,7 @@
                 max-width: none !important;
                 height: 100dvh !important;
                 min-height: 100dvh !important;
-                padding: 24px 24px 28px !important;
+                padding: 28px 24px 24px !important;
                 border: 0 !important;
                 border-radius: 0 !important;
                 background: #000 !important;
@@ -3065,22 +3065,22 @@
             #oddiAppLockClose { display: none !important; }
 
             .oddi-app-lock-icon {
-                font-size: 28px;
+                font-size: 24px;
                 line-height: 1;
-                margin: 0 0 10px;
+                margin: 8px 0 8px;
             }
 
             #oddiAppLockCard h2 {
                 margin: 0;
-                font-size: 21px;
+                font-size: 18px;
                 line-height: 1.2;
                 font-weight: 700;
             }
 
             #oddiAppLockCard p {
-                margin: 6px 0 0;
+                margin: 5px 0 0;
                 color: #aaa !important;
-                font-size: 12px;
+                font-size: 10px;
                 line-height: 1.2;
             }
 
@@ -3089,15 +3089,15 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                gap: 10px;
-                min-height: 20px;
-                margin: 22px 0 0;
+                gap: 8px;
+                min-height: 18px;
+                margin: 16px 0 0;
                 pointer-events: none;
             }
 
             .oddi-pin-dot {
-                width: 9px;
-                height: 9px;
+                width: 7px;
+                height: 7px;
                 border: 1px solid #fff;
                 border-radius: 50%;
                 box-sizing: border-box;
@@ -3127,13 +3127,13 @@
             #oddiUnlockBtn { display: none; }
 
             #oddiMobileKeypad {
-                width: min(310px, 82vw);
-                margin-top: 42px;
+                width: min(270px, 78vw);
+                margin-top: 34px;
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
-                grid-auto-rows: 66px;
-                column-gap: 34px;
-                row-gap: 20px;
+                grid-auto-rows: 58px;
+                column-gap: 30px;
+                row-gap: 18px;
                 flex: 0 0 auto;
             }
 
@@ -3146,16 +3146,13 @@
                 color: #fff;
                 border-radius: 50%;
                 font: inherit;
-                font-size: 30px;
+                font-size: 27px;
                 font-weight: 400;
                 line-height: 1;
                 padding: 0;
                 margin: 0;
                 touch-action: manipulation;
                 -webkit-tap-highlight-color: transparent;
-                -webkit-user-select: none;
-                user-select: none;
-                -webkit-touch-callout: none;
             }
 
             #oddiMobileKeypad button:active {
@@ -3174,16 +3171,16 @@
             }
 
             #oddiMobileKeypad button[data-key="backspace"] {
-                font-size: 25px;
+                font-size: 22px;
             }
 
             #oddiMobileKeypad button[data-key="empty"] { pointer-events: none; }
 
             #oddiUnlockError {
                 min-height: 16px;
-                margin: 18px 0 0;
+                margin: 15px 0 0;
                 color: #ff6b6b;
-                font-size: 12px;
+                font-size: 11px;
             }
 
             #oddiMobileFallbackUnlock {
@@ -3199,21 +3196,241 @@
         }
 
         @media (max-width: 380px) {
-            #oddiAppLockCard {
-                padding-top: 24px !important;
-                padding-bottom: 24px !important;
-            }
+            #oddiAppLockCard { padding-top: 20px !important; }
             #oddiMobileKeypad {
-                width: min(285px, 80vw);
-                grid-auto-rows: 60px;
-                column-gap: 30px;
-                row-gap: 16px;
-                margin-top: 36px;
+                width: min(250px, 76vw);
+                grid-auto-rows: 52px;
+                column-gap: 26px;
+                row-gap: 13px;
+                margin-top: 28px;
             }
-            #oddiMobileKeypad button { font-size: 28px; }
+            #oddiMobileKeypad button { font-size: 24px; }
         }
     </style>
 
+
+    <!-- FINAL APP LOCK PREMIUM PHONE UI -->
+    <style id="final-app-lock-premium-ui">
+        #oddiAppLock { isolation: isolate !important; }
+
+        .oddi-app-lock-icon svg {
+            display: block;
+            width: 44px;
+            height: 52px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.35;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        @media (max-width: 768px) {
+            #oddiAppLock {
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100vw !important;
+                height: 100dvh !important;
+                min-height: 100dvh !important;
+                padding:
+                    max(16px, env(safe-area-inset-top))
+                    max(16px, env(safe-area-inset-right))
+                    max(16px, env(safe-area-inset-bottom))
+                    max(16px, env(safe-area-inset-left)) !important;
+                align-items: center !important;
+                justify-content: center !important;
+                background: #000 !important;
+                color: #fff !important;
+                overflow: hidden !important;
+                overscroll-behavior: none !important;
+            }
+
+            #oddiAppLock.show { display: flex !important; }
+
+            #oddiAppLockCard {
+                width: min(390px, 100%) !important;
+                height: auto !important;
+                min-height: 0 !important;
+                max-height: calc(100dvh - 32px) !important;
+                padding: 0 !important;
+                margin: auto !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                background: transparent !important;
+                box-shadow: none !important;
+                overflow: visible !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+                text-align: center !important;
+                transform: translateZ(0);
+            }
+
+            #oddiAppLockClose { display: none !important; }
+
+            .oddi-app-lock-icon {
+                width: 48px !important;
+                height: 56px !important;
+                margin: 0 0 13px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                color: #f5f5f5 !important;
+            }
+
+            .oddi-app-lock-icon svg {
+                width: 40px !important;
+                height: 48px !important;
+                stroke-width: 2.15 !important;
+            }
+
+            #oddiAppLockCard h2 {
+                margin: 0 !important;
+                color: #fff !important;
+                font-size: clamp(23px, 6vw, 29px) !important;
+                line-height: 1.08 !important;
+                font-weight: 700 !important;
+                letter-spacing: -.45px !important;
+            }
+
+            #oddiAppLockCard p {
+                margin: 8px 0 0 !important;
+                color: #8d8d8d !important;
+                font-size: 13px !important;
+                line-height: 1.2 !important;
+            }
+
+            #oddiMobilePinDisplay {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: 13px !important;
+                min-height: 20px !important;
+                margin: 28px 0 0 !important;
+            }
+
+            .oddi-pin-dot {
+                width: 9px !important;
+                height: 9px !important;
+                border: 1.6px solid #d9d9d9 !important;
+                background: transparent !important;
+                transition: background .06s linear, transform .06s linear !important;
+            }
+
+            .oddi-pin-dot.filled {
+                background: #fff !important;
+                transform: scale(1) !important;
+            }
+
+            #oddiUnlockPassword {
+                position: absolute !important;
+                width: 1px !important;
+                height: 1px !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                padding: 0 !important;
+                border: 0 !important;
+                left: -9999px !important;
+            }
+
+            #oddiUnlockBtn,
+            #oddiMobileFallbackUnlock {
+                display: none !important;
+            }
+
+            #oddiMobileKeypad {
+                width: min(330px, 88vw) !important;
+                margin: 48px 0 0 !important;
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                grid-auto-rows: 74px !important;
+                column-gap: 28px !important;
+                row-gap: 18px !important;
+                flex: 0 0 auto !important;
+            }
+
+            #oddiMobileKeypad button {
+                width: 74px !important;
+                height: 74px !important;
+                justify-self: center !important;
+                align-self: center !important;
+                border: 0 !important;
+                outline: 0 !important;
+                background: transparent !important;
+                color: #f5f5f5 !important;
+                border-radius: 50% !important;
+                font-size: 31px !important;
+                font-weight: 300 !important;
+                line-height: 1 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                touch-action: manipulation !important;
+                -webkit-tap-highlight-color: transparent !important;
+                transition: background .06s linear, transform .06s linear !important;
+            }
+
+            #oddiMobileKeypad button:active {
+                background: #1d1d1d !important;
+                transform: scale(.94) !important;
+            }
+
+            .oddi-key-main {
+                display: block !important;
+                line-height: 1 !important;
+                font-weight: 300 !important;
+            }
+
+            .oddi-key-letters {
+                display: block !important;
+                min-height: 9px !important;
+                margin-top: 5px !important;
+                color: #777 !important;
+                font-size: 7px !important;
+                line-height: 1 !important;
+                letter-spacing: .35px !important;
+            }
+
+            #oddiMobileKeypad button[data-key="backspace"] {
+                font-size: 29px !important;
+                font-weight: 300 !important;
+            }
+
+            #oddiMobileKeypad button[data-key="empty"] {
+                visibility: hidden !important;
+                pointer-events: none !important;
+            }
+
+            #oddiUnlockError {
+                min-height: 18px !important;
+                margin: 24px 0 0 !important;
+                color: #d66 !important;
+                font-size: 13px !important;
+                line-height: 1.2 !important;
+            }
+        }
+
+        @media (max-width: 390px), (max-height: 700px) {
+            #oddiAppLockCard {
+                transform: scale(.92) !important;
+                transform-origin: center center !important;
+            }
+
+            #oddiMobileKeypad {
+                margin-top: 40px !important;
+                grid-auto-rows: 68px !important;
+                row-gap: 14px !important;
+                column-gap: 24px !important;
+            }
+
+            #oddiMobileKeypad button {
+                width: 68px !important;
+                height: 68px !important;
+                font-size: 29px !important;
+            }
+
+            #oddiMobilePinDisplay { margin-top: 24px !important; }
+        }
+    </style>
 
     <!-- FINAL ACCOUNT SETTINGS HEADER + INVISIBLE SCROLLBAR FIX -->
     <style id="final-account-settings-scroll-fix">
@@ -3266,7 +3483,14 @@
                 ×
             </button>
 
-            <div class="oddi-app-lock-icon">🔒</div>
+            <div class="oddi-app-lock-icon" aria-hidden="true">
+                <svg viewBox="0 0 48 56" role="img" aria-label="Locked">
+                    <rect x="6" y="22" width="36" height="29" rx="5"></rect>
+                    <path d="M13 22v-8c0-7 4.5-11 11-11s11 4 11 11v8"></path>
+                    <circle cx="24" cy="36" r="3"></circle>
+                    <path d="M24 39v6"></path>
+                </svg>
+            </div>
 
             <h2>Oddi AI</h2>
             <p>This app is locked</p>
@@ -9608,22 +9832,22 @@
             if (!passwordInput || unlockInProgress) return;
             if (passwordInput.value.length >= 12) return;
 
-            /* Update the field/dots synchronously. No crypto work happens here,
-               so every keypad press stays instant on Android WebViews. */
             setError("");
             passwordInput.value += digit;
             renderMobileDots();
 
-            /* Auto-submit only after the complete configured PIN has been
-               entered. requestAnimationFrame lets the final dot paint first. */
+            /* Keep keypad taps instant. Verify only after the final
+               configured digit has been entered. */
             const record = readRecord();
-            const requiredLength = Number(record?.secretLength) || 0;
-            if (requiredLength >= 4 && passwordInput.value.length === requiredLength) {
-                requestAnimationFrame(() => {
-                    if (!unlockInProgress && passwordInput?.value.length === requiredLength) {
-                        unlock();
-                    }
-                });
+            const expectedLength = Number(record?.secretLength);
+            if (
+                isMobileLockUI() &&
+                record?.numeric === true &&
+                Number.isInteger(expectedLength) &&
+                expectedLength >= 4 &&
+                passwordInput.value.length === expectedLength
+            ) {
+                requestAnimationFrame(() => unlock());
             }
         }
 
@@ -9632,25 +9856,6 @@
             passwordInput.value = passwordInput.value.slice(0, -1);
             setError("");
             renderMobileDots();
-        }
-
-        function handleMobileKey(event) {
-            const button = event.target?.closest?.("button[data-key]");
-            if (!button) return;
-            const key = button.dataset.key;
-            if (key === "empty") return;
-
-            /* Android WebView can delay click/pointer dispatch. Handle the
-               touchstart path immediately and suppress the duplicate event. */
-            const now = performance.now();
-            const lastHandled = Number(button.dataset.oddiHandledAt || 0);
-            if (now - lastHandled < 120) return;
-            button.dataset.oddiHandledAt = String(now);
-
-            event.preventDefault();
-            event.stopPropagation();
-            if (key === "backspace") deleteDigit();
-            else if (/^\d$/.test(key)) addDigit(key);
         }
 
         window.OddiAppLock = {
@@ -9669,14 +9874,15 @@
         unlockBtn?.addEventListener("click", unlock);
         fallbackUnlockBtn?.addEventListener("click", unlock);
 
-        /* Use touchstart as the primary mobile path: it fires at touch time
-           instead of waiting for the WebView's delayed click synthesis.
-           pointerdown remains as a fallback for non-touch devices. */
-        mobileKeypad?.addEventListener("touchstart", handleMobileKey, { passive: false });
         mobileKeypad?.addEventListener("pointerdown", event => {
-            if (event.pointerType === "touch") return;
-            handleMobileKey(event);
-        }, { passive: false });
+            const button = event.target.closest("button[data-key]");
+            if (!button) return;
+            event.preventDefault();
+            event.stopPropagation();
+            const key = button.dataset.key;
+            if (key === "backspace") deleteDigit();
+            else if (/^\d$/.test(key)) addDigit(key);
+        });
 
         passwordInput?.addEventListener("keydown", event => {
             if (isMobileLockUI()) {
