@@ -2924,6 +2924,11 @@
     }
     </style>
     <style id="oddi-app-lock-css">
+        /* ================================================================
+           ODDI APP LOCK
+           Desktop keeps the compact dialog. Mobile becomes a true
+           lock-screen-style PIN UI, matching a native phone lock screen.
+           ================================================================ */
         #oddiAppLock {
             position: fixed;
             inset: 0;
@@ -2938,12 +2943,8 @@
             -webkit-backdrop-filter: blur(14px);
         }
 
-        #oddiAppLock.show {
-            display: flex;
-        }
+        #oddiAppLock.show { display: flex; }
 
-        /* When App Lock is active, the splash stays completely hidden until the
-        correct password is entered. */
         html.oddi-app-locked #splash-screen,
         html.oddi-app-locked #mobileSplash {
             display: none !important;
@@ -2981,21 +2982,10 @@
             cursor: pointer;
         }
 
-        .oddi-app-lock-icon {
-            font-size: 42px;
-            margin-bottom: 10px;
-        }
+        .oddi-app-lock-icon { font-size: 42px; margin-bottom: 10px; }
 
-        #oddiAppLockCard h2 {
-            margin: 0 0 6px;
-            font-size: 25px;
-        }
-
-        #oddiAppLockCard p {
-            margin: 0 0 22px;
-            color: #777;
-            font-size: 14px;
-        }
+        #oddiAppLockCard h2 { margin: 0 0 6px; font-size: 25px; }
+        #oddiAppLockCard p { margin: 0 0 22px; color: #777; font-size: 14px; }
 
         #oddiUnlockPassword {
             width: 100%;
@@ -3010,9 +3000,7 @@
             color: #111;
         }
 
-        #oddiUnlockPassword:focus {
-            border-color: #111;
-        }
+        #oddiUnlockPassword:focus { border-color: #111; }
 
         #oddiUnlockBtn {
             width: 100%;
@@ -3034,39 +3022,187 @@
             font-size: 13px;
         }
 
-        body.dark-mode #oddiAppLockCard {
-            background: #111;
-            color: #fff;
-            border-color: #333;
-        }
+        #oddiMobilePinDisplay,
+        #oddiMobileKeypad { display: none; }
 
-        body.dark-mode #oddiAppLockClose {
-            background: #1b1b1b;
-            color: #fff;
-            border-color: #333;
-        }
-
-        body.dark-mode #oddiUnlockPassword {
-            background: #171717;
-            color: #fff;
-            border-color: #333;
-        }
-
-        body.dark-mode #oddiUnlockBtn {
-            background: #fff;
-            color: #111;
-        }
+        body.dark-mode #oddiAppLockCard { background: #111; color: #fff; border-color: #333; }
+        body.dark-mode #oddiAppLockClose { background: #1b1b1b; color: #fff; border-color: #333; }
+        body.dark-mode #oddiUnlockPassword { background: #171717; color: #fff; border-color: #333; }
+        body.dark-mode #oddiUnlockBtn { background: #fff; color: #111; }
 
         @media (max-width: 768px) {
+            /* Full-screen phone lock. The browser/WebView status bar remains
+               outside this element, while the app content is completely covered. */
             #oddiAppLock {
-                padding: 16px;
+                padding: 0 !important;
+                align-items: stretch;
+                justify-content: stretch;
+                background: #000 !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                overscroll-behavior: none;
             }
 
             #oddiAppLockCard {
-                width: min(360px, calc(100vw - 28px));
-                padding: 30px 22px;
-                border-radius: 20px;
+                width: 100% !important;
+                height: 100dvh !important;
+                min-height: 100%;
+                padding: 28px 24px 24px !important;
+                border: 0 !important;
+                border-radius: 0 !important;
+                background: #000 !important;
+                color: #fff !important;
+                box-shadow: none !important;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                box-sizing: border-box;
+                overflow: hidden;
+                text-align: center;
             }
+
+            #oddiAppLockClose { display: none !important; }
+
+            .oddi-app-lock-icon {
+                font-size: 24px;
+                line-height: 1;
+                margin: 8px 0 8px;
+            }
+
+            #oddiAppLockCard h2 {
+                margin: 0;
+                font-size: 18px;
+                line-height: 1.2;
+                font-weight: 700;
+            }
+
+            #oddiAppLockCard p {
+                margin: 5px 0 0;
+                color: #aaa !important;
+                font-size: 10px;
+                line-height: 1.2;
+            }
+
+            /* Native-looking PIN circles. */
+            #oddiMobilePinDisplay {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                gap: 8px;
+                min-height: 18px;
+                margin: 16px 0 0;
+                pointer-events: none;
+            }
+
+            .oddi-pin-dot {
+                width: 7px;
+                height: 7px;
+                border: 1px solid #fff;
+                border-radius: 50%;
+                box-sizing: border-box;
+                background: transparent;
+                transition: background .12s ease, transform .12s ease;
+            }
+
+            .oddi-pin-dot.filled {
+                background: #fff;
+                transform: scale(1.08);
+            }
+
+            #oddiUnlockPassword {
+                position: absolute !important;
+                width: 1px !important;
+                height: 1px !important;
+                opacity: 0 !important;
+                pointer-events: none !important;
+                padding: 0 !important;
+                border: 0 !important;
+                left: -9999px !important;
+            }
+
+            /* Hide the old dialog Unlock button on phones; tapping a keypad
+               digit can submit automatically once the configured PIN length
+               is reached. A fallback button is restored by JS for old records. */
+            #oddiUnlockBtn { display: none; }
+
+            #oddiMobileKeypad {
+                width: min(270px, 78vw);
+                margin-top: 34px;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                grid-auto-rows: 58px;
+                column-gap: 30px;
+                row-gap: 18px;
+                flex: 0 0 auto;
+            }
+
+            #oddiMobileKeypad button {
+                appearance: none;
+                -webkit-appearance: none;
+                border: 0;
+                background: transparent;
+                color: #fff;
+                border-radius: 50%;
+                font: inherit;
+                font-size: 27px;
+                font-weight: 400;
+                line-height: 1;
+                padding: 0;
+                margin: 0;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            #oddiMobileKeypad button:active {
+                background: #222;
+                transform: scale(.94);
+            }
+
+            .oddi-key-main { display: block; line-height: 1; }
+            .oddi-key-letters {
+                display: block;
+                min-height: 8px;
+                margin-top: 3px;
+                color: #888;
+                font-size: 6px;
+                letter-spacing: .3px;
+            }
+
+            #oddiMobileKeypad button[data-key="backspace"] {
+                font-size: 22px;
+            }
+
+            #oddiMobileKeypad button[data-key="empty"] { pointer-events: none; }
+
+            #oddiUnlockError {
+                min-height: 16px;
+                margin: 15px 0 0;
+                color: #ff6b6b;
+                font-size: 11px;
+            }
+
+            #oddiMobileFallbackUnlock {
+                display: none;
+                margin-top: 12px;
+                padding: 7px 14px;
+                border: 1px solid #444;
+                border-radius: 14px;
+                background: #111;
+                color: #fff;
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            #oddiAppLockCard { padding-top: 20px !important; }
+            #oddiMobileKeypad {
+                width: min(250px, 76vw);
+                grid-auto-rows: 52px;
+                column-gap: 26px;
+                row-gap: 13px;
+                margin-top: 28px;
+            }
+            #oddiMobileKeypad button { font-size: 24px; }
         }
     </style>
 
@@ -3110,46 +3246,61 @@
         }
     </style>
 
-    <style id="oddi-mobile-lock-methods-css">
-        #oddiLockMethodArea { margin-top: 14px; }
-        #oddiLockMethodButtons { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin:12px 0; }
-        #oddiLockMethodButtons button { border:1px solid #ddd; background:#f7f7f7; color:#111; border-radius:10px; padding:8px 10px; cursor:pointer; font-size:12px; }
-        #oddiLockMethodButtons button.active { font-weight:700; border-color:#111; }
-        #oddiPinInput { width:100%; box-sizing:border-box; }
-        #oddiPatternPad { display:grid; grid-template-columns:repeat(3,42px); gap:14px; justify-content:center; margin:12px auto; touch-action:none; user-select:none; }
-        #oddiPatternPad button { width:42px; height:42px; border-radius:50%; border:2px solid #aaa; background:transparent; cursor:pointer; padding:0; }
-        #oddiPatternPad button.selected { border-color:#111; background:#111; box-shadow:inset 0 0 0 10px #fff; }
-        #oddiBiometricBtn { width:100%; height:46px; margin-top:10px; border:1px solid #ddd; border-radius:11px; background:#f7f7f7; cursor:pointer; }
-        #mobileLockMethodSetting { width:100%; height:42px; border:1px solid #ddd; border-radius:10px; padding:0 10px; background:#fff; color:#111; box-sizing:border-box; }
-        #mobilePatternSetup { display:none; }
-        #mobileBiometricSetupBtn { width:100%; margin-top:8px; height:42px; border:1px solid #ddd; border-radius:10px; background:#f7f7f7; cursor:pointer; }
-        body.dark-mode #oddiLockMethodButtons button, body.dark-mode #oddiBiometricBtn, body.dark-mode #mobileBiometricSetupBtn { background:#1b1b1b; color:#fff; border-color:#333; }
-        body.dark-mode #mobileLockMethodSetting { background:#171717; color:#fff; border-color:#333; }
-        @media (max-width:768px) {
-            #oddiLockMethodButtons button { padding:7px 8px; }
-        }
-    </style>
-
     </head>
 
-    <!-- ODDI AI APP LOCK — SIMPLE PIN -->
+    <!-- ODDI AI APP LOCK -->
     <div id="oddiAppLock" aria-hidden="true">
         <div id="oddiAppLockCard">
+            <button
+                id="oddiAppLockClose"
+                type="button"
+                aria-label="Close">
+                ×
+            </button>
+
             <div class="oddi-app-lock-icon">🔒</div>
+
             <h2>Oddi AI</h2>
             <p>This app is locked</p>
 
             <input
-                id="oddiPinInput"
-                type="tel"
+                id="oddiUnlockPassword"
+                type="password"
+                autocomplete="current-password"
                 inputmode="numeric"
-                pattern="[0-9]*"
-                autocomplete="off"
-                maxlength="12"
-                placeholder="Enter PIN"
-                aria-label="Enter App Lock PIN">
+                placeholder="Enter app password"
+                aria-label="Enter app password">
 
-            <button id="oddiUnlockBtn" type="button">Unlock</button>
+            <div id="oddiMobilePinDisplay" aria-hidden="true">
+                <span class="oddi-pin-dot"></span>
+                <span class="oddi-pin-dot"></span>
+                <span class="oddi-pin-dot"></span>
+                <span class="oddi-pin-dot"></span>
+                <span class="oddi-pin-dot"></span>
+                <span class="oddi-pin-dot"></span>
+            </div>
+
+            <div id="oddiMobileKeypad" aria-label="PIN keypad">
+                <button type="button" data-key="1"><span class="oddi-key-main">1</span><span class="oddi-key-letters"></span></button>
+                <button type="button" data-key="2"><span class="oddi-key-main">2</span><span class="oddi-key-letters">ABC</span></button>
+                <button type="button" data-key="3"><span class="oddi-key-main">3</span><span class="oddi-key-letters">DEF</span></button>
+                <button type="button" data-key="4"><span class="oddi-key-main">4</span><span class="oddi-key-letters">GHI</span></button>
+                <button type="button" data-key="5"><span class="oddi-key-main">5</span><span class="oddi-key-letters">JKL</span></button>
+                <button type="button" data-key="6"><span class="oddi-key-main">6</span><span class="oddi-key-letters">MNO</span></button>
+                <button type="button" data-key="7"><span class="oddi-key-main">7</span><span class="oddi-key-letters">PQRS</span></button>
+                <button type="button" data-key="8"><span class="oddi-key-main">8</span><span class="oddi-key-letters">TUV</span></button>
+                <button type="button" data-key="9"><span class="oddi-key-main">9</span><span class="oddi-key-letters">WXYZ</span></button>
+                <button type="button" data-key="empty" aria-hidden="true"></button>
+                <button type="button" data-key="0"><span class="oddi-key-main">0</span><span class="oddi-key-letters"></span></button>
+                <button type="button" data-key="backspace" aria-label="Delete">⌫</button>
+            </div>
+
+            <button id="oddiMobileFallbackUnlock" type="button">Unlock</button>
+
+            <button id="oddiUnlockBtn" type="button">
+                Unlock
+            </button>
+
             <div id="oddiUnlockError" aria-live="polite"></div>
         </div>
     </div>
@@ -3630,19 +3781,16 @@
                 <div class="app-password-row" style="margin-top:10px;">
                     <input
                         id="appLockPasswordInput"
-                        type="tel"
-                        inputmode="numeric"
-                        pattern="[0-9]*"
-                        maxlength="12"
-                        autocomplete="off"
-                        placeholder="Set PIN (4–12 digits)"
-                        aria-label="Set App Lock PIN">
+                        type="password"
+                        autocomplete="new-password"
+                        placeholder="Set app lock password"
+                        aria-label="App lock password">
 
                     <button
                         id="toggleAppLockPasswordBtn"
                         class="app-password-btn"
                         type="button"
-                        aria-label="Show PIN">👁</button>
+                        aria-label="Show app lock password">👁</button>
 
                     <button
                         id="saveAppLockPasswordBtn"
@@ -3658,7 +3806,7 @@
                     <span>🔓</span>
                     <span class="account-action-main">
                         <strong>Remove App Lock</strong>
-                        <small>Disable the PIN required when opening Oddi AI</small>
+                        <small>Disable the password required when opening Oddi AI</small>
                     </span>
                 </button>
 
@@ -3674,7 +3822,8 @@
                 </button>
 
                 <p class="app-password-note">
-                    App Lock uses a PIN stored only as a cryptographic verifier on this device.
+                    App Lock protects this device. Your password is stored only as a
+                    cryptographic verifier on this device and is not your account password.
                 </p>
             </div>
 
@@ -9088,8 +9237,8 @@
         if (!modal) return;
 
         const ACCOUNT_KEY = "oddi_remembered_accounts_v1";
-        const LOCK_KEY = "oddi_device_app_lock_v3";
-        const LOCKED_KEY = "oddi_device_app_locked_v3";
+        const LOCK_KEY = "oddi_device_app_lock_v2";
+        const LOCKED_KEY = "oddi_device_app_locked_v2";
         const currentUsername = document.body?.dataset.username || "";
 
         function closeAccountModal() {
@@ -9236,32 +9385,42 @@
     })();
     </script>
 
-    <!-- ODDI AI — SIMPLE APP LOCK (PIN ONLY) -->
     <script id="oddi-app-lock-js">
     (function () {
         "use strict";
 
         const overlay = document.getElementById("oddiAppLock");
-        const pinInput = document.getElementById("oddiPinInput");
+        const passwordInput = document.getElementById("oddiUnlockPassword");
         const unlockBtn = document.getElementById("oddiUnlockBtn");
+        const fallbackUnlockBtn = document.getElementById("oddiMobileFallbackUnlock");
         const errorEl = document.getElementById("oddiUnlockError");
-        const settingsInput = document.getElementById("appLockPasswordInput");
-        const saveBtn = document.getElementById("saveAppLockPasswordBtn");
-        const toggleBtn = document.getElementById("toggleAppLockPasswordBtn");
-        const removeBtn = document.getElementById("removeAppLockBtn");
-        const lockNowBtn = document.getElementById("lockAppNowBtn");
-        const statusEl = document.getElementById("appLockStatus");
-
-        const LOCK_KEY = "oddi_device_app_lock_v3";
-        const LOCKED_KEY = "oddi_device_app_locked_v3";
+        const closeBtn = document.getElementById("oddiAppLockClose");
+        const mobileKeypad = document.getElementById("oddiMobileKeypad");
+        const mobilePinDots = [...document.querySelectorAll("#oddiMobilePinDisplay .oddi-pin-dot")];
+        const LOCK_KEY = "oddi_device_app_lock_v2";
+        const LOCKED_KEY = "oddi_device_app_locked_v2";
         const PBKDF2_ITERATIONS = 150000;
+        let unlockInProgress = false;
 
-        let busy = false;
+        function isMobileLockUI() {
+            return window.matchMedia?.("(max-width: 768px)").matches === true;
+        }
+
+        function readRecord() {
+            try {
+                const raw = localStorage.getItem(LOCK_KEY);
+                if (!raw) return null;
+                const record = JSON.parse(raw);
+                if (!record || !record.salt || !record.verifier) return null;
+                return record;
+            } catch (_) { return null; }
+        }
 
         function bytesToBase64(bytes) {
             let binary = "";
-            for (let i = 0; i < bytes.length; i += 0x8000) {
-                binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+            const chunk = 0x8000;
+            for (let i = 0; i < bytes.length; i += chunk) {
+                binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
             }
             return btoa(binary);
         }
@@ -9273,54 +9432,97 @@
             return bytes;
         }
 
-        async function deriveVerifier(pin, salt, iterations = PBKDF2_ITERATIONS) {
-            const key = await crypto.subtle.importKey(
-                "raw",
-                new TextEncoder().encode(pin),
-                "PBKDF2",
-                false,
-                ["deriveBits"]
+        async function deriveVerifier(password, saltBytes, iterations = PBKDF2_ITERATIONS) {
+            if (!window.crypto?.subtle) throw new Error("Web Crypto unavailable");
+            const keyMaterial = await crypto.subtle.importKey(
+                "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
             );
             const bits = await crypto.subtle.deriveBits(
-                { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
-                key,
-                256
+                { name: "PBKDF2", salt: saltBytes, iterations, hash: "SHA-256" },
+                keyMaterial, 256
             );
             return new Uint8Array(bits);
         }
 
-        function readRecord() {
-            try {
-                const raw = localStorage.getItem(LOCK_KEY);
-                if (!raw) return null;
-                const record = JSON.parse(raw);
-                if (!record || !record.salt || !record.verifier) return null;
-                return record;
-            } catch (_) {
-                return null;
+        async function setPassword(password) {
+            if (!password || password.length < 4) {
+                if (errorEl) errorEl.textContent = "Use at least 4 characters for your App Lock password.";
+                return false;
             }
+            try {
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const verifier = await deriveVerifier(password, salt);
+                const isNumeric = /^\d+$/.test(password);
+                localStorage.setItem(LOCK_KEY, JSON.stringify({
+                    version: 3,
+                    algorithm: "PBKDF2-SHA-256",
+                    iterations: PBKDF2_ITERATIONS,
+                    salt: bytesToBase64(salt),
+                    verifier: bytesToBase64(verifier),
+                    secretLength: password.length,
+                    numeric: isNumeric,
+                    createdAt: Date.now()
+                }));
+                localStorage.removeItem(LOCKED_KEY);
+                return true;
+            } catch (_) { return false; }
         }
 
-        function hasLock() { return !!readRecord(); }
+        function removePassword() {
+            try {
+                localStorage.removeItem(LOCK_KEY);
+                localStorage.removeItem(LOCKED_KEY);
+            } catch (_) {}
+            hideLock();
+        }
 
-        function refreshStatus() {
-            if (statusEl) {
-                statusEl.textContent = hasLock()
-                    ? "PIN App Lock is enabled on this device"
-                    : "Not configured on this device";
+        function renderMobileDots() {
+            const value = passwordInput?.value || "";
+            mobilePinDots.forEach((dot, index) => {
+                dot.classList.toggle("filled", index < value.length);
+            });
+        }
+
+        function setError(message) {
+            if (errorEl) errorEl.textContent = message || "";
+        }
+
+        function prepareMobileInput() {
+            if (!passwordInput) return;
+            const mobile = isMobileLockUI();
+            passwordInput.readOnly = mobile;
+            if (mobile) {
+                passwordInput.setAttribute("inputmode", "none");
+                renderMobileDots();
+            } else {
+                passwordInput.removeAttribute("inputmode");
             }
         }
 
         function showLock() {
-            if (!overlay || !hasLock()) return;
+            const record = readRecord();
+            if (!overlay || !record) return;
+            try { localStorage.setItem(LOCKED_KEY, "1"); } catch (_) {}
             overlay.classList.add("show");
             overlay.setAttribute("aria-hidden", "false");
             document.documentElement.classList.add("oddi-app-locked");
-            if (pinInput) {
-                pinInput.value = "";
-                setTimeout(() => pinInput.focus(), 50);
+            if (passwordInput) passwordInput.value = "";
+            setError("");
+            prepareMobileInput();
+            renderMobileDots();
+
+            /* Existing records from before this UI update may not contain a
+               secret length. Keep the normal Unlock fallback for those. */
+            const legacyNumeric = isMobileLockUI() && record.numeric === true && Number(record.secretLength) >= 4;
+            const legacyRecord = isMobileLockUI() && !(record.numeric === true && Number(record.secretLength) >= 4);
+            if (fallbackUnlockBtn) fallbackUnlockBtn.style.display = legacyRecord ? "block" : "none";
+            if (isMobileLockUI() && legacyNumeric) {
+                setTimeout(() => mobileKeypad?.querySelector('[data-key="1"]')?.focus(), 80);
+            } else if (isMobileLockUI()) {
+                setTimeout(() => mobileKeypad?.querySelector('[data-key="1"]')?.focus(), 80);
+            } else {
+                setTimeout(() => passwordInput?.focus(), 0);
             }
-            if (errorEl) errorEl.textContent = "";
         }
 
         function hideLock() {
@@ -9328,172 +9530,122 @@
             overlay.classList.remove("show");
             overlay.setAttribute("aria-hidden", "true");
             document.documentElement.classList.remove("oddi-app-locked");
-            if (pinInput) pinInput.value = "";
             if (errorEl) errorEl.textContent = "";
-        }
-
-        async function savePin(pin) {
-            pin = String(pin || "").trim();
-            if (!/^\d{4,12}$/.test(pin)) {
-                throw new Error("PIN must contain 4–12 digits.");
-            }
-
-            const salt = crypto.getRandomValues(new Uint8Array(16));
-            const verifier = await deriveVerifier(pin, salt);
-
-            localStorage.setItem(LOCK_KEY, JSON.stringify({
-                version: 5,
-                algorithm: "PBKDF2-SHA-256",
-                iterations: PBKDF2_ITERATIONS,
-                salt: bytesToBase64(salt),
-                verifier: bytesToBase64(verifier),
-                method: "pin",
-                createdAt: Date.now()
-            }));
-
-            localStorage.removeItem(LOCKED_KEY);
-        }
-
-        async function setPin(pin) {
-            try {
-                await savePin(pin);
-                refreshStatus();
-                return true;
-            } catch (e) {
-                if (statusEl) statusEl.textContent = e.message || "Could not configure PIN App Lock.";
-                return false;
-            }
-        }
-
-        function removePin() {
-            try {
-                localStorage.removeItem(LOCK_KEY);
-                localStorage.removeItem(LOCKED_KEY);
-            } catch (_) {}
-            hideLock();
-            refreshStatus();
+            if (passwordInput) passwordInput.value = "";
+            renderMobileDots();
         }
 
         async function unlock() {
-            if (busy) return;
+            if (unlockInProgress || !passwordInput) return false;
             const record = readRecord();
-            if (!record) { hideLock(); return; }
-
-            const pin = String(pinInput?.value || "").trim();
-            if (!/^\d{4,12}$/.test(pin)) {
-                if (errorEl) errorEl.textContent = "Enter your 4–12 digit PIN.";
-                pinInput?.focus();
-                return;
+            if (!record) { hideLock(); return true; }
+            const password = passwordInput.value;
+            if (!password) {
+                setError("Enter your PIN.");
+                return false;
             }
-
-            busy = true;
+            unlockInProgress = true;
             unlockBtn?.setAttribute("disabled", "disabled");
             try {
-                const verifier = await deriveVerifier(
-                    pin,
-                    base64ToBytes(record.salt),
-                    Number(record.iterations) || PBKDF2_ITERATIONS
-                );
+                const verifier = await deriveVerifier(password, base64ToBytes(record.salt), Number(record.iterations) || PBKDF2_ITERATIONS);
                 const expected = base64ToBytes(record.verifier);
-                let diff = verifier.length ^ expected.length;
-                for (let i = 0; i < verifier.length && i < expected.length; i++) {
-                    diff |= verifier[i] ^ expected[i];
+                let matches = verifier.length === expected.length;
+                if (matches) {
+                    let diff = 0;
+                    for (let i = 0; i < verifier.length; i++) diff |= verifier[i] ^ expected[i];
+                    matches = diff === 0;
                 }
-
-                if (diff !== 0) {
-                    if (errorEl) errorEl.textContent = "Incorrect PIN.";
-                    pinInput?.select();
-                    return;
+                if (!matches) {
+                    setError("Incorrect PIN.");
+                    passwordInput.value = "";
+                    renderMobileDots();
+                    return false;
                 }
-
-                localStorage.removeItem(LOCKED_KEY);
+                try { localStorage.removeItem(LOCKED_KEY); } catch (_) {}
                 hideLock();
                 window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
+                return true;
             } catch (_) {
-                if (errorEl) errorEl.textContent = "Unable to verify the PIN on this device.";
+                setError("Unable to verify the App Lock on this device.");
+                return false;
             } finally {
-                busy = false;
+                unlockInProgress = false;
                 unlockBtn?.removeAttribute("disabled");
             }
         }
 
+        function addDigit(digit) {
+            if (!passwordInput || unlockInProgress) return;
+            if (passwordInput.value.length >= 12) return;
+            setError("");
+            passwordInput.value += digit;
+            renderMobileDots();
+
+            const record = readRecord();
+            const length = Number(record?.secretLength) || 0;
+            if (record?.numeric === true && length >= 4 && passwordInput.value.length >= length) {
+                unlock();
+            }
+        }
+
+        function deleteDigit() {
+            if (!passwordInput || unlockInProgress) return;
+            passwordInput.value = passwordInput.value.slice(0, -1);
+            setError("");
+            renderMobileDots();
+        }
+
         window.OddiAppLock = {
-            setPassword: setPin,
-            setPin,
-            removePassword: removePin,
-            removePin,
-            lock() { showLock(); return hasLock(); },
-            isConfigured: hasLock,
-            isLocked() { return !!overlay?.classList.contains("show"); }
+            setPassword,
+            removePassword,
+            lock(options) {
+                if (!readRecord()) return false;
+                if (options?.playSplashAfterUnlock) window.__oddiPlaySplashAfterUnlock = true;
+                showLock();
+                return true;
+            },
+            isConfigured() { return !!readRecord(); },
+            isLocked() { return overlay?.classList.contains("show") || false; }
         };
 
-        /* Only allow digits in both setup and unlock fields. */
-        [pinInput, settingsInput].forEach(input => {
-            input?.addEventListener("input", () => {
-                input.value = input.value.replace(/\D/g, "").slice(0, 12);
-            });
-        });
-
         unlockBtn?.addEventListener("click", unlock);
-        pinInput?.addEventListener("keydown", event => {
-            if (event.key === "Enter") { event.preventDefault(); unlock(); }
+        fallbackUnlockBtn?.addEventListener("click", unlock);
+
+        mobileKeypad?.addEventListener("click", event => {
+            const button = event.target.closest("button[data-key]");
+            if (!button) return;
+            const key = button.dataset.key;
+            if (key === "backspace") deleteDigit();
+            else if (/^\d$/.test(key)) addDigit(key);
         });
 
-        toggleBtn?.addEventListener("click", () => {
-            if (!settingsInput) return;
-            const visible = settingsInput.type === "text";
-            settingsInput.type = visible ? "tel" : "text";
-            toggleBtn.textContent = visible ? "👁" : "🙈";
-        });
-
-        saveBtn?.addEventListener("click", async () => {
-            const pin = settingsInput?.value || "";
-            if (!/^\d{4,12}$/.test(pin)) {
-                if (statusEl) statusEl.textContent = "Enter a PIN containing 4–12 digits.";
-                return;
-            }
-            const saved = await setPin(pin);
-            if (saved) {
-                if (settingsInput) settingsInput.value = "";
-                if (statusEl) statusEl.textContent = "PIN App Lock is enabled on this device";
-            }
-        });
-
-        removeBtn?.addEventListener("click", () => {
-            if (!hasLock()) { refreshStatus(); return; }
-            if (!window.confirm("Remove App Lock from this device?")) return;
-            removePin();
-        });
-
-        lockNowBtn?.addEventListener("click", () => {
-            if (!hasLock()) {
-                if (statusEl) statusEl.textContent = "Set a PIN first";
-                return;
-            }
-            document.getElementById("closeAccountSettings")?.click();
-            showLock();
-        });
-
-        /* Never allow the locked screen to be dismissed by clicking outside or Escape. */
-        overlay?.addEventListener("click", event => {
-            if (event.target === overlay) pinInput?.focus();
-        });
-        document.addEventListener("keydown", event => {
-            if (event.key === "Escape" && overlay?.classList.contains("show")) {
+        passwordInput?.addEventListener("keydown", event => {
+            if (isMobileLockUI()) {
                 event.preventDefault();
-                event.stopPropagation();
-                pinInput?.focus();
+                return;
             }
-        }, true);
-
-        refreshStatus();
-
-        /* Start locked immediately on every fresh page/app load when configured. */
-        if (hasLock()) showLock();
-
-        window.addEventListener("pageshow", () => {
-            if (hasLock()) showLock();
+            if (event.key === "Enter") {
+                event.preventDefault();
+                unlock();
+            }
         });
+
+        closeBtn?.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (isMobileLockUI()) return;
+            passwordInput?.focus();
+        });
+
+        overlay?.addEventListener("click", event => {
+            if (event.target === overlay && !isMobileLockUI()) passwordInput?.focus();
+        });
+
+        window.addEventListener("resize", () => {
+            if (overlay?.classList.contains("show")) prepareMobileInput();
+        });
+
+        if (readRecord()) showLock();
     })();
     </script>
 
