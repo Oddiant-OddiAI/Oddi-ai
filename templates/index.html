@@ -3711,7 +3711,7 @@
                         <button type="button" data-setup-pattern-dot="7" style="width:34px;height:34px;border-radius:50%;border:2px solid #aaa;background:transparent;"></button><button type="button" data-setup-pattern-dot="8" style="width:34px;height:34px;border-radius:50%;border:2px solid #aaa;background:transparent;"></button><button type="button" data-setup-pattern-dot="9" style="width:34px;height:34px;border-radius:50%;border:2px solid #aaa;background:transparent;"></button>
                     </div>
                 </div>
-                <button id="mobileBiometricSetupBtn" type="button">Register fingerprint / face</button>
+                <button id="mobileBiometricSetupBtn" type="button">Set up fingerprint / face</button>
             </div>
 
             <p class="app-password-note">
@@ -9511,30 +9511,210 @@
             localStorage.setItem(LOCK_KEY,JSON.stringify({version:2,algorithm:"PBKDF2-SHA-256",iterations:150000,salt:b64(salt),verifier:b64(v),createdAt:Date.now(),method}));
             localStorage.setItem(METHOD_KEY,method);
         }
-        async function registerBiometric(){
-            if(!window.PublicKeyCredential || !navigator.credentials){ alert("Biometric App Lock is not supported by this browser/app."); return false; }
-            try{
-                const challenge=crypto.getRandomValues(new Uint8Array(32));
-                const userId=crypto.getRandomValues(new Uint8Array(16));
-                const cred=await navigator.credentials.create({publicKey:{challenge,rp:{name:"Oddi AI"},user:{id:userId,name:"oddi-app-lock",displayName:"Oddi AI App Lock"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"preferred"},timeout:60000}});
-                if(!cred) return false;
-                localStorage.setItem(CRED_KEY,b64(new Uint8Array(cred.rawId)));
-                setMethod("biometric");
-                if(!configuredRecord()) await saveVerifier("biometric-fallback","biometric");
-                return true;
-            }catch(e){ console.warn("Biometric registration failed",e); alert("Fingerprint/Face registration was cancelled or is unavailable on this device."); return false; }
+        /*
+         * Native mobile biometrics adapter.
+         *
+         * IMPORTANT: Do NOT use navigator.credentials/WebAuthn for the
+         * packaged Android app here. In an Android WebView that can open the
+         * Google passkey/password UI instead of the device biometric prompt.
+         * The packaged app should expose a tiny JS bridge and let Android/iOS
+         * use its native biometric API (BiometricPrompt / LocalAuthentication).
+         *
+         * Supported bridge shapes (any one is enough):
+         *   window.OddiNative.biometricRegister()
+         *   window.OddiNative.biometricAuthenticate()
+         *   window.Android.biometricRegister()
+         *   window.Android.biometricAuthenticate()
+         *   window.OddiBiometric.register()
+         *   window.OddiBiometric.authenticate()
+         *
+         * Native code can call the callbacks below when its prompt finishes:
+         *   window.OddiAppBiometricSetupResult(true/false)
+         *   window.OddiAppBiometricResult(true/false)
+         */
+        const isAndroidWebView = /;\s*wv\)|\bwv\b/i.test(navigator.userAgent || "") ||
+            (window.Android && typeof window.Android === "object");
+        const isLikelyNativeApp = isAndroidWebView ||
+            !!window.OddiNative || !!window.OddiBiometric || !!window.Android;
+
+        let biometricSetupPending = false;
+        let biometricUnlockPending = false;
+
+        function getNativeBiometricBridge(action) {
+            const candidates = [
+                window.OddiNative,
+                window.Android,
+                window.OddiBiometric
+            ];
+            const names = action === "register"
+                ? ["biometricRegister", "registerBiometric", "register"]
+                : ["biometricAuthenticate", "authenticateBiometric", "authenticate"];
+            for (const bridge of candidates) {
+                if (!bridge) continue;
+                for (const name of names) {
+                    if (typeof bridge[name] === "function") {
+                        return bridge[name].bind(bridge);
+                    }
+                }
+            }
+            return null;
         }
-        biometricSetupBtn?.addEventListener("click",registerBiometric);
+
+        function showBiometricError(message) {
+            if (errorEl) errorEl.textContent = message;
+        }
+
+        function completeBiometricSetup(success) {
+            if (!biometricSetupPending) return;
+            biometricSetupPending = false;
+            if (success) {
+                setMethod("biometric");
+                if (!configuredRecord()) {
+                    /* Keep a verifier record so the existing App Lock state
+                       remains compatible with the rest of the app. */
+                    saveVerifier("native-biometric-fallback", "biometric").catch(() => {});
+                }
+                showBiometricError("");
+            } else {
+                showBiometricError("Fingerprint/Face setup was cancelled or failed.");
+            }
+        }
+
+        function completeBiometricUnlock(success) {
+            if (!biometricUnlockPending) return;
+            biometricUnlockPending = false;
+            if (!success) {
+                showBiometricError("Biometric verification failed or was cancelled.");
+                return;
+            }
+            localStorage.removeItem("oddi_device_app_locked_v2");
+            const lock = document.getElementById("oddiAppLock");
+            lock?.classList.remove("show");
+            lock?.setAttribute("aria-hidden", "true");
+            document.documentElement.classList.remove("oddi-app-locked");
+            window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
+        }
+
+        /* Public callbacks for the native Android/iOS wrapper. */
+        window.OddiAppBiometricSetupResult = completeBiometricSetup;
+        window.OddiAppBiometricResult = completeBiometricUnlock;
+
+        async function callNativeBiometric(action) {
+            const fn = getNativeBiometricBridge(action);
+            if (!fn) return false;
+            try {
+                const result = fn();
+                /* Support native bridges that return a Promise/boolean. */
+                if (result && typeof result.then === "function") {
+                    const value = await result;
+                    if (action === "register") completeBiometricSetup(value !== false);
+                    else completeBiometricUnlock(value !== false);
+                } else if (typeof result === "boolean") {
+                    if (action === "register") completeBiometricSetup(result);
+                    else completeBiometricUnlock(result);
+                }
+                return true;
+            } catch (e) {
+                console.warn("Native biometric bridge failed", e);
+                if (action === "register") completeBiometricSetup(false);
+                else completeBiometricUnlock(false);
+                return true;
+            }
+        }
+
+        async function registerBiometric(){
+            if (biometricSetupPending) return false;
+            biometricSetupPending = true;
+            showBiometricError("");
+
+            /* Packaged Android/iOS app: use native biometric prompt. */
+            if (isLikelyNativeApp) {
+                const handled = await callNativeBiometric("register");
+                if (!handled) {
+                    biometricSetupPending = false;
+                    showBiometricError("Native fingerprint/face support is not connected in this app build yet.");
+                    return false;
+                }
+                return true;
+            }
+
+            /* Normal browser: WebAuthn is allowed here. This branch is never
+               used by a standard Android WebView, so it cannot launch the
+               unwanted Google passkey screen in the packaged app. */
+            if (!window.PublicKeyCredential || !navigator.credentials) {
+                biometricSetupPending = false;
+                showBiometricError("Biometric App Lock is not supported by this browser.");
+                return false;
+            }
+            try {
+                const challenge = crypto.getRandomValues(new Uint8Array(32));
+                const userId = crypto.getRandomValues(new Uint8Array(16));
+                const cred = await navigator.credentials.create({
+                    publicKey: {
+                        challenge,
+                        rp: { name: "Oddi AI" },
+                        user: { id: userId, name: "oddi-app-lock", displayName: "Oddi AI App Lock" },
+                        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+                        authenticatorSelection: {
+                            authenticatorAttachment: "platform",
+                            userVerification: "required",
+                            residentKey: "preferred"
+                        },
+                        timeout: 60000
+                    }
+                });
+                if (!cred) {
+                    completeBiometricSetup(false);
+                    return false;
+                }
+                localStorage.setItem(CRED_KEY, b64(new Uint8Array(cred.rawId)));
+                completeBiometricSetup(true);
+                return true;
+            } catch (e) {
+                console.warn("Browser biometric registration failed", e);
+                completeBiometricSetup(false);
+                return false;
+            }
+        }
+        biometricSetupBtn?.addEventListener("click", registerBiometric);
 
         async function biometricUnlock(){
-            const id=localStorage.getItem(CRED_KEY); if(!id){ if(errorEl)errorEl.textContent="Set up fingerprint/face in Account Settings first."; return; }
-            try{
-                await navigator.credentials.get({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:"public-key",id:fromB64(id)}],userVerification:"required",timeout:60000}});
-                localStorage.removeItem("oddi_device_app_locked_v2");
-                document.getElementById("oddiAppLock")?.classList.remove("show"); document.getElementById("oddiAppLock")?.setAttribute("aria-hidden","true"); document.documentElement.classList.remove("oddi-app-locked"); window.dispatchEvent(new CustomEvent("oddi-app-unlocked"));
-            }catch(e){ if(errorEl)errorEl.textContent="Biometric verification failed or was cancelled."; }
+            if (biometricUnlockPending) return;
+            biometricUnlockPending = true;
+            showBiometricError("");
+
+            /* Packaged Android/iOS app: NEVER call WebAuthn here. */
+            if (isLikelyNativeApp) {
+                const handled = await callNativeBiometric("authenticate");
+                if (!handled) {
+                    biometricUnlockPending = false;
+                    showBiometricError("Native fingerprint/face support is not connected in this app build yet.");
+                }
+                return;
+            }
+
+            const id = localStorage.getItem(CRED_KEY);
+            if (!id) {
+                completeBiometricUnlock(false);
+                showBiometricError("Set up fingerprint/face in Account Settings first.");
+                return;
+            }
+            try {
+                await navigator.credentials.get({
+                    publicKey: {
+                        challenge: crypto.getRandomValues(new Uint8Array(32)),
+                        allowCredentials: [{ type: "public-key", id: fromB64(id) }],
+                        userVerification: "required",
+                        timeout: 60000
+                    }
+                });
+                completeBiometricUnlock(true);
+            } catch (e) {
+                console.warn("Browser biometric unlock failed", e);
+                completeBiometricUnlock(false);
+            }
         }
-        biometricBtn?.addEventListener("click",biometricUnlock);
+        biometricBtn?.addEventListener("click", biometricUnlock);
 
         let setupPattern = [];
         const setupPad = document.getElementById("mobilePatternSetupPad");
