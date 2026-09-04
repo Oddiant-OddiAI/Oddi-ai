@@ -143,6 +143,374 @@ body.dark-mode .chat-search-input:focus {
 }
 body.dark-mode .chat-search-empty {
     color: #aaa;
+/* =========================================================
+   ODDI AI — ELECTRICAL CIRCUIT DIAGRAM
+   ========================================================= */
+
+.ai-circuit-wrap {
+    width: 100%;
+    margin: 22px 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.ai-circuit-card {
+    width: 100%;
+    box-sizing: border-box;
+    background: #ffffff;
+    border: 1px solid #e7e7e7;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+}
+
+/* Header */
+
+.ai-circuit-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 13px 16px;
+    border-bottom: 1px solid #eeeeee;
+}
+
+.ai-circuit-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    color: #222;
+}
+
+.ai-circuit-title-icon {
+    font-size: 17px;
+}
+
+/* Diagram viewport */
+
+.ai-circuit-canvas {
+    position: relative;
+    width: 100%;
+    min-height: 260px;
+    padding: 24px;
+    box-sizing: border-box;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #ffffff;
+    overflow: auto;
+}
+
+/* SVG itself */
+
+.ai-circuit-svg {
+    display: block;
+    width: min(100%, 760px);
+    height: auto;
+    min-width: 420px;
+
+    overflow: visible;
+    user-select: none;
+}
+
+/* Circuit wires */
+
+.ai-circuit-wire {
+    fill: none;
+    stroke: #171717;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Component symbols */
+
+.ai-circuit-component {
+    fill: #ffffff;
+    stroke: #171717;
+    stroke-width: 3;
+}
+
+.ai-circuit-symbol {
+    fill: none;
+    stroke: #171717;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Component labels */
+
+.ai-circuit-label {
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    fill: #222222;
+}
+
+.ai-circuit-value {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    fill: #555555;
+}
+
+/* Battery */
+
+.ai-circuit-battery-line {
+    stroke: #171717;
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.ai-circuit-polarity {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    fill: #222;
+}
+
+/* Switch */
+
+.ai-circuit-switch-contact {
+    fill: #ffffff;
+    stroke: #171717;
+    stroke-width: 3;
+}
+
+.ai-circuit-switch-arm {
+    fill: none;
+    stroke: #171717;
+    stroke-width: 3;
+    stroke-linecap: round;
+}
+
+/* Bulb */
+
+.ai-circuit-bulb {
+    fill: #ffffff;
+    stroke: #171717;
+    stroke-width: 3;
+}
+
+.ai-circuit-filament {
+    fill: none;
+    stroke: #171717;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+}
+
+/* Resistor */
+
+.ai-circuit-resistor {
+    fill: none;
+    stroke: #171717;
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* Current direction */
+
+.ai-circuit-current-arrow {
+    fill: none;
+    stroke: #555555;
+    stroke-width: 2;
+    stroke-linecap: round;
+}
+
+.ai-circuit-current-arrow-head {
+    fill: #555555;
+}
+
+/* Controls */
+
+.ai-circuit-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 9px 12px;
+    border-top: 1px solid #eeeeee;
+}
+
+.ai-circuit-control {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+
+    color: #666;
+    font-size: 15px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.16s ease,
+        color 0.16s ease,
+        transform 0.16s ease;
+}
+
+.ai-circuit-control:hover {
+    background: #eeeeee;
+    color: #111;
+}
+
+.ai-circuit-control:active {
+    transform: scale(0.94);
+}
+
+/* Fullscreen */
+
+.ai-circuit-card.circuit-fullscreen {
+    position: fixed;
+    inset: 20px;
+    z-index: 9999;
+
+    width: auto;
+    height: auto;
+
+    display: flex;
+    flex-direction: column;
+
+    border-radius: 20px;
+    box-shadow: 0 20px 70px rgba(0, 0, 0, 0.22);
+}
+
+.ai-circuit-card.circuit-fullscreen .ai-circuit-canvas {
+    flex: 1;
+    min-height: 0;
+}
+
+/* =========================================================
+   DARK MODE
+   ========================================================= */
+
+body.dark-mode .ai-circuit-card {
+    background: #171717;
+    border-color: #292929;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.30);
+}
+
+body.dark-mode .ai-circuit-header {
+    border-bottom-color: #292929;
+}
+
+body.dark-mode .ai-circuit-title {
+    color: #eeeeee;
+}
+
+body.dark-mode .ai-circuit-canvas {
+    background: #171717;
+}
+
+body.dark-mode .ai-circuit-wire,
+body.dark-mode .ai-circuit-symbol,
+body.dark-mode .ai-circuit-resistor,
+body.dark-mode .ai-circuit-switch-arm {
+    stroke: #eeeeee;
+}
+
+body.dark-mode .ai-circuit-component,
+body.dark-mode .ai-circuit-bulb,
+body.dark-mode .ai-circuit-switch-contact {
+    fill: #171717;
+    stroke: #eeeeee;
+}
+
+body.dark-mode .ai-circuit-battery-line {
+    stroke: #eeeeee;
+}
+
+body.dark-mode .ai-circuit-label {
+    fill: #eeeeee;
+}
+
+body.dark-mode .ai-circuit-value {
+    fill: #aaaaaa;
+}
+
+body.dark-mode .ai-circuit-polarity {
+    fill: #eeeeee;
+}
+
+body.dark-mode .ai-circuit-filament {
+    stroke: #eeeeee;
+}
+
+body.dark-mode .ai-circuit-current-arrow {
+    stroke: #aaaaaa;
+}
+
+body.dark-mode .ai-circuit-current-arrow-head {
+    fill: #aaaaaa;
+}
+
+body.dark-mode .ai-circuit-controls {
+    border-top-color: #292929;
+}
+
+body.dark-mode .ai-circuit-control {
+    color: #aaaaaa;
+}
+
+body.dark-mode .ai-circuit-control:hover {
+    background: #252525;
+    color: #ffffff;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) and (pointer: coarse) {
+
+    .ai-circuit-wrap {
+        margin: 18px 0;
+    }
+
+    .ai-circuit-card {
+        border-radius: 15px;
+    }
+
+    .ai-circuit-header {
+        padding: 11px 13px;
+    }
+
+    .ai-circuit-canvas {
+        min-height: 230px;
+        padding: 14px;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+
+    .ai-circuit-svg {
+        min-width: 500px;
+    }
+
+    .ai-circuit-controls {
+        padding: 8px 10px;
+    }
+
+    .ai-circuit-control {
+        width: 34px;
+        height: 34px;
+    }
+
+    .ai-circuit-card.circuit-fullscreen {
+        inset: 8px;
+        border-radius: 16px;
+    }
+}
 }
 </style>
     <!-- PWA install button — same behavior/style as VedAura AI -->
