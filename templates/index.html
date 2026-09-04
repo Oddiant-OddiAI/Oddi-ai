@@ -782,46 +782,118 @@ body.dark-mode .history-item {
 
     <!-- FINAL FOUR FIXES — user bubble, regenerate draft, mobile splash, pinned chats -->
     <style id="final-four-fixes">
-        /* 1. User messages should shrink to their content like AI messages. */
+        /* 1. Clean user-message layout: bubble + actions only. */
         .user-message {
             width: fit-content !important;
             max-width: min(760px, 88%) !important;
             box-sizing: border-box !important;
             align-self: flex-end !important;
+            display: grid !important;
+            grid-template-columns: auto auto !important;
+            align-items: start !important;
+            justify-content: end !important;
+            gap: 0 2px !important;
+            margin: 0 0 18px auto !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            color: #111 !important;
+        }
+
+        /* Flatten the old message header so Pin can live beside Copy
+           underneath the message bubble. */
+        .user-message .user-message-header,
+        .user-message .user-actions {
+            display: contents !important;
+        }
+
+        .user-message .user-message-header b {
+            display: none !important;
         }
 
         .user-message .user-text {
+            order: 1 !important;
+            grid-column: 1 / -1 !important;
+            grid-row: 1 !important;
             display: block !important;
             width: fit-content !important;
             max-width: 100% !important;
-            margin: 6px 0 !important;
-            padding: 12px 14px !important;
-            background: var(--message-bg, #ffffff) !important;
-            border: 1px solid var(--border-color, #e5e7eb) !important;
-            border-radius: 18px !important;
+            margin: 0 !important;
+            padding: 13px 18px !important;
+            box-sizing: border-box !important;
+            background: #f1f1f1 !important;
+            border: 0 !important;
+            border-radius: 26px !important;
             text-align: left !important;
             white-space: pre-wrap !important;
-            overflow-wrap: break-word !important;
+            overflow-wrap: anywhere !important;
             word-break: normal !important;
             line-height: 1.5 !important;
+            color: #111 !important;
         }
+
+        /* Both actions sit on one compact row directly below the bubble. */
+        .user-message .user-pin-btn,
+        .user-message .user-copy-btn {
+            order: 2 !important;
+            grid-row: 2 !important;
+            margin: 8px 0 0 0 !important;
+            padding: 4px 7px !important;
+            min-width: 0 !important;
+            min-height: 28px !important;
+            width: auto !important;
+            height: 28px !important;
+            position: static !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border: 0 !important;
+            border-radius: 8px !important;
+            background: transparent !important;
+            color: #666 !important;
+            box-shadow: none !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            cursor: pointer !important;
+        }
+
+        .user-message .user-pin-btn:hover,
+        .user-message .user-copy-btn:hover {
+            background: #ededed !important;
+            color: #111 !important;
+        }
+
+        /* Keep Pin and Copy together instead of letting the wrappers create
+           separate rows. The flattened buttons become flex items. */
+        .user-message .user-copy-btn {
+            margin-left: 0 !important;
+        }
+
         body.dark-mode .user-message {
-            background: #333 !important;
+            background: transparent !important;
             color: #f2f2f2 !important;
+            border: 0 !important;
+            box-shadow: none !important;
         }
 
         body.dark-mode .user-message .user-text {
-            background: transparent !important;
+            background: #171717 !important;
             color: #f2f2f2 !important;
-        }
-        body.dark-mode .user-message {
-            background: #333 !important;
-            color: #f2f2f2 !important;
+            border: 0 !important;
         }
 
-        body.dark-mode .user-message .user-text {
+        body.dark-mode .user-message .user-pin-btn,
+        body.dark-mode .user-message .user-copy-btn {
             background: transparent !important;
-            color: #f2f2f2 !important;
+            color: #bdbdbd !important;
+        }
+
+        body.dark-mode .user-message .user-pin-btn:hover,
+        body.dark-mode .user-message .user-copy-btn:hover {
+            background: #242424 !important;
+            color: #fff !important;
         }
         /* 2. Pinned chats stay above the scrolling chat-history list. */
         .pinned-history-section {
@@ -4173,6 +4245,85 @@ body.dark-mode *::-webkit-scrollbar-track {
     </div>
 </div>
 
+
+    <!-- USER MESSAGE FINAL POLISH — dark mode + hover/tap actions -->
+    <style id="user-message-final-polish">
+        /* Keep the outer message transparent; only .user-text is the bubble. */
+        .user-message {
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+
+        /* Laptop/desktop: Pin + Copy appear only while hovering the message. */
+        @media (hover: hover) and (pointer: fine) {
+            .user-message .user-pin-btn,
+            .user-message .user-copy-btn {
+                opacity: 0 !important;
+                pointer-events: none !important;
+                visibility: hidden !important;
+                transition: opacity .16s ease, background .16s ease, color .16s ease !important;
+            }
+
+            .user-message:hover .user-pin-btn,
+            .user-message:hover .user-copy-btn,
+            .user-message:focus-within .user-pin-btn,
+            .user-message:focus-within .user-copy-btn {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                visibility: visible !important;
+            }
+        }
+
+        /* Phone/touch: Pin + Copy appear only after tapping the message. */
+        @media (hover: none), (pointer: coarse) {
+            .user-message .user-pin-btn,
+            .user-message .user-copy-btn {
+                opacity: 0 !important;
+                pointer-events: none !important;
+                visibility: hidden !important;
+                transition: opacity .16s ease, background .16s ease, color .16s ease !important;
+            }
+
+            .user-message.touch-actions-visible .user-pin-btn,
+            .user-message.touch-actions-visible .user-copy-btn {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                visibility: visible !important;
+            }
+        }
+
+        /* Dark mode uses the exact same layout/shape as bright mode. */
+        body.dark-mode .user-message {
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            color: #f2f2f2 !important;
+        }
+
+        body.dark-mode .user-message .user-text {
+            background: #202020 !important;
+            color: #f2f2f2 !important;
+            border: 0 !important;
+            border-radius: 26px !important;
+            box-shadow: none !important;
+        }
+
+        body.dark-mode .user-message .user-pin-btn,
+        body.dark-mode .user-message .user-copy-btn {
+            background: transparent !important;
+            color: #bdbdbd !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+
+        body.dark-mode .user-message .user-pin-btn:hover,
+        body.dark-mode .user-message .user-copy-btn:hover {
+            background: #242424 !important;
+            color: #fff !important;
+        }
+    </style>
+
     <script src="{{ url_for('static', filename='js/core.js') }}"></script>
     <script src="{{ url_for('static', filename='js/files.js') }}"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
@@ -4184,5 +4335,716 @@ body.dark-mode *::-webkit-scrollbar-track {
     <script src="{{ url_for('static', filename='js/attachments.js') }}"></script>
     <script src="{{ url_for('static', filename='js/history.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+
+    <script id="user-message-touch-actions">
+        /* Touch devices: tap a user message to reveal Pin/Copy. */
+        (function () {
+            function isTouchDevice() {
+                return window.matchMedia("(pointer: coarse)").matches ||
+                       window.matchMedia("(hover: none)").matches;
+            }
+
+            document.addEventListener("click", function (event) {
+                if (!isTouchDevice()) return;
+
+                const message = event.target.closest(".user-message");
+                const actionButton = event.target.closest(".user-pin-btn, .user-copy-btn");
+
+                /* Existing Pin/Copy onclick handlers must work normally. */
+                if (actionButton) return;
+
+                document.querySelectorAll(".user-message.touch-actions-visible")
+                    .forEach(function (item) {
+                        if (item !== message) item.classList.remove("touch-actions-visible");
+                    });
+
+                if (message) message.classList.toggle("touch-actions-visible");
+            });
+        })();
+    </script>
+
+
+    <!-- BOT MESSAGE FINAL POLISH — clean assistant layout + hover/tap actions -->
+    <style id="bot-message-final-polish">
+        /* =========================================================
+           ODDI AI BOT MESSAGE
+           Clean, borderless assistant message — no giant card.
+           ========================================================= */
+
+        .bot-message {
+            width: min(760px, 88%) !important;
+            max-width: min(760px, 88%) !important;
+            margin: 0 auto 28px 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            color: #151515 !important;
+        }
+
+        .bot-message .bot-header {
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            margin: 0 0 10px 0 !important;
+            min-height: 32px !important;
+        }
+
+        .bot-message .bot-header b {
+            font-size: 15px !important;
+            line-height: 1.2 !important;
+            font-weight: 700 !important;
+            color: #111 !important;
+        }
+
+        /* Speaker stays visible — it is part of the assistant identity. */
+        .bot-message .message-sound-btn {
+            width: 32px !important;
+            height: 32px !important;
+            min-width: 32px !important;
+            min-height: 32px !important;
+            flex: 0 0 32px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            border-radius: 50% !important;
+            background: #f3f3f3 !important;
+            color: #111 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: none !important;
+            cursor: pointer !important;
+        }
+
+        .bot-message .message-sound-btn:hover {
+            background: #e9e9e9 !important;
+            transform: scale(1.04) !important;
+        }
+
+        /* AI response text: natural document flow, not a second bubble. */
+        .bot-message .ai-content {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 4px 0 40px !important;
+            box-sizing: border-box !important;
+            background: transparent !important;
+            border: 0 !important;
+            color: #202020 !important;
+            line-height: 1.65 !important;
+            overflow-wrap: anywhere !important;
+            word-break: normal !important;
+        }
+
+        /* Keep rich content looking natural on the clean surface. */
+        .bot-message .ai-content p:first-child {
+            margin-top: 0 !important;
+        }
+
+        .bot-message .ai-content p:last-child {
+            margin-bottom: 0 !important;
+        }
+
+        /* Action row under the answer. */
+        .bot-message .bot-actions:not(.thinking-actions) {
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 4px !important;
+            margin: 10px 0 0 40px !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+
+        .bot-message .bot-actions:not(.thinking-actions) .message-action-btn {
+            width: auto !important;
+            min-width: 0 !important;
+            min-height: 28px !important;
+            height: 28px !important;
+            margin: 0 !important;
+            padding: 4px 8px !important;
+            border: 0 !important;
+            border-radius: 8px !important;
+            background: transparent !important;
+            color: #666 !important;
+            box-shadow: none !important;
+            font-size: 13px !important;
+            line-height: 1 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            transition: opacity .16s ease, background .16s ease,
+                        color .16s ease, transform .16s ease !important;
+        }
+
+        .bot-message .bot-actions:not(.thinking-actions) .message-action-btn:hover {
+            background: #ededed !important;
+            color: #111 !important;
+        }
+
+        .bot-message .bot-actions:not(.thinking-actions) .feedback-btn {
+            width: 30px !important;
+            padding: 4px !important;
+        }
+
+        .bot-message .bot-actions:not(.thinking-actions) .message-action-btn.active {
+            background: #e9e9e9 !important;
+            color: #111 !important;
+        }
+
+        /* Stop button remains visible while the model is generating. */
+        .bot-message .bot-actions.thinking-actions {
+            display: flex !important;
+            align-items: center !important;
+            margin: 10px 0 0 40px !important;
+            padding: 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+
+        /* Laptop/desktop:
+           normal = clean; hover/focus = reveal controls. */
+        @media (hover: hover) and (pointer: fine) {
+            .bot-message .bot-actions:not(.thinking-actions) {
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                transform: translateY(-3px) !important;
+            }
+
+            .bot-message:hover .bot-actions:not(.thinking-actions),
+            .bot-message:focus-within .bot-actions:not(.thinking-actions) {
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+                transform: translateY(0) !important;
+            }
+        }
+
+        /* Phone/touch:
+           normal = clean; tap the bot message to reveal controls. */
+        @media (hover: none), (pointer: coarse) {
+            .bot-message .bot-actions:not(.thinking-actions) {
+                opacity: 0 !important;
+                visibility: hidden !important;
+                pointer-events: none !important;
+                transform: translateY(-3px) !important;
+                transition: opacity .16s ease, transform .16s ease,
+                            visibility .16s ease !important;
+            }
+
+            .bot-message.touch-actions-visible .bot-actions:not(.thinking-actions) {
+                opacity: 1 !important;
+                visibility: visible !important;
+                pointer-events: auto !important;
+                transform: translateY(0) !important;
+            }
+        }
+
+        /* Dark mode: same structure and spacing, simply inverted tones. */
+        body.dark-mode .bot-message {
+            background: transparent !important;
+            color: #eeeeee !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+
+        body.dark-mode .bot-message .bot-header b {
+            color: #f5f5f5 !important;
+        }
+
+        body.dark-mode .bot-message .message-sound-btn {
+            background: #191919 !important;
+            color: #f2f2f2 !important;
+            border: 1px solid #2a2a2a !important;
+        }
+
+        body.dark-mode .bot-message .message-sound-btn:hover {
+            background: #242424 !important;
+        }
+
+        body.dark-mode .bot-message .ai-content {
+            background: transparent !important;
+            color: #e9e9e9 !important;
+        }
+
+        body.dark-mode .bot-message .bot-actions:not(.thinking-actions) .message-action-btn {
+            background: transparent !important;
+            color: #aaa !important;
+        }
+
+        body.dark-mode .bot-message .bot-actions:not(.thinking-actions) .message-action-btn:hover {
+            background: #222 !important;
+            color: #fff !important;
+        }
+
+        body.dark-mode .bot-message .bot-actions:not(.thinking-actions) .message-action-btn.active {
+            background: #252525 !important;
+            color: #fff !important;
+        }
+
+        /* Phone width: keep the assistant answer comfortable to read. */
+        @media (max-width: 768px) and (pointer: coarse) {
+            .bot-message {
+                width: min(100%, 94%) !important;
+                max-width: 94% !important;
+                margin-bottom: 24px !important;
+            }
+
+            .bot-message .ai-content {
+                padding-left: 40px !important;
+                padding-right: 2px !important;
+                line-height: 1.6 !important;
+            }
+
+            .bot-message .bot-actions:not(.thinking-actions),
+            .bot-message .bot-actions.thinking-actions {
+                margin-left: 40px !important;
+            }
+        }
+    </style>
+
+    <script id="bot-message-touch-actions">
+        /* Touch devices: tap one bot message to reveal its action row. */
+        (function () {
+            function isTouchDevice() {
+                return window.matchMedia("(pointer: coarse)").matches ||
+                       window.matchMedia("(hover: none)").matches;
+            }
+
+            document.addEventListener("click", function (event) {
+                if (!isTouchDevice()) return;
+
+                const botMessage = event.target.closest(".bot-message");
+                if (!botMessage) {
+                    document.querySelectorAll(".bot-message.touch-actions-visible")
+                        .forEach(function (item) {
+                            item.classList.remove("touch-actions-visible");
+                        });
+                    return;
+                }
+
+                const actionButton = event.target.closest(
+                    ".bot-actions button, .message-action-btn"
+                );
+
+                /* Existing action onclick handlers should work normally. */
+                if (actionButton) return;
+
+                document.querySelectorAll(".bot-message.touch-actions-visible")
+                    .forEach(function (item) {
+                        if (item !== botMessage) {
+                            item.classList.remove("touch-actions-visible");
+                        }
+                    });
+
+                /* Do not toggle while the model's Stop button is present. */
+                if (botMessage.querySelector(".thinking-actions")) return;
+
+                botMessage.classList.toggle("touch-actions-visible");
+            });
+        })();
+    </script>
+
+
+    <!-- FINAL MESSAGE LAYOUT V3 — centered AI + modern in-bubble user expander -->
+    <style id="final-message-layout-v3">
+        /* =========================================================
+           CENTERED ASSISTANT MESSAGE
+           ========================================================= */
+        .bot-message {
+            width: min(760px, 88%) !important;
+            max-width: min(760px, 88%) !important;
+            margin: 0 auto 28px auto !important;
+        }
+
+        .bot-message .ai-content {
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        .bot-message .bot-actions:not(.thinking-actions),
+        .bot-message .bot-actions.thinking-actions {
+            margin-left: 0 !important;
+        }
+
+        .bot-message .bot-header {
+            margin-left: 0 !important;
+        }
+
+        /* =========================================================
+           USER MESSAGE — LONG MESSAGE EXPANDER
+           The arrow is INSIDE the actual message bubble.
+           ========================================================= */
+        .user-message {
+            position: relative !important;
+        }
+
+        .user-message .user-text.user-message-long {
+            position: relative !important;
+            box-sizing: border-box !important;
+            max-height: calc(1.5em * 4 + 26px) !important;
+            overflow: hidden !important;
+            padding-right: 54px !important;
+            padding-bottom: 42px !important;
+        }
+
+        /* Soft fade behind the control, not across the whole message. */
+        .user-message .user-text.user-message-long:not(.user-message-expanded)::after {
+            content: "" !important;
+            position: absolute !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            height: 48px !important;
+            pointer-events: none !important;
+            background: linear-gradient(
+                to bottom,
+                rgba(241,241,241,0),
+                rgba(241,241,241,.96)
+            ) !important;
+        }
+
+        /*
+         * Modern circular chevron.
+         * It is a CHILD of .user-text, so it physically lives inside
+         * the message bubble instead of hanging below it.
+         */
+        .user-message .user-text .user-message-expand-btn {
+            position: absolute !important;
+            right: 9px !important;
+            bottom: 9px !important;
+            z-index: 20 !important;
+
+            width: 34px !important;
+            height: 34px !important;
+            min-width: 34px !important;
+            min-height: 34px !important;
+
+            display: none !important;
+            align-items: center !important;
+            justify-content: center !important;
+
+            margin: 0 !important;
+            padding: 0 !important;
+
+            border: 1px solid rgba(0,0,0,.08) !important;
+            border-radius: 50% !important;
+
+            background: rgba(255,255,255,.90) !important;
+            color: #333 !important;
+
+            box-shadow:
+                0 2px 7px rgba(0,0,0,.10),
+                inset 0 0 0 1px rgba(255,255,255,.55) !important;
+
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+
+            cursor: pointer !important;
+            font-size: 0 !important;
+            line-height: 1 !important;
+
+            transition:
+                transform .18s cubic-bezier(.2,.8,.2,1),
+                background .18s ease,
+                box-shadow .18s ease,
+                border-color .18s ease !important;
+        }
+
+        .user-message.user-message-has-expand
+        .user-text .user-message-expand-btn {
+            display: inline-flex !important;
+        }
+
+        /* Draw the chevron with CSS so the arrow is NOT copied as text. */
+        .user-message .user-text .user-message-expand-btn::before {
+            content: "" !important;
+            width: 8px !important;
+            height: 8px !important;
+            border-right: 2px solid currentColor !important;
+            border-bottom: 2px solid currentColor !important;
+            transform: rotate(45deg) translateY(-2px) !important;
+            transition: transform .18s ease !important;
+        }
+
+        .user-message .user-text .user-message-expand-btn:hover {
+            transform: translateY(-1px) scale(1.06) !important;
+            background: #fff !important;
+            border-color: rgba(0,0,0,.14) !important;
+            box-shadow:
+                0 5px 14px rgba(0,0,0,.14),
+                inset 0 0 0 1px rgba(255,255,255,.7) !important;
+        }
+
+        .user-message .user-text .user-message-expand-btn:active {
+            transform: scale(.94) !important;
+        }
+
+        .user-message .user-text .user-message-expand-btn:focus-visible {
+            outline: 2px solid #777 !important;
+            outline-offset: 2px !important;
+        }
+
+        /* Expanded message: no clamp and no fade. */
+        .user-message .user-text.user-message-expanded {
+            max-height: none !important;
+            overflow: visible !important;
+            padding-right: 54px !important;
+            padding-bottom: 48px !important;
+        }
+
+        .user-message .user-text.user-message-expanded::after {
+            display: none !important;
+        }
+
+        /* Chevron flips upward when expanded. */
+        .user-message.user-message-expanded-state
+        .user-text .user-message-expand-btn::before {
+            transform: rotate(225deg) translate(-2px, -2px) !important;
+        }
+
+        .user-message.user-message-expanded-state
+        .user-text .user-message-expand-btn:hover {
+            transform: translateY(-1px) scale(1.06) !important;
+        }
+
+        /* =========================================================
+           DARK MODE — same shape, same position, same proportions.
+           ========================================================= */
+        body.dark-mode
+        .user-message .user-text.user-message-long:not(.user-message-expanded)::after {
+            background: linear-gradient(
+                to bottom,
+                rgba(32,32,32,0),
+                rgba(32,32,32,.96)
+            ) !important;
+        }
+
+        body.dark-mode
+        .user-message .user-text .user-message-expand-btn {
+            background: rgba(48,48,48,.92) !important;
+            color: #f2f2f2 !important;
+            border-color: rgba(255,255,255,.10) !important;
+            box-shadow:
+                0 3px 9px rgba(0,0,0,.35),
+                inset 0 0 0 1px rgba(255,255,255,.04) !important;
+        }
+
+        body.dark-mode
+        .user-message .user-text .user-message-expand-btn:hover {
+            background: #3b3b3b !important;
+            border-color: rgba(255,255,255,.16) !important;
+            box-shadow:
+                0 5px 14px rgba(0,0,0,.45),
+                inset 0 0 0 1px rgba(255,255,255,.06) !important;
+        }
+
+        body.dark-mode
+        .user-message .user-text .user-message-expand-btn:focus-visible {
+            outline-color: #aaa !important;
+        }
+
+        /* Phone: a little larger for reliable tapping. */
+        @media (max-width: 768px) and (pointer: coarse) {
+            .bot-message {
+                width: min(100%, 94%) !important;
+                max-width: 94% !important;
+            }
+
+            .user-message .user-text .user-message-expand-btn {
+                width: 38px !important;
+                height: 38px !important;
+                min-width: 38px !important;
+                min-height: 38px !important;
+                right: 8px !important;
+                bottom: 8px !important;
+            }
+
+            .user-message .user-text.user-message-long {
+                padding-right: 58px !important;
+                padding-bottom: 46px !important;
+            }
+        }
+    </style>
+
+    <script id="user-message-expand-controller-v3">
+        /*
+         * Long user messages:
+         *   <= 4 lines -> normal bubble, no arrow
+         *   > 4 lines  -> collapsed bubble + in-bubble arrow
+         *   arrow      -> expand/collapse
+         *
+         * IMPORTANT:
+         * The arrow is appended INSIDE .user-text.
+         * It has no text content; its chevron is CSS-only, so Copy
+         * does not accidentally include the arrow character.
+         */
+        (function () {
+            const LINE_LIMIT = 4;
+
+            function ensureExpandButton(message) {
+                if (!message || !message.classList.contains("user-message")) return;
+
+                const text = message.querySelector(".user-text");
+                if (!text) return;
+
+                let button = message.querySelector(".user-message-expand-btn");
+
+                if (!button) {
+                    button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "user-message-expand-btn";
+                    button.setAttribute("aria-label", "Expand message");
+                    button.setAttribute("title", "Expand message");
+                    button.textContent = "";
+
+                    button.addEventListener("click", function (event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        const expanded =
+                            message.classList.contains("user-message-expanded-state");
+
+                        if (expanded) {
+                            message.classList.remove("user-message-expanded-state");
+                            text.classList.remove("user-message-expanded");
+
+                            button.setAttribute("aria-label", "Expand message");
+                            button.setAttribute("title", "Expand message");
+                        } else {
+                            message.classList.add("user-message-expanded-state");
+                            text.classList.add("user-message-expanded");
+
+                            button.setAttribute("aria-label", "Collapse message");
+                            button.setAttribute("title", "Collapse message");
+                        }
+                    });
+                }
+
+                /*
+                 * Migration safety:
+                 * If the previous version already created the button outside
+                 * the bubble, move that SAME button into .user-text.
+                 */
+                if (button.parentElement !== text) {
+                    text.appendChild(button);
+                }
+
+                /* Measure the natural height without the clamp. */
+                text.classList.remove("user-message-long");
+                text.classList.remove("user-message-expanded");
+
+                const wasExpanded =
+                    message.classList.contains("user-message-expanded-state");
+
+                text.style.setProperty("max-height", "none", "important");
+                text.style.setProperty("overflow", "visible", "important");
+
+                const computed = window.getComputedStyle(text);
+                const lineHeight = parseFloat(computed.lineHeight) || 24;
+                const threshold = (lineHeight * LINE_LIMIT) + 3;
+                const naturalHeight = text.scrollHeight;
+
+                text.style.removeProperty("max-height");
+                text.style.removeProperty("overflow");
+
+                const isLong = naturalHeight > threshold;
+
+                if (!isLong) {
+                    message.classList.remove(
+                        "user-message-has-expand",
+                        "user-message-expanded-state"
+                    );
+
+                    text.classList.remove(
+                        "user-message-long",
+                        "user-message-expanded"
+                    );
+
+                    button.setAttribute("aria-label", "Expand message");
+                    button.setAttribute("title", "Expand message");
+                    return;
+                }
+
+                message.classList.add("user-message-has-expand");
+                text.classList.add("user-message-long");
+
+                if (wasExpanded) {
+                    message.classList.add("user-message-expanded-state");
+                    text.classList.add("user-message-expanded");
+                    button.setAttribute("aria-label", "Collapse message");
+                    button.setAttribute("title", "Collapse message");
+                } else {
+                    message.classList.remove("user-message-expanded-state");
+                    text.classList.remove("user-message-expanded");
+                    button.setAttribute("aria-label", "Expand message");
+                    button.setAttribute("title", "Expand message");
+                }
+            }
+
+            function scanUserMessages(root) {
+                const scope = root || document;
+
+                if (scope.nodeType === 1 &&
+                    scope.matches &&
+                    scope.matches(".user-message")) {
+                    ensureExpandButton(scope);
+                }
+
+                if (scope.querySelectorAll) {
+                    scope.querySelectorAll(".user-message").forEach(ensureExpandButton);
+                }
+            }
+
+            function scheduleScan(root) {
+                window.requestAnimationFrame(function () {
+                    scanUserMessages(root);
+                });
+            }
+
+            function init() {
+                scheduleScan(document);
+
+                const chatbox = document.querySelector(".chatbox");
+
+                if (chatbox) {
+                    const observer = new MutationObserver(function (mutations) {
+                        const relevant = mutations.some(function (mutation) {
+                            return mutation.type === "childList" &&
+                                   mutation.addedNodes.length > 0;
+                        });
+
+                        if (relevant) {
+                            scheduleScan(chatbox);
+                        }
+                    });
+
+                    observer.observe(chatbox, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+
+                window.addEventListener("resize", function () {
+                    scheduleScan(document);
+                });
+            }
+
+            if (document.readyState === "loading") {
+                document.addEventListener("DOMContentLoaded", init, { once: true });
+            } else {
+                init();
+            }
+        })();
+    </script>
+
 </body>
 </html>
