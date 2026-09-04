@@ -1,5 +1,5 @@
-/* 
-CONVERSATIONS
+/*
+   CONVERSATIONS
 */
 
 let conversations = [];
@@ -12,46 +12,91 @@ const historyContainer =
 async function loadConversations() {
 
     if (!isLoggedIn) {
-
         conversations = [];
         currentConversation = null;
-
         return;
     }
 
     try {
 
-        const response =
-            await fetch(
-                "/api/conversations"
-            );
+        /*
+         * Remember which conversation is currently open.
+         * This prevents the 10-second sync from losing the
+         * active conversation.
+         */
+        const currentConversationId =
+            currentConversation !== null &&
+            conversations[currentConversation]
+                ? conversations[currentConversation].id
+                : null;
+
+        const response = await fetch(
+            "/api/conversations",
+            {
+                method: "GET",
+                credentials: "include",
+                cache: "no-store",
+                headers: {
+                    "Accept": "application/json"
+                }
+            }
+        );
 
         if (!response.ok) {
+
+            console.error(
+                "Could not load conversations:",
+                response.status
+            );
+
             return;
         }
 
         const loadedConversations =
             await response.json();
 
-        // Conversations moved to the local Bin stay hidden from the
-        // active history even after a page refresh. They are only
-        // removed from the server when permanently deleted from Bin.
-        const trashedIds = new Set(
-            getTrash()
-                .map(item => item && item.id)
-                .filter(Boolean)
-                .map(String)
-        );
+        /*
+         * IMPORTANT:
+         *
+         * The SERVER is the source of truth.
+         *
+         * Do NOT filter conversations using localStorage.
+         *
+         * localStorage is device-specific and caused
+         * laptop and phone to show different histories.
+         */
+        const newConversations =
+            Array.isArray(loadedConversations)
+                ? loadedConversations
+                : [];
 
-        conversations = Array.isArray(loadedConversations)
-            ? loadedConversations.filter(conversation =>
-                !conversation.id || !trashedIds.has(String(conversation.id))
-            )
-            : [];
+        conversations = newConversations;
+
+        /*
+         * Restore the currently open conversation
+         * using its SERVER ID.
+         */
+        if (currentConversationId !== null) {
+
+            const restoredIndex =
+                conversations.findIndex(
+                    conversation =>
+                        String(conversation.id) ===
+                        String(currentConversationId)
+                );
+
+            currentConversation =
+                restoredIndex !== -1
+                    ? restoredIndex
+                    : null;
+
+        } else {
+
+            currentConversation = null;
+
+        }
 
         renderHistory();
-
-        currentConversation = null;
 
     } catch (error) {
 
@@ -62,32 +107,53 @@ async function loadConversations() {
     }
 }
 
+
 async function saveConversation(
     conversation
 ) {
 
-    if (!conversation.id) return;
+    if (!conversation?.id) {
+        return false;
+    }
 
     try {
 
-        await fetch(
+        const response = await fetch(
             `/api/conversations/${conversation.id}`,
             {
                 method: "PUT",
+                credentials: "include",
 
                 headers: {
                     "Content-Type":
+                        "application/json",
+
+                    "Accept":
                         "application/json"
                 },
 
                 body: JSON.stringify({
                     title:
                         conversation.title,
+
                     messages:
                         conversation.messages
                 })
             }
         );
+
+        if (!response.ok) {
+
+            console.error(
+                "Save conversation failed:",
+                response.status,
+                await response.text()
+            );
+
+            return false;
+        }
+
+        return true;
 
     } catch (error) {
 
@@ -95,8 +161,11 @@ async function saveConversation(
             "Save conversation error:",
             error
         );
+
+        return false;
     }
 }
+
 
 async function createServerConversation(
     title = "New Chat"
@@ -104,24 +173,34 @@ async function createServerConversation(
 
     try {
 
-        const response =
-            await fetch(
-                "/api/conversations",
-                {
-                    method: "POST",
+        const response = await fetch(
+            "/api/conversations",
+            {
+                method: "POST",
+                credentials: "include",
 
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
+                headers: {
+                    "Content-Type":
+                        "application/json",
 
-                    body: JSON.stringify({
-                        title
-                    })
-                }
-            );
+                    "Accept":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    title
+                })
+            }
+        );
 
         if (!response.ok) {
+
+            console.error(
+                "Create conversation failed:",
+                response.status,
+                await response.text()
+            );
+
             return null;
         }
 
@@ -138,3 +217,53 @@ async function createServerConversation(
     }
 }
 
+
+/* =========================================================
+   CROSS-DEVICE CONVERSATION SYNC
+   ========================================================= */
+
+let conversationSyncTimer = null;
+
+
+function startConversationSync() {
+
+    if (conversationSyncTimer) {
+
+        clearInterval(
+            conversationSyncTimer
+        );
+    }
+
+    conversationSyncTimer =
+        setInterval(
+            async () => {
+
+                if (!isLoggedIn) {
+                    return;
+                }
+
+                /*
+                 * Never replace conversation data while
+                 * a response is actively being generated.
+                 */
+                if (generationActive) {
+                    return;
+                }
+
+                await loadConversations();
+
+            },
+            10000
+        );
+}
+
+
+/* =========================================================
+   INITIAL LOAD
+   ========================================================= */
+
+loadConversations().then(() => {
+
+    startConversationSync();
+
+});
