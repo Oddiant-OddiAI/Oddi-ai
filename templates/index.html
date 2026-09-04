@@ -14,18 +14,21 @@
           href="{{ url_for('static', filename='style.css') }}?v=20260822-shooting-fix-1">
     <link rel="stylesheet"
           href="{{ url_for('static', filename='mobile.css') }}?v=20260904-mobile-layout-fix-1" media="screen and (max-width: 768px) and (pointer: coarse)">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <!-- Rich content: KaTeX for equations, superscripts and subscripts -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"></script>
-    <!-- Export helpers: client-side PDF/DOCX/PPTX generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+    <script src="{{ url_for('static', filename='js/core.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/files.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/voice.js') }}"></script>
+
+    <script src="{{ url_for('static', filename='js/rich-content.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/export.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/messages.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/attachments.js') }}"></script>
+
+    <!-- HISTORY MUST LOAD BEFORE CONVERSATION STARTUP -->
+    <script src="{{ url_for('static', filename='js/history.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/conversations.js') }}"></script>
+
+<script src="{{ url_for('static', filename='js/ui.js') }}"></script>
     <link rel="icon"
           type="image/png"
           href="{{ url_for('static', filename='favicon2.png') }}">
