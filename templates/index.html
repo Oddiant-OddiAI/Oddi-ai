@@ -1074,137 +1074,7 @@ body.dark-mode .history-item {
                 background: rgba(0, 0, 0, 0.04);
                 font-size: 13px;
             }
-            /* App Lock Overlay Styles */
-            .app-lock-overlay {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background-color: #0b0b0b;
-                z-index: 99999;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-                color: #ffffff;
-                transition: opacity 0.4s ease;
-            }
 
-            .app-lock-overlay.unlock-success {
-                opacity: 0;
-                pointer-events: none;
-            }
-
-            .app-lock-card {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                width: 100%;
-                max-width: 360px;
-                padding: 20px;
-            }
-
-            .app-lock-icon {
-                font-size: 38px;
-                margin-bottom: 8px;
-            }
-
-            .app-lock-name {
-                font-size: 22px;
-                font-weight: 600;
-                margin-bottom: 4px;
-            }
-
-            .app-lock-status {
-                font-size: 14px;
-                color: #888888;
-                margin-bottom: 24px;
-                min-height: 20px;
-            }
-
-            .app-lock-prompt {
-                font-size: 18px;
-                font-weight: 500;
-                margin-bottom: 20px;
-            }
-
-            .pin-dots {
-                display: flex;
-                gap: 14px;
-                margin-bottom: 36px;
-            }
-
-            .pin-dot {
-                width: 14px;
-                height: 14px;
-                border: 2px solid #ffffff;
-                border-radius: 50%;
-                background-color: transparent;
-                transition: background-color 0.2s;
-            }
-
-            .pin-dot.filled {
-                background-color: #ffffff;
-            }
-
-            .pin-keypad {
-                display: grid;
-                grid-template-columns: repeat(3, 76px);
-                gap: 16px;
-            }
-
-            .pin-key {
-                width: 76px;
-                height: 76px;
-                border-radius: 50%;
-                border: none;
-                background-color: #1c1c1e;
-                color: #ffffff;
-                font-size: 26px;
-                font-weight: 400;
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            }
-
-            .pin-key:active {
-                background-color: #3a3a3c;
-            }
-
-            .pin-key small {
-                font-size: 9px;
-                letter-spacing: 1.5px;
-                color: #888888;
-                margin-top: 2px;
-            }
-
-            .pin-key.empty-key {
-                background-color: transparent;
-                cursor: default;
-            }
-
-            .pin-backspace {
-                background-color: transparent;
-                font-size: 22px;
-            }
-
-            /* Shake Animation on Wrong PIN */
-            @keyframes shake {
-                0% { transform: translateX(0); }
-                20% { transform: translateX(-10px); }
-                40% { transform: translateX(10px); }
-                60% { transform: translateX(-10px); }
-                80% { transform: translateX(10px); }
-                100% { transform: translateX(0); }
-            }
-
-            .shake-animation {
-                animation: shake 0.4s ease-in-out;
-            }
             .attachment-file-name {
                 overflow: hidden;
                 text-overflow: ellipsis;
@@ -2079,7 +1949,137 @@ body.dark-mode .archived-history-section { border-color:#292929; background:#101
         .input-area {
             z-index: 600 !important;
         }
+        /* App Lock Overlay Styles */
+        .app-lock-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #0b0b0b;
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #ffffff;
+            transition: opacity 0.4s ease;
+        }
 
+        .app-lock-overlay.unlock-success {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .app-lock-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 360px;
+            padding: 20px;
+        }
+
+        .app-lock-icon {
+            font-size: 38px;
+            margin-bottom: 8px;
+        }
+
+        .app-lock-name {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .app-lock-status {
+            font-size: 14px;
+            color: #888888;
+            margin-bottom: 24px;
+            min-height: 20px;
+        }
+
+        .app-lock-prompt {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+
+        .pin-dots {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 36px;
+        }
+
+        .pin-dot {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            background-color: transparent;
+            transition: background-color 0.2s;
+        }
+
+        .pin-dot.filled {
+            background-color: #ffffff;
+        }
+
+        .pin-keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 76px);
+            gap: 16px;
+        }
+
+        .pin-key {
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            border: none;
+            background-color: #1c1c1e;
+            color: #ffffff;
+            font-size: 26px;
+            font-weight: 400;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .pin-key:active {
+            background-color: #3a3a3c;
+        }
+
+        .pin-key small {
+            font-size: 9px;
+            letter-spacing: 1.5px;
+            color: #888888;
+            margin-top: 2px;
+        }
+
+        .pin-key.empty-key {
+            background-color: transparent;
+            cursor: default;
+        }
+
+        .pin-backspace {
+            background-color: transparent;
+            font-size: 22px;
+        }
+
+        /* Shake Animation on Wrong PIN */
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
+            100% { transform: translateX(0); }
+        }
+
+        .shake-animation {
+            animation: shake 0.4s ease-in-out;
+        }
         /* Prevent the advanced sidebar rules from accidentally changing
            the main content's flex sizing. */
         .sidebar ~ .header,
@@ -2120,7 +2120,137 @@ body.dark-mode .archived-history-section { border-color:#292929; background:#101
                     visibility .24s ease,
                     box-shadow .24s ease !important;
             }
+            /* App Lock Overlay Styles */
+            .app-lock-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: #0b0b0b;
+                z-index: 99999;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                color: #ffffff;
+                transition: opacity 0.4s ease;
+            }
 
+            .app-lock-overlay.unlock-success {
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .app-lock-card {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                width: 100%;
+                max-width: 360px;
+                padding: 20px;
+            }
+
+            .app-lock-icon {
+                font-size: 38px;
+                margin-bottom: 8px;
+            }
+
+            .app-lock-name {
+                font-size: 22px;
+                font-weight: 600;
+                margin-bottom: 4px;
+            }
+
+            .app-lock-status {
+                font-size: 14px;
+                color: #888888;
+                margin-bottom: 24px;
+                min-height: 20px;
+            }
+
+            .app-lock-prompt {
+                font-size: 18px;
+                font-weight: 500;
+                margin-bottom: 20px;
+            }
+
+            .pin-dots {
+                display: flex;
+                gap: 14px;
+                margin-bottom: 36px;
+            }
+
+            .pin-dot {
+                width: 14px;
+                height: 14px;
+                border: 2px solid #ffffff;
+                border-radius: 50%;
+                background-color: transparent;
+                transition: background-color 0.2s;
+            }
+
+            .pin-dot.filled {
+                background-color: #ffffff;
+            }
+
+            .pin-keypad {
+                display: grid;
+                grid-template-columns: repeat(3, 76px);
+                gap: 16px;
+            }
+
+            .pin-key {
+                width: 76px;
+                height: 76px;
+                border-radius: 50%;
+                border: none;
+                background-color: #1c1c1e;
+                color: #ffffff;
+                font-size: 26px;
+                font-weight: 400;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                cursor: pointer;
+                transition: background-color 0.2s;
+            }
+
+            .pin-key:active {
+                background-color: #3a3a3c;
+            }
+
+            .pin-key small {
+                font-size: 9px;
+                letter-spacing: 1.5px;
+                color: #888888;
+                margin-top: 2px;
+            }
+
+            .pin-key.empty-key {
+                background-color: transparent;
+                cursor: default;
+            }
+
+            .pin-backspace {
+                background-color: transparent;
+                font-size: 22px;
+            }
+
+            /* Shake Animation on Wrong PIN */
+            @keyframes shake {
+                0% { transform: translateX(0); }
+                20% { transform: translateX(-10px); }
+                40% { transform: translateX(10px); }
+                60% { transform: translateX(-10px); }
+                80% { transform: translateX(10px); }
+                100% { transform: translateX(0); }
+            }
+
+            .shake-animation {
+                animation: shake 0.4s ease-in-out;
+            }
             /* OPEN STATE */
             #sidebar.sidebar.open {
                 transform: translateX(0) !important;
