@@ -53,7 +53,6 @@ FAST_RESPONSES = {
     "ok": "Alright! Let me know what's next. 👍",
     "okay": "Got it! What would you like to do next?",
     "sounds good": "Awesome! Let's do it. 👍",
-    "no": "No problem! Let me know if you change your mind.",
     "idk": "That's totally fine, we can figure it out together! 🔍",
     "idc": "Fair enough! What else do you want to talk about?",
     "nvm": "No worries at all! Let me know if you need anything else.",

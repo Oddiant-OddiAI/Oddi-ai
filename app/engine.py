@@ -48,14 +48,6 @@ def is_resume_analysis_request(message):
     text = message.lower().strip()
 
     return text in RESUME_ANALYSIS_TRIGGERS
-def is_resume_analysis_request(message):
-    if not message:
-        return False
-
-    text = message.lower().strip()
-
-    return text in RESUME_ANALYSIS_TRIGGERS
-
 
 def extract_docx_text(uploaded_file):
     document = Document(uploaded_file)
@@ -170,8 +162,14 @@ IMPORTANT RULES:
 """
 
 
-MAX_KNOWLEDGE_FILES = 20
-
+MAX_KNOWLEDGE_FILES = 21
+KNOWLEDGE_BASE_EXTENSIONS = (
+    ".txt",
+    ".pdf",
+    ".docx",
+    ".xlsx",
+    ".pptx",
+)
 
 def get_or_create_vector_store(user_id):
 
@@ -207,8 +205,6 @@ def get_knowledge_file_count(vector_store_id):
     )
 
     return len(files.data)
-
-
 def add_file_to_knowledge_base(
     uploaded_file,
     vector_store_id
@@ -216,6 +212,73 @@ def add_file_to_knowledge_base(
 
     if not vector_store_id:
         return None
+
+    uploaded_file.stream.seek(0)
+
+    print(
+        f"Uploading to knowledge base: "
+        f"{uploaded_file.filename}"
+    )
+
+    openai_file = None
+
+    try:
+
+        openai_file = client.files.create(
+            file=(
+                uploaded_file.filename,
+                uploaded_file.stream,
+                uploaded_file.mimetype
+            ),
+            purpose="assistants"
+        )
+
+        print(
+            f"OpenAI file created: "
+            f"{openai_file.id}"
+        )
+
+        vector_file = (
+            client.vector_stores.files.create_and_poll(
+                vector_store_id=vector_store_id,
+                file_id=openai_file.id
+            )
+        )
+
+        if vector_file.status != "completed":
+
+            print(
+                f"Knowledge indexing failed: "
+                f"{vector_file.status}"
+            )
+
+            return None
+
+        print(
+            f"Indexed successfully: "
+            f"{uploaded_file.filename}"
+        )
+
+        return openai_file.id
+
+    except Exception:
+
+        if openai_file is not None:
+
+            try:
+                client.files.delete(
+                    openai_file.id
+                )
+
+            except Exception as cleanup_error:
+
+                print(
+                    "OpenAI file cleanup failed:",
+                    cleanup_error
+                )
+
+        raise
+
 
     uploaded_file.stream.seek(0)
 
@@ -271,79 +334,13 @@ def process_message(
 
     vector_store_id = None
 
+    # Keep the user's persistent vector-store ID available to the
+    # response layer, but do NOT automatically index normal chat
+    # attachments here. Attachments must go through the local
+    # extraction/vision pipeline below first.
     if user_id is not None:
-
         vector_store_id = get_or_create_vector_store(user_id)
 
-        if uploaded_files:
-
-            # Audio/video files are temporary media-analysis files.
-            # Do NOT send them to the persistent knowledge base.
-            knowledge_files = [
-                file for file in uploaded_files
-                if not file.filename.lower().endswith((
-                    ".mp3",
-                    ".wav",
-                    ".m4a",
-                    ".aac",
-                    ".ogg",
-                    ".flac",
-                    ".mp4",
-                    ".mov",
-                    ".avi",
-                    ".mkv",
-                    ".webm"
-                ))
-            ]
-
-            if knowledge_files:
-
-                current_count = get_knowledge_file_count(
-                    vector_store_id
-                )
-
-                remaining_slots = (
-                    MAX_KNOWLEDGE_FILES - current_count
-                )
-
-                if remaining_slots <= 0:
-                    return (
-                        "📚 Your Oddi knowledge base already "
-                        "contains 20 files.\n\n"
-                        "Please remove an existing file before "
-                        "adding another."
-                    )
-
-                files_to_index = knowledge_files[
-                    :remaining_slots
-                ]
-
-                for uploaded_file in files_to_index:
-
-                    try:
-
-                        add_file_to_knowledge_base(
-                            uploaded_file,
-                            vector_store_id
-                        )
-
-                        # Reset stream so the file can be
-                        # processed again below.
-                        uploaded_file.stream.seek(0)
-
-                    except Exception as e:
-
-                        print(
-                            f"Knowledge upload error "
-                            f"for {uploaded_file.filename}: {e}"
-                        )
-
-                        return (
-                            f"⚠️ I couldn't add "
-                            f"**{uploaded_file.filename}** "
-                            f"to your knowledge base.\n\n"
-                            f"Error: {e}"
-                        )
     if uploaded_files:
         uploaded_file = uploaded_files[0]
     else:
@@ -572,6 +569,8 @@ def process_message(
             # ---------- PDF ----------
             elif filename.endswith(".pdf"):
 
+                print("PDF detected - using local pypdf extraction (not Knowledge Base retrieval).")
+
                 reader = PdfReader(uploaded_file)
 
                 documents += "\n\n===== " + uploaded_file.filename + " =====\n"
@@ -606,7 +605,7 @@ def process_message(
 
             elif filename.endswith((".pptx", ".ppt")):
 
-                print("PowerPoint detected")
+                print("PowerPoint detected - using local python-pptx extraction.")
 
                 with tempfile.TemporaryDirectory() as temp_dir:
 
