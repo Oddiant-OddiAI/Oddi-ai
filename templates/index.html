@@ -6684,6 +6684,36 @@ body.dark-mode .bot-message .ai-content {
 }
 </style>
 
+
+<style id="app-lock-auto-verify-polish">
+    @keyframes oddi-app-lock-shake {
+        0%, 100% { transform: translateX(0); }
+        20% { transform: translateX(-10px); }
+        40% { transform: translateX(9px); }
+        60% { transform: translateX(-7px); }
+        80% { transform: translateX(5px); }
+    }
+
+    #appLockOverlay.shake-animation .app-lock-card {
+        animation: oddi-app-lock-shake .42s cubic-bezier(.36,.07,.19,.97);
+    }
+
+    #appLockOverlay .app-lock-status.error {
+        color: #e53935 !important;
+        font-weight: 600 !important;
+    }
+
+    body.dark-mode #appLockOverlay .app-lock-status.error {
+        color: #ff6b6b !important;
+    }
+
+    /* Auto-unlock means these are only fallback controls now. */
+    #appLockUnlockBtn,
+    #appLockMobileUnlockBtn {
+        transition: opacity .18s ease, transform .18s ease;
+    }
+</style>
+
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
@@ -13407,6 +13437,9 @@ loadConversations();
 
         if (statusText) {
             statusText.textContent = message;
+            statusText.classList.remove("error");
+            void statusText.offsetWidth;
+            statusText.classList.add("error");
         }
 
         lockOverlay.classList.remove("shake-animation");
@@ -13487,6 +13520,7 @@ loadConversations();
 
         if (entered === savedPassword) {
             if (statusText) {
+                statusText.classList.remove("error");
                 statusText.textContent = "Unlocked";
             }
             hideLockScreen();
@@ -13526,6 +13560,7 @@ loadConversations();
 
         if (mobilePinEntry === savedPin) {
             if (statusText) {
+                statusText.classList.remove("error");
                 statusText.textContent = "Unlocked";
             }
             hideLockScreen();
@@ -13669,6 +13704,14 @@ loadConversations();
             passwordInput.value =
                 passwordInput.value.slice(0, 6);
         }
+
+        /*
+         * Auto-unlock as soon as the complete 6-character password
+         * has been entered. This also works when the password is pasted.
+         */
+        if (passwordInput.value.length === 6) {
+            verifyDesktopPassword();
+        }
     });
 
     passwordInput?.addEventListener("keydown", event => {
@@ -13691,6 +13734,15 @@ loadConversations();
                 digitButton.dataset.pinDigit;
 
             updateMobileDots();
+
+            /*
+             * Auto-unlock immediately after the sixth digit.
+             * The normal Unlock button and Enter key remain safe fallbacks.
+             */
+            if (mobilePinEntry.length === 6) {
+                verifyMobilePin();
+            }
+
             return;
         }
 
