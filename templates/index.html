@@ -13606,6 +13606,16 @@ loadConversations();
     function resetEntry(message) {
         if (unlockedThisLoad) return;
 
+        /*
+         * Emergency Recovery is an active secondary screen. On phones,
+         * focusing its input opens the virtual keyboard, which fires a
+         * viewport resize event. Do NOT let normal PIN-entry reset logic
+         * close the recovery panel during that resize.
+         */
+        if (emergencyPanel?.classList.contains("is-visible")) {
+            return;
+        }
+
         verifying = false;
         mobilePinEntry = "";
 
