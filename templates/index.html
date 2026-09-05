@@ -5974,39 +5974,478 @@ body.dark-mode .oddi-share-card {
 }
 </style>
 
+
+<style id="oddi-device-lock-and-message-polish">
+/* =========================================================
+   ODDI AI — DEVICE LOCK + CLEAN MESSAGE SURFACE
+   Final overrides are intentionally loaded last.
+   ========================================================= */
+
+/* ---------- App Lock: shared desktop foundation ---------- */
+#appLockOverlay.app-lock-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 24px !important;
+    box-sizing: border-box !important;
+    background: #090909 !important;
+    z-index: 2147483647 !important;
+    overflow: auto !important;
+}
+
+#appLockOverlay .app-lock-card {
+    width: min(420px, 100%) !important;
+    max-width: 420px !important;
+    padding: 28px 24px !important;
+    margin: auto !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+}
+
+#appLockOverlay .app-lock-icon {
+    font-size: 48px !important;
+    line-height: 1 !important;
+    margin: 0 0 12px !important;
+}
+
+#appLockOverlay .app-lock-name {
+    font-size: 28px !important;
+    font-weight: 700 !important;
+    line-height: 1.1 !important;
+    margin: 0 0 5px !important;
+    color: #fff !important;
+}
+
+#appLockOverlay .app-lock-status {
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+    color: #8f8f8f !important;
+    margin: 0 0 28px !important;
+    min-height: 22px !important;
+}
+
+#appLockOverlay .app-lock-desktop-panel,
+#appLockOverlay .app-lock-mobile-panel {
+    width: 100% !important;
+    align-items: center !important;
+    flex-direction: column !important;
+}
+
+#appLockOverlay .app-lock-desktop-panel {
+    display: flex !important;
+}
+
+#appLockOverlay .app-lock-mobile-panel {
+    display: none !important;
+}
+
+#appLockOverlay .app-lock-prompt {
+    font-size: 19px !important;
+    font-weight: 600 !important;
+    color: #fff !important;
+    margin: 0 0 15px !important;
+}
+
+#appLockOverlay .app-lock-password-wrap {
+    width: min(380px, 100%) !important;
+}
+
+#appLockOverlay .app-lock-password-input {
+    width: 100% !important;
+    height: 60px !important;
+    box-sizing: border-box !important;
+    border: 2px solid #454545 !important;
+    border-radius: 17px !important;
+    background: #171717 !important;
+    color: #fff !important;
+    padding: 0 18px !important;
+    font-size: 21px !important;
+    letter-spacing: 3px !important;
+    text-align: center !important;
+    outline: none !important;
+}
+
+#appLockOverlay .app-lock-password-input:focus {
+    border-color: #777 !important;
+    box-shadow: 0 0 0 4px rgba(255,255,255,.055) !important;
+}
+
+#appLockOverlay .app-lock-password-input::placeholder {
+    color: #6f6f6f !important;
+    letter-spacing: 0 !important;
+    font-size: 15px !important;
+}
+
+#appLockOverlay .app-lock-unlock-btn {
+    width: min(380px, 100%) !important;
+    height: 58px !important;
+    margin: 16px 0 0 !important;
+    border: 0 !important;
+    border-radius: 17px !important;
+    background: #f5f5f5 !important;
+    color: #111 !important;
+    font-size: 17px !important;
+    font-weight: 750 !important;
+    cursor: pointer !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.20) !important;
+}
+
+#appLockOverlay .app-lock-unlock-btn:hover {
+    background: #fff !important;
+    transform: translateY(-1px) !important;
+}
+
+#appLockOverlay .app-lock-unlock-btn:active {
+    transform: scale(.985) !important;
+}
+
+/* ---------- Phone lock: big, centered, numeric ---------- */
+@media (max-width: 768px) and (pointer: coarse) {
+    #appLockOverlay.app-lock-overlay {
+        padding:
+            max(20px, env(safe-area-inset-top))
+            18px
+            max(20px, env(safe-area-inset-bottom)) !important;
+        overflow-y: auto !important;
+    }
+
+    #appLockOverlay .app-lock-card {
+        width: min(430px, 100%) !important;
+        max-width: 430px !important;
+        min-height: 100% !important;
+        padding: 24px 8px !important;
+        justify-content: center !important;
+    }
+
+    #appLockOverlay .app-lock-icon {
+        font-size: 58px !important;
+        margin-bottom: 14px !important;
+    }
+
+    #appLockOverlay .app-lock-name {
+        font-size: 31px !important;
+        margin-bottom: 6px !important;
+    }
+
+    #appLockOverlay .app-lock-status {
+        font-size: 17px !important;
+        margin-bottom: 25px !important;
+    }
+
+    #appLockOverlay .app-lock-desktop-panel {
+        display: none !important;
+    }
+
+    #appLockOverlay .app-lock-mobile-panel {
+        display: flex !important;
+    }
+
+    #appLockOverlay .app-lock-prompt {
+        font-size: 21px !important;
+        margin-bottom: 18px !important;
+    }
+
+    #appLockOverlay .app-lock-pin-dots {
+        width: min(330px, 92vw) !important;
+        height: 62px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 16px !important;
+        margin: 0 auto 25px !important;
+    }
+
+    #appLockOverlay .app-lock-pin-dots span {
+        width: 16px !important;
+        height: 16px !important;
+        border-radius: 50% !important;
+        border: 2px solid #777 !important;
+        background: transparent !important;
+        box-sizing: border-box !important;
+        transition: background .12s ease, transform .12s ease, border-color .12s ease !important;
+    }
+
+    #appLockOverlay .app-lock-pin-dots span.filled {
+        background: #fff !important;
+        border-color: #fff !important;
+        transform: scale(1.08) !important;
+    }
+
+    #appLockOverlay .app-lock-keypad {
+        width: min(360px, 92vw) !important;
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 12px !important;
+        margin: 0 auto !important;
+    }
+
+    #appLockOverlay .app-lock-key {
+        width: 100% !important;
+        aspect-ratio: 1 / .72 !important;
+        min-height: 62px !important;
+        border: 1px solid #303030 !important;
+        border-radius: 18px !important;
+        background: #171717 !important;
+        color: #fff !important;
+        font-size: 26px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        -webkit-tap-highlight-color: transparent !important;
+        box-shadow: 0 5px 16px rgba(0,0,0,.20) !important;
+        transition: transform .1s ease, background .12s ease, border-color .12s ease !important;
+    }
+
+    #appLockOverlay .app-lock-key:hover {
+        background: #202020 !important;
+        border-color: #454545 !important;
+    }
+
+    #appLockOverlay .app-lock-key:active {
+        transform: scale(.95) !important;
+        background: #2a2a2a !important;
+    }
+
+    #appLockOverlay .app-lock-key-empty {
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    #appLockOverlay .app-lock-key-delete {
+        font-size: 25px !important;
+        font-weight: 500 !important;
+        color: #d0d0d0 !important;
+    }
+
+    #appLockOverlay .app-lock-mobile-unlock-btn {
+        width: min(360px, 92vw) !important;
+        height: 60px !important;
+        margin-top: 18px !important;
+        border-radius: 18px !important;
+        font-size: 18px !important;
+    }
+}
+
+/* ---------- Settings: make the separation obvious ---------- */
+.app-lock-mobile-settings-card {
+    margin-top: 12px !important;
+}
+
+.app-lock-change-note {
+    margin: -5px 0 12px !important;
+    color: #777 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+}
+
+body.dark-mode .app-lock-change-note {
+    color: #999 !important;
+}
+
+/* ---------- Oddi responses: ONE clean surface, no nested bubble ---------- */
+.bot-message,
+.bot-message.pinned-message,
+.bot-message.stopped-message {
+    width: min(760px, 88%) !important;
+    max-width: min(760px, 88%) !important;
+    align-self: center !important;
+    margin: 0 auto 22px !important;
+    padding: 17px 20px 18px !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+    border: 1px solid #e7e7e7 !important;
+    border-left: 1px solid #e7e7e7 !important;
+    border-radius: 18px !important;
+    box-shadow: 0 8px 28px rgba(0,0,0,.055) !important;
+    color: #111 !important;
+}
+
+.bot-message::before,
+.bot-message::after,
+.bot-message.pinned-message::before,
+.bot-message.pinned-message::after {
+    display: none !important;
+    content: none !important;
+}
+
+.bot-message .bot-header {
+    width: 100% !important;
+    margin: 0 0 10px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.bot-message .message-sound-btn {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    border-radius: 50% !important;
+}
+
+.bot-message .ai-content {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: inherit !important;
+}
+
+.bot-message .ai-content > *:first-child {
+    margin-top: 0 !important;
+}
+
+.bot-message .ai-content > *:last-child {
+    margin-bottom: 0 !important;
+}
+
+/* Neutralize any legacy first-paragraph/message bubble styling. */
+.bot-message .ai-content > p:first-child,
+.bot-message .ai-content > div:first-child,
+.bot-message .ai-content > section:first-child {
+    background: transparent !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.bot-message .bot-actions {
+    margin: 10px auto 0 !important;
+    width: fit-content !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+body.dark-mode .bot-message,
+body.dark-mode .bot-message.pinned-message,
+body.dark-mode .bot-message.stopped-message {
+    background: #111 !important;
+    border-color: #292929 !important;
+    border-left-color: #292929 !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,.30) !important;
+    color: #f2f2f2 !important;
+}
+
+body.dark-mode .bot-message .ai-content {
+    background: transparent !important;
+    color: #f2f2f2 !important;
+}
+
+body.dark-mode .bot-message .ai-content > p:first-child,
+body.dark-mode .bot-message .ai-content > div:first-child,
+body.dark-mode .bot-message .ai-content > section:first-child {
+    background: transparent !important;
+    color: inherit !important;
+}
+
+/* Keep bot responses comfortably full-width on phones without nested cards. */
+@media (max-width: 768px) and (pointer: coarse) {
+    .bot-message,
+    .bot-message.pinned-message,
+    .bot-message.stopped-message {
+        width: calc(100vw - 28px) !important;
+        max-width: calc(100vw - 28px) !important;
+        margin: 0 auto 22px !important;
+        padding: 16px 16px 17px !important;
+        border-radius: 18px !important;
+    }
+
+    .bot-message .bot-header {
+        margin-bottom: 9px !important;
+    }
+
+    .bot-message .ai-content {
+        font-size: 15px !important;
+        line-height: 1.6 !important;
+    }
+}
+</style>
+
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 
 
-<!-- Unified App Lock Screen Overlay -->
+<!-- Device-adaptive App Lock Screen Overlay -->
 <div id="appLockOverlay" class="app-lock-overlay" aria-hidden="false">
     <div class="app-lock-card" role="dialog" aria-modal="true" aria-labelledby="appLockTitle">
-        <div class="app-lock-icon">🔒</div>
+        <div class="app-lock-icon" aria-hidden="true">🔒</div>
         <div id="appLockTitle" class="app-lock-name">Oddi AI</div>
         <div class="app-lock-status" id="appLockStatus">This app is locked</div>
 
-        <div class="app-lock-prompt">Enter your password</div>
-
-        <div class="app-lock-password-wrap">
-            <input
-                id="appLockPasswordInput"
-                class="app-lock-password-input"
-                type="password"
-                maxlength="6"
-                autocomplete="current-password"
-                autocapitalize="off"
-                spellcheck="false"
-                placeholder="6-character password"
-                aria-label="App Lock password">
+        <!-- Desktop / laptop: 6-character password -->
+        <div class="app-lock-desktop-panel">
+            <div class="app-lock-prompt">Enter your password</div>
+            <div class="app-lock-password-wrap">
+                <input
+                    id="appLockPasswordInput"
+                    class="app-lock-password-input"
+                    type="password"
+                    maxlength="6"
+                    autocomplete="current-password"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    placeholder="6-character password"
+                    aria-label="App Lock password">
+            </div>
+            <button
+                id="appLockUnlockBtn"
+                class="app-lock-unlock-btn"
+                type="button">
+                Unlock Oddi AI
+            </button>
         </div>
 
-        <button
-            id="appLockUnlockBtn"
-            class="app-lock-unlock-btn"
-            type="button">
-            Unlock Oddi AI
-        </button>
+        <!-- Phone: separate 6-digit numeric PIN + large keypad -->
+        <div class="app-lock-mobile-panel" aria-label="Mobile App Lock">
+            <div class="app-lock-prompt">Enter your 6-digit PIN</div>
+
+            <div id="appLockPinDots" class="app-lock-pin-dots" aria-label="PIN entry">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+            </div>
+
+            <div class="app-lock-keypad" aria-label="Numeric keypad">
+                <button type="button" class="app-lock-key" data-pin-digit="1">1</button>
+                <button type="button" class="app-lock-key" data-pin-digit="2">2</button>
+                <button type="button" class="app-lock-key" data-pin-digit="3">3</button>
+                <button type="button" class="app-lock-key" data-pin-digit="4">4</button>
+                <button type="button" class="app-lock-key" data-pin-digit="5">5</button>
+                <button type="button" class="app-lock-key" data-pin-digit="6">6</button>
+                <button type="button" class="app-lock-key" data-pin-digit="7">7</button>
+                <button type="button" class="app-lock-key" data-pin-digit="8">8</button>
+                <button type="button" class="app-lock-key" data-pin-digit="9">9</button>
+                <button type="button" class="app-lock-key app-lock-key-empty" tabindex="-1" aria-hidden="true"></button>
+                <button type="button" class="app-lock-key" data-pin-digit="0">0</button>
+                <button type="button" class="app-lock-key app-lock-key-delete" data-pin-delete aria-label="Delete last digit">⌫</button>
+            </div>
+
+            <button
+                id="appLockMobileUnlockBtn"
+                class="app-lock-unlock-btn app-lock-mobile-unlock-btn"
+                type="button">
+                Unlock Oddi AI
+            </button>
+        </div>
     </div>
 </div>
 
@@ -6545,6 +6984,50 @@ body.dark-mode .oddi-share-card {
                         type="button">Save Password</button>
 
                 <div id="appLockChangeStatus"
+                     class="app-lock-change-status"
+                     role="status"
+                     aria-live="polite"></div>
+            </div>
+
+            <div class="app-lock-change-card app-lock-mobile-settings-card">
+                <div class="app-lock-change-title">Phone PIN</div>
+                <div class="app-lock-change-note">Separate 6-digit PIN used only on phones.</div>
+
+                <div class="app-password-row app-lock-pin-row">
+                    <input id="currentMobilePinInput"
+                           type="password"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           maxlength="6"
+                           placeholder="Current 6-digit PIN"
+                           aria-label="Current phone App Lock PIN">
+                </div>
+
+                <div class="app-password-row app-lock-pin-row">
+                    <input id="changeMobilePinInput"
+                           type="password"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           maxlength="6"
+                           placeholder="New 6-digit PIN"
+                           aria-label="New phone App Lock PIN">
+                </div>
+
+                <div class="app-password-row app-lock-pin-row">
+                    <input id="confirmMobilePinInput"
+                           type="password"
+                           inputmode="numeric"
+                           autocomplete="off"
+                           maxlength="6"
+                           placeholder="Confirm new PIN"
+                           aria-label="Confirm new phone App Lock PIN">
+                </div>
+
+                <button id="saveMobilePinBtn"
+                        class="app-password-btn app-lock-save-btn"
+                        type="button">Save Phone PIN</button>
+
+                <div id="mobilePinChangeStatus"
                      class="app-lock-change-status"
                      role="status"
                      aria-live="polite"></div>
@@ -12210,39 +12693,60 @@ loadConversations();
 </script>
 <script id="oddi-app-lock-controller">
 /*
-   ODDI AI — UNIFIED APP LOCK CONTROLLER
-   - One App Lock system for desktop/laptop and mobile.
-   - Exactly 6 characters; letters, numbers and symbols are allowed.
-   - Same setting/password on both device types.
-   - Existing localStorage key is preserved so the old 123456 PIN
-     continues to work until the user changes it.
-   - Everything is local to this browser/device.
+   ODDI AI — DEVICE-ADAPTIVE APP LOCK
+   Desktop/laptop: separate 6-character password.
+   Phone: separate 6-digit numeric PIN with an on-screen keypad.
+   Existing desktop key is preserved for backwards compatibility.
 */
 (function () {
     const lockOverlay = document.getElementById("appLockOverlay");
     if (!lockOverlay) return;
 
-    const PASSWORD_STORAGE_KEY = "oddi_app_lock_pin_v1";
+    const DESKTOP_PASSWORD_KEY = "oddi_app_lock_pin_v1";
+    const MOBILE_PIN_KEY = "oddi_app_lock_mobile_pin_v1";
     const ENABLED_STORAGE_KEY = "oddi_app_lock_enabled_v1";
-    const DEFAULT_PASSWORD = "123456";
+
+    const DEFAULT_DESKTOP_PASSWORD = "123456";
+    const DEFAULT_MOBILE_PIN = "123456";
 
     const passwordInput = document.getElementById("appLockPasswordInput");
-    const unlockBtn = document.getElementById("appLockUnlockBtn");
+    const desktopUnlockBtn = document.getElementById("appLockUnlockBtn");
+    const mobileUnlockBtn = document.getElementById("appLockMobileUnlockBtn");
+    const mobilePinDots = document.getElementById("appLockPinDots");
+    const mobileKeypad = lockOverlay.querySelector(".app-lock-keypad");
     const statusText = document.getElementById("appLockStatus");
 
     const toggleBtn = document.getElementById("toggleAppLockOptBtn");
     const settingStatus = document.getElementById("appLockSettingStatus");
+
     const currentPinInput = document.getElementById("currentPinInput");
     const changePinInput = document.getElementById("changePinInput");
     const confirmPinInput = document.getElementById("confirmPinInput");
     const savePinBtn = document.getElementById("savePinBtn");
     const changeStatus = document.getElementById("appLockChangeStatus");
+
+    const currentMobilePinInput = document.getElementById("currentMobilePinInput");
+    const changeMobilePinInput = document.getElementById("changeMobilePinInput");
+    const confirmMobilePinInput = document.getElementById("confirmMobilePinInput");
+    const saveMobilePinBtn = document.getElementById("saveMobilePinBtn");
+    const mobilePinChangeStatus = document.getElementById("mobilePinChangeStatus");
+
     const lockNowBtn = document.getElementById("lockNowBtn");
 
     let verifying = false;
+    let mobilePinEntry = "";
 
-    function getPassword() {
-        return localStorage.getItem(PASSWORD_STORAGE_KEY) || DEFAULT_PASSWORD;
+    function isTouchPhone() {
+        return window.matchMedia("(max-width: 768px) and (pointer: coarse)").matches;
+    }
+
+    function getDesktopPassword() {
+        return localStorage.getItem(DESKTOP_PASSWORD_KEY) || DEFAULT_DESKTOP_PASSWORD;
+    }
+
+    function getMobilePin() {
+        const saved = localStorage.getItem(MOBILE_PIN_KEY);
+        return /^\d{6}$/.test(saved || "") ? saved : DEFAULT_MOBILE_PIN;
     }
 
     function isEnabled() {
@@ -12251,62 +12755,73 @@ loadConversations();
     }
 
     function setEnabled(enabled) {
-        localStorage.setItem(
-            ENABLED_STORAGE_KEY,
-            enabled ? "true" : "false"
-        );
+        localStorage.setItem(ENABLED_STORAGE_KEY, enabled ? "true" : "false");
         updateSettingsUI();
     }
 
-    function validPassword(value) {
+    function validDesktopPassword(value) {
         return typeof value === "string" &&
                value.length === 6 &&
                !/\s/.test(value);
     }
 
-    function clearPasswordFields() {
-        if (currentPinInput) currentPinInput.value = "";
-        if (changePinInput) changePinInput.value = "";
-        if (confirmPinInput) confirmPinInput.value = "";
+    function validMobilePin(value) {
+        return /^\d{6}$/.test(value);
     }
 
-    function focusPasswordInput() {
+    function clearSettingsFields() {
+        [currentPinInput, changePinInput, confirmPinInput,
+         currentMobilePinInput, changeMobilePinInput, confirmMobilePinInput]
+            .forEach(input => {
+                if (input) input.value = "";
+            });
+    }
+
+    function updateMobileDots() {
+        if (!mobilePinDots) return;
+        const dots = mobilePinDots.querySelectorAll("span");
+        dots.forEach((dot, index) => {
+            dot.classList.toggle("filled", index < mobilePinEntry.length);
+        });
+        mobilePinDots.setAttribute(
+            "aria-label",
+            `${mobilePinEntry.length} of 6 PIN digits entered`
+        );
+    }
+
+    function focusActiveEntry() {
         requestAnimationFrame(() => {
-            passwordInput?.focus();
-            passwordInput?.select();
+            if (isTouchPhone()) {
+                document.querySelector(".app-lock-key[data-pin-digit='1']")?.focus();
+            } else {
+                passwordInput?.focus();
+                passwordInput?.select();
+            }
         });
     }
 
     function resetEntry(message) {
         verifying = false;
+        mobilePinEntry = "";
         if (passwordInput) passwordInput.value = "";
-        if (statusText) {
-            statusText.textContent =
-                message || "This app is locked";
-        }
-        focusPasswordInput();
+        updateMobileDots();
+        if (statusText) statusText.textContent = message || "This app is locked";
+        focusActiveEntry();
     }
 
     function showLockScreen() {
         if (!isEnabled()) return;
 
         verifying = false;
-        lockOverlay.classList.remove(
-            "unlock-success",
-            "shake-animation"
-        );
+        mobilePinEntry = "";
+        lockOverlay.classList.remove("unlock-success", "shake-animation");
         lockOverlay.style.display = "flex";
         lockOverlay.setAttribute("aria-hidden", "false");
 
-        if (statusText) {
-            statusText.textContent = "This app is locked";
-        }
-
-        if (passwordInput) {
-            passwordInput.value = "";
-        }
-
-        focusPasswordInput();
+        if (statusText) statusText.textContent = "This app is locked";
+        if (passwordInput) passwordInput.value = "";
+        updateMobileDots();
+        focusActiveEntry();
     }
 
     function hideLockScreen() {
@@ -12320,44 +12835,52 @@ loadConversations();
         }, 400);
     }
 
-    function verifyPassword() {
+    function rejectEntry(message) {
+        if (statusText) statusText.textContent = message;
+        lockOverlay.classList.remove("shake-animation");
+        void lockOverlay.offsetWidth;
+        lockOverlay.classList.add("shake-animation");
+
+        setTimeout(() => {
+            lockOverlay.classList.remove("shake-animation");
+            resetEntry("This app is locked");
+        }, 500);
+    }
+
+    function verifyDesktopPassword() {
         if (verifying) return;
 
         const entered = passwordInput?.value || "";
-
-        if (!validPassword(entered)) {
-            if (statusText) {
-                statusText.textContent =
-                    "Password must contain exactly 6 characters.";
-            }
-            lockOverlay.classList.remove("shake-animation");
-            void lockOverlay.offsetWidth;
-            lockOverlay.classList.add("shake-animation");
-            setTimeout(() => {
-                lockOverlay.classList.remove("shake-animation");
-                focusPasswordInput();
-            }, 450);
+        if (!validDesktopPassword(entered)) {
+            rejectEntry("Password must contain exactly 6 characters.");
             return;
         }
 
         verifying = true;
-
-        if (entered === getPassword()) {
+        if (entered === getDesktopPassword()) {
             if (statusText) statusText.textContent = "Unlocked";
             hideLockScreen();
         } else {
-            if (statusText) {
-                statusText.textContent =
-                    "Incorrect password. Try again.";
-            }
+            verifying = false;
+            rejectEntry("Incorrect password. Try again.");
+        }
+    }
 
-            lockOverlay.classList.remove("shake-animation");
-            void lockOverlay.offsetWidth;
-            lockOverlay.classList.add("shake-animation");
+    function verifyMobilePin() {
+        if (verifying) return;
 
-            setTimeout(() => {
-                resetEntry("This app is locked");
-            }, 600);
+        if (!validMobilePin(mobilePinEntry)) {
+            rejectEntry("Enter all 6 digits.");
+            return;
+        }
+
+        verifying = true;
+        if (mobilePinEntry === getMobilePin()) {
+            if (statusText) statusText.textContent = "Unlocked";
+            hideLockScreen();
+        } else {
+            verifying = false;
+            rejectEntry("Incorrect PIN. Try again.");
         }
     }
 
@@ -12365,22 +12888,15 @@ loadConversations();
         const enabled = isEnabled();
 
         if (toggleBtn) {
-            toggleBtn.textContent =
-                enabled ? "Disable" : "Enable";
-            toggleBtn.setAttribute(
-                "aria-pressed",
-                enabled ? "true" : "false"
-            );
-            toggleBtn.title =
-                enabled
-                    ? "Disable App Lock"
-                    : "Enable App Lock";
+            toggleBtn.textContent = enabled ? "Disable" : "Enable";
+            toggleBtn.setAttribute("aria-pressed", enabled ? "true" : "false");
+            toggleBtn.title = enabled ? "Disable App Lock" : "Enable App Lock";
         }
 
         if (settingStatus) {
             settingStatus.textContent = enabled
-                ? "Enabled — password required when Oddi AI opens"
-                : "Disabled — Oddi AI opens without a password";
+                ? "Enabled — password/PIN required when Oddi AI opens"
+                : "Disabled — Oddi AI opens without a password/PIN";
         }
 
         if (lockNowBtn) {
@@ -12391,32 +12907,46 @@ loadConversations();
         }
     }
 
-    function setChangeStatus(message, type) {
-        if (!changeStatus) return;
-
-        changeStatus.textContent = message || "";
-        changeStatus.classList.remove("success", "error");
-
-        if (type) {
-            changeStatus.classList.add(type);
-        }
+    function setChangeStatus(element, message, type) {
+        if (!element) return;
+        element.textContent = message || "";
+        element.classList.remove("success", "error");
+        if (type) element.classList.add(type);
     }
 
-    unlockBtn?.addEventListener("click", verifyPassword);
-
+    // Desktop password unlock.
+    desktopUnlockBtn?.addEventListener("click", verifyDesktopPassword);
     passwordInput?.addEventListener("input", () => {
         if (passwordInput.value.length > 6) {
-            passwordInput.value =
-                passwordInput.value.slice(0, 6);
+            passwordInput.value = passwordInput.value.slice(0, 6);
         }
     });
-
     passwordInput?.addEventListener("keydown", event => {
         if (event.key === "Enter") {
             event.preventDefault();
-            verifyPassword();
+            verifyDesktopPassword();
         }
     });
+
+    // Phone keypad.
+    mobileKeypad?.addEventListener("click", event => {
+        const digitButton = event.target.closest("[data-pin-digit]");
+        const deleteButton = event.target.closest("[data-pin-delete]");
+
+        if (digitButton) {
+            if (mobilePinEntry.length >= 6) return;
+            mobilePinEntry += digitButton.dataset.pinDigit;
+            updateMobileDots();
+            return;
+        }
+
+        if (deleteButton) {
+            mobilePinEntry = mobilePinEntry.slice(0, -1);
+            updateMobileDots();
+        }
+    });
+
+    mobileUnlockBtn?.addEventListener("click", verifyMobilePin);
 
     document.addEventListener("keydown", event => {
         if (!isEnabled() ||
@@ -12428,96 +12958,137 @@ loadConversations();
         if (event.key === "Escape") {
             event.preventDefault();
             resetEntry("This app is locked");
+            return;
+        }
+
+        if (isTouchPhone()) {
+            if (/^\d$/.test(event.key)) {
+                event.preventDefault();
+                if (mobilePinEntry.length < 6) {
+                    mobilePinEntry += event.key;
+                    updateMobileDots();
+                }
+            } else if (event.key === "Backspace") {
+                event.preventDefault();
+                mobilePinEntry = mobilePinEntry.slice(0, -1);
+                updateMobileDots();
+            } else if (event.key === "Enter") {
+                event.preventDefault();
+                verifyMobilePin();
+            }
         }
     }, true);
 
+    // Enable / disable App Lock.
     toggleBtn?.addEventListener("click", () => {
         const enabled = isEnabled();
-
-        if (enabled) {
-            setEnabled(false);
-            setChangeStatus(
-                "App Lock disabled. You can enable it again anytime.",
-                "success"
-            );
-        } else {
-            setEnabled(true);
-            setChangeStatus(
-                "App Lock enabled. Your current password is still active.",
-                "success"
-            );
-        }
+        setEnabled(!enabled);
+        setChangeStatus(
+            changeStatus,
+            !enabled
+                ? "App Lock enabled. Your desktop password and phone PIN remain separate."
+                : "App Lock disabled. You can enable it again anytime.",
+            "success"
+        );
     });
 
+    // Desktop/laptop password change.
     savePinBtn?.addEventListener("click", () => {
-        const currentPassword =
-            (currentPinInput?.value || "").trim();
-        const newPassword =
-            (changePinInput?.value || "").trim();
-        const confirmPassword =
-            (confirmPinInput?.value || "").trim();
+        const currentPassword = currentPinInput?.value || "";
+        const newPassword = changePinInput?.value || "";
+        const confirmPassword = confirmPinInput?.value || "";
 
-        if (!validPassword(currentPassword)) {
-            setChangeStatus(
-                "Enter your current 6-character password.",
-                "error"
-            );
+        if (!validDesktopPassword(currentPassword)) {
+            setChangeStatus(changeStatus, "Enter your current 6-character password.", "error");
             currentPinInput?.focus();
             return;
         }
 
-        if (currentPassword !== getPassword()) {
-            setChangeStatus(
-                "Current password is incorrect.",
-                "error"
-            );
+        if (currentPassword !== getDesktopPassword()) {
+            setChangeStatus(changeStatus, "Current password is incorrect.", "error");
             currentPinInput?.focus();
             return;
         }
 
-        if (!validPassword(newPassword)) {
-            setChangeStatus(
-                "New password must contain exactly 6 characters.",
-                "error"
-            );
+        if (!validDesktopPassword(newPassword)) {
+            setChangeStatus(changeStatus, "New password must contain exactly 6 characters.", "error");
             changePinInput?.focus();
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            setChangeStatus(
-                "New password and confirmation do not match.",
-                "error"
-            );
+            setChangeStatus(changeStatus, "New password and confirmation do not match.", "error");
             confirmPinInput?.focus();
             return;
         }
 
         if (newPassword === currentPassword) {
-            setChangeStatus(
-                "Choose a different password.",
-                "error"
-            );
+            setChangeStatus(changeStatus, "Choose a different password.", "error");
             changePinInput?.focus();
             return;
         }
 
-        localStorage.setItem(
-            PASSWORD_STORAGE_KEY,
-            newPassword
-        );
+        localStorage.setItem(DESKTOP_PASSWORD_KEY, newPassword);
+        setChangeStatus(changeStatus, "Desktop password changed successfully.", "success");
+        if (currentPinInput) currentPinInput.value = "";
+        if (changePinInput) changePinInput.value = "";
+        if (confirmPinInput) confirmPinInput.value = "";
+    });
 
-        setChangeStatus(
-            "Password changed successfully.",
-            "success"
-        );
+    // Phone PIN change.
+    saveMobilePinBtn?.addEventListener("click", () => {
+        const currentPin = currentMobilePinInput?.value || "";
+        const newPin = changeMobilePinInput?.value || "";
+        const confirmPin = confirmMobilePinInput?.value || "";
 
-        clearPasswordFields();
+        if (!validMobilePin(currentPin)) {
+            setChangeStatus(mobilePinChangeStatus, "Enter your current 6-digit PIN.", "error");
+            currentMobilePinInput?.focus();
+            return;
+        }
+
+        if (currentPin !== getMobilePin()) {
+            setChangeStatus(mobilePinChangeStatus, "Current phone PIN is incorrect.", "error");
+            currentMobilePinInput?.focus();
+            return;
+        }
+
+        if (!validMobilePin(newPin)) {
+            setChangeStatus(mobilePinChangeStatus, "New phone PIN must contain exactly 6 digits.", "error");
+            changeMobilePinInput?.focus();
+            return;
+        }
+
+        if (newPin !== confirmPin) {
+            setChangeStatus(mobilePinChangeStatus, "New PIN and confirmation do not match.", "error");
+            confirmMobilePinInput?.focus();
+            return;
+        }
+
+        if (newPin === currentPin) {
+            setChangeStatus(mobilePinChangeStatus, "Choose a different PIN.", "error");
+            changeMobilePinInput?.focus();
+            return;
+        }
+
+        localStorage.setItem(MOBILE_PIN_KEY, newPin);
+        setChangeStatus(mobilePinChangeStatus, "Phone PIN changed successfully.", "success");
+        if (currentMobilePinInput) currentMobilePinInput.value = "";
+        if (changeMobilePinInput) changeMobilePinInput.value = "";
+        if (confirmMobilePinInput) confirmMobilePinInput.value = "";
     });
 
     lockNowBtn?.addEventListener("click", () => {
         if (!isEnabled()) return;
         showLockScreen();
+    });
+
+    // Keep the lock UI responsive if the viewport changes between device modes.
+    window.addEventListener("resize", () => {
+        if (!lockOverlay.classList.contains("unlock-success") &&
+            lockOverlay.getAttribute("aria-hidden") !== "true") {
+            resetEntry("This app is locked");
+        }
     });
 
     updateSettingsUI();
