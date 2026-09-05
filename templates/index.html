@@ -6707,13 +6707,122 @@ body.dark-mode .bot-message .ai-content {
     }
 </style>
 
+
+
+<style id="oddi-app-lock-emergency-recovery">
+    /* Emergency recovery is completely invisible during normal lock usage. */
+    #appLockOverlay .app-lock-emergency-panel {
+        display: none !important;
+        width: min(380px, 100%) !important;
+        margin-top: 20px !important;
+        padding-top: 18px !important;
+        border-top: 1px solid #2b2b2b !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 10px !important;
+        box-sizing: border-box !important;
+    }
+
+    #appLockOverlay .app-lock-emergency-panel.is-visible {
+        display: flex !important;
+    }
+
+    #appLockOverlay .app-lock-emergency-title {
+        font-size: 17px !important;
+        font-weight: 700 !important;
+        color: #fff !important;
+    }
+
+    #appLockOverlay .app-lock-emergency-note {
+        width: min(350px, 100%) !important;
+        font-size: 13px !important;
+        line-height: 1.45 !important;
+        color: #999 !important;
+        text-align: center !important;
+    }
+
+    #appLockOverlay .app-lock-recovery-input {
+        width: min(300px, 100%) !important;
+        height: 50px !important;
+        box-sizing: border-box !important;
+        border: 1px solid #454545 !important;
+        border-radius: 13px !important;
+        background: #171717 !important;
+        color: #fff !important;
+        padding: 0 15px !important;
+        font-size: 18px !important;
+        letter-spacing: 3px !important;
+        text-align: center !important;
+        outline: none !important;
+    }
+
+    #appLockOverlay .app-lock-recovery-input:focus {
+        border-color: #777 !important;
+        box-shadow: 0 0 0 3px rgba(255,255,255,.055) !important;
+    }
+
+    #appLockOverlay .app-lock-recovery-btn {
+        width: min(300px, 100%) !important;
+        height: 48px !important;
+        border: 0 !important;
+        border-radius: 13px !important;
+        background: #f5f5f5 !important;
+        color: #111 !important;
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        cursor: pointer !important;
+    }
+
+    #appLockOverlay .app-lock-recovery-status {
+        min-height: 20px !important;
+        font-size: 13px !important;
+        color: #999 !important;
+        text-align: center !important;
+    }
+
+    #appLockOverlay .app-lock-recovery-status.error {
+        color: #ff6b6b !important;
+        font-weight: 600 !important;
+    }
+
+    #appLockOverlay .app-lock-recovery-status.success {
+        color: #20c76b !important;
+        font-weight: 600 !important;
+    }
+
+    /* The phone keypad remains exactly where it was; the emergency panel
+       only appears after the seven-tap recovery gesture. */
+    @media (max-width: 768px) and (pointer: coarse) {
+        #appLockOverlay .app-lock-emergency-panel {
+            width: min(360px, 92vw) !important;
+        }
+
+        #appLockOverlay .app-lock-recovery-input,
+        #appLockOverlay .app-lock-recovery-btn {
+            width: min(320px, 92vw) !important;
+        }
+    }
+
+    /* Phone has no normal Unlock button; the keypad auto-verifies. */
+    @media (max-width: 768px) and (pointer: coarse) {
+        #appLockOverlay .app-lock-mobile-panel #appLockUnlockBtn {
+            display: none !important;
+        }
+    }
+
+    /* Avoid an initial overlay flash while private-mode detection runs. */
+    #appLockOverlay[aria-hidden="true"] {
+        display: none !important;
+    }
+</style>
+
 </head>
 
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 
 
 <!-- Device-adaptive App Lock Screen Overlay -->
-<div id="appLockOverlay" class="app-lock-overlay" aria-hidden="false">
+<div id="appLockOverlay" class="app-lock-overlay" aria-hidden="true" style="display:none;">
     <div class="app-lock-card" role="dialog" aria-modal="true" aria-labelledby="appLockTitle">
         <div class="app-lock-icon" aria-hidden="true">🔒</div>
         <div id="appLockTitle" class="app-lock-name">Oddi AI</div>
@@ -6767,6 +6876,31 @@ body.dark-mode .bot-message .ai-content {
                 <button type="button" class="app-lock-key app-lock-key-delete" data-pin-delete aria-label="Delete last digit">⌫</button>
             </div>
 
+        </div>
+
+        <!-- Hidden emergency recovery. Revealed only after 7 lock-icon taps. -->
+        <div id="appLockEmergencyPanel"
+             class="app-lock-emergency-panel"
+             aria-hidden="true">
+            <div class="app-lock-emergency-title">Emergency Recovery</div>
+            <div class="app-lock-emergency-note">
+                Enter the permanent recovery code to disable App Lock and set a new PIN.
+            </div>
+            <input id="appLockRecoveryInput"
+                   class="app-lock-recovery-input"
+                   type="password"
+                   inputmode="numeric"
+                   maxlength="6"
+                   autocomplete="off"
+                   placeholder="Recovery code"
+                   aria-label="Emergency recovery code">
+            <button id="appLockRecoveryBtn"
+                    class="app-lock-recovery-btn"
+                    type="button">Reset App Lock</button>
+            <div id="appLockRecoveryStatus"
+                 class="app-lock-recovery-status"
+                 role="status"
+                 aria-live="polite"></div>
         </div>
     </div>
 </div>
@@ -7277,7 +7411,7 @@ body.dark-mode .bot-message .ai-content {
                     Use the same 6-digit PIN on both laptop and phone.
                 </div>
 
-                <div class="app-password-row app-lock-pin-row">
+                <div class="app-password-row app-lock-pin-row" id="currentPinRow" style="display:none;">
                     <input id="currentPinInput"
                            type="password"
                            inputmode="numeric"
@@ -13092,14 +13226,160 @@ loadConversations();
     const lockNowBtn =
         document.getElementById("lockNowBtn");
 
+    const lockIcon =
+        lockOverlay.querySelector(".app-lock-icon");
+
+    const emergencyPanel =
+        document.getElementById("appLockEmergencyPanel");
+
+    const recoveryInput =
+        document.getElementById("appLockRecoveryInput");
+
+    const recoveryBtn =
+        document.getElementById("appLockRecoveryBtn");
+
+    const recoveryStatus =
+        document.getElementById("appLockRecoveryStatus");
+
+    const EMERGENCY_RECOVERY_CODE = "197542";
+    let emergencyTapCount = 0;
+    let emergencyTapTimer = null;
+    let privateBrowsing = false;
+
     let verifying = false;
     let mobilePinEntry = "";
     let unlockedThisLoad = false;
+
+    /*
+     * Private/incognito browsing:
+     * Browsers intentionally do not expose a universal "incognito" flag.
+     * Chromium private windows, however, normally expose a much smaller
+     * temporary storage quota. We combine that signal with the legacy
+     * Chromium file-system probe when available.
+     *
+     * Result is deliberately used only to SKIP App Lock. It never grants
+     * access to normal browsing contexts.
+     */
+    async function detectPrivateBrowsing() {
+        let quotaLooksPrivate = false;
+        let fileSystemLooksPrivate = false;
+
+        try {
+            if (navigator.storage &&
+                typeof navigator.storage.estimate === "function") {
+                const estimate = await navigator.storage.estimate();
+                const quota = Number(estimate?.quota || 0);
+
+                /*
+                 * Chrome/Edge private contexts historically expose a small
+                 * temporary quota. A 200 MB threshold avoids treating normal
+                 * desktop storage as private in practical use.
+                 */
+                quotaLooksPrivate =
+                    quota > 0 &&
+                    quota < (200 * 1024 * 1024);
+            }
+        } catch (_) {
+            quotaLooksPrivate = false;
+        }
+
+        try {
+            if (typeof window.webkitRequestFileSystem === "function") {
+                fileSystemLooksPrivate =
+                    await new Promise(resolve => {
+                        let settled = false;
+                        const finish = value => {
+                            if (settled) return;
+                            settled = true;
+                            resolve(Boolean(value));
+                        };
+
+                        try {
+                            window.webkitRequestFileSystem(
+                                window.TEMPORARY,
+                                1,
+                                () => finish(false),
+                                () => finish(true)
+                            );
+
+                            setTimeout(() => finish(false), 250);
+                        } catch (_) {
+                            finish(true);
+                        }
+                    });
+            }
+        } catch (_) {
+            fileSystemLooksPrivate = false;
+        }
+
+        /*
+         * Either browser signal is enough to treat the context as private.
+         * This is best-effort because browsers intentionally prevent a
+         * standards-based incognito detector.
+         */
+        return quotaLooksPrivate || fileSystemLooksPrivate;
+    }
 
     function isTouchPhone() {
         return window.matchMedia(
             "(max-width: 768px) and (pointer: coarse)"
         ).matches;
+    }
+
+    function setRecoveryStatus(message, type) {
+        if (!recoveryStatus) return;
+        recoveryStatus.textContent = message || "";
+        recoveryStatus.classList.remove("error", "success");
+        if (type) recoveryStatus.classList.add(type);
+    }
+
+    function hideEmergencyRecovery() {
+        emergencyTapCount = 0;
+
+        if (emergencyTapTimer) {
+            clearTimeout(emergencyTapTimer);
+            emergencyTapTimer = null;
+        }
+
+        emergencyPanel?.classList.remove("is-visible");
+        emergencyPanel?.setAttribute("aria-hidden", "true");
+
+        if (recoveryInput) recoveryInput.value = "";
+        setRecoveryStatus("", "");
+    }
+
+    function showEmergencyRecovery() {
+        if (unlockedThisLoad || privateBrowsing) return;
+
+        emergencyTapCount = 0;
+        emergencyPanel?.classList.add("is-visible");
+        emergencyPanel?.setAttribute("aria-hidden", "false");
+
+        setRecoveryStatus(
+            "Emergency recovery unlocked.",
+            "success"
+        );
+
+        requestAnimationFrame(() => recoveryInput?.focus());
+    }
+
+    function registerEmergencyTap() {
+        if (unlockedThisLoad || privateBrowsing) return;
+
+        emergencyTapCount += 1;
+
+        if (emergencyTapTimer) {
+            clearTimeout(emergencyTapTimer);
+        }
+
+        emergencyTapTimer = setTimeout(() => {
+            emergencyTapCount = 0;
+            emergencyTapTimer = null;
+        }, 2500);
+
+        if (emergencyTapCount >= 7) {
+            showEmergencyRecovery();
+        }
     }
 
     function validPin(value) {
@@ -13158,24 +13438,51 @@ loadConversations();
      * PIN, so it is intentionally not migrated.
      */
     function migrateUnifiedPinIfNeeded() {
+        /*
+         * Never let a genuinely new signed-in account inherit a guest
+         * credential or another account's PIN.
+         *
+         * Migration rules:
+         * 1. Existing unified PIN for this exact account wins.
+         * 2. Existing scoped phone/desktop credentials for this exact account
+         *    may be migrated.
+         * 3. Legacy device-wide credentials may be migrated only when the
+         *    stored owner is this same account (or there is no owner yet).
+         * 4. Guest credentials are migrated only for the guest context.
+         */
         if (hasPin()) return true;
+
+        const owner = safeGet(OWNER_KEY);
+        const isGuest = ACCOUNT_ID === "__guest__";
+        const sameKnownOwner = Boolean(
+            ACCOUNT_USERNAME &&
+            owner &&
+            owner === ACCOUNT_USERNAME
+        );
 
         const candidates = [
             safeGet(OLD_MOBILE_KEY),
-            safeGet(OLD_DESKTOP_KEY),
-            safeGet(GUEST_UNIFIED_PIN_KEY),
-            safeGet(GUEST_OLD_MOBILE_KEY),
-            safeGet(GUEST_OLD_DESKTOP_KEY)
+            safeGet(OLD_DESKTOP_KEY)
         ];
 
         /*
-         * Device-wide v1 credentials are only migrated when there is no
-         * recorded owner or the recorded owner is this same account.
-         * A completely different account must never inherit another user's
-         * old device-wide PIN.
+         * Guest credentials belong only to the guest context. A newly signed
+         * in account must start with no App Lock PIN.
          */
-        const owner = safeGet(OWNER_KEY);
-        if (!owner || owner === ACCOUNT_USERNAME) {
+        if (isGuest) {
+            candidates.push(
+                safeGet(GUEST_UNIFIED_PIN_KEY),
+                safeGet(GUEST_OLD_MOBILE_KEY),
+                safeGet(GUEST_OLD_DESKTOP_KEY)
+            );
+        }
+
+        /*
+         * Device-wide legacy credentials are safe only when ownership is
+         * unknown or already belongs to this exact account. If another
+         * account owns them, never inherit them.
+         */
+        if (!ACCOUNT_USERNAME || !owner || sameKnownOwner) {
             candidates.push(
                 safeGet(LEGACY_MOBILE_KEY),
                 safeGet(LEGACY_DESKTOP_KEY)
@@ -13201,6 +13508,25 @@ loadConversations();
         const scopedEnabled =
             safeGet(ENABLED_STORAGE_KEY);
 
+        const owner = safeGet(OWNER_KEY);
+        const isGuest = ACCOUNT_ID === "__guest__";
+        const isKnownExistingAccount =
+            Boolean(
+                ACCOUNT_USERNAME &&
+                owner &&
+                owner === ACCOUNT_USERNAME
+            );
+
+        /*
+         * A signed-in account that has never been seen by App Lock must start
+         * clean. In particular, do not copy the guest account's PIN into it.
+         */
+        if (ACCOUNT_USERNAME && !isKnownExistingAccount &&
+            scopedEnabled === "" && !hasPin()) {
+            safeSet(ENABLED_STORAGE_KEY, "false");
+            return;
+        }
+
         const migrated = migrateUnifiedPinIfNeeded();
 
         if (scopedEnabled !== "") {
@@ -13217,15 +13543,15 @@ loadConversations();
         }
 
         /*
-         * This is a genuinely new account/device-scope entry. Never inherit
-         * another account's enabled state. The user must explicitly enable
-         * App Lock after choosing the unified PIN.
+         * This is a new App Lock scope. Never inherit another account's
+         * enabled state. The user must explicitly enable App Lock after
+         * choosing the unified PIN.
          */
         safeSet(ENABLED_STORAGE_KEY, "false");
 
         /*
-         * Keep the owner marker only for the legacy migration bookkeeping;
-         * it does not enable App Lock for a new account.
+         * Keep the owner marker only for migration bookkeeping. Do not create
+         * a PIN merely because another account or guest had one.
          */
         if (ACCOUNT_USERNAME && !safeGet(OWNER_KEY) && hasPin()) {
             safeSet(OWNER_KEY, ACCOUNT_USERNAME);
@@ -13286,6 +13612,8 @@ loadConversations();
         if (passwordInput) {
             passwordInput.value = "";
         }
+
+        hideEmergencyRecovery();
 
         updateMobileDots();
 
@@ -13465,6 +13793,7 @@ loadConversations();
         }
 
         const currentRow =
+            document.getElementById("currentPinRow") ||
             currentPinInput?.closest(".app-password-row");
 
         if (changeCard) {
@@ -13477,6 +13806,17 @@ loadConversations();
         if (currentRow) {
             currentRow.style.display =
                 configured ? "" : "none";
+            currentRow.setAttribute(
+                "aria-hidden",
+                configured ? "false" : "true"
+            );
+        }
+
+        if (currentPinInput) {
+            currentPinInput.disabled = !configured;
+            if (!configured) {
+                currentPinInput.value = "";
+            }
         }
 
         if (changeTitle) {
@@ -13530,6 +13870,76 @@ loadConversations();
         event.preventDefault();
         event.stopPropagation();
     }, true);
+
+    lockIcon?.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        registerEmergencyTap();
+    });
+
+    recoveryBtn?.addEventListener("click", () => {
+        if (unlockedThisLoad || privateBrowsing) return;
+
+        const code = (recoveryInput?.value || "").trim();
+
+        if (code !== EMERGENCY_RECOVERY_CODE) {
+            setRecoveryStatus(
+                "Incorrect recovery code.",
+                "error"
+            );
+
+            recoveryInput?.focus();
+            lockOverlay.classList.remove("shake-animation");
+            void lockOverlay.offsetWidth;
+            lockOverlay.classList.add("shake-animation");
+            return;
+        }
+
+        /*
+         * Emergency recovery is intentionally stronger than the normal
+         * unlock path: it disables App Lock and removes the current PIN,
+         * forcing a fresh PIN to be configured in Settings.
+         */
+        safeSet(ENABLED_STORAGE_KEY, "false");
+
+        try {
+            localStorage.removeItem(UNIFIED_PIN_KEY);
+        } catch (_) {}
+
+        unlockedThisLoad = true;
+        verifying = false;
+        mobilePinEntry = "";
+
+        if (passwordInput) passwordInput.value = "";
+        updateMobileDots();
+
+        if (statusText) {
+            statusText.classList.remove("error");
+            statusText.textContent =
+                "App Lock disabled. Set a new PIN in Settings.";
+        }
+
+        updateSettingsUI();
+        hideLockScreen();
+    });
+
+    recoveryInput?.addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            recoveryBtn?.click();
+        }
+    });
+
+    recoveryInput?.addEventListener("input", () => {
+        const value =
+            (recoveryInput.value || "")
+            .replace(/\D/g, "")
+            .slice(0, 6);
+
+        if (recoveryInput.value !== value) {
+            recoveryInput.value = value;
+        }
+    });
 
     desktopUnlockBtn?.addEventListener(
         "click",
@@ -13801,12 +14211,36 @@ loadConversations();
         }
     });
 
-    initializeAccountConfig();
-    updateSettingsUI();
+    /*
+     * App Lock must never be enforced in a private/incognito context.
+     * Detect the browsing context before reading/enforcing the lock state so
+     * the lock screen does not flash before the decision is made.
+     */
+    (async function initializeAppLock() {
+        privateBrowsing = await detectPrivateBrowsing();
 
-    if (isEnabled() && hasPin()) {
-        showLockScreen();
-    }
+        if (privateBrowsing) {
+            unlockedThisLoad = true;
+            hideEmergencyRecovery();
+
+            if (lockOverlay) {
+                lockOverlay.setAttribute("aria-hidden", "true");
+                lockOverlay.style.display = "none";
+                lockOverlay.style.visibility = "hidden";
+                lockOverlay.style.opacity = "0";
+                lockOverlay.style.pointerEvents = "none";
+            }
+
+            return;
+        }
+
+        initializeAccountConfig();
+        updateSettingsUI();
+
+        if (isEnabled() && hasPin()) {
+            showLockScreen();
+        }
+    })();
 })();
 </script>
 
