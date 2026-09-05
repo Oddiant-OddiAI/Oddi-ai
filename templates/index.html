@@ -6268,18 +6268,11 @@ body.dark-mode .oddi-share-card {
         color: #d0d0d0 !important;
     }
 
-    #appLockOverlay .app-lock-mobile-unlock-btn {
-        width: min(360px, 92vw) !important;
-        height: 60px !important;
-        margin-top: 18px !important;
-        border-radius: 18px !important;
-        font-size: 18px !important;
-    }
 }
 
 /* ---------- Settings: make the separation obvious ---------- */
-.app-lock-mobile-settings-card {
-    margin-top: 12px !important;
+.app-lock-unified-settings-card {
+    margin-top: 0 !important;
 }
 
 .app-lock-change-note {
@@ -6287,6 +6280,7 @@ body.dark-mode .oddi-share-card {
     color: #777 !important;
     font-size: 12px !important;
     line-height: 1.4 !important;
+    text-align: left !important;
 }
 
 body.dark-mode .app-lock-change-note {
@@ -6707,9 +6701,8 @@ body.dark-mode .bot-message .ai-content {
         color: #ff6b6b !important;
     }
 
-    /* Auto-unlock means these are only fallback controls now. */
-    #appLockUnlockBtn,
-    #appLockMobileUnlockBtn {
+    /* Auto-unlock means the desktop button is only a fallback now. */
+    #appLockUnlockBtn {
         transition: opacity .18s ease, transform .18s ease;
     }
 </style>
@@ -6726,20 +6719,21 @@ body.dark-mode .bot-message .ai-content {
         <div id="appLockTitle" class="app-lock-name">Oddi AI</div>
         <div class="app-lock-status" id="appLockStatus">This app is locked</div>
 
-        <!-- Desktop / laptop: 6-character password -->
+        <!-- Desktop / laptop: same 6-digit PIN (keyboard entry) -->
         <div class="app-lock-desktop-panel">
-            <div class="app-lock-prompt">Enter your password</div>
+            <div class="app-lock-prompt">Enter your 6-digit PIN</div>
             <div class="app-lock-password-wrap">
                 <input
                     id="appLockPasswordInput"
                     class="app-lock-password-input"
                     type="password"
                     maxlength="6"
+                    inputmode="numeric"
                     autocomplete="current-password"
                     autocapitalize="off"
                     spellcheck="false"
-                    placeholder="6-character password"
-                    aria-label="App Lock password">
+                    placeholder="6-digit PIN"
+                    aria-label="App Lock PIN">
             </div>
             <button
                 id="appLockUnlockBtn"
@@ -6749,7 +6743,7 @@ body.dark-mode .bot-message .ai-content {
             </button>
         </div>
 
-        <!-- Phone: separate 6-digit numeric PIN + large keypad -->
+        <!-- Phone: same 6-digit PIN + large keypad -->
         <div class="app-lock-mobile-panel" aria-label="Mobile App Lock">
             <div class="app-lock-prompt">Enter your 6-digit PIN</div>
 
@@ -6773,12 +6767,6 @@ body.dark-mode .bot-message .ai-content {
                 <button type="button" class="app-lock-key app-lock-key-delete" data-pin-delete aria-label="Delete last digit">⌫</button>
             </div>
 
-            <button
-                id="appLockMobileUnlockBtn"
-                class="app-lock-unlock-btn app-lock-mobile-unlock-btn"
-                type="button">
-                Unlock Oddi AI
-            </button>
         </div>
     </div>
 </div>
@@ -7274,7 +7262,7 @@ body.dark-mode .bot-message .ai-content {
                     <span>🔒</span>
                     <span class="account-action-main">
                         <strong>App Lock</strong>
-                        <small id="appLockSettingStatus">Disabled — Oddi AI opens without a password/PIN</small>
+                        <small id="appLockSettingStatus">Disabled — Oddi AI opens without a PIN</small>
                     </span>
                 </div>
                 <button id="toggleAppLockOptBtn"
@@ -7283,85 +7271,47 @@ body.dark-mode .bot-message .ai-content {
                         aria-pressed="false">Enable</button>
             </div>
 
-            <div class="app-lock-change-card">
-                <div class="app-lock-change-title">Change Password</div>
+            <div class="app-lock-change-card app-lock-unified-settings-card">
+                <div class="app-lock-change-title">App Lock PIN</div>
+                <div class="app-lock-change-note">
+                    Use the same 6-digit PIN on both laptop and phone.
+                </div>
 
                 <div class="app-password-row app-lock-pin-row">
                     <input id="currentPinInput"
                            type="password"
+                           inputmode="numeric"
                            autocomplete="current-password"
                            maxlength="6"
-                           placeholder="Current 6-character password"
-                           aria-label="Current App Lock password">
+                           placeholder="Current 6-digit PIN"
+                           aria-label="Current App Lock PIN">
                 </div>
 
                 <div class="app-password-row app-lock-pin-row">
                     <input id="changePinInput"
                            type="password"
+                           inputmode="numeric"
                            autocomplete="new-password"
                            maxlength="6"
-                           placeholder="New 6-character password"
-                           aria-label="New App Lock password">
+                           placeholder="New 6-digit PIN"
+                           aria-label="New App Lock PIN">
                 </div>
 
                 <div class="app-password-row app-lock-pin-row">
                     <input id="confirmPinInput"
                            type="password"
+                           inputmode="numeric"
                            autocomplete="new-password"
                            maxlength="6"
-                           placeholder="Confirm new password"
-                           aria-label="Confirm new App Lock password">
+                           placeholder="Confirm new PIN"
+                           aria-label="Confirm new App Lock PIN">
                 </div>
 
                 <button id="savePinBtn"
                         class="app-password-btn app-lock-save-btn"
-                        type="button">Save Password</button>
+                        type="button">Save PIN</button>
 
                 <div id="appLockChangeStatus"
-                     class="app-lock-change-status"
-                     role="status"
-                     aria-live="polite"></div>
-            </div>
-
-            <div class="app-lock-change-card app-lock-mobile-settings-card">
-                <div class="app-lock-change-title">Phone PIN</div>
-                <div class="app-lock-change-note">Separate 6-digit PIN used only on phones.</div>
-
-                <div class="app-password-row app-lock-pin-row">
-                    <input id="currentMobilePinInput"
-                           type="password"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           maxlength="6"
-                           placeholder="Current 6-digit PIN"
-                           aria-label="Current phone App Lock PIN">
-                </div>
-
-                <div class="app-password-row app-lock-pin-row">
-                    <input id="changeMobilePinInput"
-                           type="password"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           maxlength="6"
-                           placeholder="New 6-digit PIN"
-                           aria-label="New phone App Lock PIN">
-                </div>
-
-                <div class="app-password-row app-lock-pin-row">
-                    <input id="confirmMobilePinInput"
-                           type="password"
-                           inputmode="numeric"
-                           autocomplete="off"
-                           maxlength="6"
-                           placeholder="Confirm new PIN"
-                           aria-label="Confirm new phone App Lock PIN">
-                </div>
-
-                <button id="saveMobilePinBtn"
-                        class="app-password-btn app-lock-save-btn"
-                        type="button">Save Phone PIN</button>
-
-                <div id="mobilePinChangeStatus"
                      class="app-lock-change-status"
                      role="status"
                      aria-live="polite"></div>
@@ -13040,19 +12990,25 @@ loadConversations();
 </script>
 <script id="oddi-app-lock-controller">
 /*
- * ODDI AI — DEVICE-ADAPTIVE APP LOCK
+ * ODDI AI — UNIFIED APP LOCK
  *
- * Desktop/laptop: separate 6-character keyboard password.
- * Phone: separate 6-digit numeric PIN with on-screen keypad.
+ * One credential for every device:
+ * - Exactly 6 digits.
+ * - Laptop/desktop: same PIN entered with the keyboard.
+ * - Phone: same PIN entered with the large on-screen keypad.
+ *
+ * The visual lock UI remains device-adaptive; only the credential is unified.
  *
  * IMPORTANT:
  * - App Lock is account-scoped.
- * - New accounts start disabled and have no default credential.
- * - A successful unlock is valid for the current page load and can never
- *   be immediately re-locked by resize/orientation/focus events.
- * - If an old/broken version left "enabled=true" but lost the credential,
- *   the first valid credential entered is restored instead of disabling the
- *   lock or trapping the user on the lock screen.
+ * - New accounts start disabled and have no default PIN.
+ * - A successful unlock is valid for the current page load and cannot be
+ *   immediately re-locked by resize/orientation/focus events.
+ * - Old separate desktop/mobile credentials are migrated conservatively:
+ *   a valid old phone PIN is preferred; otherwise a valid old desktop
+ *   credential is migrated only when it was already exactly 6 digits.
+ * - If an old enabled account has no valid 6-digit PIN after migration,
+ *   App Lock is disabled rather than trapping the user on the lock screen.
  */
 (function () {
     "use strict";
@@ -13064,29 +13020,35 @@ loadConversations();
     const LEGACY_MOBILE_KEY = "oddi_app_lock_mobile_pin_v1";
     const LEGACY_ENABLED_KEY = "oddi_app_lock_enabled_v1";
 
-    /*
-     * Use the server-rendered username as the stable account identity.
-     * Normalizing case/whitespace prevents a harmless username formatting
-     * change from producing a different storage key.
-     */
-    const ACCOUNT_USERNAME = (document.body?.dataset.username || "").trim();
+    const ACCOUNT_USERNAME =
+        (document.body?.dataset.username || "").trim();
     const ACCOUNT_ID = ACCOUNT_USERNAME
         ? ACCOUNT_USERNAME.toLowerCase()
         : "__guest__";
     const ACCOUNT_SCOPE = encodeURIComponent(ACCOUNT_ID);
 
-    const DESKTOP_PASSWORD_KEY =
+    /*
+     * v3 is deliberately a single credential. The old v2 desktop/mobile
+     * keys are read only for one-time migration and are never required after
+     * the unified PIN is saved.
+     */
+    const UNIFIED_PIN_KEY =
+        `oddi_app_lock_pin_v3_${ACCOUNT_SCOPE}`;
+
+    const OLD_DESKTOP_KEY =
         `oddi_app_lock_password_v2_${ACCOUNT_SCOPE}`;
-    const MOBILE_PIN_KEY =
+    const OLD_MOBILE_KEY =
         `oddi_app_lock_mobile_pin_v2_${ACCOUNT_SCOPE}`;
+
+    const GUEST_UNIFIED_PIN_KEY =
+        "oddi_app_lock_pin_v3_" + encodeURIComponent("__guest__");
+    const GUEST_OLD_DESKTOP_KEY =
+        "oddi_app_lock_password_v2_" + encodeURIComponent("__guest__");
+    const GUEST_OLD_MOBILE_KEY =
+        "oddi_app_lock_mobile_pin_v2_" + encodeURIComponent("__guest__");
+
     const ENABLED_STORAGE_KEY =
         `oddi_app_lock_enabled_v2_${ACCOUNT_SCOPE}`;
-
-    const GUEST_SCOPE = encodeURIComponent("__guest__");
-    const GUEST_DESKTOP_KEY =
-        `oddi_app_lock_password_v2_${GUEST_SCOPE}`;
-    const GUEST_MOBILE_KEY =
-        `oddi_app_lock_mobile_pin_v2_${GUEST_SCOPE}`;
 
     const OWNER_KEY = "oddi_app_lock_owner_v2";
 
@@ -13094,12 +13056,12 @@ loadConversations();
         document.getElementById("appLockPasswordInput");
     const desktopUnlockBtn =
         document.getElementById("appLockUnlockBtn");
-    const mobileUnlockBtn =
-        document.getElementById("appLockMobileUnlockBtn");
+
     const mobilePinDots =
         document.getElementById("appLockPinDots");
     const mobileKeypad =
         lockOverlay.querySelector(".app-lock-keypad");
+
     const statusText =
         document.getElementById("appLockStatus");
 
@@ -13108,17 +13070,11 @@ loadConversations();
     const settingStatus =
         document.getElementById("appLockSettingStatus");
 
-    const desktopChangeCard =
-        document.querySelector(
-            ".app-lock-change-card:not(.app-lock-mobile-settings-card)"
-        );
-    const mobileChangeCard =
-        document.querySelector(".app-lock-mobile-settings-card");
+    const changeCard =
+        document.querySelector(".app-lock-unified-settings-card");
 
-    const desktopChangeTitle =
-        desktopChangeCard?.querySelector(".app-lock-change-title");
-    const mobileChangeTitle =
-        mobileChangeCard?.querySelector(".app-lock-change-title");
+    const changeTitle =
+        changeCard?.querySelector(".app-lock-change-title");
 
     const currentPinInput =
         document.getElementById("currentPinInput");
@@ -13126,21 +13082,12 @@ loadConversations();
         document.getElementById("changePinInput");
     const confirmPinInput =
         document.getElementById("confirmPinInput");
+
     const savePinBtn =
         document.getElementById("savePinBtn");
+
     const changeStatus =
         document.getElementById("appLockChangeStatus");
-
-    const currentMobilePinInput =
-        document.getElementById("currentMobilePinInput");
-    const changeMobilePinInput =
-        document.getElementById("changeMobilePinInput");
-    const confirmMobilePinInput =
-        document.getElementById("confirmMobilePinInput");
-    const saveMobilePinBtn =
-        document.getElementById("saveMobilePinBtn");
-    const mobilePinChangeStatus =
-        document.getElementById("mobilePinChangeStatus");
 
     const lockNowBtn =
         document.getElementById("lockNowBtn");
@@ -13155,13 +13102,7 @@ loadConversations();
         ).matches;
     }
 
-    function validDesktopPassword(value) {
-        return typeof value === "string" &&
-            value.length === 6 &&
-            !/\s/.test(value);
-    }
-
-    function validMobilePin(value) {
+    function validPin(value) {
         return /^\d{6}$/.test(value);
     }
 
@@ -13182,20 +13123,12 @@ loadConversations();
         }
     }
 
-    function hasDesktopPassword() {
-        return validDesktopPassword(safeGet(DESKTOP_PASSWORD_KEY));
+    function getPin() {
+        return safeGet(UNIFIED_PIN_KEY);
     }
 
-    function hasMobilePin() {
-        return validMobilePin(safeGet(MOBILE_PIN_KEY));
-    }
-
-    function getDesktopPassword() {
-        return safeGet(DESKTOP_PASSWORD_KEY);
-    }
-
-    function getMobilePin() {
-        return safeGet(MOBILE_PIN_KEY);
+    function hasPin() {
+        return validPin(getPin());
     }
 
     function isEnabled() {
@@ -13211,108 +13144,99 @@ loadConversations();
     }
 
     /*
-     * Recover credentials from the immediately previous App Lock format.
-     * This is intentionally conservative:
-     * - current account always wins;
-     * - guest credentials may follow the guest -> signed-in transition;
-     * - legacy device-wide credentials are only adopted when this account
-     *   is the recorded owner or there is no owner yet.
+     * Migrate old credentials into ONE 6-digit PIN.
+     *
+     * Preference order:
+     * 1. Existing unified PIN.
+     * 2. Existing scoped phone PIN.
+     * 3. Existing scoped desktop password, but only if it is 6 digits.
+     * 4. Guest unified/phone/desktop credentials.
+     * 5. Old device-wide phone PIN.
+     * 6. Old device-wide PIN/password, only if exactly 6 digits.
+     *
+     * An old alphanumeric desktop password cannot silently become a numeric
+     * PIN, so it is intentionally not migrated.
      */
-    function migrateLegacyCredentialsIfNeeded() {
+    function migrateUnifiedPinIfNeeded() {
+        if (hasPin()) return true;
+
+        const candidates = [
+            safeGet(OLD_MOBILE_KEY),
+            safeGet(OLD_DESKTOP_KEY),
+            safeGet(GUEST_UNIFIED_PIN_KEY),
+            safeGet(GUEST_OLD_MOBILE_KEY),
+            safeGet(GUEST_OLD_DESKTOP_KEY)
+        ];
+
+        /*
+         * Device-wide v1 credentials are only migrated when there is no
+         * recorded owner or the recorded owner is this same account.
+         * A completely different account must never inherit another user's
+         * old device-wide PIN.
+         */
         const owner = safeGet(OWNER_KEY);
-        const currentDesktop = safeGet(DESKTOP_PASSWORD_KEY);
-        const currentMobile = safeGet(MOBILE_PIN_KEY);
+        if (!owner || owner === ACCOUNT_USERNAME) {
+            candidates.push(
+                safeGet(LEGACY_MOBILE_KEY),
+                safeGet(LEGACY_DESKTOP_KEY)
+            );
+        }
 
-        if (ACCOUNT_USERNAME) {
-            if (!validDesktopPassword(currentDesktop)) {
-                const guestDesktop = safeGet(GUEST_DESKTOP_KEY);
-                if (validDesktopPassword(guestDesktop)) {
-                    safeSet(DESKTOP_PASSWORD_KEY, guestDesktop);
-                }
-            }
+        for (const candidate of candidates) {
+            if (!validPin(candidate)) continue;
 
-            if (!validMobilePin(currentMobile)) {
-                const guestMobile = safeGet(GUEST_MOBILE_KEY);
-                if (validMobilePin(guestMobile)) {
-                    safeSet(MOBILE_PIN_KEY, guestMobile);
-                }
+            if (safeSet(UNIFIED_PIN_KEY, candidate)) {
+                return true;
             }
         }
 
-        if (hasDesktopPassword() || hasMobilePin() ||
-            owner === ACCOUNT_USERNAME || !owner) {
-
-            const legacyDesktop = safeGet(LEGACY_DESKTOP_KEY);
-            const legacyMobile = safeGet(LEGACY_MOBILE_KEY);
-
-            if (!hasDesktopPassword() &&
-                validDesktopPassword(legacyDesktop)) {
-                safeSet(DESKTOP_PASSWORD_KEY, legacyDesktop);
-            }
-
-            if (!hasMobilePin() &&
-                validMobilePin(legacyMobile)) {
-                safeSet(MOBILE_PIN_KEY, legacyMobile);
-            } else if (!hasMobilePin() &&
-                       validMobilePin(legacyDesktop)) {
-                /*
-                 * Old versions used one 6-digit value for both devices.
-                 * Keep it as the phone PIN when it is valid.
-                 */
-                safeSet(MOBILE_PIN_KEY, legacyDesktop);
-            }
-        }
+        return false;
     }
 
     /*
-     * Initialize only the account's own enabled flag.
-     * A brand-new account must NEVER inherit "enabled=true" merely because
-     * another account used App Lock on this browser.
+     * Initialize account state without allowing a brand-new account to inherit
+     * another account's enabled lock state.
      */
     function initializeAccountConfig() {
-        const scopedEnabled = safeGet(ENABLED_STORAGE_KEY);
+        const scopedEnabled =
+            safeGet(ENABLED_STORAGE_KEY);
 
-        migrateLegacyCredentialsIfNeeded();
+        const migrated = migrateUnifiedPinIfNeeded();
 
         if (scopedEnabled !== "") {
+            /*
+             * The old build could have enabled App Lock while storing the
+             * desktop and phone credentials separately. If no usable unified
+             * PIN exists, fail safe: disable the lock so the user can configure
+             * one PIN instead of being trapped.
+             */
+            if (scopedEnabled === "true" && !migrated && !hasPin()) {
+                safeSet(ENABLED_STORAGE_KEY, "false");
+            }
             return;
         }
-
-        const owner = safeGet(OWNER_KEY);
-        const legacyEnabled = safeGet(LEGACY_ENABLED_KEY);
 
         /*
-         * First signed-in account after the old v1 format: migrate the old
-         * enabled state only when the legacy credentials actually exist.
+         * This is a genuinely new account/device-scope entry. Never inherit
+         * another account's enabled state. The user must explicitly enable
+         * App Lock after choosing the unified PIN.
          */
-        const hasLegacyCredentials =
-            validDesktopPassword(safeGet(LEGACY_DESKTOP_KEY)) ||
-            validMobilePin(safeGet(LEGACY_MOBILE_KEY));
-
-        if (ACCOUNT_USERNAME &&
-            !owner &&
-            (legacyEnabled !== "" || hasLegacyCredentials)) {
-
-            safeSet(
-                ENABLED_STORAGE_KEY,
-                legacyEnabled === "true" ? "true" : "false"
-            );
-            safeSet(OWNER_KEY, ACCOUNT_USERNAME);
-            return;
-        }
-
-        /* Fresh/new account: disabled, with no default password/PIN. */
         safeSet(ENABLED_STORAGE_KEY, "false");
+
+        /*
+         * Keep the owner marker only for the legacy migration bookkeeping;
+         * it does not enable App Lock for a new account.
+         */
+        if (ACCOUNT_USERNAME && !safeGet(OWNER_KEY) && hasPin()) {
+            safeSet(OWNER_KEY, ACCOUNT_USERNAME);
+        }
     }
 
     function clearSettingsFields() {
         [
             currentPinInput,
             changePinInput,
-            confirmPinInput,
-            currentMobilePinInput,
-            changeMobilePinInput,
-            confirmMobilePinInput
+            confirmPinInput
         ].forEach(input => {
             if (input) input.value = "";
         });
@@ -13366,6 +13290,7 @@ loadConversations();
         updateMobileDots();
 
         if (statusText) {
+            statusText.classList.remove("error");
             statusText.textContent =
                 message || "This app is locked";
         }
@@ -13374,10 +13299,6 @@ loadConversations();
     }
 
     function showLockScreen() {
-        /*
-         * This guard is the key to preventing the old:
-         * "unlock -> app appears -> lock screen returns" bug.
-         */
         if (!isEnabled() || unlockedThisLoad) return;
 
         verifying = false;
@@ -13395,6 +13316,7 @@ loadConversations();
         lockOverlay.setAttribute("aria-hidden", "false");
 
         if (statusText) {
+            statusText.classList.remove("error");
             statusText.textContent = "This app is locked";
         }
 
@@ -13408,8 +13330,8 @@ loadConversations();
 
     function hideLockScreen() {
         /*
-         * Set this BEFORE changing the DOM. Any resize/focus/click handler
-         * that fires during the fade now sees the unlocked state.
+         * Set this BEFORE changing the DOM so resize/focus/click handlers
+         * cannot re-lock the app during the unlock animation.
          */
         unlockedThisLoad = true;
         verifying = false;
@@ -13420,11 +13342,6 @@ loadConversations();
         lockOverlay.style.pointerEvents = "none";
 
         setTimeout(() => {
-            /*
-             * Never call showLockScreen() here and never alter the enabled
-             * setting. The lock remains disabled only when the user explicitly
-             * disables it in Settings.
-             */
             lockOverlay.style.display = "none";
             lockOverlay.style.visibility = "hidden";
             lockOverlay.style.opacity = "0";
@@ -13454,111 +13371,43 @@ loadConversations();
         }, 500);
     }
 
-    function recoverMissingDesktopCredential(entered) {
-        /*
-         * If a previous version left App Lock enabled but the scoped password
-         * was lost, do NOT turn App Lock off. Restore the credential from the
-         * user's valid 6-character entry and continue unlocking.
-         */
-        if (!isEnabled() ||
-            hasDesktopPassword() ||
-            !validDesktopPassword(entered)) {
-            return false;
-        }
-
-        return safeSet(DESKTOP_PASSWORD_KEY, entered);
-    }
-
-    function recoverMissingMobileCredential(pin) {
-        if (!isEnabled() ||
-            hasMobilePin() ||
-            !validMobilePin(pin)) {
-            return false;
-        }
-
-        return safeSet(MOBILE_PIN_KEY, pin);
-    }
-
-    function verifyDesktopPassword() {
+    function verifyPin(entered) {
         if (verifying || unlockedThisLoad) return;
 
-        const entered = passwordInput?.value || "";
-        const savedPassword = getDesktopPassword();
-
-        /*
-         * Recovery path for the exact failure that occurred in the previous
-         * build: enabled=true but the scoped password key was missing.
-         */
-        if (!hasDesktopPassword()) {
-            if (recoverMissingDesktopCredential(entered)) {
-                if (statusText) {
-                    statusText.textContent =
-                        "Password restored — Oddi AI unlocked";
-                }
-                hideLockScreen();
-                return;
-            }
-
-            if (statusText) {
-                statusText.textContent =
-                    "Password data is missing. Enter exactly 6 characters to restore it.";
-            }
-            rejectEntry(
-                "Enter your 6-character password to restore App Lock."
-            );
+        if (!validPin(entered)) {
+            rejectEntry("PIN must contain exactly 6 digits.");
             return;
         }
 
-        if (!validDesktopPassword(entered)) {
-            rejectEntry(
-                "Password must contain exactly 6 characters."
-            );
-            return;
-        }
+        const savedPin = getPin();
 
-        verifying = true;
+        /*
+         * Recovery path for an enabled account whose unified key disappeared.
+         * Only a valid 6-digit entry can restore it.
+         */
+        if (!hasPin()) {
+            if (isEnabled() &&
+                safeSet(UNIFIED_PIN_KEY, entered)) {
 
-        if (entered === savedPassword) {
-            if (statusText) {
-                statusText.classList.remove("error");
-                statusText.textContent = "Unlocked";
-            }
-            hideLockScreen();
-        } else {
-            verifying = false;
-            rejectEntry("Incorrect password. Try again.");
-        }
-    }
-
-    function verifyMobilePin() {
-        if (verifying || unlockedThisLoad) return;
-
-        const savedPin = getMobilePin();
-
-        if (!hasMobilePin()) {
-            if (recoverMissingMobileCredential(mobilePinEntry)) {
                 if (statusText) {
+                    statusText.classList.remove("error");
                     statusText.textContent =
                         "PIN restored — Oddi AI unlocked";
                 }
+
                 hideLockScreen();
                 return;
             }
 
             rejectEntry(
-                "Enter your 6-digit PIN to restore App Lock."
+                "PIN data is missing. Set a new 6-digit PIN in Settings."
             );
-            return;
-        }
-
-        if (!validMobilePin(mobilePinEntry)) {
-            rejectEntry("Enter all 6 digits.");
             return;
         }
 
         verifying = true;
 
-        if (mobilePinEntry === savedPin) {
+        if (entered === savedPin) {
             if (statusText) {
                 statusText.classList.remove("error");
                 statusText.textContent = "Unlocked";
@@ -13568,6 +13417,14 @@ loadConversations();
             verifying = false;
             rejectEntry("Incorrect PIN. Try again.");
         }
+    }
+
+    function verifyDesktopPin() {
+        verifyPin(passwordInput?.value || "");
+    }
+
+    function verifyMobilePin() {
+        verifyPin(mobilePinEntry);
     }
 
     function setChangeStatus(element, message, type) {
@@ -13583,16 +13440,17 @@ loadConversations();
 
     function updateSettingsUI() {
         const enabled = isEnabled();
-        const desktopConfigured = hasDesktopPassword();
-        const mobileConfigured = hasMobilePin();
+        const configured = hasPin();
 
         if (toggleBtn) {
             toggleBtn.textContent =
                 enabled ? "Disable" : "Enable";
+
             toggleBtn.setAttribute(
                 "aria-pressed",
                 enabled ? "true" : "false"
             );
+
             toggleBtn.title =
                 enabled
                     ? "Disable App Lock"
@@ -13602,51 +13460,30 @@ loadConversations();
         if (settingStatus) {
             settingStatus.textContent =
                 enabled
-                    ? "Enabled — password/PIN required when Oddi AI opens"
-                    : "Disabled — Oddi AI opens without a password/PIN";
+                    ? "Enabled — 6-digit PIN required when Oddi AI opens"
+                    : "Disabled — Oddi AI opens without a PIN";
         }
 
-        const desktopCurrentRow =
+        const currentRow =
             currentPinInput?.closest(".app-password-row");
-        const mobileCurrentRow =
-            currentMobilePinInput?.closest(".app-password-row");
 
-        if (desktopChangeCard) {
-            desktopChangeCard.classList.toggle(
+        if (changeCard) {
+            changeCard.classList.toggle(
                 "first-setup",
-                !desktopConfigured
+                !configured
             );
         }
 
-        if (mobileChangeCard) {
-            mobileChangeCard.classList.toggle(
-                "first-setup",
-                !mobileConfigured
-            );
+        if (currentRow) {
+            currentRow.style.display =
+                configured ? "" : "none";
         }
 
-        if (desktopCurrentRow) {
-            desktopCurrentRow.style.display =
-                desktopConfigured ? "" : "none";
-        }
-
-        if (mobileCurrentRow) {
-            mobileCurrentRow.style.display =
-                mobileConfigured ? "" : "none";
-        }
-
-        if (desktopChangeTitle) {
-            desktopChangeTitle.textContent =
-                desktopConfigured
-                    ? "Change Password"
-                    : "Set Password";
-        }
-
-        if (mobileChangeTitle) {
-            mobileChangeTitle.textContent =
-                mobileConfigured
-                    ? "Change Phone PIN"
-                    : "Set Phone PIN";
+        if (changeTitle) {
+            changeTitle.textContent =
+                configured
+                    ? "Change App Lock PIN"
+                    : "Set App Lock PIN";
         }
 
         if (lockNowBtn) {
@@ -13666,9 +13503,9 @@ loadConversations();
     }
 
     /*
-     * While locked, prevent the underlying app from receiving pointer,
-     * click, or keyboard events. This also prevents the attachment button
-     * from opening the native Windows "Open" dialog behind the lock.
+     * While locked, prevent the underlying app from receiving pointer, click,
+     * or keyboard events. This prevents attachment/file-picker actions from
+     * firing behind the lock.
      */
     document.addEventListener("pointerdown", event => {
         if (!lockIsActive()) return;
@@ -13696,34 +13533,44 @@ loadConversations();
 
     desktopUnlockBtn?.addEventListener(
         "click",
-        verifyDesktopPassword
+        verifyDesktopPin
     );
 
+    /*
+     * Laptop/desktop keyboard entry.
+     * Auto-unlocks immediately at exactly six digits, including paste.
+     */
     passwordInput?.addEventListener("input", () => {
-        if (passwordInput.value.length > 6) {
-            passwordInput.value =
-                passwordInput.value.slice(0, 6);
+        const value =
+            (passwordInput.value || "")
+            .replace(/\D/g, "")
+            .slice(0, 6);
+
+        if (passwordInput.value !== value) {
+            passwordInput.value = value;
         }
 
-        /*
-         * Auto-unlock as soon as the complete 6-character password
-         * has been entered. This also works when the password is pasted.
-         */
-        if (passwordInput.value.length === 6) {
-            verifyDesktopPassword();
+        if (value.length === 6) {
+            verifyDesktopPin();
         }
     });
 
     passwordInput?.addEventListener("keydown", event => {
         if (event.key === "Enter") {
             event.preventDefault();
-            verifyDesktopPassword();
+            verifyDesktopPin();
         }
     });
 
+    /*
+     * Phone keypad entry.
+     * Auto-unlocks immediately after the sixth digit.
+     * There is intentionally NO phone Unlock button.
+     */
     mobileKeypad?.addEventListener("click", event => {
         const digitButton =
             event.target.closest("[data-pin-digit]");
+
         const deleteButton =
             event.target.closest("[data-pin-delete]");
 
@@ -13735,10 +13582,6 @@ loadConversations();
 
             updateMobileDots();
 
-            /*
-             * Auto-unlock immediately after the sixth digit.
-             * The normal Unlock button and Enter key remain safe fallbacks.
-             */
             if (mobilePinEntry.length === 6) {
                 verifyMobilePin();
             }
@@ -13749,18 +13592,15 @@ loadConversations();
         if (deleteButton) {
             mobilePinEntry =
                 mobilePinEntry.slice(0, -1);
+
             updateMobileDots();
         }
     });
 
-    mobileUnlockBtn?.addEventListener(
-        "click",
-        verifyMobilePin
-    );
-
     /*
-     * Phone keyboard support. Desktop keyboard input is handled directly by
-     * the password field, so this handler does not interfere with it.
+     * Phone keyboard support.
+     * Physical keyboard digits still work when available, while the visual
+     * phone UI remains the same keypad design.
      */
     document.addEventListener("keydown", event => {
         if (!isEnabled() ||
@@ -13784,6 +13624,10 @@ loadConversations();
             if (mobilePinEntry.length < 6) {
                 mobilePinEntry += event.key;
                 updateMobileDots();
+
+                if (mobilePinEntry.length === 6) {
+                    verifyMobilePin();
+                }
             }
 
             return;
@@ -13791,8 +13635,10 @@ loadConversations();
 
         if (event.key === "Backspace") {
             event.preventDefault();
+
             mobilePinEntry =
                 mobilePinEntry.slice(0, -1);
+
             updateMobileDots();
             return;
         }
@@ -13808,21 +13654,23 @@ loadConversations();
 
         if (enabled) {
             setEnabled(false);
+
             setChangeStatus(
                 changeStatus,
-                "App Lock disabled. You can enable it again anytime.",
+                "App Lock disabled. Your PIN is kept for next time.",
                 "success"
             );
             return;
         }
 
-        if (!hasDesktopPassword() ||
-            !hasMobilePin()) {
+        if (!hasPin()) {
             setChangeStatus(
                 changeStatus,
-                "Set both the desktop password and phone PIN before enabling App Lock.",
+                "Set your 6-digit PIN before enabling App Lock.",
                 "error"
             );
+
+            changePinInput?.focus();
             return;
         }
 
@@ -13830,77 +13678,88 @@ loadConversations();
 
         setChangeStatus(
             changeStatus,
-            "App Lock enabled. Desktop password and phone PIN remain separate.",
+            "App Lock enabled. The same 6-digit PIN works on laptop and phone.",
             "success"
         );
     });
 
     savePinBtn?.addEventListener("click", () => {
-        const currentPassword =
+        const currentPin =
             currentPinInput?.value || "";
-        const newPassword =
+
+        const newPin =
             changePinInput?.value || "";
-        const confirmPassword =
+
+        const confirmPin =
             confirmPinInput?.value || "";
-        const configured = hasDesktopPassword();
+
+        const configured = hasPin();
 
         if (configured &&
-            !validDesktopPassword(currentPassword)) {
+            !validPin(currentPin)) {
+
             setChangeStatus(
                 changeStatus,
-                "Enter your current 6-character password.",
+                "Enter your current 6-digit PIN.",
                 "error"
             );
+
             currentPinInput?.focus();
             return;
         }
 
         if (configured &&
-            currentPassword !== getDesktopPassword()) {
+            currentPin !== getPin()) {
+
             setChangeStatus(
                 changeStatus,
-                "Current password is incorrect.",
+                "Current PIN is incorrect.",
                 "error"
             );
+
             currentPinInput?.focus();
             return;
         }
 
-        if (!validDesktopPassword(newPassword)) {
+        if (!validPin(newPin)) {
             setChangeStatus(
                 changeStatus,
-                "New password must contain exactly 6 characters.",
+                "New PIN must contain exactly 6 digits.",
                 "error"
             );
+
             changePinInput?.focus();
             return;
         }
 
-        if (newPassword !== confirmPassword) {
+        if (newPin !== confirmPin) {
             setChangeStatus(
                 changeStatus,
-                "New password and confirmation do not match.",
+                "New PIN and confirmation do not match.",
                 "error"
             );
+
             confirmPinInput?.focus();
             return;
         }
 
         if (configured &&
-            newPassword === currentPassword) {
+            newPin === currentPin) {
+
             setChangeStatus(
                 changeStatus,
-                "Choose a different password.",
+                "Choose a different PIN.",
                 "error"
             );
+
             changePinInput?.focus();
             return;
         }
 
-        if (!safeSet(DESKTOP_PASSWORD_KEY, newPassword)) {
+        if (!safeSet(UNIFIED_PIN_KEY, newPin)) {
             setChangeStatus(
                 changeStatus,
-                "Could not save the password on this device.",
+                "Could not save the PIN on this device.",
                 "error"
             );
             return;
@@ -13909,91 +13768,8 @@ loadConversations();
         setChangeStatus(
             changeStatus,
             configured
-                ? "Desktop password changed successfully."
-                : "Desktop password set successfully.",
-            "success"
-        );
-
-        clearSettingsFields();
-        updateSettingsUI();
-    });
-
-    saveMobilePinBtn?.addEventListener("click", () => {
-        const currentPin =
-            currentMobilePinInput?.value || "";
-        const newPin =
-            changeMobilePinInput?.value || "";
-        const confirmPin =
-            confirmMobilePinInput?.value || "";
-        const configured = hasMobilePin();
-
-        if (configured &&
-            !validMobilePin(currentPin)) {
-            setChangeStatus(
-                mobilePinChangeStatus,
-                "Enter your current 6-digit PIN.",
-                "error"
-            );
-            currentMobilePinInput?.focus();
-            return;
-        }
-
-        if (configured &&
-            currentPin !== getMobilePin()) {
-            setChangeStatus(
-                mobilePinChangeStatus,
-                "Current phone PIN is incorrect.",
-                "error"
-            );
-            currentMobilePinInput?.focus();
-            return;
-        }
-
-        if (!validMobilePin(newPin)) {
-            setChangeStatus(
-                mobilePinChangeStatus,
-                "New phone PIN must contain exactly 6 digits.",
-                "error"
-            );
-            changeMobilePinInput?.focus();
-            return;
-        }
-
-        if (newPin !== confirmPin) {
-            setChangeStatus(
-                mobilePinChangeStatus,
-                "New PIN and confirmation do not match.",
-                "error"
-            );
-            confirmMobilePinInput?.focus();
-            return;
-        }
-
-        if (configured &&
-            newPin === currentPin) {
-            setChangeStatus(
-                mobilePinChangeStatus,
-                "Choose a different PIN.",
-                "error"
-            );
-            changeMobilePinInput?.focus();
-            return;
-        }
-
-        if (!safeSet(MOBILE_PIN_KEY, newPin)) {
-            setChangeStatus(
-                mobilePinChangeStatus,
-                "Could not save the PIN on this device.",
-                "error"
-            );
-            return;
-        }
-
-        setChangeStatus(
-            mobilePinChangeStatus,
-            configured
-                ? "Phone PIN changed successfully."
-                : "Phone PIN set successfully.",
+                ? "App Lock PIN changed successfully."
+                : "App Lock PIN set successfully.",
             "success"
         );
 
@@ -14002,7 +13778,7 @@ loadConversations();
     });
 
     lockNowBtn?.addEventListener("click", () => {
-        if (!isEnabled()) return;
+        if (!isEnabled() || !hasPin()) return;
 
         /*
          * Lock Now is the ONLY normal path that intentionally resets the
@@ -14013,13 +13789,14 @@ loadConversations();
     });
 
     /*
-     * A viewport change while the lock is already visible should only clear
-     * the current entry. Once unlocked, resize/orientation changes do nothing.
+     * A viewport change while the lock is visible only clears the current
+     * entry. Once unlocked, resize/orientation changes do nothing.
      */
     window.addEventListener("resize", () => {
         if (!unlockedThisLoad &&
             !lockOverlay.classList.contains("unlock-success") &&
             lockOverlay.getAttribute("aria-hidden") !== "true") {
+
             resetEntry("This app is locked");
         }
     });
@@ -14027,14 +13804,8 @@ loadConversations();
     initializeAccountConfig();
     updateSettingsUI();
 
-    if (isEnabled()) {
+    if (isEnabled() && hasPin()) {
         showLockScreen();
-    } else {
-        lockOverlay.style.display = "none";
-        lockOverlay.style.visibility = "hidden";
-        lockOverlay.style.opacity = "0";
-        lockOverlay.style.pointerEvents = "none";
-        lockOverlay.setAttribute("aria-hidden", "true");
     }
 })();
 </script>
