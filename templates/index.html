@@ -285,6 +285,340 @@
 }
 </style>
 
+
+<style id="oddi-message-left-margin-final">
+/* Desktop: ODDI responses start comfortably to the right of the left boundary. */
+@media (min-width: 769px) {
+    .chatbox .bot-message {
+        align-self:flex-start !important;
+        width:min(760px,calc(100% - 300px)) !important;
+        max-width:760px !important;
+        margin-left:clamp(150px,12vw,220px) !important;
+        margin-right:40px !important;
+        margin-bottom:20px !important;
+        box-sizing:border-box !important;
+    }
+    .chatbox .bot-message .bot-header {
+        justify-content:flex-start !important;
+        margin-left:0 !important;
+        margin-right:0 !important;
+        text-align:left !important;
+    }
+    .chatbox .bot-message .ai-content {
+        width:100% !important;
+        max-width:none !important;
+        margin-left:0 !important;
+        margin-right:0 !important;
+        text-align:left !important;
+    }
+    .chatbox .bot-message .ai-content > p,
+    .chatbox .bot-message .ai-content > h1,
+    .chatbox .bot-message .ai-content > h2,
+    .chatbox .bot-message .ai-content > h3,
+    .chatbox .bot-message .ai-content > h4,
+    .chatbox .bot-message .ai-content > h5,
+    .chatbox .bot-message .ai-content > h6 {
+        text-align:left !important;
+    }
+}
+
+/* Phone: keep ODDI clearly left-aligned and roughly 1–2 cm in from the boundary. */
+@media (max-width: 768px) {
+    .chatbox .bot-message {
+        align-self:flex-start !important;
+        width:calc(100% - 62px) !important;
+        max-width:none !important;
+        margin-left:clamp(42px,11vw,58px) !important;
+        margin-right:4px !important;
+        margin-bottom:18px !important;
+        box-sizing:border-box !important;
+    }
+    .chatbox .bot-message .bot-header {
+        justify-content:flex-start !important;
+        margin-left:0 !important;
+        margin-right:0 !important;
+        text-align:left !important;
+    }
+    .chatbox .bot-message .ai-content {
+        width:100% !important;
+        max-width:none !important;
+        margin-left:0 !important;
+        margin-right:0 !important;
+        text-align:left !important;
+    }
+    .chatbox .bot-message .ai-content > p,
+    .chatbox .bot-message .ai-content > h1,
+    .chatbox .bot-message .ai-content > h2,
+    .chatbox .bot-message .ai-content > h3,
+    .chatbox .bot-message .ai-content > h4,
+    .chatbox .bot-message .ai-content > h5,
+    .chatbox .bot-message .ai-content > h6 {
+        text-align:left !important;
+    }
+}
+
+/* The expand control belongs to the whole user bubble now, not the text node. */
+.user-message .user-expand-btn {
+    position:absolute !important;
+    right:10px !important;
+    bottom:10px !important;
+    z-index:2147483003 !important;
+    pointer-events:auto !important;
+    touch-action:manipulation !important;
+    -webkit-tap-highlight-color:transparent !important;
+}
+.user-message .user-text.user-text-collapsible {
+    max-height:6em !important;
+    overflow:hidden !important;
+    padding-bottom:42px !important;
+    padding-right:58px !important;
+}
+.user-message .user-text.user-text-expanded {
+    max-height:none !important;
+    overflow:visible !important;
+    padding-bottom:42px !important;
+    padding-right:58px !important;
+}
+</style>
+
+
+<style id="mobile-ai-message-alignment-fix-v1">
+/* Mobile AI message alignment:
+   Keep every ODDI response on the same left edge as the chatbox content.
+   The header sits directly above the response and uses the exact same left edge. */
+@media (max-width: 768px) and (pointer: coarse) {
+    .chatbox .bot-message,
+    .chatbox .bot-message.pinned-message,
+    .chatbox .bot-message.stopped-message {
+        width: 100% !important;
+        max-width: 100% !important;
+        align-self: flex-start !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        margin: 0 0 18px 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        text-align: left !important;
+    }
+
+    .chatbox .bot-message .bot-header {
+        width: auto !important;
+        max-width: 100% !important;
+        margin: 0 0 7px 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        align-self: flex-start !important;
+        text-align: left !important;
+        box-sizing: border-box !important;
+    }
+
+    .chatbox .bot-message .ai-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        align-self: flex-start !important;
+        box-sizing: border-box !important;
+        text-align: left !important;
+    }
+
+    .chatbox .bot-message .ai-content > p,
+    .chatbox .bot-message .ai-content > h1,
+    .chatbox .bot-message .ai-content > h2,
+    .chatbox .bot-message .ai-content > h3,
+    .chatbox .bot-message .ai-content > h4,
+    .chatbox .bot-message .ai-content > h5,
+    .chatbox .bot-message .ai-content > h6,
+    .chatbox .bot-message .ai-content > ul,
+    .chatbox .bot-message .ai-content > ol,
+    .chatbox .bot-message .ai-content > blockquote {
+        text-align: left !important;
+        margin-left: 0 !important;
+    }
+
+    .chatbox .bot-message .bot-actions {
+        align-self: flex-start !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        justify-content: flex-start !important;
+    }
+}
+</style>
+
+
+<style id="laptop-ai-message-alignment-fix-v1">
+/* Laptop/Desktop: give the AI response a little more breathing room
+   from the left boundary, while keeping the speaker/header exactly
+   aligned with the response text below it. */
+@media (min-width: 769px) {
+    .chatbox .bot-message,
+    .chatbox .bot-message.pinned-message,
+    .chatbox .bot-message.stopped-message {
+        width: min(760px, calc(100% - 300px)) !important;
+        max-width: 760px !important;
+        align-self: flex-start !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        margin-left: 260px !important;
+        margin-right: 40px !important;
+        margin-bottom: 20px !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        text-align: left !important;
+    }
+
+    .chatbox .bot-message .bot-header {
+        width: auto !important;
+        max-width: 100% !important;
+        margin: 0 0 7px 0 !important;
+        padding: 0 !important;
+        align-self: flex-start !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 8px !important;
+        text-align: left !important;
+        box-sizing: border-box !important;
+    }
+
+    .chatbox .bot-message .ai-content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        align-self: flex-start !important;
+        box-sizing: border-box !important;
+        text-align: left !important;
+    }
+
+    .chatbox .bot-message .bot-actions {
+        align-self: flex-start !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        justify-content: flex-start !important;
+    }
+}
+</style>
+
+
+<style id="user-expand-arrow-inside-fix-v1">
+/* Keep the expand/collapse control anchored to the actual user bubble,
+   not to the full .user-message container (which also contains action buttons). */
+.user-message .user-bubble-main {
+    position: relative !important;
+    display: block !important;
+    width: fit-content !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.user-message .user-bubble-main .user-expand-btn {
+    position: absolute !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    z-index: 20 !important;
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+}
+
+.user-message .user-bubble-main .user-text.user-text-collapsible,
+.user-message .user-bubble-main .user-text.user-text-expanded {
+    position: relative !important;
+    box-sizing: border-box !important;
+    padding-bottom: 42px !important;
+    padding-right: 58px !important;
+}
+
+@media (max-width: 768px) and (pointer: coarse) {
+    .user-message .user-bubble-main {
+        position: relative !important;
+        width: fit-content !important;
+        max-width: 100% !important;
+    }
+
+    .user-message .user-bubble-main .user-expand-btn {
+        right: 10px !important;
+        bottom: 10px !important;
+    }
+}
+</style>
+
+
+<style id="universal-expand-control-fix-v1">
+.user-message .user-bubble-main {
+    position: relative !important;
+}
+
+.user-message .user-expand-btn {
+    position: absolute !important;
+    right: 10px !important;
+    bottom: 10px !important;
+    z-index: 2147483000 !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+.user-message .user-expand-btn svg {
+    width: 16px !important;
+    height: 16px !important;
+    pointer-events: none !important;
+}
+
+.user-message .user-text.user-text-collapsible {
+    max-height: 6em !important;
+    overflow: hidden !important;
+    padding-bottom: 42px !important;
+    padding-right: 58px !important;
+}
+
+.user-message .user-text.user-text-expanded {
+    max-height: none !important;
+    overflow: visible !important;
+    padding-bottom: 42px !important;
+    padding-right: 58px !important;
+}
+
+@media (max-width: 768px) {
+    .user-message .user-expand-btn {
+        z-index: 2147483000 !important;
+        pointer-events: auto !important;
+        touch-action: manipulation !important;
+    }
+}
+</style>
+
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 <div id="appLockOverlay" class="app-lock-overlay" aria-hidden="true" style="display:none;">
@@ -2826,6 +3160,9 @@ ${bodyHtml}
 
 
 
+
+
+
 </body></html>`;
 }
 
@@ -3772,7 +4109,9 @@ async function sendMessage(
             <div class="user-message" data-message-index="${userMessageIndex}">
                 ${fileHTML}
 
-                <div class="user-text">${escapeUserText(userDisplayMessage)}</div>
+                <div class="user-bubble-main">
+                    <div class="user-text">${escapeUserText(userDisplayMessage)}</div>
+                </div>
 
                 <div class="user-actions-row">
                     <button
@@ -4963,7 +5302,9 @@ async function openConversation(
 
                         ${fileHTML}
 
-                        <div class="user-text">${escapeUserText(msg.text)}</div>
+                        <div class="user-bubble-main">
+                            <div class="user-text">${escapeUserText(msg.text)}</div>
+                        </div>
 
                         <div class="user-actions-row">
                             <button
@@ -7487,16 +7828,26 @@ loadConversations();
 })();
 </script>
 
-<script id="oddi-final-message-ui-v4-js">
+<script id="oddi-final-message-ui-v6-js">
 (function () {
     "use strict";
 
-    const TOUCH_QUERY =
-        "(max-width: 768px) and (pointer: coarse)";
-
-    function isTouch() {
-        return window.matchMedia(TOUCH_QUERY).matches;
-    }
+    /*
+     * Universal expand control.
+     *
+     * Important lifecycle fix:
+     * The previous version looked for .chatbox while this script was in
+     * <head>. At that moment the body did not exist yet, so its MutationObserver
+     * was never installed. That is why fresh messages could miss initialization
+     * until a full reload.
+     *
+     * This version:
+     *  1. installs the observer AFTER DOM is ready;
+     *  2. uses delegated click handling, so a freshly-created button never
+     *     needs its own event listener;
+     *  3. measures the real uncapped text height;
+     *  4. keeps working while messages are being generated/changed.
+     */
 
     function chevronSvg(direction) {
         const path = direction === "up"
@@ -7505,75 +7856,179 @@ loadConversations();
 
         return `
             <svg viewBox="0 0 16 16"
+                 width="16"
+                 height="16"
                  aria-hidden="true"
-                 focusable="false"
-                 xmlns="http://www.w3.org/2000/svg">
-                <path d="${path}"></path>
+                 focusable="false">
+                <path d="${path}"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"></path>
             </svg>
         `;
     }
 
     function updateExpandButton(button, expanded) {
+        if (!button) return;
+
         button.innerHTML = chevronSvg(expanded ? "up" : "down");
         button.setAttribute("aria-expanded", expanded ? "true" : "false");
         button.setAttribute(
             "aria-label",
-            expanded
-                ? "Collapse user message"
-                : "Expand user message"
+            expanded ? "Collapse user message" : "Expand user message"
         );
-        button.title = expanded
-            ? "Collapse message"
-            : "Expand message";
+        button.title = expanded ? "Collapse message" : "Expand message";
+    }
+
+    function getHost(textEl) {
+        return textEl.closest(".user-bubble-main")
+            || textEl.closest(".user-message");
+    }
+
+    function naturalTextHeight(textEl) {
+        const hadCollapsible = textEl.classList.contains("user-text-collapsible");
+        const hadExpanded = textEl.classList.contains("user-text-expanded");
+
+        const old = {
+            maxHeight: textEl.style.maxHeight,
+            overflow: textEl.style.overflow,
+            paddingBottom: textEl.style.paddingBottom,
+            paddingRight: textEl.style.paddingRight
+        };
+
+        /*
+         * Remove the state classes while measuring. Their CSS uses !important,
+         * so merely assigning an inline max-height would not be enough.
+         */
+        textEl.classList.remove(
+            "user-text-collapsible",
+            "user-text-expanded"
+        );
+
+        textEl.style.setProperty("max-height", "none", "important");
+        textEl.style.setProperty("overflow", "visible", "important");
+        textEl.style.setProperty("padding-bottom", "0", "important");
+        textEl.style.setProperty("padding-right", "0", "important");
+
+        const height = textEl.scrollHeight;
+
+        textEl.style.maxHeight = old.maxHeight;
+        textEl.style.overflow = old.overflow;
+        textEl.style.paddingBottom = old.paddingBottom;
+        textEl.style.paddingRight = old.paddingRight;
+
+        if (hadExpanded) {
+            textEl.classList.add("user-text-expanded");
+        } else if (hadCollapsible) {
+            textEl.classList.add("user-text-collapsible");
+        }
+
+        return height;
+    }
+
+    function bindExpandButton(button) {
+        if (!button) return;
+        updateExpandButton(
+            button,
+            button.closest(".user-bubble-main")
+                ?.querySelector(".user-text")
+                ?.classList.contains("user-text-expanded") || false
+        );
     }
 
     function addExpandControl(textEl) {
-        if (!textEl || textEl.querySelector(".user-expand-btn")) return;
+        if (!textEl) return;
 
         const bubble = textEl.closest(".user-message");
-        if (!bubble) return;
+        const host = getHost(textEl);
 
-        /* Ignore empty/file-only messages. */
-        if (!textEl.textContent.trim()) return;
+        if (!bubble || !host) return;
+
+        const text = textEl.textContent.trim();
+        if (!text) return;
 
         const computed = getComputedStyle(textEl);
         const lineHeight = parseFloat(computed.lineHeight);
 
         if (!Number.isFinite(lineHeight) || lineHeight <= 0) return;
 
-        /*
-         * Measure the natural content height. We do this without changing
-         * the final state, so existing message rendering is untouched.
-         */
-        const oldMaxHeight = textEl.style.maxHeight;
-        const oldOverflow = textEl.style.overflow;
-        const oldPaddingBottom = textEl.style.paddingBottom;
-        const oldPaddingRight = textEl.style.paddingRight;
-
-        textEl.style.maxHeight = "none";
-        textEl.style.overflow = "visible";
-
-        const naturalHeight = textEl.scrollHeight;
+        const naturalHeight = naturalTextHeight(textEl);
         const fourLineHeight = lineHeight * 4;
 
-        textEl.style.maxHeight = oldMaxHeight;
-        textEl.style.overflow = oldOverflow;
-        textEl.style.paddingBottom = oldPaddingBottom;
-        textEl.style.paddingRight = oldPaddingRight;
+        let button = host.querySelector(".user-expand-btn");
 
-        /* Only messages longer than four rendered lines get the button. */
-        if (naturalHeight <= fourLineHeight + 2) return;
+        /*
+         * If the message is long enough, create the control.
+         * If content was short earlier and later becomes long while streaming,
+         * this runs again and creates it.
+         */
+        if (naturalHeight > fourLineHeight + 2) {
+            if (!button) {
+                textEl.classList.add("user-text-collapsible");
 
-        textEl.classList.add("user-text-collapsible");
+                button = document.createElement("button");
+                button.type = "button";
+                button.className = "user-expand-btn";
+                button.setAttribute("aria-expanded", "false");
+                button.setAttribute("aria-label", "Expand user message");
+                button.title = "Expand message";
 
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "user-expand-btn";
-        updateExpandButton(button, false);
+                host.appendChild(button);
+            }
 
-        button.addEventListener("click", function (event) {
+            /*
+             * Keep the button's state synchronized every refresh.
+             * No per-button event listener is required.
+             */
+            bindExpandButton(button);
+            return;
+        }
+
+        /*
+         * Do not destroy an existing control just because the viewport or
+         * wrapping temporarily changes. Once a message has an expand control,
+         * keep it available.
+         */
+        if (button) {
+            bindExpandButton(button);
+        }
+    }
+
+    function refresh(root) {
+        const scope = root || document;
+
+        scope
+            .querySelectorAll(".user-message .user-text")
+            .forEach(addExpandControl);
+    }
+
+    /*
+     * Delegated handler = the key fix.
+     *
+     * It works for buttons that are created milliseconds ago, buttons created
+     * during streaming, restored messages, and programmatic .click() calls.
+     *
+     * Capture phase prevents the normal message click handler from treating
+     * an expand-button tap as a message tap.
+     */
+    function installDelegatedExpandHandler() {
+        if (document.__oddiUniversalExpandHandlerInstalled) return;
+        document.__oddiUniversalExpandHandlerInstalled = true;
+
+        document.addEventListener("click", function (event) {
+            const button = event.target.closest?.(".user-expand-btn");
+            if (!button) return;
+
+            const bubble = button.closest(".user-message");
+            const textEl = bubble?.querySelector(".user-text");
+
+            if (!bubble || !textEl) return;
+
             event.preventDefault();
             event.stopPropagation();
+            event.stopImmediatePropagation();
 
             const expanded =
                 textEl.classList.contains("user-text-expanded");
@@ -7581,110 +8036,87 @@ loadConversations();
             if (expanded) {
                 textEl.classList.remove("user-text-expanded");
                 textEl.classList.add("user-text-collapsible");
-                updateExpandButton(button, false);
             } else {
                 textEl.classList.remove("user-text-collapsible");
                 textEl.classList.add("user-text-expanded");
-                updateExpandButton(button, true);
             }
-        });
 
-        textEl.appendChild(button);
+            updateExpandButton(button, !expanded);
+        }, true);
     }
 
-    function enhanceUserMessages(root) {
-        (root || document)
-            .querySelectorAll(".user-message .user-text")
-            .forEach(addExpandControl);
-    }
+    function installObservers() {
+        if (document.__oddiUniversalExpandObserversInstalled) return;
+        document.__oddiUniversalExpandObserversInstalled = true;
 
-    function toggleActions(bubble) {
-        if (!isTouch() || !bubble) return;
+        const chat = document.querySelector(".chatbox");
+        if (!chat) {
+            /*
+             * Body can still be unavailable in unusual template timing.
+             * Retry after DOMContentLoaded rather than silently giving up.
+             */
+            return;
+        }
 
-        const wasVisible =
-            bubble.classList.contains("actions-visible");
+        let refreshQueued = false;
 
-        document
-            .querySelectorAll(
-                ".user-message.actions-visible, .bot-message.actions-visible"
-            )
-            .forEach(other => {
-                if (other !== bubble) {
-                    other.classList.remove("actions-visible");
-                }
-            });
+        const queueRefresh = () => {
+            if (refreshQueued) return;
+            refreshQueued = true;
 
-        bubble.classList.toggle("actions-visible", !wasVisible);
-    }
-
-    function bind(root) {
-        (root || document)
-            .querySelectorAll(".user-message, .bot-message")
-            .forEach(bubble => {
-                if (bubble.dataset.messageUiV4Bound === "1") return;
-
-                bubble.dataset.messageUiV4Bound = "1";
-
-                bubble.addEventListener("click", function (event) {
-                    if (!isTouch()) return;
-
-                    /* Clicking the SVG expand button must not toggle actions. */
-                    if (
-                        event.target.closest(
-                            ".user-expand-btn, button, a, input, textarea, select"
-                        )
-                    ) {
-                        return;
-                    }
-
-                    toggleActions(bubble);
-                });
-            });
-    }
-
-    function refresh(root) {
-        enhanceUserMessages(root);
-        bind(root);
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener(
-            "DOMContentLoaded",
-            () => refresh(document)
-        );
-    } else {
-        refresh(document);
-    }
-
-    const chat = document.querySelector(".chatbox");
-
-    if (chat) {
-        const observer = new MutationObserver(mutations => {
-            if (
-                mutations.some(
-                    mutation =>
-                        mutation.type === "childList" &&
-                        mutation.addedNodes.length
-                )
-            ) {
+            requestAnimationFrame(() => {
+                refreshQueued = false;
                 refresh(chat);
-            }
-        });
+            });
+        };
+
+        const observer = new MutationObserver(queueRefresh);
 
         observer.observe(chat, {
             childList: true,
-            subtree: true
+            subtree: true,
+            characterData: true
         });
-    }
-    window.addEventListener("resize", () => {
-        if (!isTouch()) {
-            document
-                .querySelectorAll(".actions-visible")
-                .forEach(el => el.classList.remove("actions-visible"));
-        }
-    });
-})();
 
+        window.addEventListener("resize", queueRefresh, { passive: true });
+        window.addEventListener("orientationchange", queueRefresh, { passive: true });
+        window.addEventListener("load", queueRefresh, { once: true });
+
+        /*
+         * Streaming can change wrapping without producing a useful mutation
+         * for layout. Keep checking while the page is alive.
+         */
+        let lastCheck = 0;
+
+        function visualCheck(time) {
+            if (time - lastCheck >= 300) {
+                lastCheck = time;
+                refresh(chat);
+            }
+            requestAnimationFrame(visualCheck);
+        }
+
+        requestAnimationFrame(visualCheck);
+
+        refresh(chat);
+    }
+
+    window.__oddiRefreshUserExpandControls = function () {
+        refresh(document);
+    };
+
+    function init() {
+        installDelegatedExpandHandler();
+        installObservers();
+        refresh(document);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", init, { once: true });
+    } else {
+        init();
+    }
+})();
 </script>
 
 <style id="final-bot-message-match-user">.bot-message, .bot-message.pinned-message, .bot-message.stopped-message{width:min(760px,88%) !important;max-width:min(760px,88%) !important;align-self:center !important;display:flex !important;flex-direction:column !important;align-items:center !important;margin:0 auto 18px auto !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#111 !important;box-sizing:border-box !important;}.bot-message .bot-header{width:fit-content !important;max-width:100% !important;margin:0 0 7px 0 !important;padding:0 !important;display:flex !important;align-items:center !important;justify-content:center !important;gap:8px !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#111 !important;}.bot-message .bot-header b{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important;margin:0 !important;color:inherit !important;}.bot-message .message-sound-btn{width:32px !important;height:32px !important;min-width:32px !important;min-height:32px !important;flex:0 0 32px !important;padding:0 !important;margin:0 !important;border:0 !important;border-radius:50% !important;background:#f5f5f5 !important;color:#111 !important;box-shadow:none !important;}.bot-message .message-sound-btn:hover{background:#eaeaea !important;}.bot-message .message-sound-btn.speaking{background:#111 !important;color:#fff !important;}.bot-message .ai-content{display:block !important;width:100% !important;max-width:100% !important;margin:0 !important;padding:0 !important;box-sizing:border-box !important;background:transparent !important;color:#111 !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;line-height:1.5 !important;overflow-wrap:anywhere !important;word-break:normal !important;text-align:left !important;}.bot-message .ai-content, .bot-message .ai-content > *{background:transparent !important;}.bot-message .ai-content{border:0 !important;border-radius:0 !important;box-shadow:none !important;}.bot-message .ai-content > *:first-child{margin-top:0 !important;}.bot-message .ai-content > *:last-child{margin-bottom:0 !important;}.bot-message .ai-content p, .bot-message .ai-content h1, .bot-message .ai-content h2, .bot-message .ai-content h3, .bot-message .ai-content h4, .bot-message .ai-content h5, .bot-message .ai-content h6, .bot-message .ai-content ul, .bot-message .ai-content ol, .bot-message .ai-content blockquote, .bot-message .ai-content table{background:transparent !important;}.bot-message .bot-actions{display:flex !important;align-items:center !important;justify-content:center !important;flex-wrap:wrap !important;gap:5px !important;width:fit-content !important;max-width:100% !important;margin:7px auto 0 !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;}.bot-message .bot-actions .message-action-btn{min-width:0 !important;min-height:28px !important;width:auto !important;height:28px !important;padding:4px 7px !important;margin:0 !important;border:0 !important;border-radius:8px !important;background:transparent !important;color:#666 !important;box-shadow:none !important;}.bot-message .bot-actions .message-action-btn:hover{background:#ededed !important;color:#111 !important;}.bot-message::before, .bot-message::after, .bot-message.pinned-message::before, .bot-message.pinned-message::after{display:none !important;content:none !important;}body.dark-mode .bot-message, body.dark-mode .bot-message.pinned-message, body.dark-mode .bot-message.stopped-message{background:transparent !important;border:0 !important;box-shadow:none !important;color:#f2f2f2 !important;}body.dark-mode .bot-message .bot-header{background:transparent !important;color:#f2f2f2 !important;}body.dark-mode .bot-message .message-sound-btn{background:#f5f5f5 !important;color:#111 !important;}body.dark-mode .bot-message .message-sound-btn:hover{background:#dedede !important;}body.dark-mode .bot-message .message-sound-btn.speaking{background:#fff !important;color:#111 !important;}body.dark-mode .bot-message .ai-content{background:transparent !important;color:#f2f2f2 !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;padding:0 !important;}body.dark-mode .bot-message .ai-content > *{background:transparent !important;color:inherit;}body.dark-mode .bot-message .bot-actions, body.dark-mode .bot-message .bot-actions .message-action-btn{background:transparent !important;border:0 !important;box-shadow:none !important;color:#bdbdbd !important;}body.dark-mode .bot-message .bot-actions .message-action-btn:hover{background:#242424 !important;color:#fff !important;}@media (max-width: 768px) and (pointer: coarse) { .bot-message, .bot-message.pinned-message, .bot-message.stopped-message{width:calc(100vw - 34px) !important;max-width:calc(100vw - 34px) !important;margin:0 auto 18px auto !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;}.bot-message .ai-content{width:100% !important;max-width:100% !important;margin:0 !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;font-size:15px !important;line-height:1.6 !important;}.bot-message .bot-header{margin-bottom:7px !important;}.bot-message .bot-actions{margin-top:7px !important;}
@@ -8612,6 +9044,54 @@ loadConversations();
         initPhoneSidebar();
     }
     window.addEventListener("resize", initPhoneSidebar);
+})();
+</script>
+
+
+<script id="oddi-message-interaction-final-bridge">
+(function () {
+    "use strict";
+
+    const phoneQuery = window.matchMedia("(max-width: 768px)");
+
+    function phoneMode() {
+        return phoneQuery.matches;
+    }
+
+    document.addEventListener("click", function (event) {
+        if (!phoneMode()) return;
+
+        const expand = event.target.closest(".user-expand-btn");
+        if (expand) {
+            /* Its own handler owns this interaction. */
+            return;
+        }
+
+        const control = event.target.closest(
+            ".user-message button, .bot-message button, " +
+            ".user-message a, .bot-message a, " +
+            ".user-message input, .bot-message input, " +
+            ".user-message textarea, .bot-message textarea, " +
+            ".user-message select, .bot-message select"
+        );
+        if (control) return;
+
+        const bubble = event.target.closest(".user-message, .bot-message");
+        if (!bubble) return;
+
+        document
+            .querySelectorAll(".user-message.actions-visible, .bot-message.actions-visible")
+            .forEach(other => {
+                if (other !== bubble) {
+                    other.classList.remove("actions-visible");
+                }
+            });
+
+        bubble.classList.toggle(
+            "actions-visible",
+            !bubble.classList.contains("actions-visible")
+        );
+    }, false);
 })();
 </script>
 
