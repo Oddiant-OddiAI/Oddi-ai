@@ -867,6 +867,523 @@ body.dark-mode .user-message .user-expand-btn:hover{
 }
 </style>
 
+
+<style id="oddi-modal-top-layer-fix">
+/* Rename/Delete confirmations must always sit above the sidebar, popovers,
+   overlays and every other normal UI layer. */
+#renameModal,
+#deleteModal,
+#actionConfirmModal{
+    position:fixed !important;
+    z-index:2147483647 !important;
+}
+#renameModal.show,
+#deleteModal.show,
+#actionConfirmModal.show{
+    z-index:2147483647 !important;
+}
+</style>
+
+<style id="oddi-mobile-longpress-chat-actions-v2">
+@media (max-width: 768px) and (pointer: coarse) {
+  .history-item.oddi-longpress-armed {
+    background: #f0f0f0 !important;
+    border-color: #dedede !important;
+    transform: none !important;
+  }
+  body.dark-mode .history-item.oddi-longpress-armed {
+    background: #1d1d1d !important;
+    border-color: #333 !important;
+  }
+
+  /* Compact contextual menu: anchored beside the long-pressed chat,
+     similar to a native chat-history action popover. */
+  #oddiLongPressMenu {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 150px !important;
+    max-width: calc(100vw - 16px) !important;
+    box-sizing: border-box !important;
+    padding: 6px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 14px !important;
+    background: rgba(255,255,255,.98) !important;
+    box-shadow: 0 10px 28px rgba(0,0,0,.14) !important;
+    z-index: 2147483646 !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translateY(5px) !important;
+    transition: opacity .14s ease, transform .14s ease, visibility .14s ease !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+  #oddiLongPressMenu.show {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+  #oddiLongPressMenu .oddi-longpress-title {
+    display: none !important;
+  }
+  #oddiLongPressMenu button {
+    width: 100% !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 9px !important;
+    padding: 0 9px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    color: #111 !important;
+    text-align: left !important;
+    font: inherit !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+  #oddiLongPressMenu button:active {
+    background: #eeeeee !important;
+  }
+  #oddiLongPressMenu .oddi-longpress-icon {
+    width: 19px !important;
+    flex: 0 0 19px !important;
+    text-align: center !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+  }
+  #oddiLongPressBackdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483645 !important;
+    background: rgba(0,0,0,.08) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transition: opacity .14s ease, visibility .14s ease !important;
+  }
+  #oddiLongPressBackdrop.show {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+  body.dark-mode #oddiLongPressMenu {
+    background: rgba(20,20,20,.98) !important;
+    border-color: #333 !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,.55) !important;
+  }
+  body.dark-mode #oddiLongPressMenu button { color: #fff !important; }
+  body.dark-mode #oddiLongPressMenu button:active { background: #292929 !important; }
+}
+@media (min-width: 769px), (pointer: fine) {
+  #oddiLongPressMenu, #oddiLongPressBackdrop { display: none !important; }
+}
+</style>
+
+<script id="oddi-mobile-longpress-chat-actions-v2-js">
+(function () {
+    "use strict";
+
+    var HOLD_MS = 650;
+    var activeItem = null;
+    var activeConversation = null;
+    var activeConversationIndex = -1;
+    var holdTimer = null;
+    var suppressNextClick = false;
+    var startX = 0;
+    var startY = 0;
+    var touchIdentifier = null;
+
+    function isPhone() {
+        return window.matchMedia &&
+            window.matchMedia("(max-width: 768px) and (pointer: coarse)").matches;
+    }
+
+    function getMenu() {
+        var menu = document.getElementById("oddiLongPressMenu");
+        if (menu) return menu;
+
+        var backdrop = document.createElement("div");
+        backdrop.id = "oddiLongPressBackdrop";
+        backdrop.setAttribute("aria-hidden", "true");
+        document.body.appendChild(backdrop);
+
+        menu = document.createElement("div");
+        menu.id = "oddiLongPressMenu";
+        menu.setAttribute("role", "menu");
+        menu.setAttribute("aria-hidden", "true");
+        menu.innerHTML =
+            '<div class="oddi-longpress-title" id="oddiLongPressTitle"></div>' +
+            '<button type="button" data-action="rename" role="menuitem">' +
+                '<span class="oddi-longpress-icon">✏️</span><span>Rename</span>' +
+            '</button>' +
+            '<button type="button" data-action="pin" role="menuitem">' +
+                '<span class="oddi-longpress-icon">📌</span><span id="oddiLongPressPinLabel">Pin</span>' +
+            '</button>' +
+            '<button type="button" data-action="delete" role="menuitem">' +
+                '<span class="oddi-longpress-icon">🗑️</span><span>Delete</span>' +
+            '</button>';
+        document.body.appendChild(menu);
+
+        backdrop.addEventListener("pointerdown", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeMenu();
+        }, true);
+
+        menu.addEventListener("pointerdown", function (event) {
+            event.stopPropagation();
+        }, true);
+
+        function handleMenuAction(event) {
+            var button = event.target && event.target.closest
+                ? event.target.closest("button[data-action]") : null;
+            if (!button || !activeConversation) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+
+            var action = button.dataset.action;
+            var conversation = activeConversation;
+            var conversationIndex = activeConversationIndex;
+
+            closeMenu();
+
+            if (conversationIndex < 0 || conversations[conversationIndex] !== conversation) {
+                conversationIndex = conversations.indexOf(conversation);
+            }
+            if (conversationIndex < 0) return;
+
+            if (action === "rename") {
+                closeSidebarForModal();
+                renameInput.value = conversation.title || "";
+                renameIndex = conversationIndex;
+                renameModal.classList.add("show");
+                setTimeout(function () {
+                    try { renameInput.focus(); renameInput.select(); } catch (_) {}
+                }, 0);
+            } else if (action === "pin") {
+                togglePinConversation(conversation);
+            } else if (action === "delete") {
+                closeSidebarForModal();
+                deleteIndex = conversationIndex;
+                deleteModal.classList.add("show");
+            }
+        }
+
+        menu.addEventListener("pointerup", function (event) {
+            if (event.pointerType === "touch") handleMenuAction(event);
+        }, true);
+
+        menu.addEventListener("click", function (event) {
+            handleMenuAction(event);
+        }, true);
+
+        return menu;
+    }
+
+    function clearHold() {
+        if (holdTimer) {
+            clearTimeout(holdTimer);
+            holdTimer = null;
+        }
+        if (activeItem) {
+            activeItem.classList.remove("oddi-longpress-armed");
+        }
+    }
+
+    function closeMenu() {
+        var menu = document.getElementById("oddiLongPressMenu");
+        var backdrop = document.getElementById("oddiLongPressBackdrop");
+
+        if (menu) {
+            menu.classList.remove("show");
+            menu.setAttribute("aria-hidden", "true");
+        }
+        if (backdrop) {
+            backdrop.classList.remove("show");
+        }
+
+        if (activeItem) {
+            activeItem.classList.remove("oddi-longpress-armed");
+        }
+
+        activeItem = null;
+        activeConversation = null;
+        activeConversationIndex = -1;
+        touchIdentifier = null;
+        suppressNextClick = false;
+    }
+
+    function openMenu(item) {
+        if (!isPhone() || !item) return;
+
+        clearHold();
+        activeItem = item;
+
+        var itemIndex = Number(item.dataset.index);
+        activeConversationIndex = Number.isInteger(itemIndex) ? itemIndex : -1;
+        activeConversation =
+            activeConversationIndex >= 0 &&
+            activeConversationIndex < conversations.length
+                ? conversations[activeConversationIndex]
+                : null;
+
+        if (!activeConversation) {
+            activeConversationIndex = conversations.indexOf(
+                conversations.find(function (conversation) {
+                    return getConversationKey(conversation) === item.dataset.conversationId;
+                })
+            );
+            activeConversation =
+                activeConversationIndex >= 0
+                    ? conversations[activeConversationIndex]
+                    : null;
+        }
+
+        if (!activeConversation) {
+            closeMenu();
+            return;
+        }
+
+        var title = item.querySelector(".history-title");
+        var titleNode = document.getElementById("oddiLongPressTitle");
+        var pinButton = item.querySelector(".chat-pin-btn");
+        var pinLabel = document.getElementById("oddiLongPressPinLabel");
+
+        if (titleNode) {
+            titleNode.textContent = title ? title.textContent.trim() : "Chat";
+        }
+        if (pinLabel) {
+            pinLabel.textContent =
+                pinButton && pinButton.classList.contains("active") ? "Unpin" : "Pin";
+        }
+
+        var menu = getMenu();
+        var backdrop = document.getElementById("oddiLongPressBackdrop");
+
+        if (navigator.vibrate) {
+            try { navigator.vibrate(12); } catch (_) {}
+        }
+
+        /* Show it invisibly first so its real height can be measured. */
+        menu.classList.add("show");
+        menu.setAttribute("aria-hidden", "false");
+        if (backdrop) backdrop.classList.add("show");
+
+        var itemRect = item.getBoundingClientRect();
+        var menuWidth = menu.offsetWidth || 150;
+        var menuHeight = menu.offsetHeight || 130;
+        var viewportWidth = window.innerWidth;
+        var viewportHeight = window.innerHeight;
+        var gap = 4;
+
+        /* Anchor the menu directly to the clicked chat row. It opens just
+           below the row when there is room; otherwise it flips above it.
+           Keep the horizontal position aligned with the row and clamp it
+           to the phone viewport so it never disappears off-screen. */
+        var left = itemRect.left;
+        left = Math.max(8, Math.min(left, viewportWidth - menuWidth - 8));
+
+        var spaceBelow = viewportHeight - itemRect.bottom - 8;
+        var spaceAbove = itemRect.top - 8;
+        var top;
+
+        if (spaceBelow >= menuHeight + gap || spaceBelow >= spaceAbove) {
+            top = itemRect.bottom + gap;
+        } else {
+            top = itemRect.top - menuHeight - gap;
+        }
+        top = Math.max(8, Math.min(top, viewportHeight - menuHeight - 8));
+
+        /* The base mobile CSS intentionally uses !important on left/top.
+           Use inline !important here so the contextual position wins over
+           those defaults. */
+        menu.style.setProperty("left", Math.round(left) + "px", "important");
+        menu.style.setProperty("top", Math.round(top) + "px", "important");
+
+        suppressNextClick = true;
+    }
+
+    function beginHold(item, event) {
+        if (!isPhone() || !item) return;
+        if (event.target.closest &&
+            event.target.closest(".history-actions, button, a, input, textarea, select")) {
+            return;
+        }
+
+        clearHold();
+
+        if (event.touches && event.touches.length) {
+            var touch = event.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            touchIdentifier = touch.identifier;
+        } else {
+            startX = event.clientX || 0;
+            startY = event.clientY || 0;
+        }
+
+        item.classList.add("oddi-longpress-armed");
+
+        holdTimer = setTimeout(function () {
+            holdTimer = null;
+            openMenu(item);
+        }, HOLD_MS);
+    }
+
+    function moveHold(event) {
+        if (!holdTimer) return;
+
+        var x, y;
+        if (event.touches && event.touches.length) {
+            var touch = null;
+            for (var i = 0; i < event.touches.length; i++) {
+                if (touchIdentifier === null || event.touches[i].identifier === touchIdentifier) {
+                    touch = event.touches[i];
+                    break;
+                }
+            }
+            if (!touch) return;
+            x = touch.clientX;
+            y = touch.clientY;
+        } else {
+            x = event.clientX || 0;
+            y = event.clientY || 0;
+        }
+
+        if (Math.abs(x - startX) > 12 || Math.abs(y - startY) > 12) {
+            clearHold();
+        }
+    }
+
+    function endHold(event) {
+        if (holdTimer) {
+            clearHold();
+            return;
+        }
+
+        /*
+         * IMPORTANT: once the contextual menu is open, the next touch may
+         * land on Rename / Pin / Delete. Never prevent that touch's default
+         * action. Only suppress the synthetic touch/click that returns to
+         * the original history row after a long-press.
+         */
+        if (suppressNextClick && activeItem && event) {
+            var target = event.target;
+            var returnedToHistoryRow = target === activeItem ||
+                (target && activeItem.contains && activeItem.contains(target));
+
+            if (returnedToHistoryRow) {
+                if (event.preventDefault) event.preventDefault();
+                if (event.stopPropagation) event.stopPropagation();
+            }
+        }
+    }
+
+    document.addEventListener("touchstart", function (event) {
+        if (!isPhone()) return;
+        var item = event.target.closest ? event.target.closest(".history-item") : null;
+        if (!item) return;
+        beginHold(item, event);
+    }, { capture: true, passive: true });
+
+    document.addEventListener("touchmove", function (event) {
+        if (!isPhone()) return;
+        moveHold(event);
+    }, { capture: true, passive: true });
+
+    document.addEventListener("touchend", function (event) {
+        if (!isPhone()) return;
+        endHold(event);
+        touchIdentifier = null;
+    }, { capture: true, passive: false });
+
+    document.addEventListener("touchcancel", function () {
+        clearHold();
+        touchIdentifier = null;
+    }, { capture: true, passive: true });
+
+    document.addEventListener("contextmenu", function (event) {
+        if (!isPhone()) return;
+        var item = event.target.closest ? event.target.closest(".history-item") : null;
+        if (!item) return;
+        event.preventDefault();
+        event.stopPropagation();
+    }, true);
+
+    document.addEventListener("click", function (event) {
+        if (!isPhone()) return;
+
+        var item = event.target.closest ? event.target.closest(".history-item") : null;
+
+        if (suppressNextClick) {
+            /*
+             * Only suppress the synthetic click that lands back on the
+             * long-pressed history row. Never suppress clicks on the
+             * contextual menu itself (which lives outside .history-item).
+             */
+            if (item && activeItem && item === activeItem) {
+                suppressNextClick = false;
+                event.preventDefault();
+                event.stopPropagation();
+                return;
+            }
+
+            /*
+             * If the browser emits the post-long-press click somewhere else,
+             * leave it alone. The flag will be cleared when the menu closes.
+             */
+        }
+
+        if (!item) return;
+
+        if (event.target.closest &&
+            event.target.closest(".history-actions, button, a, input, textarea, select")) {
+            return;
+        }
+    }, true);
+
+    document.addEventListener("pointerdown", function (event) {
+        if (!isPhone()) return;
+        if (event.pointerType !== "touch") return;
+
+        var item = event.target.closest ? event.target.closest(".history-item") : null;
+        if (!item) return;
+
+        beginHold(item, event);
+    }, true);
+
+    document.addEventListener("pointermove", function (event) {
+        if (!isPhone() || event.pointerType !== "touch") return;
+        moveHold(event);
+    }, true);
+
+    document.addEventListener("pointerup", function (event) {
+        if (!isPhone() || event.pointerType !== "touch") return;
+        endHold(event);
+    }, true);
+
+    document.addEventListener("pointercancel", function (event) {
+        if (!isPhone() || event.pointerType !== "touch") return;
+        clearHold();
+    }, true);
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") closeMenu();
+    }, true);
+
+    window.__oddiCloseLongPressChatMenu = closeMenu;
+})();
+</script>
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 <div id="appLockOverlay" class="app-lock-overlay" aria-hidden="true" style="display:none;">
@@ -3697,6 +4214,72 @@ function buildDocxHtml(conversation, clone) {
     min-width:32px !important;
     flex-basis:32px !important;
   }
+}
+</style>
+
+<style id="oddi-mobile-composer-final-position-v3">
+@media (max-width:768px) and (pointer:coarse) {
+    .input-area {
+        left: 7px !important;
+        right: 7px !important;
+        bottom: max(28px, calc(env(safe-area-inset-bottom) + 23px)) !important;
+        width: auto !important;
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+        padding: 3px 4px !important;
+        gap: 2px !important;
+        border-radius: 14px !important;
+        z-index: 2147483647 !important;
+    }
+    .input-area textarea {
+        height: 30px !important;
+        min-height: 30px !important;
+        max-height: 30px !important;
+        padding: 5px 4px !important;
+        font-size: 12px !important;
+        line-height: 1.3 !important;
+    }
+    .attach-btn,.dictation-btn,.voice-btn,.send-btn {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        min-height: 30px !important;
+        flex: 0 0 30px !important;
+        border-radius: 50% !important;
+    }
+    .attach-btn { font-size: 16px !important; }
+    .dictation-btn svg,.voice-btn svg { width: 15px !important; height: 15px !important; }
+    .send-btn { font-size: 16px !important; }
+    .action-button-slot {
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        flex: 0 0 30px !important;
+    }
+    #mobileToolMenu {
+        left: 8px !important;
+        bottom: calc(max(28px, calc(env(safe-area-inset-bottom) + 23px)) + 44px) !important;
+        width: 178px !important;
+        padding: 3px !important;
+        border-radius: 10px !important;
+        gap: 0 !important;
+        z-index: 2147483646 !important;
+    }
+    .mobile-tool-item {
+        min-height: 25px !important;
+        height: 25px !important;
+        padding: 0 7px !important;
+        gap: 6px !important;
+        border-radius: 6px !important;
+        font-size: 10px !important;
+        line-height: 1 !important;
+    }
+    .mobile-tool-icon {
+        width: 16px !important;
+        font-size: 12px !important;
+        line-height: 1 !important;
+    }
 }
 </style>
 
@@ -9405,5 +9988,427 @@ loadConversations();
 })();
 </script>
 
-</body>
+\n\n</body>
+
+
+<style id="oddi-mobile-composer-buttons-v5">
+@media (max-width:768px) and (pointer:coarse) {
+    /* Empty state: keep the three composer controls safely inside the border. */
+    .attach-btn,
+    .dictation-btn,
+    .voice-btn,
+    .send-btn {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        min-height: 28px !important;
+        flex: 0 0 28px !important;
+        flex-basis: 28px !important;
+        border-radius: 50% !important;
+        box-sizing: border-box !important;
+    }
+
+    .attach-btn {
+        font-size: 15px !important;
+    }
+
+    .dictation-btn svg,
+    .voice-btn svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+
+    .send-btn {
+        font-size: 15px !important;
+    }
+
+    .action-button-slot {
+        width: 28px !important;
+        height: 28px !important;
+        min-width: 28px !important;
+        flex: 0 0 28px !important;
+        flex-basis: 28px !important;
+    }
+
+    /* Typing: smoothly grow those same controls to the normal size. */
+    body.mobile-composer-typing .attach-btn,
+    body.mobile-composer-typing .dictation-btn,
+    body.mobile-composer-typing .voice-btn,
+    body.mobile-composer-typing .send-btn {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        flex: 0 0 38px !important;
+        flex-basis: 38px !important;
+    }
+
+    body.mobile-composer-typing .attach-btn {
+        font-size: 20px !important;
+    }
+
+    body.mobile-composer-typing .dictation-btn svg,
+    body.mobile-composer-typing .voice-btn svg {
+        width: 19px !important;
+        height: 19px !important;
+    }
+
+    body.mobile-composer-typing .send-btn {
+        font-size: 20px !important;
+    }
+
+    body.mobile-composer-typing .action-button-slot {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        flex: 0 0 38px !important;
+        flex-basis: 38px !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .attach-btn,
+        .dictation-btn,
+        .voice-btn,
+        .send-btn,
+        .action-button-slot {
+            transition: none !important;
+        }
+    }
+}
+</style>
+
 </html>
+
+
+<style id="oddi-mobile-composer-final-polish-v4">
+@media (max-width:768px) and (pointer:coarse) {
+    /* Empty home state: slightly smaller + lifted from the bottom. */
+    .input-area {
+        left: 7px !important;
+        right: 7px !important;
+        bottom: max(14px, calc(env(safe-area-inset-bottom) + 9px)) !important;
+        width: auto !important;
+        height: 42px !important;
+        min-height: 42px !important;
+        max-height: 42px !important;
+        padding: 4px 5px !important;
+        gap: 2px !important;
+        border-radius: 15px !important;
+        transform: translateZ(0) scale(.96) !important;
+        transform-origin: center bottom !important;
+        transition:
+            height .28s cubic-bezier(.22,1,.36,1),
+            min-height .28s cubic-bezier(.22,1,.36,1),
+            max-height .28s cubic-bezier(.22,1,.36,1),
+            padding .28s cubic-bezier(.22,1,.36,1),
+            border-radius .28s cubic-bezier(.22,1,.36,1),
+            transform .28s cubic-bezier(.22,1,.36,1),
+            box-shadow .28s ease !important;
+    }
+
+    .input-area textarea {
+        height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        padding: 6px 5px !important;
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+        transition:
+            height .28s cubic-bezier(.22,1,.36,1),
+            min-height .28s cubic-bezier(.22,1,.36,1),
+            max-height .28s cubic-bezier(.22,1,.36,1),
+            padding .28s cubic-bezier(.22,1,.36,1),
+            font-size .28s ease !important;
+    }
+
+    .attach-btn,
+    .dictation-btn,
+    .voice-btn,
+    .send-btn {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        min-height: 32px !important;
+        flex: 0 0 32px !important;
+        border-radius: 50% !important;
+        transition:
+            width .28s cubic-bezier(.22,1,.36,1),
+            height .28s cubic-bezier(.22,1,.36,1),
+            min-width .28s cubic-bezier(.22,1,.36,1),
+            min-height .28s cubic-bezier(.22,1,.36,1),
+            flex-basis .28s cubic-bezier(.22,1,.36,1),
+            transform .18s ease,
+            background .18s ease !important;
+    }
+
+    .attach-btn { font-size: 17px !important; }
+    .dictation-btn svg,
+    .voice-btn svg { width: 16px !important; height: 16px !important; }
+    .send-btn { font-size: 17px !important; }
+
+    .action-button-slot {
+        width: 32px !important;
+        height: 32px !important;
+        min-width: 32px !important;
+        flex: 0 0 32px !important;
+        transition:
+            width .28s cubic-bezier(.22,1,.36,1),
+            height .28s cubic-bezier(.22,1,.36,1),
+            min-width .28s cubic-bezier(.22,1,.36,1),
+            flex-basis .28s cubic-bezier(.22,1,.36,1) !important;
+    }
+
+    /* The three home tools track the composer and remain directly above it. */
+    #mobileToolMenu {
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        bottom: calc(max(14px, calc(env(safe-area-inset-bottom) + 9px)) + 48px) !important;
+        padding: 0 2px 3px !important;
+        gap: 0 !important;
+        transition:
+            bottom .28s cubic-bezier(.22,1,.36,1),
+            opacity .2s ease,
+            transform .28s cubic-bezier(.22,1,.36,1) !important;
+    }
+
+    .mobile-tool-item {
+        min-height: 31px !important;
+        height: 31px !important;
+        padding: 0 7px !important;
+        gap: 7px !important;
+        font-size: 11px !important;
+    }
+
+    .mobile-tool-icon {
+        width: 17px !important;
+        min-width: 17px !important;
+        font-size: 13px !important;
+    }
+
+    /* Typing state: smoothly grows to the current 50px composer size. */
+    body.mobile-composer-typing .input-area {
+        bottom: max(14px, calc(env(safe-area-inset-bottom) + 9px)) !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+        padding: 5px 6px !important;
+        border-radius: 17px !important;
+        transform: translateZ(0) scale(1) !important;
+    }
+
+    body.mobile-composer-typing .input-area textarea {
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        padding: 9px 5px !important;
+        font-size: 14px !important;
+        line-height: 1.4 !important;
+    }
+
+    body.mobile-composer-typing .attach-btn,
+    body.mobile-composer-typing .dictation-btn,
+    body.mobile-composer-typing .voice-btn,
+    body.mobile-composer-typing .send-btn {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        flex-basis: 38px !important;
+    }
+
+    body.mobile-composer-typing .attach-btn { font-size: 20px !important; }
+    body.mobile-composer-typing .dictation-btn svg,
+    body.mobile-composer-typing .voice-btn svg { width: 19px !important; height: 19px !important; }
+    body.mobile-composer-typing .send-btn { font-size: 20px !important; }
+
+    body.mobile-composer-typing .action-button-slot {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        flex-basis: 38px !important;
+    }
+
+    body.mobile-composer-typing #mobileToolMenu {
+        bottom: calc(max(14px, calc(env(safe-area-inset-bottom) + 9px)) + 56px) !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .input-area,
+    .input-area textarea,
+    .attach-btn,
+    .dictation-btn,
+    .voice-btn,
+    .send-btn,
+    .action-button-slot,
+    #mobileToolMenu {
+        transition: none !important;
+    }
+}
+</style>
+
+
+<script id="oddi-mobile-composer-final-polish-v4-js">
+(function () {
+    "use strict";
+
+    const mobileQuery = window.matchMedia("(max-width:768px) and (pointer:coarse)");
+    if (!mobileQuery.matches) return;
+
+    const input = document.getElementById("userInput");
+    if (!input) return;
+
+    function syncComposerSize() {
+        const hasText = input.value.trim().length > 0;
+        document.body.classList.toggle("mobile-composer-typing", hasText);
+    }
+
+    input.addEventListener("input", syncComposerSize, true);
+    input.addEventListener("change", syncComposerSize, true);
+    input.addEventListener("keyup", syncComposerSize, true);
+
+    syncComposerSize();
+})();
+</script>
+
+<style id="oddi-composer-button-overlap-final-fix">
+@media (max-width:768px) and (pointer:coarse) {
+    /* Final mobile empty-state sizing:
+       keep every control completely inside the composer border. */
+    .input-area {
+        overflow: hidden !important;
+    }
+
+    .input-area > .attach-btn,
+    .input-area > .dictation-btn,
+    .input-area > .action-button-slot,
+    .input-area > .action-button-slot .voice-btn,
+    .input-area > .action-button-slot .send-btn {
+        box-sizing: border-box !important;
+    }
+
+    .input-area > .attach-btn,
+    .input-area > .dictation-btn,
+    .input-area > .action-button-slot {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        flex: 0 0 24px !important;
+        flex-basis: 24px !important;
+    }
+
+    /* Remove any inherited/old grey circle from the wrapper itself. */
+    .input-area > .action-button-slot {
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        outline: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        overflow: visible !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .input-area > .attach-btn,
+    .input-area > .dictation-btn,
+    .input-area > .action-button-slot .voice-btn,
+    .input-area > .action-button-slot .send-btn {
+        width: 24px !important;
+        height: 24px !important;
+        min-width: 24px !important;
+        min-height: 24px !important;
+        flex: 0 0 24px !important;
+        flex-basis: 24px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        border-radius: 50% !important;
+        outline: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        appearance: none !important;
+        -webkit-appearance: none !important;
+        transition:
+            width .28s cubic-bezier(.22,1,.36,1),
+            height .28s cubic-bezier(.22,1,.36,1),
+            min-width .28s cubic-bezier(.22,1,.36,1),
+            min-height .28s cubic-bezier(.22,1,.36,1),
+            flex-basis .28s cubic-bezier(.22,1,.36,1),
+            font-size .28s cubic-bezier(.22,1,.36,1),
+            background .18s ease,
+            transform .18s ease !important;
+    }
+
+    .input-area > .attach-btn {
+        font-size: 14px !important;
+        line-height: 1 !important;
+    }
+
+    .input-area > .dictation-btn svg,
+    .input-area > .action-button-slot .voice-btn svg {
+        width: 13px !important;
+        height: 13px !important;
+        max-width: 13px !important;
+        max-height: 13px !important;
+    }
+
+    .input-area > .action-button-slot .send-btn {
+        font-size: 14px !important;
+        line-height: 1 !important;
+    }
+
+    /* Typing state: same controls smoothly grow, without the wrapper
+       creating a second/overlapping circle. */
+    body.mobile-composer-typing .input-area > .attach-btn,
+    body.mobile-composer-typing .input-area > .dictation-btn,
+    body.mobile-composer-typing .input-area > .action-button-slot,
+    body.mobile-composer-typing .input-area > .action-button-slot .voice-btn,
+    body.mobile-composer-typing .input-area > .action-button-slot .send-btn {
+        width: 36px !important;
+        height: 36px !important;
+        min-width: 36px !important;
+        min-height: 36px !important;
+        flex: 0 0 36px !important;
+        flex-basis: 36px !important;
+    }
+
+    body.mobile-composer-typing .input-area > .attach-btn {
+        font-size: 19px !important;
+    }
+
+    body.mobile-composer-typing .input-area > .dictation-btn svg,
+    body.mobile-composer-typing .input-area > .action-button-slot .voice-btn svg {
+        width: 18px !important;
+        height: 18px !important;
+        max-width: 18px !important;
+        max-height: 18px !important;
+    }
+
+    body.mobile-composer-typing .input-area > .action-button-slot .send-btn {
+        font-size: 19px !important;
+    }
+
+    body.mobile-composer-typing .input-area > .action-button-slot {
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+
+    .input-area > .attach-btn:hover,
+    .input-area > .dictation-btn:hover,
+    .input-area > .action-button-slot .voice-btn:hover,
+    .input-area > .action-button-slot .send-btn:hover {
+        background: rgba(127,127,127,.08) !important;
+        box-shadow: none !important;
+        transform: none !important;
+    }
+}
+</style>
