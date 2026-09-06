@@ -619,6 +619,147 @@
 }
 </style>
 
+
+<style id="oddi-phone-header-two-improvements-v1">
+@media (max-width: 768px) and (pointer: coarse) {
+    /* 1) Standalone light-gray circular menu button */
+    .header + .menu-btn,
+    #menuBtn.menu-btn {
+        position: fixed !important;
+        top: 8px !important;
+        left: 8px !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        max-width: 40px !important;
+        max-height: 40px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        border: 1px solid #dedede !important;
+        border-radius: 50% !important;
+        background: #eeeeee !important;
+        color: #222 !important;
+        box-shadow: none !important;
+        z-index: 2147483002 !important;
+    }
+
+    #menuBtn.menu-btn:hover {
+        background: #e7e7e7 !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    #menuBtn.menu-btn:active {
+        transform: scale(.96) !important;
+    }
+
+    #menuBtn.menu-btn svg {
+        width: 18px !important;
+        height: 18px !important;
+    }
+
+    /* 2) Three-dots + theme buttons inside one shared gray capsule */
+    .header-controls {
+        top: 8px !important;
+        right: 8px !important;
+        height: 40px !important;
+        width: auto !important;
+        padding: 3px !important;
+        gap: 2px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+        border: 1px solid #dedede !important;
+        border-radius: 999px !important;
+        background: #eeeeee !important;
+        box-shadow: none !important;
+    }
+
+    .header-controls .header-more,
+    .header-controls .theme-toggle {
+        width: 32px !important;
+        min-width: 32px !important;
+        max-width: 32px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        flex: 0 0 32px !important;
+        margin: 0 !important;
+        position: static !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .header-controls .header-more-btn,
+    .header-controls #themeBtn {
+        width: 32px !important;
+        min-width: 32px !important;
+        max-width: 32px !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        max-height: 32px !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 50% !important;
+        background: transparent !important;
+        color: #222 !important;
+        box-shadow: none !important;
+    }
+
+    .header-controls .header-more-btn:hover,
+    .header-controls #themeBtn:hover {
+        background: rgba(0,0,0,.07) !important;
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .header-controls .header-more-btn:active,
+    .header-controls #themeBtn:active {
+        transform: scale(.94) !important;
+    }
+
+    /* Keep the header logo from colliding with either control group. */
+    .header .logo-box {
+        max-width: calc(100% - 110px) !important;
+    }
+
+    /* Dark mode: same geometry, darker shared regions. */
+    body.dark-mode #menuBtn.menu-btn {
+        background: #1d1d1d !important;
+        border-color: #303030 !important;
+        color: #f2f2f2 !important;
+    }
+
+    body.dark-mode #menuBtn.menu-btn:hover {
+        background: #252525 !important;
+    }
+
+    body.dark-mode .header-controls {
+        background: #1d1d1d !important;
+        border-color: #303030 !important;
+    }
+
+    body.dark-mode .header-controls .header-more-btn,
+    body.dark-mode .header-controls #themeBtn {
+        background: transparent !important;
+        color: #f2f2f2 !important;
+    }
+
+    body.dark-mode .header-controls .header-more-btn:hover,
+    body.dark-mode .header-controls #themeBtn:hover {
+        background: rgba(255,255,255,.08) !important;
+    }
+}
+</style>
+
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 <div id="appLockOverlay" class="app-lock-overlay" aria-hidden="true" style="display:none;">
