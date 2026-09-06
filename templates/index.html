@@ -5215,6 +5215,13 @@ async function sendMessage(
     input.value = "";
     input.style.height = "auto";
 
+    /* Programmatic value changes do not fire "input", so explicitly
+       reset every mobile composer state immediately after Send. */
+    if (window.matchMedia("(max-width:768px) and (pointer:coarse)").matches) {
+        document.body.classList.remove("mobile-composer-typing");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
     selectedFiles = [];
     fileInput.value = "";
 
@@ -10520,3 +10527,201 @@ loadConversations();
     });
 })();
 </script>
+
+<style id="oddi-mobile-sidebar-selection-shield-v1">
+/*
+ * MOBILE SIDEBAR SELECTION SHIELD
+ * Prevent browser text-selection/copy UI from appearing when users
+ * tap, drag, or long-press sidebar content. Interactive controls are
+ * still fully clickable; the search field remains text-selectable.
+ */
+@media (max-width: 768px) and (pointer: coarse) {
+    #sidebar,
+    #sidebar * {
+        -webkit-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+    }
+
+    #sidebar button,
+    #sidebar a,
+    #sidebar [role="button"],
+    #sidebar .history-item {
+        -webkit-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+        -webkit-tap-highlight-color: transparent !important;
+    }
+
+    #sidebar .chat-search-input {
+        -webkit-user-select: text !important;
+        user-select: text !important;
+        -webkit-touch-callout: default !important;
+    }
+
+    #sidebar .history-title,
+    #sidebar .history-preview,
+    #sidebar .history-meta,
+    #sidebar .history-main,
+    #sidebar .history-date-group-label,
+    #sidebar .sidebar-section-label,
+    #sidebar .oddi-sidebar-brand,
+    #sidebar .oddi-account-copy,
+    #sidebar .oddi-account-name,
+    #sidebar .oddi-account-plan {
+        -webkit-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+    }
+}
+</style>
+
+<style id="oddi-mobile-composer-final-size-reset-v1">
+@media (max-width:768px) and (pointer:coarse) {
+    /*
+     * EMPTY STATE
+     * Slightly shorter and lifted a little higher from the bottom.
+     */
+    .input-area {
+        bottom: max(18px, calc(env(safe-area-inset-bottom) + 13px)) !important;
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        padding: 4px 5px !important;
+        border-radius: 15px !important;
+        transform: translateZ(0) scale(.96) !important;
+        transform-origin: center bottom !important;
+    }
+
+    .input-area textarea {
+        height: 28px !important;
+        min-height: 28px !important;
+        max-height: 28px !important;
+        padding: 5px 5px !important;
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+    }
+
+    /*
+     * TYPING STATE
+     * Grow smoothly to the existing comfortable 50px state.
+     */
+    body.mobile-composer-typing .input-area {
+        bottom: max(18px, calc(env(safe-area-inset-bottom) + 13px)) !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+        padding: 5px 6px !important;
+        border-radius: 17px !important;
+        transform: translateZ(0) scale(1) !important;
+    }
+
+    body.mobile-composer-typing .input-area textarea {
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        padding: 9px 5px !important;
+    }
+
+    /*
+     * Keep the tool row attached to the actual composer position.
+     */
+    #mobileToolMenu {
+        bottom: calc(max(18px, calc(env(safe-area-inset-bottom) + 13px)) + 44px) !important;
+    }
+
+    body.mobile-composer-typing #mobileToolMenu {
+        bottom: calc(max(18px, calc(env(safe-area-inset-bottom) + 13px)) + 56px) !important;
+    }
+}
+</style>
+
+<script id="oddi-mobile-sidebar-selection-shield-v1-js">
+(function () {
+    "use strict";
+
+    function isMobilePhone() {
+        return window.matchMedia &&
+            window.matchMedia("(max-width:768px) and (pointer:coarse)").matches;
+    }
+
+    function isEditable(target) {
+        return !!(
+            target &&
+            (
+                target.closest("input, textarea, [contenteditable='true']")
+            )
+        );
+    }
+
+    function protectSidebarSelection(event) {
+        if (!isMobilePhone()) return;
+
+        var sidebar = document.getElementById("sidebar");
+        if (!sidebar || !sidebar.contains(event.target)) return;
+
+        if (isEditable(event.target)) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
+    /*
+     * Capture before the browser creates a native selection/copy UI.
+     * This does NOT cancel click/pointer events, so sidebar buttons remain
+     * normal interactive controls.
+     */
+    document.addEventListener("selectstart", protectSidebarSelection, true);
+    document.addEventListener("dragstart", protectSidebarSelection, true);
+
+    /*
+     * Mobile browsers can expose a context/copy callout after a long press.
+     * Do not interfere with editable search input.
+     */
+    document.addEventListener("contextmenu", function (event) {
+        if (!isMobilePhone()) return;
+
+        var sidebar = document.getElementById("sidebar");
+        if (!sidebar || !sidebar.contains(event.target)) return;
+        if (isEditable(event.target)) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+    }, true);
+})();
+</script>
+
+<script id="oddi-mobile-composer-send-reset-v1-js">
+(function () {
+    "use strict";
+
+    var media = window.matchMedia("(max-width:768px) and (pointer:coarse)");
+    if (!media.matches) return;
+
+    var input = document.getElementById("userInput");
+    if (!input) return;
+
+    /*
+     * A second safety net for any code path that clears the textarea
+     * programmatically after Send.
+     */
+    input.addEventListener("input", function () {
+        if (!input.value.trim()) {
+            document.body.classList.remove("mobile-composer-typing");
+        }
+    }, true);
+
+    /*
+     * Expose a tiny explicit reset hook for future send paths without
+     * changing desktop behavior.
+     */
+    window.__oddiResetMobileComposer = function () {
+        input.value = "";
+        input.style.height = "auto";
+        document.body.classList.remove("mobile-composer-typing");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+})();
+</script>
+
+</html>
