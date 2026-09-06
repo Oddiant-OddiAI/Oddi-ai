@@ -2075,6 +2075,69 @@ const chat = document.getElementById("chatbox");
 const input = document.getElementById("userInput");
 const button = document.getElementById("send-btn");
 const voiceBtn = document.getElementById("voice-btn");
+/* =========================================================
+   ODDI SMART CHAT SCROLL
+   - Never jumps to the bottom when the chat does not overflow.
+   - Follows new content only when the user is already near the bottom
+     (or when a new message explicitly requests a follow).
+   - Preserves the user's position when they scroll upward.
+   ========================================================= */
+let oddiChatShouldFollow = true;
+
+function oddiUpdateChatFollowState() {
+    if (!chat) return;
+    const maxScroll = Math.max(0, chat.scrollHeight - chat.clientHeight);
+    if (maxScroll <= 2) {
+        oddiChatShouldFollow = true;
+        return;
+    }
+    const distanceFromBottom = maxScroll - chat.scrollTop;
+    oddiChatShouldFollow = distanceFromBottom <= 140;
+}
+
+function oddiSmartScroll(forceFollow = false) {
+    if (!chat) return;
+
+    requestAnimationFrame(() => {
+        const maxScroll = Math.max(0, chat.scrollHeight - chat.clientHeight);
+
+        /* No overflow = stay at the natural top. */
+        if (maxScroll <= 2) {
+            chat.scrollTop = 0;
+            return;
+        }
+
+        if (forceFollow || oddiChatShouldFollow) {
+            chat.scrollTop = maxScroll;
+            oddiChatShouldFollow = true;
+        }
+    });
+}
+
+function oddiRestoreChatScroll(savedScroll = 0) {
+    if (!chat) return;
+
+    requestAnimationFrame(() => {
+        const maxScroll = Math.max(0, chat.scrollHeight - chat.clientHeight);
+
+        if (maxScroll <= 2) {
+            chat.scrollTop = 0;
+            oddiChatShouldFollow = true;
+            return;
+        }
+
+        if (Number(savedScroll) > 0) {
+            chat.scrollTop = Math.min(Number(savedScroll), maxScroll);
+            oddiUpdateChatFollowState();
+        } else {
+            chat.scrollTop = maxScroll;
+            oddiChatShouldFollow = true;
+        }
+    });
+}
+
+chat?.addEventListener("scroll", oddiUpdateChatFollowState, { passive: true });
+
 
 const isLoggedIn =
     document.body.dataset.loggedIn === "true";
@@ -5019,8 +5082,7 @@ async function sendMessage(
             </div>
         `;
 
-        chat.scrollTop =
-            chat.scrollHeight;
+        oddiSmartScroll(true);
 
         conversations[
             currentConversation
@@ -5112,13 +5174,7 @@ async function sendMessage(
     const savedScroll = scrollKey
         ? Number(localStorage.getItem(scrollKey) || 0)
         : 0;
-    requestAnimationFrame(() => {
-        if (savedScroll > 0) {
-            chat.scrollTop = Math.min(savedScroll, chat.scrollHeight);
-        } else {
-            chat.scrollTop = chat.scrollHeight;
-        }
-    });
+    oddiRestoreChatScroll(savedScroll);
 
     /* -----------------------------------------
        SEND TO BACKEND
@@ -5289,8 +5345,7 @@ async function sendMessage(
             input.focus();
         }
 
-        chat.scrollTop =
-            chat.scrollHeight;
+        oddiSmartScroll(true);
     }
 }
 
@@ -5377,8 +5432,7 @@ function typeAIResponse(
 
                     });
 
-                chat.scrollTop =
-                    chat.scrollHeight;
+                oddiSmartScroll(false);
             }
 
             /*
@@ -5408,8 +5462,7 @@ function typeAIResponse(
 
                     });
 
-                chat.scrollTop =
-                    chat.scrollHeight;
+                oddiSmartScroll(false);
 
                 resolve();
             }
@@ -5540,8 +5593,7 @@ async function finishAIMessage(
         speakVoiceReply(reply);
     }
 
-    chat.scrollTop =
-        chat.scrollHeight;
+    oddiSmartScroll(true);
 }
 
 /* 
@@ -6282,8 +6334,7 @@ async function openConversation(
         enhanceRichContent(content);
     });
 
-    chat.scrollTop =
-        chat.scrollHeight;
+    oddiSmartScroll(true);
 
     sidebar.classList.remove("open");
     overlay.classList.remove("show");
@@ -10412,3 +10463,60 @@ loadConversations();
     }
 }
 </style>
+
+
+<style id="oddi-mission-impossible-final-css">
+/*
+ * MISSION 1 — Keep chat content below the fixed mobile header controls.
+ * The mobile home redesign intentionally makes the header a zero-height
+ * fixed layer, so the scrollable chat needs its own top breathing room.
+ */
+@media (max-width: 768px) and (pointer: coarse) {
+    .chatbox {
+        padding-top: max(66px, calc(env(safe-area-inset-top) + 58px)) !important;
+        padding-right: 10px !important;
+        padding-bottom: max(90px, calc(env(safe-area-inset-bottom) + 84px)) !important;
+        scroll-padding-top: max(66px, calc(env(safe-area-inset-top) + 58px)) !important;
+    }
+
+    /*
+     * Keep the welcome screen centered in the usable area while retaining
+     * the same header clearance.
+     */
+    .welcome-message {
+        min-height: calc(100dvh - max(66px, calc(env(safe-area-inset-top) + 58px))) !important;
+    }
+}
+
+/*
+ * MISSION 3 — The old mobile rule applied a max-height to BOTH states.
+ * This final rule is intentionally later and stronger: expanded means
+ * genuinely expanded.
+ */
+.user-message .user-text.user-text-expanded,
+.user-message .user-bubble-main .user-text.user-text-expanded {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+}
+</style>
+
+
+<script id="oddi-mission-impossible-final-js">
+(function () {
+    "use strict";
+
+    const chatbox = document.getElementById("chatbox");
+    if (!chatbox) return;
+
+    /*
+     * The main script owns the scroll helper. Re-check the state once after
+     * layout settles so the first render cannot be mistaken for "at bottom".
+     */
+    requestAnimationFrame(() => {
+        if (typeof oddiUpdateChatFollowState === "function") {
+            oddiUpdateChatFollowState();
+        }
+    });
+})();
+</script>
