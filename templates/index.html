@@ -760,6 +760,113 @@
 }
 </style>
 
+
+<style id="oddi-universal-expand-v7-css">
+/* Final expand-control layer: intentionally last so older message styles
+   cannot disable or misplace the control. */
+.user-message .user-bubble-main{
+    position:relative !important;
+    box-sizing:border-box !important;
+    max-width:100% !important;
+}
+
+.user-message .user-expand-btn{
+    position:absolute !important;
+    right:10px !important;
+    bottom:14px !important;
+    z-index:2147483647 !important;
+    width:30px !important;
+    height:30px !important;
+    min-width:30px !important;
+    min-height:30px !important;
+    margin:0 !important;
+    padding:0 !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-sizing:border-box !important;
+    border:1px solid rgba(0,0,0,.10) !important;
+    border-radius:50% !important;
+    background:#e7e7e7 !important;
+    color:#222 !important;
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+    cursor:pointer !important;
+    touch-action:manipulation !important;
+    -webkit-tap-highlight-color:transparent !important;
+    user-select:none !important;
+    -webkit-user-select:none !important;
+}
+
+.user-message .user-expand-btn:hover{
+    background:#dcdcdc !important;
+}
+
+.user-message .user-expand-btn:active{
+    transform:scale(.94) !important;
+}
+
+.user-message .user-expand-btn svg{
+    width:16px !important;
+    height:16px !important;
+    display:block !important;
+    pointer-events:none !important;
+}
+
+.user-message .user-text.user-text-collapsible{
+    max-height:6em !important;
+    overflow:hidden !important;
+    max-height:calc(4.5em + 36px) !important;
+    padding-bottom:36px !important;
+    padding-right:50px !important;
+}
+
+.user-message .user-text.user-text-expanded{
+    max-height:none !important;
+    overflow:visible !important;
+    max-height:calc(4.5em + 36px) !important;
+    padding-bottom:36px !important;
+    padding-right:50px !important;
+}
+
+body.dark-mode .user-message .user-expand-btn{
+    background:#2a2a2a !important;
+    color:#fff !important;
+    border-color:#444 !important;
+}
+
+body.dark-mode .user-message .user-expand-btn:hover{
+    background:#353535 !important;
+}
+
+@media (max-width:768px) and (pointer:coarse){
+    .user-message .user-bubble-main{
+        position:relative !important;
+        z-index:1 !important;
+    }
+
+    .user-message .user-expand-btn{
+        right:9px !important;
+        bottom:12px !important;
+        z-index:2147483647 !important;
+        width:30px !important;
+        height:30px !important;
+        min-width:30px !important;
+        min-height:30px !important;
+        pointer-events:auto !important;
+        touch-action:manipulation !important;
+    }
+
+    .user-message .user-text.user-text-collapsible,
+    .user-message .user-text.user-text-expanded{
+        max-height:calc(4.5em + 36px) !important;
+        padding-bottom:36px !important;
+        padding-right:50px !important;
+    }
+}
+</style>
+
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 <div id="appLockOverlay" class="app-lock-overlay" aria-hidden="true" style="display:none;">
@@ -3536,7 +3643,64 @@ async function exportCurrentChatAsPdf() {
 function buildDocxHtml(conversation, clone) {
     const title = escapeHtml(conversation.title || "Oddi Chat");
     return `<!doctype html><html><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;color:#111;line-height:1.5}h1{font-size:24pt}h2,h3{font-size:15pt}table{border-collapse:collapse;width:100%}th,td{border:1px solid #999;padding:6px}pre{background:#f3f3f3;padding:8px}code{font-family:Consolas,monospace}.katex-display{text-align:center;margin:12px 0}
-    </style></head><body><h1>${title}</h1><p>Exported from Oddi AI · ${escapeHtml(new Date().toLocaleString())}</p>${clone?.innerHTML || ""}</body></html>`;
+    </style>
+<style id="oddi-mobile-ultra-compact-v1">
+@media (max-width:768px) and (pointer:coarse){
+  #mobileToolMenu{
+    bottom:calc(max(5px,env(safe-area-inset-bottom)) + 49px) !important;
+    width:180px !important;
+    padding:3px !important;
+    border-radius:10px !important;
+    gap:0 !important;
+  }
+  .mobile-tool-item{
+    min-height:29px !important;
+    height:29px !important;
+    padding:0 7px !important;
+    gap:7px !important;
+    border-radius:7px !important;
+    font-size:11px !important;
+  }
+  .mobile-tool-icon{
+    width:17px !important;
+    font-size:13px !important;
+  }
+  .input-area{
+    left:6px !important;
+    right:6px !important;
+    bottom:max(5px,env(safe-area-inset-bottom)) !important;
+    height:42px !important;
+    min-height:42px !important;
+    padding:4px 5px !important;
+    border-radius:14px !important;
+    gap:2px !important;
+  }
+  .input-area textarea{
+    min-height:32px !important;
+    max-height:100px !important;
+    padding:7px 4px !important;
+    font-size:12px !important;
+  }
+  .attach-btn,.dictation-btn,.voice-btn,.send-btn{
+    width:32px !important;
+    height:32px !important;
+    min-width:32px !important;
+    min-height:32px !important;
+    flex-basis:32px !important;
+  }
+  .attach-btn{font-size:17px !important;}
+  .dictation-btn svg,.voice-btn svg{width:16px !important;height:16px !important;}
+  .send-btn{font-size:17px !important;}
+  .action-button-slot{
+    width:32px !important;
+    height:32px !important;
+    min-width:32px !important;
+    flex-basis:32px !important;
+  }
+}
+</style>
+
+</head><body><h1>${title}</h1><p>Exported from Oddi AI · ${escapeHtml(new Date().toLocaleString())}</p>${clone?.innerHTML || ""}</body></html>`;
 }
 
 function exportCurrentChatAsDocx() {
@@ -7969,68 +8133,41 @@ loadConversations();
 })();
 </script>
 
-<script id="oddi-final-message-ui-v6-js">
+<script id="oddi-final-message-ui-v7-js">
 (function () {
     "use strict";
 
     /*
-     * Universal expand control.
-     *
-     * Important lifecycle fix:
-     * The previous version looked for .chatbox while this script was in
-     * <head>. At that moment the body did not exist yet, so its MutationObserver
-     * was never installed. That is why fresh messages could miss initialization
-     * until a full reload.
-     *
-     * This version:
-     *  1. installs the observer AFTER DOM is ready;
-     *  2. uses delegated click handling, so a freshly-created button never
-     *     needs its own event listener;
-     *  3. measures the real uncapped text height;
-     *  4. keeps working while messages are being generated/changed.
+     * Universal user-message expand/collapse.
+     * - Works for newly-created messages.
+     * - Works while ODDI is thinking/streaming.
+     * - Works on phone, tablet and laptop.
+     * - Uses pointerdown capture so touch cannot be swallowed by the
+     *   message-tap interaction.
+     * - Mutation/resize observers keep the control available as text grows.
      */
 
-    function chevronSvg(direction) {
-        const path = direction === "up"
-            ? "M4 10l4-4 4 4"
-            : "M4 6l4 4 4-4";
+    const MAX_LINES = 3;
 
-        return `
-            <svg viewBox="0 0 16 16"
-                 width="16"
-                 height="16"
-                 aria-hidden="true"
-                 focusable="false">
-                <path d="${path}"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.8"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"></path>
-            </svg>
-        `;
-    }
-
-    function updateExpandButton(button, expanded) {
-        if (!button) return;
-
-        button.innerHTML = chevronSvg(expanded ? "up" : "down");
-        button.setAttribute("aria-expanded", expanded ? "true" : "false");
-        button.setAttribute(
-            "aria-label",
-            expanded ? "Collapse user message" : "Expand user message"
-        );
-        button.title = expanded ? "Collapse message" : "Expand message";
+    function getBubble(textEl) {
+        return textEl && textEl.closest(".user-message");
     }
 
     function getHost(textEl) {
-        return textEl.closest(".user-bubble-main")
-            || textEl.closest(".user-message");
+        return textEl &&
+            (textEl.closest(".user-bubble-main") || getBubble(textEl));
     }
 
-    function naturalTextHeight(textEl) {
-        const hadCollapsible = textEl.classList.contains("user-text-collapsible");
-        const hadExpanded = textEl.classList.contains("user-text-expanded");
+    function getLineHeight(textEl) {
+        const value = parseFloat(getComputedStyle(textEl).lineHeight);
+        return Number.isFinite(value) && value > 0 ? value : 22;
+    }
+
+    function measureNaturalHeight(textEl) {
+        if (!textEl) return 0;
+
+        const wasCollapsed = textEl.classList.contains("user-text-collapsible");
+        const wasExpanded = textEl.classList.contains("user-text-expanded");
 
         const old = {
             maxHeight: textEl.style.maxHeight,
@@ -8039,226 +8176,258 @@ loadConversations();
             paddingRight: textEl.style.paddingRight
         };
 
-        /*
-         * Remove the state classes while measuring. Their CSS uses !important,
-         * so merely assigning an inline max-height would not be enough.
-         */
-        textEl.classList.remove(
-            "user-text-collapsible",
-            "user-text-expanded"
-        );
+        textEl.classList.remove("user-text-collapsible", "user-text-expanded");
 
         textEl.style.setProperty("max-height", "none", "important");
         textEl.style.setProperty("overflow", "visible", "important");
         textEl.style.setProperty("padding-bottom", "0", "important");
         textEl.style.setProperty("padding-right", "0", "important");
 
-        const height = textEl.scrollHeight;
+        const height = Math.max(textEl.scrollHeight, textEl.getBoundingClientRect().height);
 
         textEl.style.maxHeight = old.maxHeight;
         textEl.style.overflow = old.overflow;
         textEl.style.paddingBottom = old.paddingBottom;
         textEl.style.paddingRight = old.paddingRight;
 
-        if (hadExpanded) {
+        if (wasExpanded) {
             textEl.classList.add("user-text-expanded");
-        } else if (hadCollapsible) {
+        } else if (wasCollapsed) {
             textEl.classList.add("user-text-collapsible");
         }
 
         return height;
     }
 
-    function bindExpandButton(button) {
+    function setButtonState(button, expanded) {
         if (!button) return;
-        updateExpandButton(
-            button,
-            button.closest(".user-bubble-main")
-                ?.querySelector(".user-text")
-                ?.classList.contains("user-text-expanded") || false
-        );
+
+        const nextLabel = expanded ? "Collapse user message" : "Expand user message";
+        const nextTitle = expanded ? "Collapse message" : "Expand message";
+        const nextPath = expanded ? "M4 10l4-4 4 4" : "M4 6l4 4 4-4";
+
+        button.setAttribute("aria-expanded", expanded ? "true" : "false");
+        button.setAttribute("aria-label", nextLabel);
+        button.title = nextTitle;
+
+        const svg = button.querySelector("svg");
+        const path = svg && svg.querySelector("path");
+
+        if (!svg || !path || path.getAttribute("d") !== nextPath) {
+            button.innerHTML =
+                '<svg viewBox="0 0 16 16" width="16" height="16" ' +
+                'aria-hidden="true" focusable="false">' +
+                '<path d="' + nextPath + '" fill="none" stroke="currentColor" ' +
+                'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>' +
+                '</svg>';
+        }
     }
 
-    function addExpandControl(textEl) {
-        if (!textEl) return;
+    function toggleExpand(button) {
+        if (!button) return;
 
-        const bubble = textEl.closest(".user-message");
+        const bubble = getBubble(button);
+        const textEl = bubble && bubble.querySelector(".user-text");
+        if (!bubble || !textEl) return;
+
+        const expanded = textEl.classList.contains("user-text-expanded");
+
+        if (expanded) {
+            textEl.classList.remove("user-text-expanded");
+            textEl.classList.add("user-text-collapsible");
+            setButtonState(button, false);
+        } else {
+            textEl.classList.remove("user-text-collapsible");
+            textEl.classList.add("user-text-expanded");
+            setButtonState(button, true);
+        }
+    }
+
+    function createButton(host) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "user-expand-btn";
+        button.setAttribute("aria-expanded", "false");
+        button.setAttribute("aria-label", "Expand user message");
+        button.title = "Expand message";
+        button.setAttribute("data-oddi-expand-control", "true");
+        setButtonState(button, false);
+        host.appendChild(button);
+        return button;
+    }
+
+    function ensureExpandControl(textEl) {
+        if (!textEl || !getBubble(textEl)) return;
+
         const host = getHost(textEl);
+        if (!host) return;
 
-        if (!bubble || !host) return;
-
-        const text = textEl.textContent.trim();
-        if (!text) return;
-
-        const computed = getComputedStyle(textEl);
-        const lineHeight = parseFloat(computed.lineHeight);
-
-        if (!Number.isFinite(lineHeight) || lineHeight <= 0) return;
-
-        const naturalHeight = naturalTextHeight(textEl);
-        const fourLineHeight = lineHeight * 4;
+        if (!textEl.textContent.trim()) return;
 
         let button = host.querySelector(".user-expand-btn");
 
         /*
-         * If the message is long enough, create the control.
-         * If content was short earlier and later becomes long while streaming,
-         * this runs again and creates it.
+         * Once a message has been identified as expandable, never remove its
+         * control just because the viewport temporarily changes.
          */
-        if (naturalHeight > fourLineHeight + 2) {
-            if (!button) {
-                textEl.classList.add("user-text-collapsible");
+        const alreadyEligible = textEl.dataset.oddiExpandEligible === "true";
 
-                button = document.createElement("button");
-                button.type = "button";
-                button.className = "user-expand-btn";
-                button.setAttribute("aria-expanded", "false");
-                button.setAttribute("aria-label", "Expand user message");
-                button.title = "Expand message";
+        if (!alreadyEligible) {
+            const naturalHeight = measureNaturalHeight(textEl);
+            const threshold = getLineHeight(textEl) * MAX_LINES + 2;
 
-                host.appendChild(button);
+            if (naturalHeight > threshold) {
+                textEl.dataset.oddiExpandEligible = "true";
             }
+        }
 
-            /*
-             * Keep the button's state synchronized every refresh.
-             * No per-button event listener is required.
-             */
-            bindExpandButton(button);
-            return;
+        if (textEl.dataset.oddiExpandEligible !== "true") return;
+
+        if (!button || !host.contains(button)) {
+            button = createButton(host);
         }
 
         /*
-         * Do not destroy an existing control just because the viewport or
-         * wrapping temporarily changes. Once a message has an expand control,
-         * keep it available.
+         * Do not rewrite the button DOM on every observer pass. This prevents
+         * our own MutationObserver from causing an endless refresh loop.
          */
-        if (button) {
-            bindExpandButton(button);
-        }
+        setButtonState(
+            button,
+            textEl.classList.contains("user-text-expanded")
+        );
+
+        textEl.classList.toggle(
+            "user-text-collapsible",
+            !textEl.classList.contains("user-text-expanded")
+        );
     }
 
     function refresh(root) {
         const scope = root || document;
-
-        scope
-            .querySelectorAll(".user-message .user-text")
-            .forEach(addExpandControl);
+        scope.querySelectorAll(".user-message .user-text").forEach(ensureExpandControl);
     }
 
-    /*
-     * Delegated handler = the key fix.
-     *
-     * It works for buttons that are created milliseconds ago, buttons created
-     * during streaming, restored messages, and programmatic .click() calls.
-     *
-     * Capture phase prevents the normal message click handler from treating
-     * an expand-button tap as a message tap.
-     */
-    function installDelegatedExpandHandler() {
-        if (document.__oddiUniversalExpandHandlerInstalled) return;
-        document.__oddiUniversalExpandHandlerInstalled = true;
+    function installInteractions() {
+        if (document.__oddiUniversalExpandV7Installed) return;
+        document.__oddiUniversalExpandV7Installed = true;
 
-        document.addEventListener("click", function (event) {
-            const button = event.target.closest?.(".user-expand-btn");
+        /*
+         * Capture pointerdown first. This makes the expand button independent
+         * from the normal "tap a message to show actions" handler.
+         */
+        document.addEventListener("pointerdown", function (event) {
+            const button = event.target && event.target.closest
+                ? event.target.closest(".user-expand-btn")
+                : null;
+
             if (!button) return;
-
-            const bubble = button.closest(".user-message");
-            const textEl = bubble?.querySelector(".user-text");
-
-            if (!bubble || !textEl) return;
 
             event.preventDefault();
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            const expanded =
-                textEl.classList.contains("user-text-expanded");
+            button.dataset.oddiPointerHandled = "true";
+            toggleExpand(button);
+        }, true);
 
-            if (expanded) {
-                textEl.classList.remove("user-text-expanded");
-                textEl.classList.add("user-text-collapsible");
-            } else {
-                textEl.classList.remove("user-text-collapsible");
-                textEl.classList.add("user-text-expanded");
+        /*
+         * Keyboard activation and browsers without pointer events.
+         * A pointer-generated click is ignored because pointerdown already
+         * handled it, preventing the dreaded double-toggle.
+         */
+        document.addEventListener("click", function (event) {
+            const button = event.target && event.target.closest
+                ? event.target.closest(".user-expand-btn")
+                : null;
+
+            if (!button) return;
+
+            event.preventDefault();
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+
+            if (button.dataset.oddiPointerHandled === "true") {
+                delete button.dataset.oddiPointerHandled;
+                return;
             }
 
-            updateExpandButton(button, !expanded);
+            toggleExpand(button);
         }, true);
     }
 
     function installObservers() {
-        if (document.__oddiUniversalExpandObserversInstalled) return;
-        document.__oddiUniversalExpandObserversInstalled = true;
+        if (document.__oddiUniversalExpandV7ObserversInstalled) return;
+        document.__oddiUniversalExpandV7ObserversInstalled = true;
 
-        const chat = document.querySelector(".chatbox");
-        if (!chat) {
-            /*
-             * Body can still be unavailable in unusual template timing.
-             * Retry after DOMContentLoaded rather than silently giving up.
-             */
-            return;
-        }
+        const start = function () {
+            const chat = document.querySelector(".chatbox");
+            if (!chat) {
+                setTimeout(start, 100);
+                return;
+            }
 
-        let refreshQueued = false;
+            let queued = false;
 
-        const queueRefresh = () => {
-            if (refreshQueued) return;
-            refreshQueued = true;
+            const queueRefresh = function () {
+                if (queued) return;
+                queued = true;
 
-            requestAnimationFrame(() => {
-                refreshQueued = false;
-                refresh(chat);
+                requestAnimationFrame(function () {
+                    queued = false;
+                    refresh(chat);
+                });
+            };
+
+            const mutationObserver = new MutationObserver(queueRefresh);
+            mutationObserver.observe(chat, {
+                childList: true,
+                subtree: true,
+                characterData: true
             });
-        };
 
-        const observer = new MutationObserver(queueRefresh);
+            if (typeof ResizeObserver === "function") {
+                const resizeObserver = new ResizeObserver(queueRefresh);
+                resizeObserver.observe(chat);
+                window.__oddiExpandResizeObserverV7 = resizeObserver;
+            }
 
-        observer.observe(chat, {
-            childList: true,
-            subtree: true,
-            characterData: true
-        });
+            window.addEventListener("resize", queueRefresh, { passive: true });
+            window.addEventListener("orientationchange", queueRefresh, { passive: true });
 
-        window.addEventListener("resize", queueRefresh, { passive: true });
-        window.addEventListener("orientationchange", queueRefresh, { passive: true });
-        window.addEventListener("load", queueRefresh, { once: true });
+            refresh(chat);
 
-        /*
-         * Streaming can change wrapping without producing a useful mutation
-         * for layout. Keep checking while the page is alive.
-         */
-        let lastCheck = 0;
-
-        function visualCheck(time) {
-            if (time - lastCheck >= 300) {
-                lastCheck = time;
-                refresh(chat);
+            /*
+             * Streaming can change wrapping/height without a useful mutation.
+             * Keep a lightweight check running so the control appears even
+             * while ODDI is still thinking.
+             */
+            let last = 0;
+            function visualCheck(now) {
+                if (now - last >= 250) {
+                    last = now;
+                    refresh(chat);
+                }
+                requestAnimationFrame(visualCheck);
             }
             requestAnimationFrame(visualCheck);
+        };
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", start, { once: true });
+        } else {
+            start();
         }
-
-        requestAnimationFrame(visualCheck);
-
-        refresh(chat);
     }
 
     window.__oddiRefreshUserExpandControls = function () {
         refresh(document);
     };
 
-    function init() {
-        installDelegatedExpandHandler();
-        installObservers();
-        refresh(document);
-    }
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", init, { once: true });
-    } else {
-        init();
-    }
+    installInteractions();
+    installObservers();
 })();
 </script>
+
 
 <style id="final-bot-message-match-user">.bot-message, .bot-message.pinned-message, .bot-message.stopped-message{width:min(760px,88%) !important;max-width:min(760px,88%) !important;align-self:center !important;display:flex !important;flex-direction:column !important;align-items:center !important;margin:0 auto 18px auto !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#111 !important;box-sizing:border-box !important;}.bot-message .bot-header{width:fit-content !important;max-width:100% !important;margin:0 0 7px 0 !important;padding:0 !important;display:flex !important;align-items:center !important;justify-content:center !important;gap:8px !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#111 !important;}.bot-message .bot-header b{background:transparent !important;border:0 !important;box-shadow:none !important;padding:0 !important;margin:0 !important;color:inherit !important;}.bot-message .message-sound-btn{width:32px !important;height:32px !important;min-width:32px !important;min-height:32px !important;flex:0 0 32px !important;padding:0 !important;margin:0 !important;border:0 !important;border-radius:50% !important;background:#f5f5f5 !important;color:#111 !important;box-shadow:none !important;}.bot-message .message-sound-btn:hover{background:#eaeaea !important;}.bot-message .message-sound-btn.speaking{background:#111 !important;color:#fff !important;}.bot-message .ai-content{display:block !important;width:100% !important;max-width:100% !important;margin:0 !important;padding:0 !important;box-sizing:border-box !important;background:transparent !important;color:#111 !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;line-height:1.5 !important;overflow-wrap:anywhere !important;word-break:normal !important;text-align:left !important;}.bot-message .ai-content, .bot-message .ai-content > *{background:transparent !important;}.bot-message .ai-content{border:0 !important;border-radius:0 !important;box-shadow:none !important;}.bot-message .ai-content > *:first-child{margin-top:0 !important;}.bot-message .ai-content > *:last-child{margin-bottom:0 !important;}.bot-message .ai-content p, .bot-message .ai-content h1, .bot-message .ai-content h2, .bot-message .ai-content h3, .bot-message .ai-content h4, .bot-message .ai-content h5, .bot-message .ai-content h6, .bot-message .ai-content ul, .bot-message .ai-content ol, .bot-message .ai-content blockquote, .bot-message .ai-content table{background:transparent !important;}.bot-message .bot-actions{display:flex !important;align-items:center !important;justify-content:center !important;flex-wrap:wrap !important;gap:5px !important;width:fit-content !important;max-width:100% !important;margin:7px auto 0 !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;}.bot-message .bot-actions .message-action-btn{min-width:0 !important;min-height:28px !important;width:auto !important;height:28px !important;padding:4px 7px !important;margin:0 !important;border:0 !important;border-radius:8px !important;background:transparent !important;color:#666 !important;box-shadow:none !important;}.bot-message .bot-actions .message-action-btn:hover{background:#ededed !important;color:#111 !important;}.bot-message::before, .bot-message::after, .bot-message.pinned-message::before, .bot-message.pinned-message::after{display:none !important;content:none !important;}body.dark-mode .bot-message, body.dark-mode .bot-message.pinned-message, body.dark-mode .bot-message.stopped-message{background:transparent !important;border:0 !important;box-shadow:none !important;color:#f2f2f2 !important;}body.dark-mode .bot-message .bot-header{background:transparent !important;color:#f2f2f2 !important;}body.dark-mode .bot-message .message-sound-btn{background:#f5f5f5 !important;color:#111 !important;}body.dark-mode .bot-message .message-sound-btn:hover{background:#dedede !important;}body.dark-mode .bot-message .message-sound-btn.speaking{background:#fff !important;color:#111 !important;}body.dark-mode .bot-message .ai-content{background:transparent !important;color:#f2f2f2 !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;padding:0 !important;}body.dark-mode .bot-message .ai-content > *{background:transparent !important;color:inherit;}body.dark-mode .bot-message .bot-actions, body.dark-mode .bot-message .bot-actions .message-action-btn{background:transparent !important;border:0 !important;box-shadow:none !important;color:#bdbdbd !important;}body.dark-mode .bot-message .bot-actions .message-action-btn:hover{background:#242424 !important;color:#fff !important;}@media (max-width: 768px) and (pointer: coarse) { .bot-message, .bot-message.pinned-message, .bot-message.stopped-message{width:calc(100vw - 34px) !important;max-width:calc(100vw - 34px) !important;margin:0 auto 18px auto !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;}.bot-message .ai-content{width:100% !important;max-width:100% !important;margin:0 !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;font-size:15px !important;line-height:1.6 !important;}.bot-message .bot-header{margin-bottom:7px !important;}.bot-message .bot-actions{margin-top:7px !important;}
 }
