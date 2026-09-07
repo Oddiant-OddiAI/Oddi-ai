@@ -2159,6 +2159,66 @@ chat?.addEventListener("scroll", oddiUpdateChatFollowState, { passive: true });
 const isLoggedIn =
     document.body.dataset.loggedIn === "true";
 
+/*
+   LOCAL CHAT RECOVERY
+   Keep a device-local copy of conversations while the server save is
+   in flight. This protects newly created phone chats from disappearing
+   if the page is re-rendered/reloaded before the PUT request finishes.
+   The server remains the source of truth; successful server saves remove
+   the temporary local copy.
+*/
+const oddiLocalChatBackupKey = (() => {
+    const username = String(document.body.dataset.username || "guest").trim();
+    return `oddi_pending_conversations_${username || "guest"}`;
+})();
+
+function getOddiLocalChatBackups() {
+    try {
+        const raw = localStorage.getItem(oddiLocalChatBackupKey);
+        const parsed = raw ? JSON.parse(raw) : [];
+        return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+        console.warn("Could not read local chat recovery data:", error);
+        return [];
+    }
+}
+
+function setOddiLocalChatBackups(items) {
+    try {
+        if (!items.length) {
+            localStorage.removeItem(oddiLocalChatBackupKey);
+            return;
+        }
+        localStorage.setItem(oddiLocalChatBackupKey, JSON.stringify(items));
+    } catch (error) {
+        console.warn("Could not write local chat recovery data:", error);
+    }
+}
+
+function backupOddiConversation(conversation) {
+    if (!conversation || !conversation.id) return;
+    const backups = getOddiLocalChatBackups();
+    const index = backups.findIndex(item => String(item.id) === String(conversation.id));
+    const snapshot = {
+        id: conversation.id,
+        title: conversation.title || "New Chat",
+        messages: Array.isArray(conversation.messages) ? conversation.messages : [],
+        pinned: !!conversation.pinned,
+        updatedAt: Date.now()
+    };
+    if (index >= 0) backups[index] = snapshot;
+    else backups.push(snapshot);
+    setOddiLocalChatBackups(backups);
+}
+
+function removeOddiConversationBackup(conversationId) {
+    if (!conversationId) return;
+    const backups = getOddiLocalChatBackups().filter(
+        item => String(item.id) !== String(conversationId)
+    );
+    setOddiLocalChatBackups(backups);
+}
+
 /* 
    GENERATION CONTROL
  */
@@ -3535,15 +3595,37 @@ async function loadConversations() {
                 .map(String)
         );
 
-        conversations = Array.isArray(loadedConversations)
+        const serverConversations = Array.isArray(loadedConversations)
             ? loadedConversations.filter(conversation =>
                 !conversation.id || !trashedIds.has(String(conversation.id))
             )
             : [];
 
+        /* Recover any phone chat whose save was interrupted by a page
+           re-render/reload. Only backups missing from the server are
+           merged, so normal server data is never replaced by local data. */
+        const localBackups = getOddiLocalChatBackups();
+        const serverIds = new Set(
+            serverConversations
+                .filter(conversation => conversation && conversation.id)
+                .map(conversation => String(conversation.id))
+        );
+        const recoverableBackups = localBackups.filter(
+            backup => backup && backup.id && !trashedIds.has(String(backup.id)) && !serverIds.has(String(backup.id))
+        );
+
+        conversations = serverConversations.concat(recoverableBackups);
+
         renderHistory();
 
         currentConversation = null;
+
+        /* Retry interrupted saves in the background. A successful retry
+           removes the local recovery copy; failure leaves it available for
+           the next load. */
+        for (const backup of recoverableBackups) {
+            saveConversation(backup).catch(() => {});
+        }
 
     } catch (error) {
 
@@ -3558,11 +3640,15 @@ async function saveConversation(
     conversation
 ) {
 
-    if (!conversation.id) return;
+    if (!conversation || !conversation.id) return false;
+
+    /* Write the recovery copy BEFORE the network request. If the page
+       reloads while the request is pending, the chat can still be restored. */
+    backupOddiConversation(conversation);
 
     try {
 
-        await fetch(
+        const response = await fetch(
             `/api/conversations/${conversation.id}`,
             {
                 method: "PUT",
@@ -3581,12 +3667,22 @@ async function saveConversation(
             }
         );
 
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        /* Server save succeeded, so the temporary device recovery copy
+           is no longer needed. */
+        removeOddiConversationBackup(conversation.id);
+        return true;
+
     } catch (error) {
 
         console.error(
             "Save conversation error:",
             error
         );
+        return false;
     }
 }
 
@@ -11445,6 +11541,25 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
 </style>
 
 
+<style id="oddi-mobile-select-replaces-search">
+@media (max-width: 768px){
+    /* On phone, replace the duplicate sidebar Search entry with Select.
+       The header Search button remains untouched. */
+    #sidebar .sidebar-nav-row{display:none !important;}
+    #sidebar .sidebar-main > .sidebar-select-controls{order:2 !important;width:100% !important;margin:0 0 5px !important;}
+    #sidebar .sidebar-main > .guest-save-message{order:3 !important;}
+    #sidebar .sidebar-main > .sidebar-bottom-nav{order:4 !important;}
+    #sidebar .sidebar-main > .chat-history{order:5 !important;}
+    #sidebar .sidebar-select-controls .sidebar-select-btn{width:100% !important;min-height:42px !important;height:42px !important;padding:0 10px !important;margin:0 !important;display:flex !important;align-items:center !important;justify-content:flex-start !important;gap:11px !important;border:0 !important;border-radius:9px !important;background:transparent !important;color:#202020 !important;font-size:14px !important;font-weight:400 !important;line-height:1 !important;box-shadow:none !important;transform:none !important;text-align:left !important;}
+    #sidebar .sidebar-select-controls .sidebar-select-btn:hover{background:#f2f2f2 !important;color:#111 !important;}
+    #sidebar .sidebar-select-controls .sidebar-select-btn:active{transform:scale(.985) !important;}
+    #sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{width:20px !important;min-width:20px !important;flex:0 0 20px !important;font-size:19px !important;line-height:1 !important;text-align:center !important;font-weight:400 !important;}
+    #sidebar .sidebar-select-controls .bulk-chat-actions{margin-top:2px !important;padding-left:0 !important;padding-right:0 !important;}
+    body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn{background:transparent !important;color:#e8e8e8 !important;}
+    body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn:hover{background:#191919 !important;color:#fff !important;}
+}
+</style>
+
 <script id="oddi-bulk-chat-selection-logic">
 (function(){
     "use strict";
@@ -11471,9 +11586,11 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
     }
 
     function selectedConversations(){
-        if (!Array.isArray(window.conversations)) return [];
+        /* `conversations` is declared with `let`, so it is not exposed as
+           window.conversations. Read the live app array directly. */
+        if (!Array.isArray(conversations)) return [];
         const keys = window.__oddiSelectedChatKeys;
-        return window.conversations.filter(c => keys.has(keyOf(c)));
+        return conversations.filter(c => keys.has(keyOf(c)));
     }
 
     function updateSelectionUI(){
@@ -11545,9 +11662,15 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
         if (!confirmed) return;
 
         const selectedKeys = new Set(selected.map(keyOf));
-        const trash = typeof getTrash === "function" ? getTrash() : [];
+        const trashSource = typeof getTrash === "function" ? getTrash() : [];
+        const trash = Array.isArray(trashSource) ? trashSource.slice() : [];
+        const trashKeys = new Set(trash.map(keyOf));
         selected.forEach(conversation => {
-            trash.push({ ...conversation, deletedAt: Date.now() });
+            const key = keyOf(conversation);
+            if (!trashKeys.has(key)) {
+                trash.push({ ...conversation, deletedAt: Date.now() });
+                trashKeys.add(key);
+            }
             if (typeof removePinnedConversation === "function") removePinnedConversation(conversation);
         });
         if (typeof setTrash === "function") setTrash(trash);
@@ -11590,27 +11713,41 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
             ? (selected[0].title || "Oddi Chat")
             : `${selected.length} Oddi AI chats`;
 
-        try {
-            if (navigator.share) {
+        /* Native sharing must be attempted directly from the button click.
+           If it is unavailable or rejected for a reason other than user
+           cancellation, fall back to copying the same complete text. */
+        if (typeof navigator.share === "function") {
+            try {
                 await navigator.share({ title, text });
                 return;
+            } catch (error) {
+                if (error && error.name === "AbortError") return;
             }
-        } catch (error) {
-            if (error && error.name === "AbortError") return;
         }
 
         try {
-            await navigator.clipboard.writeText(text);
-            alert("Selected chats copied to clipboard.");
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                await navigator.clipboard.writeText(text);
+                alert("Selected chats copied to clipboard.");
+                return;
+            }
+        } catch (_) {}
+
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.left = "-9999px";
+        area.style.top = "0";
+        document.body.appendChild(area);
+        area.focus();
+        area.select();
+        try {
+            if (document.execCommand("copy")) alert("Selected chats copied to clipboard.");
+            else alert("Could not share the selected chats.");
         } catch (_) {
-            const area = document.createElement("textarea");
-            area.value = text;
-            area.style.position = "fixed";
-            area.style.left = "-9999px";
-            document.body.appendChild(area);
-            area.select();
-            try { document.execCommand("copy"); alert("Selected chats copied to clipboard."); }
-            catch (_) { alert("Could not share the selected chats."); }
+            alert("Could not share the selected chats.");
+        } finally {
             area.remove();
         }
     }
