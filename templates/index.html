@@ -10724,4 +10724,586 @@ loadConversations();
 })();
 </script>
 
+
+<style id="oddi-mobile-composer-curve-only-fix">
+@media (max-width:768px) and (pointer:coarse) {
+  /* ONLY the outer composer curve: pill-shaped like the reference. */
+  .input-area {
+    border-radius: 999px !important;
+  }
+}
+</style>
+
 </html>
+<style id="oddi-mobile-composer-major-size-upgrade-v1">
+/*
+ * FINAL MOBILE COMPOSER SIZE UPGRADE
+ * Keep the left/right/bottom walls exactly where they are.
+ * The composer grows upward, while every control stays centered inside it.
+ */
+@media (max-width:768px) and (pointer:coarse) {
+    .input-area {
+        left: 7px !important;
+        right: 7px !important;
+        bottom: max(18px, calc(env(safe-area-inset-bottom) + 13px)) !important;
+        width: auto !important;
+        height: 92px !important;
+        min-height: 92px !important;
+        max-height: 92px !important;
+        padding: 8px 9px !important;
+        gap: 5px !important;
+        border-radius: 20px !important;
+        transform: translateZ(0) scale(1) !important;
+        transform-origin: center bottom !important;
+        align-items: center !important;
+        overflow: hidden !important;
+        transition:
+            height .28s cubic-bezier(.22,1,.36,1),
+            min-height .28s cubic-bezier(.22,1,.36,1),
+            max-height .28s cubic-bezier(.22,1,.36,1),
+            padding .28s cubic-bezier(.22,1,.36,1),
+            border-radius .28s cubic-bezier(.22,1,.36,1),
+            transform .28s cubic-bezier(.22,1,.36,1),
+            box-shadow .28s ease !important;
+    }
+
+    .input-area textarea {
+        flex: 1 1 auto !important;
+        align-self: center !important;
+        width: auto !important;
+        min-width: 0 !important;
+        height: 60px !important;
+        min-height: 60px !important;
+        max-height: 60px !important;
+        margin: 0 !important;
+        padding: 18px 7px !important;
+        box-sizing: border-box !important;
+        font-size: 14px !important;
+        line-height: 1.45 !important;
+        text-align: left !important;
+    }
+
+    .input-area > .attach-btn,
+    .input-area > .dictation-btn,
+    .input-area > .action-button-slot,
+    .input-area > .action-button-slot .voice-btn,
+    .input-area > .action-button-slot .send-btn {
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+        flex: 0 0 48px !important;
+        flex-basis: 48px !important;
+        align-self: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-sizing: border-box !important;
+        border-radius: 50% !important;
+    }
+
+    .input-area > .attach-btn {
+        font-size: 22px !important;
+        line-height: 1 !important;
+    }
+
+    .input-area > .dictation-btn svg,
+    .input-area > .action-button-slot .voice-btn svg {
+        width: 21px !important;
+        height: 21px !important;
+        max-width: 21px !important;
+        max-height: 21px !important;
+    }
+
+    .input-area > .action-button-slot {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: transparent !important;
+        border: 0 !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        overflow: visible !important;
+    }
+
+    .input-area > .action-button-slot .voice-btn,
+    .input-area > .action-button-slot .send-btn {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: transparent !important;
+        color: inherit !important;
+        border: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .input-area > .action-button-slot .send-btn {
+        font-size: 22px !important;
+        line-height: 1 !important;
+    }
+
+    /* Keep the three tools directly above the enlarged composer. */
+    #mobileToolMenu {
+        left: 10px !important;
+        right: 10px !important;
+        width: auto !important;
+        bottom: calc(max(18px, calc(env(safe-area-inset-bottom) + 13px)) + 99px) !important;
+        padding: 2px 4px 4px !important;
+        gap: 2px !important;
+        align-items: center !important;
+    }
+
+    .mobile-tool-item {
+        width: min(100%, 230px) !important;
+        min-height: 40px !important;
+        height: 40px !important;
+        padding: 0 12px !important;
+        gap: 9px !important;
+        justify-content: center !important;
+        border-radius: 11px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        box-sizing: border-box !important;
+    }
+
+    .mobile-tool-icon {
+        width: 22px !important;
+        min-width: 22px !important;
+        font-size: 17px !important;
+        text-align: center !important;
+    }
+
+    /* Typing state is also comfortably large; the bottom edge does not move. */
+    body.mobile-composer-typing .input-area {
+        bottom: max(18px, calc(env(safe-area-inset-bottom) + 13px)) !important;
+        height: 104px !important;
+        min-height: 104px !important;
+        max-height: 104px !important;
+        padding: 9px 10px !important;
+        border-radius: 22px !important;
+        transform: translateZ(0) scale(1) !important;
+    }
+
+    body.mobile-composer-typing .input-area textarea {
+        height: 72px !important;
+        min-height: 72px !important;
+        max-height: 72px !important;
+        padding: 20px 8px !important;
+        font-size: 15px !important;
+        line-height: 1.45 !important;
+    }
+
+    body.mobile-composer-typing .input-area > .attach-btn,
+    body.mobile-composer-typing .input-area > .dictation-btn,
+    body.mobile-composer-typing .input-area > .action-button-slot,
+    body.mobile-composer-typing .input-area > .action-button-slot .voice-btn,
+    body.mobile-composer-typing .input-area > .action-button-slot .send-btn {
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+        flex: 0 0 48px !important;
+        flex-basis: 48px !important;
+    }
+
+    body.mobile-composer-typing .input-area > .attach-btn {
+        font-size: 22px !important;
+    }
+
+    body.mobile-composer-typing .input-area > .dictation-btn svg,
+    body.mobile-composer-typing .input-area > .action-button-slot .voice-btn svg {
+        width: 21px !important;
+        height: 21px !important;
+        max-width: 21px !important;
+        max-height: 21px !important;
+    }
+
+    body.mobile-composer-typing .input-area > .action-button-slot .send-btn {
+        font-size: 22px !important;
+    }
+
+    body.mobile-composer-typing #mobileToolMenu {
+        bottom: calc(max(18px, calc(env(safe-area-inset-bottom) + 13px)) + 111px) !important;
+    }
+}
+</style>
+
+
+<style id="oddi-mobile-composer-correction-v2">
+@media (max-width:768px) and (pointer:coarse) {
+  /* 1) Clean, properly rounded composer. Keep the same walls and bottom edge. */
+  .input-area {
+    left: 7px !important;
+    right: 7px !important;
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 13px)) !important;
+    width: auto !important;
+    height: 92px !important;
+    min-height: 92px !important;
+    max-height: 92px !important;
+    padding: 8px 9px !important;
+    border-radius: 24px !important;
+    overflow: hidden !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .input-area textarea {
+    align-self: center !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+    margin: 0 !important;
+    padding: 18px 7px !important;
+    box-sizing: border-box !important;
+    text-align: left !important;
+  }
+
+  /* 2) No grey boxes/circles around +, mic or voice controls. */
+  .input-area > .attach-btn,
+  .input-area > .dictation-btn,
+  .input-area > .action-button-slot,
+  .input-area > .action-button-slot .voice-btn,
+  .input-area > .action-button-slot .send-btn {
+    align-self: center !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    border-radius: 50% !important;
+  }
+
+  .input-area > .attach-btn,
+  .input-area > .dictation-btn,
+  .input-area > .action-button-slot {
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    flex: 0 0 48px !important;
+  }
+
+  .input-area > .attach-btn {
+    font-size: 22px !important;
+    color: #8a8a8a !important;
+  }
+
+  .input-area > .dictation-btn,
+  .input-area > .action-button-slot .voice-btn {
+    color: #8a8a8a !important;
+  }
+
+  .input-area > .dictation-btn svg,
+  .input-area > .action-button-slot .voice-btn svg {
+    width: 21px !important;
+    height: 21px !important;
+    max-width: 21px !important;
+    max-height: 21px !important;
+  }
+
+  /* 3) Send is completely hidden until the user starts typing. */
+  .input-area > .action-button-slot .send-btn {
+    display: none !important;
+  }
+  body.mobile-composer-typing .input-area > .action-button-slot .send-btn,
+  .input-area > .action-button-slot .send-btn.stop-active {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    flex: 0 0 48px !important;
+    color: #777 !important;
+    background: transparent !important;
+  }
+
+  /* When typing, the voice button is replaced by send as intended. */
+  body.mobile-composer-typing .input-area > .action-button-slot .voice-btn {
+    display: none !important;
+  }
+
+  /* 4) Three tools: left aligned, starting at the composer/attachment side,
+        larger than before but deliberately a little dull/subtle. */
+  #mobileToolMenu {
+    left: 10px !important;
+    right: auto !important;
+    width: 170px !important;
+    padding: 2px 0 !important;
+    margin: 0 !important;
+    gap: 1px !important;
+    align-items: stretch !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .mobile-tool-item {
+    width: 100% !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 8px !important;
+    gap: 9px !important;
+    justify-content: flex-start !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: #9a9a9a !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    opacity: .82 !important;
+    box-sizing: border-box !important;
+  }
+
+  .mobile-tool-item:hover,
+  .mobile-tool-item:active {
+    background: rgba(255,255,255,.06) !important;
+    color: #b0b0b0 !important;
+  }
+
+  .mobile-tool-icon {
+    width: 22px !important;
+    min-width: 22px !important;
+    font-size: 17px !important;
+    text-align: center !important;
+    opacity: .78 !important;
+  }
+
+  body.mobile-composer-typing #mobileToolMenu {
+    bottom: calc(max(18px, calc(env(safe-area-inset-bottom) + 13px)) + 111px) !important;
+  }
+}
+</style>
+
+<style id="oddi-mobile-composer-final-curve-text-fix">
+@media (max-width:768px) and (pointer:coarse) {
+  /* 1) Strong, smooth outer curve — keep the existing walls/bottom position. */
+  .input-area {
+    border-radius: 30px !important;
+    overflow: hidden !important;
+  }
+
+  /* 2) + and microphone are icon-only: no circle, border, background or shadow. */
+  .input-area > .attach-btn,
+  .input-area > .dictation-btn,
+  .input-area > .action-button-slot .voice-btn,
+  .input-area > .action-button-slot .send-btn {
+    width: 34px !important;
+    height: 48px !important;
+    min-width: 34px !important;
+    min-height: 48px !important;
+    flex: 0 0 34px !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .input-area > .attach-btn {
+    font-size: 23px !important;
+    color: #8a8a8a !important;
+  }
+
+  .input-area > .dictation-btn,
+  .input-area > .action-button-slot .voice-btn {
+    color: #8a8a8a !important;
+  }
+
+  .input-area > .dictation-btn svg,
+  .input-area > .action-button-slot .voice-btn svg {
+    width: 21px !important;
+    height: 21px !important;
+    max-width: 21px !important;
+    max-height: 21px !important;
+  }
+
+  /* Keep the action slot itself invisible while preserving its layout. */
+  .input-area > .action-button-slot {
+    width: auto !important;
+    min-width: 34px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    flex: 0 0 auto !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  /* 3) Larger placeholder and typed input text. */
+  .input-area textarea {
+    font-size: 17px !important;
+    line-height: 1.45 !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  .input-area textarea::placeholder {
+    font-size: 17px !important;
+    opacity: 1 !important;
+  }
+
+  body.mobile-composer-typing .input-area textarea {
+    font-size: 17px !important;
+    line-height: 1.45 !important;
+  }
+
+  /* Keep the send icon icon-only when it becomes visible while typing. */
+  body.mobile-composer-typing .input-area > .action-button-slot .send-btn,
+  .input-area > .action-button-slot .send-btn.stop-active {
+    width: 34px !important;
+    height: 48px !important;
+    min-width: 34px !important;
+    min-height: 48px !important;
+    flex: 0 0 34px !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+}
+</style>
+
+
+<style id="oddi-mobile-composer-final-exact-fix">
+/* FINAL MOBILE COMPOSER: only the three agreed fixes. */
+@media (max-width:768px) {
+  /* 1) Make the OUTER composer a true pill with fully rounded end edges. */
+  .input-area {
+    border-radius: 9999px !important;
+    overflow: hidden !important;
+  }
+
+  /* 2) + / mic / voice / send are icon-only: no circle, box, border or shadow. */
+  .input-area > .attach-btn,
+  .input-area > .dictation-btn,
+  .input-area > .action-button-slot,
+  .input-area > .action-button-slot .voice-btn,
+  .input-area > .action-button-slot .send-btn {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    border-radius: 0 !important;
+  }
+
+  /* 3) Make both placeholder and typed input text larger. */
+  .input-area textarea {
+    font-size: 17px !important;
+    line-height: 1.45 !important;
+  }
+
+  .input-area textarea::placeholder {
+    font-size: 17px !important;
+    opacity: 1 !important;
+  }
+}
+</style>
+
+<style id="oddi-mobile-remove-attach-mic-box-final">
+@media (max-width:768px) {
+  /* ONLY remove the visible square surfaces from + and microphone.
+     Keep the real buttons, dimensions, alignment and click/touch behavior. */
+  #attach-btn,
+  #dictation-btn {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-width: 0 !important;
+    border-style: none !important;
+    box-shadow: none !important;
+    -webkit-box-shadow: none !important;
+    outline: none !important;
+    outline-width: 0 !important;
+    border-radius: 0 !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+    filter: none !important;
+  }
+
+  #attach-btn::before,
+  #attach-btn::after,
+  #dictation-btn::before,
+  #dictation-btn::after {
+    content: none !important;
+    display: none !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  #attach-btn:hover,
+  #attach-btn:focus,
+  #attach-btn:focus-visible,
+  #attach-btn:active,
+  #dictation-btn:hover,
+  #dictation-btn:focus,
+  #dictation-btn:focus-visible,
+  #dictation-btn:active {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border-radius: 0 !important;
+  }
+}
+</style>
+
+<style id="oddi-mobile-composer-empty-state-final">
+@media (max-width:768px) and (pointer:coarse) {
+  /*
+   * EMPTY STATE ONLY:
+   * Smaller than the typing composer, with exactly 2x the existing
+   * left/right/bottom wall clearance. Keep the same pill curve.
+   */
+  body:not(.mobile-composer-typing) .input-area {
+    left: 14px !important;
+    right: 14px !important;
+    bottom: max(36px, calc(env(safe-area-inset-bottom) + 26px)) !important;
+    width: auto !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    max-height: 60px !important;
+    border-radius: 30px !important;
+    transform: translateZ(0) scale(1) !important;
+    transform-origin: center bottom !important;
+  }
+
+  /* Keep the existing typing state completely unchanged. */
+  body.mobile-composer-typing .input-area {
+    left: 7px !important;
+    right: 7px !important;
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 13px)) !important;
+    width: auto !important;
+    height: 92px !important;
+    min-height: 92px !important;
+    max-height: 92px !important;
+    border-radius: 30px !important;
+    transform: translateZ(0) scale(1) !important;
+    transform-origin: center bottom !important;
+  }
+
+  /* Keep the three tools attached to the smaller empty composer. */
+  body:not(.mobile-composer-typing) #mobileToolMenu {
+    bottom: calc(max(36px, calc(env(safe-area-inset-bottom) + 26px)) + 68px) !important;
+  }
+}
+</style>
