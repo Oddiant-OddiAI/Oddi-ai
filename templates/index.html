@@ -1542,6 +1542,23 @@ body.dark-mode .user-message .user-expand-btn:hover{
                 <span class="new-chat-icon" aria-hidden="true"></span>
                 <span>New chat</span>
             </button>
+            <div id="sidebarSelectControls" class="sidebar-select-controls" aria-label="Select chats">
+                <button id="selectChatsBtn" class="sidebar-select-btn" type="button" aria-pressed="false">
+                    <span aria-hidden="true">☑</span>
+                    <span id="selectChatsLabel">Select</span>
+                </button>
+                <div id="bulkChatActions" class="bulk-chat-actions" hidden>
+                    <button id="bulkMoveToBinBtn" class="bulk-chat-action" type="button" disabled>
+                        <span aria-hidden="true">🗑️</span>
+                        <span>Move to Bin</span>
+                    </button>
+                    <button id="bulkShareBtn" class="bulk-chat-action" type="button" disabled>
+                        <span aria-hidden="true">↗</span>
+                        <span>Share</span>
+                    </button>
+                </div>
+            </div>
+
             {% if not logged_in %}
             <div class="guest-save-message">
                 🔐 <a href="/login">Sign in</a> or
@@ -6046,12 +6063,15 @@ function createHistoryItem(conversation, options = {}) {
     const timestamp = getConversationDate(conversation);
     const preview = getConversationPreview(conversation);
     const item = document.createElement('div');
-    item.className = `history-item ${pinned ? 'pinned-chat' : ''} ${active ? 'active-chat' : ''}`;
+    const conversationKey = getConversationKey(conversation);
+    const isSelected = !!(window.__oddiSelectedChatKeys && window.__oddiSelectedChatKeys.has(String(conversationKey)));
+    item.className = `history-item ${pinned ? 'pinned-chat' : ''} ${active ? 'active-chat' : ''} ${isSelected ? 'chat-selected' : ''}`;
     item.tabIndex = 0;
     item.setAttribute('role', 'button');
     item.dataset.conversationId = getConversationKey(conversation);
     item.dataset.index = String(conversations.indexOf(conversation));
     item.innerHTML = `
+        <span class="chat-select-check" aria-hidden="true"></span>
         <div class="history-main">
             <div class="history-topline">
                 <span class="history-title">${pinned ? '<span class="history-pin-mark" aria-hidden="true">📌</span>' : ''}${highlightText(conversation.title || 'New Chat', searchQuery)}</span>
@@ -6094,9 +6114,28 @@ function createHistoryItem(conversation, options = {}) {
     });
 
     const open = () => openConversation(conversations.indexOf(conversation));
-    item.addEventListener('click', open);
+    item.addEventListener('click', event => {
+        if (window.__oddiSelectMode) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (typeof window.__oddiToggleChatSelection === 'function') {
+                window.__oddiToggleChatSelection(conversation);
+            }
+            return;
+        }
+        open();
+    });
     item.addEventListener('keydown', event => {
-        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); }
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            if (window.__oddiSelectMode) {
+                if (typeof window.__oddiToggleChatSelection === 'function') {
+                    window.__oddiToggleChatSelection(conversation);
+                }
+            } else {
+                open();
+            }
+        }
     });
     return item;
 }
@@ -11307,3 +11346,297 @@ loadConversations();
   }
 }
 </style>
+
+<style id="oddi-bulk-chat-selection-ui">
+/* Bulk chat selection */
+.sidebar-select-controls{
+    width:100%;
+    flex:0 0 auto;
+    margin:0 0 8px;
+}
+.sidebar-select-btn{
+    width:100%;
+    min-height:40px;
+    padding:0 12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    border:1px solid #e5e5e5;
+    border-radius:10px;
+    background:#f7f7f7;
+    color:#222;
+    font-size:12px;
+    font-weight:700;
+    cursor:pointer;
+    box-sizing:border-box;
+    transition:background .16s ease,border-color .16s ease,transform .16s ease;
+}
+.sidebar-select-btn:hover{background:#ededed;border-color:#dcdcdc;transform:translateY(-1px);}
+.sidebar-select-btn[aria-pressed="true"]{background:#111;color:#fff;border-color:#111;}
+.bulk-chat-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+    margin-top:7px;
+}
+.bulk-chat-actions[hidden]{display:none !important;}
+.bulk-chat-action{
+    min-height:38px;
+    padding:0 8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    border:1px solid #e5e5e5;
+    border-radius:10px;
+    background:#f7f7f7;
+    color:#222;
+    font-size:11px;
+    font-weight:700;
+    cursor:pointer;
+    box-sizing:border-box;
+    transition:background .16s ease,border-color .16s ease,opacity .16s ease,transform .16s ease;
+}
+.bulk-chat-action:not(:disabled):hover{background:#ededed;border-color:#d6d6d6;transform:translateY(-1px);}
+.bulk-chat-action:disabled{opacity:.38;cursor:not-allowed;}
+#bulkMoveToBinBtn:not(:disabled){color:#b21f1f;}
+.chat-select-check{
+    flex:0 0 19px;
+    width:19px;
+    height:19px;
+    margin:2px 8px 0 0;
+    border:1.5px solid #bcbcbc;
+    border-radius:6px;
+    background:#fff;
+    box-sizing:border-box;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-size:12px;
+    line-height:1;
+    transition:background .14s ease,border-color .14s ease,transform .14s ease;
+}
+.history-item.chat-selected .chat-select-check{
+    background:#111;
+    border-color:#111;
+}
+.history-item.chat-selected .chat-select-check::before{content:"✓";}
+.history-item.chat-selected{background:#f0f0f0 !important;border-color:#dedede !important;transform:none !important;}
+.history-item.chat-selected.active-chat{background:#151515 !important;border-color:#151515 !important;}
+.history-item.chat-selected.active-chat .chat-select-check{background:#fff;border-color:#fff;color:#111;}
+.history-item.chat-selected .history-actions{opacity:0 !important;pointer-events:none !important;}
+body.dark-mode .sidebar-select-btn{background:#171717;color:#fff;border-color:#2b2b2b;}
+body.dark-mode .sidebar-select-btn:hover{background:#222;border-color:#383838;}
+body.dark-mode .sidebar-select-btn[aria-pressed="true"]{background:#f5f5f5;color:#111;border-color:#f5f5f5;}
+body.dark-mode .bulk-chat-action{background:#171717;color:#fff;border-color:#2b2b2b;}
+body.dark-mode .bulk-chat-action:not(:disabled):hover{background:#222;border-color:#383838;}
+body.dark-mode #bulkMoveToBinBtn:not(:disabled){color:#ff7777;}
+body.dark-mode .chat-select-check{background:#111;border-color:#555;}
+body.dark-mode .history-item.chat-selected{background:#202020 !important;border-color:#383838 !important;}
+body.dark-mode .history-item.chat-selected .chat-select-check{background:#f5f5f5;border-color:#f5f5f5;color:#111;}
+body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !important;border-color:#151515 !important;}
+@media (max-width:768px){
+    .sidebar-select-btn{min-height:42px;font-size:12px;}
+    .bulk-chat-action{min-height:40px;font-size:11px;}
+    .chat-select-check{flex-basis:20px;width:20px;height:20px;margin-right:9px;}
+}
+</style>
+
+
+<script id="oddi-bulk-chat-selection-logic">
+(function(){
+    "use strict";
+
+    const selectBtn = document.getElementById("selectChatsBtn");
+    const selectLabel = document.getElementById("selectChatsLabel");
+    const bulkActions = document.getElementById("bulkChatActions");
+    const moveBtn = document.getElementById("bulkMoveToBinBtn");
+    const shareBtn = document.getElementById("bulkShareBtn");
+
+    if (!selectBtn || !bulkActions || !moveBtn || !shareBtn) return;
+
+    window.__oddiSelectMode = false;
+    window.__oddiSelectedChatKeys = new Set();
+
+    function keyOf(conversation){
+        try {
+            return String(typeof getConversationKey === "function"
+                ? getConversationKey(conversation)
+                : (conversation && conversation.id != null ? conversation.id : ""));
+        } catch (_) {
+            return String(conversation && conversation.id != null ? conversation.id : "");
+        }
+    }
+
+    function selectedConversations(){
+        if (!Array.isArray(window.conversations)) return [];
+        const keys = window.__oddiSelectedChatKeys;
+        return window.conversations.filter(c => keys.has(keyOf(c)));
+    }
+
+    function updateSelectionUI(){
+        const count = window.__oddiSelectedChatKeys.size;
+        selectBtn.setAttribute("aria-pressed", window.__oddiSelectMode ? "true" : "false");
+        selectLabel.textContent = window.__oddiSelectMode
+            ? (count ? `${count} selected` : "Cancel")
+            : "Select";
+        bulkActions.hidden = !window.__oddiSelectMode;
+        moveBtn.disabled = count === 0;
+        shareBtn.disabled = count === 0;
+
+        document.querySelectorAll("#chatHistory .history-item").forEach(item => {
+            const selected = window.__oddiSelectedChatKeys.has(String(item.dataset.conversationId || ""));
+            item.classList.toggle("chat-selected", selected);
+            const check = item.querySelector(".chat-select-check");
+            if (check) check.setAttribute("aria-hidden", selected ? "false" : "true");
+        });
+    }
+
+    function renderSelectionState(){
+        if (typeof renderHistory === "function") renderHistory();
+        updateSelectionUI();
+    }
+
+    window.__oddiToggleChatSelection = function(conversation){
+        if (!window.__oddiSelectMode || !conversation) return;
+        const key = keyOf(conversation);
+        if (!key) return;
+        if (window.__oddiSelectedChatKeys.has(key)) {
+            window.__oddiSelectedChatKeys.delete(key);
+        } else {
+            window.__oddiSelectedChatKeys.add(key);
+        }
+        renderSelectionState();
+    };
+
+    function clearSelection(exitMode = true){
+        window.__oddiSelectedChatKeys.clear();
+        if (exitMode) window.__oddiSelectMode = false;
+        renderSelectionState();
+    }
+
+    selectBtn.addEventListener("click", function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        if (window.__oddiSelectMode) {
+            clearSelection(true);
+        } else {
+            window.__oddiSelectMode = true;
+            window.__oddiSelectedChatKeys.clear();
+            renderSelectionState();
+        }
+    });
+
+    async function moveSelectedToBin(){
+        const selected = selectedConversations();
+        if (!selected.length) return;
+
+        const confirmed = typeof showActionConfirmation === "function"
+            ? await showActionConfirmation(
+                "Move Selected Chats to Bin?",
+                `${selected.length} ${selected.length === 1 ? "chat" : "chats"} will be moved to the Bin.`,
+                "Move to Bin",
+                true
+            )
+            : window.confirm(`Move ${selected.length} chats to the Bin?`);
+
+        if (!confirmed) return;
+
+        const selectedKeys = new Set(selected.map(keyOf));
+        const trash = typeof getTrash === "function" ? getTrash() : [];
+        selected.forEach(conversation => {
+            trash.push({ ...conversation, deletedAt: Date.now() });
+            if (typeof removePinnedConversation === "function") removePinnedConversation(conversation);
+        });
+        if (typeof setTrash === "function") setTrash(trash);
+
+        const current = (typeof currentConversation !== "undefined" && currentConversation !== null)
+            ? conversations[currentConversation]
+            : null;
+        conversations = conversations.filter(c => !selectedKeys.has(keyOf(c)));
+
+        if (current && selectedKeys.has(keyOf(current))) {
+            currentConversation = null;
+            if (typeof chat !== "undefined" && chat) chat.innerHTML = "";
+        } else if (current) {
+            currentConversation = conversations.indexOf(current);
+        }
+
+        clearSelection(true);
+        if (typeof renderHistory === "function") renderHistory();
+    }
+
+    function buildCombinedShareText(selected){
+        return selected.map((conversation, index) => {
+            const title = conversation.title || "New Chat";
+            const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
+            const body = messages.map(msg => {
+                const role = msg.role === "user" ? "You" : "Oddi AI";
+                const value = String(msg.text || msg.content || "").trim();
+                return value ? `${role}: ${value}` : "";
+            }).filter(Boolean).join("\n\n");
+            return `${index + 1}. ${title}\n${body || "No messages."}`;
+        }).join("\n\n------------------------------\n\n");
+    }
+
+    async function shareSelected(){
+        const selected = selectedConversations();
+        if (!selected.length) return;
+
+        const text = `Oddi AI — Selected Chats\n\n${buildCombinedShareText(selected)}`;
+        const title = selected.length === 1
+            ? (selected[0].title || "Oddi Chat")
+            : `${selected.length} Oddi AI chats`;
+
+        try {
+            if (navigator.share) {
+                await navigator.share({ title, text });
+                return;
+            }
+        } catch (error) {
+            if (error && error.name === "AbortError") return;
+        }
+
+        try {
+            await navigator.clipboard.writeText(text);
+            alert("Selected chats copied to clipboard.");
+        } catch (_) {
+            const area = document.createElement("textarea");
+            area.value = text;
+            area.style.position = "fixed";
+            area.style.left = "-9999px";
+            document.body.appendChild(area);
+            area.select();
+            try { document.execCommand("copy"); alert("Selected chats copied to clipboard."); }
+            catch (_) { alert("Could not share the selected chats."); }
+            area.remove();
+        }
+    }
+
+    moveBtn.addEventListener("click", function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        moveSelectedToBin();
+    });
+
+    shareBtn.addEventListener("click", function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        shareSelected();
+    });
+
+    /* Keep selection mode consistent after history is rerendered elsewhere. */
+    const originalRenderHistory = window.renderHistory;
+    if (typeof originalRenderHistory === "function") {
+        window.renderHistory = function(){
+            originalRenderHistory.apply(this, arguments);
+            updateSelectionUI();
+        };
+    }
+
+    /* Expose a small reset hook for actions that intentionally leave the sidebar. */
+    window.__oddiClearChatSelection = clearSelection;
+})();
+</script>
