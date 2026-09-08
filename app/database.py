@@ -34,12 +34,24 @@ def create_tables():
             title TEXT NOT NULL DEFAULT 'New Chat',
             messages TEXT NOT NULL DEFAULT '[]',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            pinned INTEGER NOT NULL DEFAULT 0,
+            archived INTEGER NOT NULL DEFAULT 0,
+            deleted_at TIMESTAMP NULL,
 
             FOREIGN KEY (user_id)
             REFERENCES users(id)
             ON DELETE CASCADE
         )
     """)
+
+    # Safe migrations for databases created by older ODDI versions.
+    columns = {row[1] for row in conn.execute("PRAGMA table_info(conversations)").fetchall()}
+    if "pinned" not in columns:
+        conn.execute("ALTER TABLE conversations ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
+    if "archived" not in columns:
+        conn.execute("ALTER TABLE conversations ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
+    if "deleted_at" not in columns:
+        conn.execute("ALTER TABLE conversations ADD COLUMN deleted_at TIMESTAMP NULL")
 
     # Memories table
     conn.execute("""
@@ -129,83 +141,93 @@ def create_conversation(user_id, title="New Chat"):
     return conversation_id
 
 
-def get_conversations(user_id):
-
-    conn = get_db()
-
-    rows = conn.execute(
-        """
-        SELECT id, user_id, title, messages, created_at
-        FROM conversations
-        WHERE user_id = ?
-        ORDER BY id DESC
-        """,
-        (user_id,)
-    ).fetchall()
-
-    conn.close()
-
-    conversations = []
-
-    for row in rows:
-        conversations.append({
-            "id": row["id"],
-            "user_id": row["user_id"],
-            "title": row["title"],
-            "messages": json.loads(row["messages"]),
-            "created_at": row["created_at"]
-        })
-
-    return conversations
-
-
-def get_conversation(conversation_id, user_id):
-
-    conn = get_db()
-
-    row = conn.execute(
-        """
-        SELECT id, user_id, title, messages, created_at
-        FROM conversations
-        WHERE id = ? AND user_id = ?
-        """,
-        (conversation_id, user_id)
-    ).fetchone()
-
-    conn.close()
-
-    if not row:
-        return None
-
+def _conversation_dict(row):
     return {
         "id": row["id"],
         "user_id": row["user_id"],
         "title": row["title"],
         "messages": json.loads(row["messages"]),
-        "created_at": row["created_at"]
+        "created_at": row["created_at"],
+        "pinned": bool(row["pinned"]),
+        "archived": bool(row["archived"]),
+        "deleted": bool(row["deleted_at"]),
+        "deleted_at": row["deleted_at"]
     }
 
 
-def update_conversation(conversation_id, user_id, title, messages):
-
+def get_conversations(user_id):
     conn = get_db()
+    rows = conn.execute("""
+        SELECT id, user_id, title, messages, created_at, pinned, archived, deleted_at
+        FROM conversations
+        WHERE user_id = ? AND deleted_at IS NULL
+        ORDER BY id DESC
+    """, (user_id,)).fetchall()
+    conn.close()
+    return [_conversation_dict(row) for row in rows]
 
-    conn.execute(
-        """
+
+def get_deleted_conversations(user_id):
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT id, user_id, title, messages, created_at, pinned, archived, deleted_at
+        FROM conversations
+        WHERE user_id = ? AND deleted_at IS NOT NULL
+        ORDER BY deleted_at DESC, id DESC
+    """, (user_id,)).fetchall()
+    conn.close()
+    return [_conversation_dict(row) for row in rows]
+
+
+def get_conversation(conversation_id, user_id):
+    conn = get_db()
+    row = conn.execute("""
+        SELECT id, user_id, title, messages, created_at, pinned, archived, deleted_at
+        FROM conversations
+        WHERE id = ? AND user_id = ?
+    """, (conversation_id, user_id)).fetchone()
+    conn.close()
+    if not row:
+        return None
+    return _conversation_dict(row)
+
+
+def update_conversation(conversation_id, user_id, title, messages):
+    conn = get_db()
+    cursor = conn.execute("""
         UPDATE conversations
         SET title = ?, messages = ?
         WHERE id = ? AND user_id = ?
-        """,
-        (
-            title,
-            json.dumps(messages),
-            conversation_id,
-            user_id
-        )
-    )
-
+    """, (title, json.dumps(messages), conversation_id, user_id))
     conn.commit()
     conn.close()
+    return cursor.rowcount > 0
+
+
+def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None):
+    conn = get_db()
+    current = conn.execute("SELECT pinned, archived, deleted_at FROM conversations WHERE id = ? AND user_id = ?", (conversation_id, user_id)).fetchone()
+    if not current:
+        conn.close()
+        return None
+    next_pinned = int(bool(current["pinned"])) if pinned is None else int(bool(pinned))
+    next_archived = int(bool(current["archived"])) if archived is None else int(bool(archived))
+    if deleted is None:
+        next_deleted = current["deleted_at"]
+    else:
+        next_deleted = __import__("datetime").datetime.utcnow().isoformat(timespec="seconds") if deleted else None
+    if deleted is True:
+        next_pinned = 0
+        next_archived = 0
+    conn.execute("""
+        UPDATE conversations
+        SET pinned = ?, archived = ?, deleted_at = ?
+        WHERE id = ? AND user_id = ?
+    """, (next_pinned, next_archived, next_deleted, conversation_id, user_id))
+    conn.commit()
+    row = conn.execute("""SELECT id, user_id, title, messages, created_at, pinned, archived, deleted_at FROM conversations WHERE id = ? AND user_id = ?""", (conversation_id, user_id)).fetchone()
+    conn.close()
+    return _conversation_dict(row) if row else None
 
 
 def delete_conversation(conversation_id, user_id):

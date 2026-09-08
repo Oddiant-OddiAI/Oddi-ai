@@ -1384,64 +1384,6 @@ body.dark-mode .user-message .user-expand-btn:hover{
     window.__oddiCloseLongPressChatMenu = closeMenu;
 })();
 </script>
-
-<style id="oddi-select-button-desktop-match-final">
-/* Select should look like the other sidebar navigation buttons on laptop/desktop. */
-#sidebar .sidebar-select-controls .sidebar-select-btn{
-    width:100% !important;
-    min-height:42px !important;
-    height:42px !important;
-    margin:0 !important;
-    padding:0 10px !important;
-    display:flex !important;
-    align-items:center !important;
-    justify-content:flex-start !important;
-    gap:11px !important;
-    box-sizing:border-box !important;
-    border:0 !important;
-    border-radius:9px !important;
-    background:transparent !important;
-    color:#202020 !important;
-    font-size:14px !important;
-    font-weight:400 !important;
-    line-height:1 !important;
-    box-shadow:none !important;
-    transform:none !important;
-    text-align:left !important;
-}
-#sidebar .sidebar-select-controls .sidebar-select-btn:hover{
-    background:#f2f2f2 !important;
-    border:0 !important;
-    color:#111 !important;
-    transform:none !important;
-}
-#sidebar .sidebar-select-controls .sidebar-select-btn:active{transform:scale(.985) !important;}
-#sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{
-    width:22px !important;
-    min-width:22px !important;
-    flex:0 0 22px !important;
-    font-size:19px !important;
-    line-height:1 !important;
-    text-align:center !important;
-    font-weight:400 !important;
-}
-body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn{
-    background:transparent !important;
-    color:#e8e8e8 !important;
-}
-body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn:hover{
-    background:#191919 !important;
-    color:#fff !important;
-}
-
-/* Phone keeps the current layout/appearance, but Select matches the bold
-   weight used by the other prominent phone sidebar labels. */
-@media (max-width:768px){
-    #sidebar .sidebar-select-controls .sidebar-select-btn{
-        font-weight:700 !important;
-    }
-}
-</style>
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 <div id="appLockOverlay" class="app-lock-overlay" aria-hidden="true" style="display:none;">
@@ -3559,134 +3501,54 @@ const historyContainer =
         "chatHistory"
     );
 
-/* =========================================================
-   PERSISTENT CONVERSATION STORAGE
-   - Logged-in users: SQLite/server is the primary store.
-   - Guests/offline/local HTML: browser localStorage is the durable fallback.
-   - The browser cache is also kept for logged-in users as a recovery cache
-     if the API is temporarily unavailable.
-========================================================= */
-const ODDI_CONVERSATIONS_STORAGE_PREFIX = "oddi_conversations_persistent_v2";
-
-function getConversationStorageKey() {
-    const username = String(document.body?.dataset?.username || "").trim();
-    if (isLoggedIn && username) {
-        return `${ODDI_CONVERSATIONS_STORAGE_PREFIX}:user:${username}`;
-    }
-    return `${ODDI_CONVERSATIONS_STORAGE_PREFIX}:guest`;
-}
-
-function readLocalConversations() {
-    try {
-        const raw = localStorage.getItem(getConversationStorageKey());
-        if (!raw) return [];
-        const value = JSON.parse(raw);
-        return Array.isArray(value) ? value : [];
-    } catch (error) {
-        console.warn("Could not read persistent conversations:", error);
-        return [];
-    }
-}
-
-function writeLocalConversations(list = conversations) {
-    try {
-        const safeList = Array.isArray(list) ? list : [];
-        localStorage.setItem(
-            getConversationStorageKey(),
-            JSON.stringify(safeList)
-        );
-        return true;
-    } catch (error) {
-        console.warn("Could not persist conversations locally:", error);
-        return false;
-    }
-}
-
-function filterTrashedConversations(list) {
-    const trashedIds = new Set(
-        getTrash()
-            .map(item => item && item.id)
-            .filter(Boolean)
-            .map(String)
-    );
-    return (Array.isArray(list) ? list : []).filter(conversation =>
-        !conversation.id || !trashedIds.has(String(conversation.id))
-    );
-}
-
 async function loadConversations() {
-    try {
-        /* Logged-out/local-file mode must NEVER throw away the in-memory
-           array on refresh. Restore it from durable browser storage. */
-        if (!isLoggedIn) {
-            conversations = filterTrashedConversations(readLocalConversations());
-            renderHistory();
-            currentConversation = null;
-            return;
-        }
-
-        const response = await fetch("/api/conversations", {
-            credentials: "same-origin"
-        });
-
-        if (response.ok) {
-            const loadedConversations = await response.json();
-            conversations = filterTrashedConversations(
-                Array.isArray(loadedConversations) ? loadedConversations : []
-            );
-
-            /* Keep a recovery copy. If the server later becomes unavailable,
-               the user's conversations are still available in this browser. */
-            writeLocalConversations(conversations);
-        } else {
-            console.warn("Conversation API unavailable; restoring local cache.");
-            conversations = filterTrashedConversations(readLocalConversations());
-        }
-
-        renderHistory();
+    if (!isLoggedIn) {
+        conversations = [];
         currentConversation = null;
+        return;
+    }
 
+    try {
+        const response = await fetch("/api/conversations", { credentials: "same-origin" });
+        if (!response.ok) throw new Error(`Load conversations failed (${response.status})`);
+
+        const loadedConversations = await response.json();
+        conversations = Array.isArray(loadedConversations) ? loadedConversations : [];
+
+        // Migrate any old device-local pin/bin state once. The server then
+        // becomes the single source of truth for every device.
+        await migrateLegacyConversationState();
+
+        const fresh = await fetch("/api/conversations", { credentials: "same-origin" });
+        if (fresh.ok) {
+            const latest = await fresh.json();
+            conversations = Array.isArray(latest) ? latest : conversations;
+        }
+
+        currentConversation = null;
+        renderHistory();
     } catch (error) {
         console.error("Load conversations error:", error);
-        conversations = filterTrashedConversations(readLocalConversations());
-        renderHistory();
-        currentConversation = null;
     }
 }
 
 async function saveConversation(conversation) {
-    if (!conversation) return;
-
-    /* Always persist the complete conversation list locally. This fixes the
-       old guest mode where conversations existed only in the JS array and
-       disappeared on refresh/reload. */
-    writeLocalConversations(conversations);
-
-    if (!isLoggedIn || !conversation.id) return;
-
+    if (!conversation?.id) return false;
     try {
-        const response = await fetch(
-            `/api/conversations/${conversation.id}`,
-            {
-                method: "PUT",
-                credentials: "same-origin",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    title: conversation.title,
-                    messages: conversation.messages
-                })
-            }
-        );
-
-        if (!response.ok) {
-            console.warn("Server conversation save failed:", response.status);
-        }
+        const response = await fetch(`/api/conversations/${conversation.id}`, {
+            method: "PUT",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                title: conversation.title || "New Chat",
+                messages: Array.isArray(conversation.messages) ? conversation.messages : []
+            })
+        });
+        if (!response.ok) throw new Error(`Save conversation failed (${response.status})`);
+        return true;
     } catch (error) {
-        /* Local persistence has already succeeded; keep the app usable
-           offline and let the recovery cache preserve the conversation. */
         console.error("Save conversation error:", error);
+        return false;
     }
 }
 
@@ -4108,15 +3970,6 @@ ${bodyHtml}
 
 
 
-<style id="oddi-selected-share-modal-final">
-#oddiShareModal. show,
-#oddiShareModal.show{z-index:2147483640 !important;pointer-events:auto !important;}
-#oddiShareModal.show .oddi-share-card{position:relative !important;z-index:2147483641 !important;pointer-events:auto !important;}
-#oddiShareModal.show .oddi-share-options,
-#oddiShareModal.show .oddi-share-options button,
-#oddiShareModal.show .oddi-share-close,
-#oddiShareModal.show .oddi-share-format-row select{pointer-events:auto !important;}
-</style>
 </body></html>`;
 }
 
@@ -4552,45 +4405,11 @@ async function exportCurrentChatAsPptx() {
     }
 }
 
-function getShareConversations() {
-    const selected = Array.isArray(window.__oddiShareSelection)
-        ? window.__oddiShareSelection.filter(Boolean)
-        : [];
-
-    if (selected.length) return selected;
-
-    const conversation = getCurrentExportConversation();
-    return conversation ? [conversation] : [];
-}
-
-function buildSelectedShareText(items) {
-    return items.map((conversation, index) => {
-        const title = conversation?.title || "Oddi Chat";
-        const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
-        const body = messages.map(msg => {
-            const role = msg?.role === "user" ? "You" : "Oddi AI";
-            const value = String(msg?.text || msg?.content || "").trim();
-            return value ? `${role}: ${value}` : "";
-        }).filter(Boolean).join("\n\n");
-
-        return `${index + 1}. ${title}\n${body || "No messages."}`;
-    }).join("\n\n------------------------------\n\n");
-}
-
-function clearShareSelection() {
-    window.__oddiShareSelection = null;
-}
-
 function openShareModal() {
-    clearShareSelection();
     const conversation = getCurrentExportConversation();
     if (!conversation) return;
     const modal = document.getElementById("oddiShareModal");
     if (!modal) return;
-    const title = document.getElementById("oddiShareTitle");
-    const subtitle = modal.querySelector(".oddi-share-subtitle");
-    if (title) title.textContent = "Share chat";
-    if (subtitle) subtitle.textContent = "Share the current conversation";
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
 }
@@ -4610,195 +4429,11 @@ async function shareCurrentChat() {
     openShareModal();
 }
 
-async function createConversationPdfBlob(conversation) {
-    if (!conversation) return null;
-
-    const JsPDF = window.jspdf?.jsPDF;
-    const html2canvasFn = window.html2canvas;
-    if (typeof JsPDF !== "function" || typeof html2canvasFn !== "function") {
-        throw new Error("PDF export libraries are unavailable.");
-    }
-
-    /*
-     * IMPORTANT:
-     * Do not feed multilingual text directly to jsPDF's built-in Helvetica
-     * font. Helvetica in jsPDF does not contain Devanagari, CJK, Arabic,
-     * Cyrillic, etc., and produces mojibake / spaced garbage characters.
-     *
-     * Instead, render the selected conversation as real browser HTML first
-     * and rasterize it with html2canvas. The browser has the appropriate
-     * Unicode fonts, so the resulting PDF preserves the characters exactly
-     * as they appear in ODDI.
-     */
-    const root = document.createElement("div");
-    root.className = "oddi-export-pdf-root";
-    Object.assign(root.style, {
-        position: "fixed",
-        left: "0",
-        top: "0",
-        width: "794px",
-        minHeight: "1123px",
-        height: "auto",
-        maxHeight: "none",
-        overflow: "visible",
-        zIndex: "2147483647",
-        pointerEvents: "none",
-        visibility: "visible",
-        opacity: "1",
-        background: "#ffffff",
-        color: "#111111",
-        boxSizing: "border-box",
-        padding: "32px"
-    });
-
-    const title = document.createElement("h1");
-    title.className = "export-chat-title";
-    title.textContent = String(conversation.title || "Oddi Chat");
-    Object.assign(title.style, {
-        margin: "0 0 6px",
-        fontFamily: "Arial, Helvetica, sans-serif",
-        fontSize: "26px",
-        lineHeight: "1.25",
-        fontWeight: "700",
-        overflowWrap: "anywhere"
-    });
-    root.appendChild(title);
-
-    const meta = document.createElement("p");
-    meta.className = "export-chat-meta";
-    meta.textContent = `Exported from Oddi AI · ${new Date().toLocaleString()}`;
-    Object.assign(meta.style, {
-        margin: "0 0 24px",
-        fontFamily: "Arial, Helvetica, sans-serif",
-        fontSize: "12px",
-        lineHeight: "1.4",
-        color: "#666666"
-    });
-    root.appendChild(meta);
-
-    const messages = Array.isArray(conversation.messages) ? conversation.messages : [];
-    messages.forEach(msg => {
-        const value = String(msg?.text || msg?.content || "").trim();
-        if (!value) return;
-
-        const block = document.createElement("section");
-        block.className = msg?.role === "user" ? "user-message" : "bot-message";
-        Object.assign(block.style, {
-            margin: "0 0 16px",
-            padding: "14px",
-            border: "1px solid #dddddd",
-            borderRadius: "10px",
-            background: "#ffffff",
-            boxSizing: "border-box",
-            fontFamily: "Arial, Helvetica, sans-serif",
-            overflowWrap: "anywhere",
-            wordBreak: "break-word",
-            whiteSpace: "pre-wrap"
-        });
-
-        const role = document.createElement("div");
-        role.textContent = msg?.role === "user" ? "You" : "Oddi AI";
-        Object.assign(role.style, {
-            marginBottom: "8px",
-            fontSize: "14px",
-            lineHeight: "1.3",
-            fontWeight: "700"
-        });
-        block.appendChild(role);
-
-        const body = document.createElement("div");
-        body.textContent = value;
-        Object.assign(body.style, {
-            fontSize: "14px",
-            lineHeight: "1.55",
-            whiteSpace: "pre-wrap",
-            overflowWrap: "anywhere",
-            wordBreak: "break-word"
-        });
-        block.appendChild(body);
-        root.appendChild(block);
-    });
-
-    if (!messages.some(msg => String(msg?.text || msg?.content || "").trim())) {
-        const empty = document.createElement("div");
-        empty.textContent = "No messages.";
-        empty.style.fontFamily = "Arial, Helvetica, sans-serif";
-        root.appendChild(empty);
-    }
-
-    document.body.appendChild(root);
-
-    try {
-        if (document.fonts?.ready) await document.fonts.ready;
-        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-
-        const width = Math.max(794, Math.ceil(root.scrollWidth || root.getBoundingClientRect().width));
-        const height = Math.max(1123, Math.ceil(root.scrollHeight || root.getBoundingClientRect().height));
-        root.style.width = `${width}px`;
-        root.style.height = `${height}px`;
-
-        let scale = Math.min(2, Math.max(1.5, window.devicePixelRatio || 1.5));
-        const maxCanvasDimension = 30000;
-        if (height * scale > maxCanvasDimension) scale = maxCanvasDimension / height;
-        scale = Math.max(1, scale);
-
-        const canvas = await html2canvasFn(root, {
-            scale,
-            useCORS: true,
-            allowTaint: false,
-            backgroundColor: "#ffffff",
-            logging: false,
-            width,
-            height,
-            windowWidth: width,
-            windowHeight: height,
-            scrollX: 0,
-            scrollY: 0
-        });
-
-        if (!canvas || canvas.width < 2 || canvas.height < 2) {
-            throw new Error("The PDF canvas was empty.");
-        }
-
-        const pdf = new JsPDF({ unit: "pt", format: "a4", orientation: "portrait", compress: true });
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const margin = 28;
-        const contentWidth = pageWidth - margin * 2;
-        const contentHeight = pageHeight - margin * 2;
-        const pxToPt = contentWidth / canvas.width;
-        const sliceHeightPx = Math.max(1, Math.floor(contentHeight / pxToPt));
-
-        let offsetY = 0;
-        let pageIndex = 0;
-        while (offsetY < canvas.height) {
-            const sliceHeight = Math.min(sliceHeightPx, canvas.height - offsetY);
-            const slice = document.createElement("canvas");
-            slice.width = canvas.width;
-            slice.height = sliceHeight;
-            const ctx = slice.getContext("2d", { alpha: false });
-            if (!ctx) throw new Error("Could not create PDF page canvas.");
-            ctx.fillStyle = "#ffffff";
-            ctx.fillRect(0, 0, slice.width, slice.height);
-            ctx.drawImage(canvas, 0, offsetY, canvas.width, sliceHeight, 0, 0, canvas.width, sliceHeight);
-
-            if (pageIndex > 0) pdf.addPage();
-            const renderedHeight = sliceHeight * pxToPt;
-            pdf.addImage(slice.toDataURL("image/jpeg", 0.94), "JPEG", margin, margin, contentWidth, renderedHeight, undefined, "FAST");
-            offsetY += sliceHeight;
-            pageIndex += 1;
-        }
-
-        return pdf.output("blob");
-    } finally {
-        root.remove();
-    }
-}
 async function createShareFile(format, conversation) {
     const safeName = sanitizeExportFilename(conversation.title);
 
     if (format === "pdf") {
-        const blob = await createConversationPdfBlob(conversation);
+        const blob = await createCurrentChatPdfBlob();
         return blob ? new File([blob], `${safeName}.pdf`, { type: "application/pdf" }) : null;
     }
 
@@ -4859,123 +4494,88 @@ function getSelectedShareFormat() {
 }
 
 async function handleShareTarget(target) {
-    const items = getShareConversations();
-    if (!items.length) return;
-
+    const conversation = getCurrentExportConversation();
+    if (!conversation) return;
     const format = getSelectedShareFormat();
-    const text = items.length === 1
-        ? buildPlainTextExport(items[0])
-        : `Oddi AI — Selected Chats\n\n${buildSelectedShareText(items)}`;
-    const title = items.length === 1
-        ? (items[0].title || "Oddi Chat")
-        : `${items.length} Oddi AI chats`;
+    const text = buildPlainTextExport(conversation);
+    const title = conversation.title || "Oddi Chat";
 
-    const closeAfter = () => {
-        closeShareModal();
-        clearShareSelection();
-    };
-
-    // Copy = download the selected conversation in the chosen format.
-    // The default PDF path is generated from the selected conversation itself,
-    // so it does not depend on which chat happens to be open on screen.
     if (target === "copy") {
         try {
-            if (items.length === 1) {
-                const file = await createShareFile(format, items[0]);
-                if (!file) throw new Error("Could not create the selected export.");
-                const bytes = await file.arrayBuffer();
-                downloadExportFile(bytes, file.name, file.type);
-            } else {
-                // For multiple selected chats, PDF is the primary supported download.
-                if (format === "pdf") {
-                    const mergedText = buildSelectedShareText(items);
-                    const synthetic = { title: "Oddi AI — Selected Chats", messages: [{ role: "assistant", text: mergedText }] };
-                    const file = await createShareFile("pdf", synthetic);
-                    if (!file) throw new Error("Could not create the selected export.");
-                    downloadExportFile(await file.arrayBuffer(), file.name, file.type);
-                } else {
-                    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-                    downloadExportFile(await blob.arrayBuffer(), "oddi-ai-selected-chats.txt", blob.type);
-                }
-            }
-            closeAfter();
+            await navigator.clipboard.writeText(text);
+            closeShareModal();
+            alert("Chat copied to clipboard.");
         } catch (error) {
-            console.error("Could not download selected chat:", error);
-            alert("Could not create the selected chat file.");
+            alert("Could not copy the chat.");
         }
-        return;
-    }
-
-    if (target === "email") {
-        const subject = encodeURIComponent(title);
-        const body = encodeURIComponent(text);
-        closeAfter();
-        window.location.href = `mailto:?subject=${subject}&body=${body}`;
         return;
     }
 
     if (target === "whatsapp") {
-        // On phones/browsers that support Web Share with files, offer the
-        // actual selected PDF to the native share sheet (WhatsApp can then be
-        // chosen). Otherwise fall back to WhatsApp Web with the chat text.
         try {
-            if (navigator.share && items.length === 1) {
-                const file = await createShareFile(format, items[0]);
-                if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    await navigator.share({
-                        title,
-                        text: `Shared from Oddi AI: ${title}`,
-                        files: [file]
-                    });
-                    closeAfter();
-                    return;
-                }
+            const file = await createShareFile(format, conversation);
+            // On browsers with a real file-share API (typically mobile), use
+            // it so the selected PDF/DOCX/etc. can be attached to WhatsApp.
+            if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+                await navigator.share({ title, text: `Shared from Oddi AI: ${title}`, files: [file] });
+                closeShareModal();
+                return;
+            }
+
+            // WhatsApp Web does not expose a browser API that lets a website
+            // silently attach a local File to a chat. Download the selected
+            // file first, then open WhatsApp Web with the chat text so the user
+            // can attach the downloaded file normally.
+            if (file) {
+                downloadExportFile(await file.arrayBuffer(), file.name, file.type);
+                const url = `https://web.whatsapp.com/send?text=${encodeURIComponent(`Shared from Oddi AI: ${title}`)}`;
+                window.open(url, "_blank", "noopener,noreferrer");
+                closeShareModal();
+                setTimeout(() => alert(`${file.name} was downloaded. In WhatsApp Web, open the chat and attach this file.`), 250);
+                return;
             }
         } catch (error) {
             if (error?.name === "AbortError") return;
-            console.error("WhatsApp/native file share failed:", error);
+            console.error("WhatsApp sharing failed:", error);
         }
 
         const url = `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-        closeAfter();
         window.open(url, "_blank", "noopener,noreferrer");
+        return;
+    }
+
+    if (target === "email") {
+        const body = format === "txt" ? text : `${text}\n\n(Attachment sharing depends on your mail app.)`;
+        const subject = encodeURIComponent(title);
+        window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
         return;
     }
 
     if (target === "more") {
         try {
+            const file = await createShareFile(format, conversation);
+            if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+                await navigator.share({ title, text: `Shared from Oddi AI: ${title}`, files: [file] });
+                closeShareModal();
+                return;
+            }
             if (navigator.share) {
-                if (items.length === 1) {
-                    const file = await createShareFile(format, items[0]);
-                    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-                        await navigator.share({ title, text, files: [file] });
-                    } else {
-                        await navigator.share({ title, text });
-                    }
-                } else {
-                    await navigator.share({ title, text });
-                }
-                closeAfter();
+                await navigator.share({ title, text });
+                closeShareModal();
                 return;
             }
         } catch (error) {
             if (error?.name === "AbortError") return;
-            console.error("Native sharing failed:", error);
         }
-
         try {
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-                await navigator.clipboard.writeText(text);
-                closeAfter();
-                alert("Native sharing is unavailable here. The chat text was copied to the clipboard.");
-                return;
-            }
-        } catch (_) {}
-
-        alert("More sharing options are not available in this browser.");
+            await navigator.clipboard.writeText(text);
+            closeShareModal();
+            alert("Your browser does not provide native share options here. The chat was copied so you can paste it into any app.");
+        } catch (error) {
+            alert("More sharing options are not available in this browser.");
+        }
     }
 }
-
 async function copyCurrentChat() {
     const conversation = getCurrentExportConversation();
     if (!conversation) return;
@@ -5010,27 +4610,11 @@ exportChatMenu?.addEventListener("click", async event => {
     if (action === "share") await shareCurrentChat();
 });
 
-document.getElementById("oddiShareClose")?.addEventListener("click", event => {
-    event.preventDefault();
-    event.stopPropagation();
-    closeShareModal();
-    clearShareSelection();
-});
-
-const oddiShareModal = document.getElementById("oddiShareModal");
-oddiShareModal?.addEventListener("click", event => {
-    if (event.target === oddiShareModal) {
-        closeShareModal();
-        clearShareSelection();
-    }
-});
-
-oddiShareModal?.querySelectorAll("button[data-share-target]").forEach(button => {
-    button.addEventListener("click", event => {
-        event.preventDefault();
-        event.stopPropagation();
-        handleShareTarget(button.dataset.shareTarget);
-    });
+document.getElementById("oddiShareClose")?.addEventListener("click", closeShareModal);
+document.getElementById("oddiShareModal")?.addEventListener("click", event => {
+    if (event.target.id === "oddiShareModal") closeShareModal();
+    const button = event.target.closest("button[data-share-target]");
+    if (button) handleShareTarget(button.dataset.shareTarget);
 });
 
 document.addEventListener("click", event => {
@@ -5384,14 +4968,13 @@ async function sendMessage(
 
             currentConversation = 0;
             touchConversation(conversations[0]);
-            writeLocalConversations(conversations);
 
             renderHistory();
 
         } else {
 
             conversations = [{
-                id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+                id: null,
                 title: message,
                 messages: []
             }];
@@ -6306,16 +5889,97 @@ chatSearchInput.addEventListener(
 );
 
 function getPinnedChatIds() {
-    try {
-        const saved = JSON.parse(localStorage.getItem(PINNED_CHATS_KEY) || '[]');
-        return Array.isArray(saved) ? saved.map(String) : [];
-    } catch {
-        return [];
+    if (Array.isArray(conversations)) {
+        return conversations.filter(c => c?.pinned).map(c => getConversationKey(c));
     }
+    return [];
 }
 
 function savePinnedChatIds(ids) {
-    localStorage.setItem(PINNED_CHATS_KEY, JSON.stringify([...new Set(ids.map(String))]));
+    // Kept only as a compatibility helper for old code. Server state is authoritative.
+    localStorage.setItem(PINNED_CHATS_KEY, JSON.stringify([...new Set((ids || []).map(String))]));
+}
+
+async function updateConversationMetadata(conversation, patch = {}) {
+    if (!conversation?.id) return false;
+    try {
+        const response = await fetch(`/api/conversations/${conversation.id}/metadata`, {
+            method: "PUT",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(patch)
+        });
+        if (!response.ok) throw new Error(`Metadata update failed (${response.status})`);
+        const updated = await response.json();
+        Object.assign(conversation, updated.conversation || {});
+        return true;
+    } catch (error) {
+        console.error("Conversation metadata update error:", error);
+        return false;
+    }
+}
+
+async function migrateLegacyConversationState() {
+    if (!Array.isArray(conversations) || !conversations.length) return;
+    const legacyPinned = (() => {
+        try { return JSON.parse(localStorage.getItem(PINNED_CHATS_KEY) || "[]"); }
+        catch { return []; }
+    })();
+    const legacyTrash = (() => {
+        try { return JSON.parse(localStorage.getItem("oddi_deleted_chats_v1") || "[]"); }
+        catch { return []; }
+    })();
+    const pinnedSet = new Set((Array.isArray(legacyPinned) ? legacyPinned : []).map(String));
+    const trashIds = new Set((Array.isArray(legacyTrash) ? legacyTrash : []).map(x => x?.id).filter(Boolean).map(String));
+
+    const jobs = [];
+    const migratedPinned = new Set();
+    const migratedTrash = new Set();
+    const migratedArchive = new Set();
+
+    for (const conversation of conversations) {
+        const key = getConversationKey(conversation);
+        if (!key) continue;
+        if (!conversation.pinned && pinnedSet.has(key)) {
+            jobs.push(updateConversationMetadata(conversation, { pinned: true }).then(ok => { if (ok) migratedPinned.add(key); }));
+        }
+    }
+
+    // Legacy Bin entries may be absent from /api/conversations because the
+    // server still considers them active. Push those IDs to the server too.
+    for (const legacy of (Array.isArray(legacyTrash) ? legacyTrash : [])) {
+        if (!legacy?.id) continue;
+        const id = String(legacy.id);
+        jobs.push(updateConversationMetadata({ id: legacy.id }, { deleted: true }).then(ok => { if (ok) migratedTrash.add(id); }));
+    }
+
+    // Older builds stored archive state locally. Migrate it when the chat is
+    // present on the server.
+    let legacyArchive = [];
+    try { legacyArchive = JSON.parse(localStorage.getItem("oddi_archived_chats_v1") || "[]"); } catch { legacyArchive = []; }
+    const archiveSet = new Set((Array.isArray(legacyArchive) ? legacyArchive : []).map(String));
+    for (const conversation of conversations) {
+        const key = getConversationKey(conversation);
+        if (key && archiveSet.has(key) && !conversation.archived) {
+            jobs.push(updateConversationMetadata(conversation, { archived: true }).then(ok => { if (ok) migratedArchive.add(key); }));
+        }
+    }
+
+    if (jobs.length) await Promise.allSettled(jobs);
+
+    // Remove only legacy entries that were successfully migrated.
+    if (migratedPinned.size) {
+        const remaining = (Array.isArray(legacyPinned) ? legacyPinned : []).filter(k => !migratedPinned.has(String(k)));
+        if (remaining.length) localStorage.setItem(PINNED_CHATS_KEY, JSON.stringify(remaining)); else localStorage.removeItem(PINNED_CHATS_KEY);
+    }
+    if (migratedTrash.size) {
+        const remaining = (Array.isArray(legacyTrash) ? legacyTrash : []).filter(item => !migratedTrash.has(String(item?.id || "")));
+        if (remaining.length) localStorage.setItem("oddi_deleted_chats_v1", JSON.stringify(remaining)); else localStorage.removeItem("oddi_deleted_chats_v1");
+    }
+    if (migratedArchive.size) {
+        const remaining = (Array.isArray(legacyArchive) ? legacyArchive : []).filter(k => !migratedArchive.has(String(k)));
+        if (remaining.length) localStorage.setItem("oddi_archived_chats_v1", JSON.stringify(remaining)); else localStorage.removeItem("oddi_archived_chats_v1");
+    }
 }
 
 function getConversationKey(conversation) {
@@ -6407,32 +6071,21 @@ function conversationMatchesQuery(conversation, query) {
 }
 
 function isConversationArchived(conversation) {
-    const key = getConversationKey(conversation);
-    if (!key) return false;
-    try {
-        return JSON.parse(localStorage.getItem('oddi_archived_chats_v1') || '[]').map(String).includes(key);
-    } catch { return false; }
+    return !!conversation?.archived;
 }
 
 function getArchivedChatIds() {
-    try {
-        const value = JSON.parse(localStorage.getItem('oddi_archived_chats_v1') || '[]');
-        return Array.isArray(value) ? value.map(String) : [];
-    } catch { return []; }
+    return Array.isArray(conversations) ? conversations.filter(c => c?.archived).map(getConversationKey) : [];
 }
 
 function setArchivedChatIds(ids) {
-    localStorage.setItem('oddi_archived_chats_v1', JSON.stringify([...new Set(ids.map(String))]));
+    // Compatibility no-op; archive state is server-backed.
 }
 
-function toggleArchiveConversation(conversation) {
-    const key = getConversationKey(conversation);
-    if (!key) return;
-    const ids = getArchivedChatIds();
-    const index = ids.indexOf(key);
-    if (index === -1) ids.push(key); else ids.splice(index, 1);
-    setArchivedChatIds(ids);
-    renderHistory();
+async function toggleArchiveConversation(conversation) {
+    if (!conversation?.id) return;
+    const ok = await updateConversationMetadata(conversation, { archived: !conversation.archived });
+    if (ok) renderHistory();
 }
 
 function createHistoryItem(conversation, options = {}) {
@@ -6603,27 +6256,15 @@ function renderHistory() {
     }
 }
 
-function togglePinConversation(conversation) {
-    const key = getConversationKey(conversation);
-    if (!key) return;
-
-    const ids = getPinnedChatIds();
-    const index = ids.indexOf(key);
-
-    if (index === -1) {
-        ids.push(key);
-    } else {
-        ids.splice(index, 1);
-    }
-
-    savePinnedChatIds(ids);
-    renderHistory();
+async function togglePinConversation(conversation) {
+    if (!conversation?.id) return;
+    const ok = await updateConversationMetadata(conversation, { pinned: !conversation.pinned });
+    if (ok) renderHistory();
 }
 
-function removePinnedConversation(conversation) {
-    const key = getConversationKey(conversation);
-    if (!key) return;
-    savePinnedChatIds(getPinnedChatIds().filter(id => id !== key));
+async function removePinnedConversation(conversation) {
+    if (!conversation?.id) return false;
+    return updateConversationMetadata(conversation, { pinned: false });
 }
 
 async function openConversation(
@@ -6915,13 +6556,11 @@ async function newChat() {
     } else {
 
         conversations = [{
-            id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+            id: null,
             title: "New Chat",
             messages: [],
             pinned: false
         }];
-
-        writeLocalConversations(conversations);
 
         currentConversation = 0;
     }
@@ -7331,48 +6970,54 @@ cancelDelete.onclick = () => {
 };
 
 const TRASH_KEY = "oddi_deleted_chats_v1";
-function getTrash() {
-    try {
-        const value = JSON.parse(localStorage.getItem(TRASH_KEY) || "[]");
-        return Array.isArray(value) ? value : [];
-    } catch { return []; }
-}
-function setTrash(items) { localStorage.setItem(TRASH_KEY, JSON.stringify(items)); }
-async function permanentlyDeleteAllBinChats() {
-    const trash = getTrash();
-    if (!trash.length) {
-        renderBin();
-        return;
-    }
 
+function getTrash() {
+    // Synchronous compatibility snapshot. The real Bin is loaded from the server.
+    return Array.isArray(window.__oddiServerTrash) ? window.__oddiServerTrash : [];
+}
+
+function setTrash(items) {
+    window.__oddiServerTrash = Array.isArray(items) ? items : [];
+}
+
+async function loadTrashFromServer() {
+    if (!isLoggedIn) { window.__oddiServerTrash = []; return []; }
+    try {
+        const response = await fetch("/api/conversations/bin", { credentials: "same-origin" });
+        if (!response.ok) throw new Error(`Load Bin failed (${response.status})`);
+        const trash = await response.json();
+        window.__oddiServerTrash = Array.isArray(trash) ? trash : [];
+        return window.__oddiServerTrash;
+    } catch (error) {
+        console.error("Load Bin error:", error);
+        return getTrash();
+    }
+}
+
+async function permanentlyDeleteAllBinChats() {
+    const trash = await loadTrashFromServer();
+    if (!trash.length) { renderBin(); return; }
     const confirmed = await showActionConfirmation(
         "Delete All Chats Permanently?",
         "Every chat currently in the Bin will be permanently deleted and cannot be restored.",
-        "Delete All",
-        true
+        "Delete All", true
     );
     if (!confirmed) return;
-
-    /* Remove every deleted conversation from the server when it has an id.
-       Local Bin data is cleared even if one server request fails, because
-       the user explicitly confirmed permanent deletion. */
-    await Promise.all(trash.map(async conversation => {
-        if (!conversation?.id) return;
-        try {
-            await fetch(`/api/conversations/${conversation.id}`, { method: "DELETE" });
-        } catch (e) {
-            console.warn("Permanent delete sync failed", e);
-        }
-    }));
-
-    setTrash([]);
+    const results = await Promise.allSettled(trash.map(c =>
+        fetch(`/api/conversations/${c.id}`, { method: "DELETE", credentials: "same-origin" })
+    ));
+    if (results.some(r => r.status === "rejected" || !r.value.ok)) {
+        console.warn("One or more Bin deletions failed.");
+    }
+    window.__oddiServerTrash = [];
+    await loadConversations();
     renderBin();
 }
 
-function renderBin() {
+async function renderBin() {
     const list = document.getElementById("binList");
     if (!list) return;
-    const trash = getTrash();
+    const trash = await loadTrashFromServer();
     list.innerHTML = "";
     if (!trash.length) {
         list.innerHTML = '<div class="utility-empty">🗑️ Bin is empty</div>';
@@ -7386,24 +7031,22 @@ function renderBin() {
         row.innerHTML = `<div class="bin-item-main"><div class="bin-item-title"></div><div class="bin-item-meta">${count} ${count === 1 ? "message" : "messages"}</div></div><div class="bin-actions"><button class="restore-trash" type="button">↩ Restore</button><button class="permanent-delete" type="button">Delete</button></div>`;
         row.querySelector(".bin-item-title").textContent = conversation.title || "New Chat";
         row.querySelector(".restore-trash").onclick = async () => {
-            const item = getTrash();
-            const restored = item.splice(realIndex, 1)[0];
+            const item = await loadTrashFromServer();
+            const restored = item.find(c => String(c.id) === String(conversation.id));
             if (!restored) return;
-            setTrash(item);
-            conversations.push(restored);
-            try { await saveConversation(restored); } catch (e) { console.warn("Could not sync restored chat", e); }
+            const ok = await updateConversationMetadata(restored, { deleted: false });
+            if (!ok) return;
+            conversations.push({ ...restored, deleted: false });
+            window.__oddiServerTrash = item.filter(c => String(c.id) !== String(conversation.id));
             renderHistory(); renderBin();
         };
         row.querySelector(".permanent-delete").onclick = async () => {
-            const item = getTrash();
-            const doomed = item[realIndex];
-            if (!doomed) return;
             const ok = await showActionConfirmation("Delete Permanently?", "This chat will be permanently deleted and cannot be restored.", "Delete", true);
             if (!ok) return;
-            if (doomed.id) {
-                try { await fetch(`/api/conversations/${doomed.id}`, { method: "DELETE" }); } catch (e) { console.warn("Permanent delete sync failed", e); }
-            }
-            item.splice(realIndex, 1); setTrash(item); renderBin();
+            const response = await fetch(`/api/conversations/${conversation.id}`, { method: "DELETE", credentials: "same-origin" });
+            if (!response.ok) { alert("Could not permanently delete this chat. Please try again."); return; }
+            window.__oddiServerTrash = (await loadTrashFromServer()).filter(c => String(c.id) !== String(conversation.id));
+            renderBin();
         };
         list.appendChild(row);
     });
@@ -7414,17 +7057,14 @@ deleteAllBinBtn?.addEventListener("click", permanentlyDeleteAllBinChats);
 
 confirmDelete.onclick = async () => {
     const conversation = conversations[deleteIndex];
-    if (!conversation) return;
-    const trash = getTrash();
-    trash.push({ ...conversation, deletedAt: Date.now() });
-    setTrash(trash);
-    removePinnedConversation(conversation);
+    if (!conversation?.id) return;
+    const moved = await updateConversationMetadata(conversation, { deleted: true, pinned: false, archived: false });
+    if (!moved) { alert("Could not move this chat to the Bin. Please try again."); return; }
     conversations.splice(deleteIndex, 1);
-    writeLocalConversations(conversations);
     deleteModal.classList.remove("show");
     currentConversation = null;
+    if (chat) chat.innerHTML = "";
     renderHistory();
-    chat.innerHTML = "";
 };
 
 settingsBtn.onclick = () => {
@@ -7548,30 +7188,16 @@ clearChatBtn.onclick =
         if (!confirmed) {
             return;
         }
-        const trash = getTrash();
-        const existingIds = new Set(
-            trash
-                .map(item => item && item.id)
-                .filter(Boolean)
-                .map(String)
-        );
-        const now = Date.now();
-        conversations.forEach(conversation => {
-            // Avoid duplicate Bin entries if the same conversation is
-            // ever encountered more than once.
-            if (conversation.id && existingIds.has(String(conversation.id))) {
-                return;
-            }
-            trash.push({
-                ...conversation,
-                deletedAt: now
-            });
-            if (conversation.id) {
-                existingIds.add(String(conversation.id));
-            }
-            removePinnedConversation(conversation);
-        });
-        setTrash(trash);
+        const selected = conversations.slice();
+        const results = await Promise.all(selected.map(conversation =>
+            conversation?.id
+                ? updateConversationMetadata(conversation, { deleted: true, pinned: false, archived: false })
+                : true
+        ));
+        if (results.some(ok => ok !== true)) {
+            alert("Some chats could not be moved to the Bin. Please try again.");
+            return;
+        }
         conversations = [];
         currentConversation = null;
         chat.innerHTML = "";
@@ -7754,9 +7380,9 @@ loadConversations();
             const open = () => { closeModal(modal); const idx = conversations.indexOf(conversation); if (idx >= 0) openConversation(idx); };
             row.querySelector(".archived-open").addEventListener("click", open);
             row.querySelector(".archived-modal-main").addEventListener("click", open);
-            row.querySelector(".archived-restore").addEventListener("click", () => {
-                const ids = getArchivedChatIds().filter(id => id !== getConversationKey(conversation));
-                setArchivedChatIds(ids);
+            row.querySelector(".archived-restore").addEventListener("click", async () => {
+                const ok = await updateConversationMetadata(conversation, { archived: false });
+                if (!ok) { alert("Could not unarchive this chat. Please try again."); return; }
                 renderArchivedModal();
                 renderHistory();
             });
@@ -11948,18 +11574,13 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
         if (!confirmed) return;
 
         const selectedKeys = new Set(selected.map(keyOf));
-        const trashSource = typeof getTrash === "function" ? getTrash() : [];
-        const trash = Array.isArray(trashSource) ? trashSource.slice() : [];
-        const trashKeys = new Set(trash.map(keyOf));
-        selected.forEach(conversation => {
-            const key = keyOf(conversation);
-            if (!trashKeys.has(key)) {
-                trash.push({ ...conversation, deletedAt: Date.now() });
-                trashKeys.add(key);
-            }
-            if (typeof removePinnedConversation === "function") removePinnedConversation(conversation);
-        });
-        if (typeof setTrash === "function") setTrash(trash);
+        const results = await Promise.all(selected.map(conversation =>
+            updateConversationMetadata(conversation, { deleted: true, pinned: false, archived: false })
+        ));
+        if (results.some(ok => !ok)) {
+            alert("One or more chats could not be moved to the Bin. Please try again.");
+            return;
+        }
 
         const current = (typeof currentConversation !== "undefined" && currentConversation !== null)
             ? conversations[currentConversation]
@@ -11994,38 +11615,47 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
         const selected = selectedConversations();
         if (!selected.length) return;
 
-        /*
-         * Open the same Share chat modal used by the normal chat share flow.
-         * Keep the selected conversations in a global bridge so the modal
-         * can operate on the exact chats selected in the sidebar, even when
-         * the selected chat is not the currently open conversation.
-         */
-        window.__oddiShareSelection = selected.slice();
+        const text = `Oddi AI — Selected Chats\n\n${buildCombinedShareText(selected)}`;
+        const title = selected.length === 1
+            ? (selected[0].title || "Oddi Chat")
+            : `${selected.length} Oddi AI chats`;
 
-        // Close the sidebar before opening the share modal.
-        if (typeof closeSidebarForModal === "function") {
-            closeSidebarForModal();
-        } else {
-            document.getElementById("sidebar")?.classList.remove("open");
-            document.getElementById("overlay")?.classList.remove("show");
+        /* Native sharing must be attempted directly from the button click.
+           If it is unavailable or rejected for a reason other than user
+           cancellation, fall back to copying the same complete text. */
+        if (typeof navigator.share === "function") {
+            try {
+                await navigator.share({ title, text });
+                return;
+            } catch (error) {
+                if (error && error.name === "AbortError") return;
+            }
         }
 
-        const modal = document.getElementById("oddiShareModal");
-        const title = document.getElementById("oddiShareTitle");
-        const subtitle = modal?.querySelector(".oddi-share-subtitle");
-        const format = document.getElementById("oddiShareFormat");
+        try {
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+                await navigator.clipboard.writeText(text);
+                alert("Selected chats copied to clipboard.");
+                return;
+            }
+        } catch (_) {}
 
-        if (format) format.value = "pdf";
-        if (title) title.textContent = selected.length === 1 ? "Share chat" : "Share selected chats";
-        if (subtitle) {
-            subtitle.textContent = selected.length === 1
-                ? "Share the selected conversation"
-                : `Share ${selected.length} selected conversations`;
-        }
-
-        if (modal) {
-            modal.classList.add("show");
-            modal.setAttribute("aria-hidden", "false");
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.setAttribute("readonly", "");
+        area.style.position = "fixed";
+        area.style.left = "-9999px";
+        area.style.top = "0";
+        document.body.appendChild(area);
+        area.focus();
+        area.select();
+        try {
+            if (document.execCommand("copy")) alert("Selected chats copied to clipboard.");
+            else alert("Could not share the selected chats.");
+        } catch (_) {
+            alert("Could not share the selected chats.");
+        } finally {
+            area.remove();
         }
     }
 
@@ -12054,112 +11684,3 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
     window.__oddiClearChatSelection = clearSelection;
 })();
 </script>
-
-
-<style id="oddi-select-ui-final-cleanup">
-/* Final selected-chat UI: desktop keeps Select directly below New chat. */
-#sidebar .sidebar-select-controls{
-    width:100% !important;
-    box-sizing:border-box !important;
-    margin:0 0 5px !important;
-}
-#sidebar .sidebar-select-controls .sidebar-select-btn{
-    min-height:40px !important;
-}
-/* Phone placement is handled by the companion script: the same control is
-   physically moved into the lower sidebar-navigation slot, replacing Search. */
-@media (max-width:768px){
-    #sidebar .sidebar-select-controls .sidebar-select-btn{
-        min-height:42px !important;
-        height:42px !important;
-    }
-    #sidebar .sidebar-select-controls .bulk-chat-actions{
-        grid-template-columns:1fr 1fr !important;
-        width:100% !important;
-    }
-}
-</style>
-
-
-<script id="oddi-select-ui-final-connection">
-(function(){
-    "use strict";
-
-    const controls = document.getElementById("sidebarSelectControls");
-    const navRow = document.querySelector("#sidebar .sidebar-nav-row");
-    const searchBtn = document.getElementById("sidebarSearchBtn");
-    if (!controls || !navRow || !searchBtn) return;
-
-    const originalParent = controls.parentElement;
-    const placeholder = document.createComment("oddi-select-controls-slot");
-    originalParent.insertBefore(placeholder, controls);
-
-    const phoneQuery = window.matchMedia("(max-width: 768px)");
-
-    function applyLayout(){
-        const phone = phoneQuery.matches;
-        if (phone) {
-            /* Phone: replace only the lower sidebar Search row with Select. */
-            searchBtn.hidden = true;
-            searchBtn.setAttribute("aria-hidden", "true");
-            searchBtn.tabIndex = -1;
-            if (controls.parentElement !== navRow) {
-                navRow.insertBefore(controls, searchBtn);
-            }
-            navRow.style.display = "block";
-        } else {
-            /* Laptop/desktop: restore Select immediately below New chat. */
-            searchBtn.hidden = false;
-            searchBtn.removeAttribute("aria-hidden");
-            searchBtn.tabIndex = 0;
-            if (controls.parentElement !== originalParent) {
-                originalParent.insertBefore(controls, placeholder.nextSibling);
-            }
-        }
-    }
-
-    applyLayout();
-    if (typeof phoneQuery.addEventListener === "function") {
-        phoneQuery.addEventListener("change", applyLayout);
-    } else if (typeof phoneQuery.addListener === "function") {
-        phoneQuery.addListener(applyLayout);
-    }
-
-    /* Make the two bulk actions explicit public entry points as well. This
-       keeps their UI wiring stable even if another sidebar script rerenders. */
-    const moveBtn = document.getElementById("bulkMoveToBinBtn");
-    const shareBtn = document.getElementById("bulkShareBtn");
-    if (moveBtn) moveBtn.type = "button";
-    if (shareBtn) shareBtn.type = "button";
-})();
-</script>
-
-
-
-<style id="oddi-phone-select-visibility-final-fix">
-/* Phone: the Select control is moved into the old Search row by JS.
-   The older mobile rule hides that row, which also hid Select. */
-@media (max-width: 768px){
-    #sidebar .sidebar-nav-row:has(#sidebarSelectControls){
-        display:block !important;
-        width:100% !important;
-        margin:0 0 5px !important;
-    }
-    #sidebar .sidebar-nav-row:has(#sidebarSelectControls) #sidebarSearchBtn{
-        display:none !important;
-    }
-    #sidebar .sidebar-nav-row:has(#sidebarSelectControls) #sidebarSelectControls{
-        display:block !important;
-        width:100% !important;
-        margin:0 !important;
-    }
-    #sidebar .sidebar-nav-row:has(#sidebarSelectControls) #selectChatsBtn{
-        display:flex !important;
-    }
-}
-</style>
-<style id="oddi-share-selected-final-ux">
-#oddiShareModal.show{z-index:2147483640 !important;pointer-events:auto !important;}
-#oddiShareModal.show .oddi-share-card{position:relative !important;z-index:2147483641 !important;}
-#oddiShareClose,#oddiShareModal button[data-share-target]{pointer-events:auto !important;cursor:pointer !important;}
-</style>

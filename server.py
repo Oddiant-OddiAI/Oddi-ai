@@ -19,7 +19,9 @@ from app.database import (
     get_conversation,
     update_conversation,
     delete_conversation,
-    delete_all_conversations
+    delete_all_conversations,
+    get_deleted_conversations,
+    update_conversation_metadata
 )
 
 from app.engine import process_message
@@ -151,6 +153,33 @@ def api_create_conversation():
         "id": conversation_id,
         "title": title
     }), 201
+
+
+@app.route("/api/conversations/bin", methods=["GET"])
+def api_get_deleted_conversations():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+    return jsonify(get_deleted_conversations(session["user_id"]))
+
+
+@app.route("/api/conversations/<int:conversation_id>/metadata", methods=["PUT"])
+def api_update_conversation_metadata(conversation_id):
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+    data = request.get_json(silent=True) or {}
+    allowed = {"pinned", "archived", "deleted"}
+    patch = {key: data[key] for key in allowed if key in data}
+    if not patch:
+        return jsonify({"error": "No metadata changes supplied."}), 400
+    updated = update_conversation_metadata(
+        conversation_id, session["user_id"],
+        pinned=patch.get("pinned"),
+        archived=patch.get("archived"),
+        deleted=patch.get("deleted")
+    )
+    if not updated:
+        return jsonify({"error": "Conversation not found."}), 404
+    return jsonify({"success": True, "conversation": updated})
 
 
 @app.route("/api/conversations/<int:conversation_id>", methods=["GET"])
