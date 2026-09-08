@@ -12089,6 +12089,29 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
 </script>
 
 
+
+<style id="oddi-phone-select-visibility-final-fix">
+/* Phone: the Select control is moved into the old Search row by JS.
+   The older mobile rule hides that row, which also hid Select. */
+@media (max-width: 768px){
+    #sidebar .sidebar-nav-row:has(#sidebarSelectControls){
+        display:block !important;
+        width:100% !important;
+        margin:0 0 5px !important;
+    }
+    #sidebar .sidebar-nav-row:has(#sidebarSelectControls) #sidebarSearchBtn{
+        display:none !important;
+    }
+    #sidebar .sidebar-nav-row:has(#sidebarSelectControls) #sidebarSelectControls{
+        display:block !important;
+        width:100% !important;
+        margin:0 !important;
+    }
+    #sidebar .sidebar-nav-row:has(#sidebarSelectControls) #selectChatsBtn{
+        display:flex !important;
+    }
+}
+</style>
 <style id="oddi-share-selected-final-ux">
 #oddiShareModal.show{z-index:2147483640 !important;pointer-events:auto !important;}
 #oddiShareModal.show .oddi-share-card{position:relative !important;z-index:2147483641 !important;}
