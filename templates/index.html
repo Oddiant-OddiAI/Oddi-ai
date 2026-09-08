@@ -3559,92 +3559,134 @@ const historyContainer =
         "chatHistory"
     );
 
-async function loadConversations() {
+/* =========================================================
+   PERSISTENT CONVERSATION STORAGE
+   - Logged-in users: SQLite/server is the primary store.
+   - Guests/offline/local HTML: browser localStorage is the durable fallback.
+   - The browser cache is also kept for logged-in users as a recovery cache
+     if the API is temporarily unavailable.
+========================================================= */
+const ODDI_CONVERSATIONS_STORAGE_PREFIX = "oddi_conversations_persistent_v2";
 
-    if (!isLoggedIn) {
-
-        conversations = [];
-        currentConversation = null;
-
-        return;
+function getConversationStorageKey() {
+    const username = String(document.body?.dataset?.username || "").trim();
+    if (isLoggedIn && username) {
+        return `${ODDI_CONVERSATIONS_STORAGE_PREFIX}:user:${username}`;
     }
+    return `${ODDI_CONVERSATIONS_STORAGE_PREFIX}:guest`;
+}
 
+function readLocalConversations() {
     try {
-
-        const response =
-            await fetch(
-                "/api/conversations"
-            );
-
-        if (!response.ok) {
-            return;
-        }
-
-        const loadedConversations =
-            await response.json();
-
-        // Conversations moved to the local Bin stay hidden from the
-        // active history even after a page refresh. They are only
-        // removed from the server when permanently deleted from Bin.
-        const trashedIds = new Set(
-            getTrash()
-                .map(item => item && item.id)
-                .filter(Boolean)
-                .map(String)
-        );
-
-        conversations = Array.isArray(loadedConversations)
-            ? loadedConversations.filter(conversation =>
-                !conversation.id || !trashedIds.has(String(conversation.id))
-            )
-            : [];
-
-        renderHistory();
-
-        currentConversation = null;
-
+        const raw = localStorage.getItem(getConversationStorageKey());
+        if (!raw) return [];
+        const value = JSON.parse(raw);
+        return Array.isArray(value) ? value : [];
     } catch (error) {
-
-        console.error(
-            "Load conversations error:",
-            error
-        );
+        console.warn("Could not read persistent conversations:", error);
+        return [];
     }
 }
 
-async function saveConversation(
-    conversation
-) {
+function writeLocalConversations(list = conversations) {
+    try {
+        const safeList = Array.isArray(list) ? list : [];
+        localStorage.setItem(
+            getConversationStorageKey(),
+            JSON.stringify(safeList)
+        );
+        return true;
+    } catch (error) {
+        console.warn("Could not persist conversations locally:", error);
+        return false;
+    }
+}
 
-    if (!conversation.id) return;
+function filterTrashedConversations(list) {
+    const trashedIds = new Set(
+        getTrash()
+            .map(item => item && item.id)
+            .filter(Boolean)
+            .map(String)
+    );
+    return (Array.isArray(list) ? list : []).filter(conversation =>
+        !conversation.id || !trashedIds.has(String(conversation.id))
+    );
+}
+
+async function loadConversations() {
+    try {
+        /* Logged-out/local-file mode must NEVER throw away the in-memory
+           array on refresh. Restore it from durable browser storage. */
+        if (!isLoggedIn) {
+            conversations = filterTrashedConversations(readLocalConversations());
+            renderHistory();
+            currentConversation = null;
+            return;
+        }
+
+        const response = await fetch("/api/conversations", {
+            credentials: "same-origin"
+        });
+
+        if (response.ok) {
+            const loadedConversations = await response.json();
+            conversations = filterTrashedConversations(
+                Array.isArray(loadedConversations) ? loadedConversations : []
+            );
+
+            /* Keep a recovery copy. If the server later becomes unavailable,
+               the user's conversations are still available in this browser. */
+            writeLocalConversations(conversations);
+        } else {
+            console.warn("Conversation API unavailable; restoring local cache.");
+            conversations = filterTrashedConversations(readLocalConversations());
+        }
+
+        renderHistory();
+        currentConversation = null;
+
+    } catch (error) {
+        console.error("Load conversations error:", error);
+        conversations = filterTrashedConversations(readLocalConversations());
+        renderHistory();
+        currentConversation = null;
+    }
+}
+
+async function saveConversation(conversation) {
+    if (!conversation) return;
+
+    /* Always persist the complete conversation list locally. This fixes the
+       old guest mode where conversations existed only in the JS array and
+       disappeared on refresh/reload. */
+    writeLocalConversations(conversations);
+
+    if (!isLoggedIn || !conversation.id) return;
 
     try {
-
-        await fetch(
+        const response = await fetch(
             `/api/conversations/${conversation.id}`,
             {
                 method: "PUT",
-
+                credentials: "same-origin",
                 headers: {
-                    "Content-Type":
-                        "application/json"
+                    "Content-Type": "application/json"
                 },
-
                 body: JSON.stringify({
-                    title:
-                        conversation.title,
-                    messages:
-                        conversation.messages
+                    title: conversation.title,
+                    messages: conversation.messages
                 })
             }
         );
 
+        if (!response.ok) {
+            console.warn("Server conversation save failed:", response.status);
+        }
     } catch (error) {
-
-        console.error(
-            "Save conversation error:",
-            error
-        );
+        /* Local persistence has already succeeded; keep the app usable
+           offline and let the recovery cache preserve the conversation. */
+        console.error("Save conversation error:", error);
     }
 }
 
@@ -5342,13 +5384,14 @@ async function sendMessage(
 
             currentConversation = 0;
             touchConversation(conversations[0]);
+            writeLocalConversations(conversations);
 
             renderHistory();
 
         } else {
 
             conversations = [{
-                id: null,
+                id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
                 title: message,
                 messages: []
             }];
@@ -6872,11 +6915,13 @@ async function newChat() {
     } else {
 
         conversations = [{
-            id: null,
+            id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
             title: "New Chat",
             messages: [],
             pinned: false
         }];
+
+        writeLocalConversations(conversations);
 
         currentConversation = 0;
     }
@@ -7375,6 +7420,7 @@ confirmDelete.onclick = async () => {
     setTrash(trash);
     removePinnedConversation(conversation);
     conversations.splice(deleteIndex, 1);
+    writeLocalConversations(conversations);
     deleteModal.classList.remove("show");
     currentConversation = null;
     renderHistory();
