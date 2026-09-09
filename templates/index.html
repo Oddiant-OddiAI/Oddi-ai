@@ -1576,6 +1576,1732 @@ body.dark-mode .memory-cancel-btn,body.dark-mode .memory-secondary-btn{backgroun
 body.dark-mode .memory-footer{border-top-color:#333;}
 @media (max-width:600px){.memory-box{width:calc(100vw - 20px);padding:17px;}.memory-card{padding:11px;}.memory-actions{gap:4px;}.memory-action-btn{padding:6px 8px;}}
 </style>
+<style id="oddi-home-single-position-fix">
+/* Mobile home: move the ENTIRE welcome message down so its first visible line
+   starts exactly where the headline currently begins. Do not alter the rest. */
+@media (max-width:768px) and (pointer:coarse){
+    .welcome-message{
+        padding-top:36px !important;
+    }
+}
+</style>
+
+
+<style id="oddi-desktop-homepage-9plus">
+@media (min-width:769px){
+  /* Desktop is a deliberate composition, not a stretched phone layout. */
+  .chatbox{
+    padding:26px 34px 126px !important;
+    background:
+      radial-gradient(circle at 50% 18%, rgba(32,199,107,.035), transparent 30%),
+      radial-gradient(circle at 72% 58%, rgba(255,220,170,.035), transparent 28%),
+      #fff !important;
+  }
+  .welcome-message{
+    width:min(1120px,calc(100vw - 150px)) !important;
+    max-width:1120px !important;
+    padding:34px 20px 24px !important;
+    margin:0 auto !important;
+  }
+  .welcome-message::before{
+    margin-bottom:10px !important;
+    font-size:10px !important;
+    letter-spacing:.08em !important;
+  }
+  .welcome-message h2{
+    max-width:560px !important;
+    margin:0 auto 8px !important;
+    font-size:clamp(34px,3.1vw,42px) !important;
+    line-height:1.06 !important;
+    letter-spacing:-1.35px !important;
+  }
+  .welcome-message > p{
+    max-width:720px !important;
+    margin:0 auto !important;
+    font-size:15px !important;
+    line-height:1.45 !important;
+  }
+  .home-memory-context{
+    width:100% !important;
+    max-width:760px !important;
+    margin:9px auto 0 !important;
+    font-size:12px !important;
+    line-height:1.4 !important;
+  }
+  .home-suggestion-label{
+    width:min(100%,1000px) !important;
+    margin:20px auto 9px !important;
+    padding:0 2px !important;
+    font-size:10px !important;
+    letter-spacing:.11em !important;
+  }
+  .quick-actions{
+    width:min(100%,1000px) !important;
+    margin:0 auto !important;
+    padding:0 !important;
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:14px !important;
+    overflow:visible !important;
+  }
+  .quick-actions .action-card{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:78px !important;
+    min-height:78px !important;
+    max-height:78px !important;
+    padding:13px 16px !important;
+    border-radius:14px !important;
+    box-shadow:0 5px 18px rgba(0,0,0,.035) !important;
+  }
+  .quick-actions .action-card:hover{
+    transform:translateY(-2px) !important;
+    box-shadow:0 10px 24px rgba(0,0,0,.065) !important;
+  }
+  .quick-actions .action-card-main{min-width:0 !important;}
+  .quick-actions .action-card-copy strong{
+    font-size:13px !important;
+    line-height:1.2 !important;
+  }
+  .quick-actions .action-card-copy small{
+    font-size:10px !important;
+    line-height:1.3 !important;
+  }
+  .quick-actions .action-card-icon{
+    width:30px !important;
+    height:30px !important;
+    min-width:30px !important;
+    border-radius:9px !important;
+  }
+
+  /* Learning becomes a compact, useful horizontal card. */
+  #homeLearningMount{
+    width:min(100%,1000px) !important;
+    margin:18px auto 0 !important;
+  }
+  #homeLearningMount .home-learning-card{
+    width:100% !important;
+    min-height:76px !important;
+    box-sizing:border-box !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    gap:20px !important;
+    padding:14px 18px !important;
+    border-radius:15px !important;
+    box-shadow:0 7px 24px rgba(0,0,0,.045) !important;
+  }
+  #homeLearningMount .home-learning-main{
+    flex:1 1 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    gap:4px !important;
+  }
+  #homeLearningMount .home-learning-kicker{
+    font-size:10px !important;
+    letter-spacing:.1em !important;
+  }
+  #homeLearningMount .home-learning-title{
+    font-size:18px !important;
+    line-height:1.2 !important;
+  }
+  #homeLearningMount .home-learning-goal{
+    font-size:11px !important;
+    line-height:1.35 !important;
+  }
+  #homeLearningMount .home-learning-btn{
+    align-self:center !important;
+    flex:0 0 auto !important;
+    height:38px !important;
+    min-height:38px !important;
+    padding:0 14px !important;
+    border-radius:10px !important;
+    font-size:11px !important;
+  }
+  #continueCardMount{width:min(100%,1000px) !important;margin:16px auto 0 !important;}
+
+  /* Learn → Decide → Act. */
+  .home-next-move{
+    width:min(100%,1000px) !important;
+    margin:17px auto 0 !important;
+    padding:0 4px 4px !important;
+    text-align:center !important;
+  }
+  .home-next-move-kicker{
+    font-size:10px !important;
+    letter-spacing:.11em !important;
+  }
+  .home-next-move h3{
+    margin:6px 0 4px !important;
+    font-size:16px !important;
+    line-height:1.25 !important;
+  }
+  .home-next-move p{
+    margin:0 0 9px !important;
+    font-size:11.5px !important;
+    line-height:1.4 !important;
+  }
+  .home-next-move-btn{
+    min-height:38px !important;
+    padding:0 15px !important;
+    border-radius:10px !important;
+  }
+
+  /* Composer follows the same content width. */
+  .input-area{
+    width:min(1000px,calc(100vw - 150px)) !important;
+    height:58px !important;
+    min-height:58px !important;
+    bottom:14px !important;
+    border-radius:17px !important;
+    box-shadow:0 12px 34px rgba(0,0,0,.11) !important;
+  }
+  .input-area textarea{min-height:44px !important;padding:11px 14px !important;font-size:14px !important;}
+  .input-area .attach-btn,.input-area .dictation-btn,.input-area .voice-btn,.input-area .send-btn{
+    width:44px !important;height:44px !important;min-width:44px !important;min-height:44px !important;border-radius:13px !important;
+  }
+
+  /* Desktop rail: quieter, clearer, and easier to understand. */
+  .menu-btn,.sidebar-utility-btn{
+    border-color:#e8e7e3 !important;
+    background:#faf9f6 !important;
+    color:#5f605c !important;
+    box-shadow:0 6px 18px rgba(30,28,24,.055) !important;
+  }
+  .menu-btn:hover,.sidebar-utility-btn:hover{background:#f4f3ef !important;color:#252623 !important;box-shadow:0 9px 22px rgba(30,28,24,.08) !important;}
+  .sidebar-utility-btn{font-size:17px !important;}
+  .left-line{background:#ebe9e4 !important;}
+
+  /* Keep the header light and quiet while preserving existing controls. */
+  .header{background:rgba(255,255,255,.94) !important;}
+  body.dark-mode .chatbox{
+    background:
+      radial-gradient(circle at 50% 18%, rgba(32,199,107,.035), transparent 30%),
+      #0b0b0b !important;
+  }
+  body.dark-mode .input-area{box-shadow:0 12px 34px rgba(0,0,0,.34) !important;}
+  body.dark-mode .menu-btn,body.dark-mode .sidebar-utility-btn{background:#151515 !important;border-color:#292929 !important;color:#c8c8c3 !important;}
+}
+</style>
+
+
+<style id="oddi-desktop-home-9plus2-final">
+/* Desktop homepage 9+ final pass — do not alter phone composition. */
+@media (min-width:769px){
+  :root{--oddi-accent:#16C76B;}
+
+  .chatbox{
+    padding:20px 30px 112px !important;
+    background:
+      radial-gradient(circle at 50% 10%, rgba(22,199,107,.035), transparent 28%),
+      radial-gradient(circle at 78% 62%, rgba(245,220,180,.03), transparent 24%),
+      #FAFAF9 !important;
+  }
+
+  .welcome-message{
+    width:min(1100px,calc(100vw - 150px)) !important;
+    max-width:1100px !important;
+    max-height:none !important;
+    overflow:visible !important;
+    padding:18px 20px 70px !important;
+    margin:0 auto !important;
+  }
+
+  /* Compact desktop hero without changing the established headline. */
+  .welcome-message::before{
+    margin:0 auto 8px !important;
+    font-size:10px !important;
+    letter-spacing:.11em !important;
+    color:var(--oddi-accent) !important;
+  }
+  .welcome-message h2{
+    max-width:620px !important;
+    margin:0 auto 7px !important;
+    font-size:34px !important;
+    line-height:1.06 !important;
+    letter-spacing:-1.15px !important;
+  }
+  .welcome-message > p{
+    max-width:700px !important;
+    margin:0 auto !important;
+    font-size:14px !important;
+    line-height:1.42 !important;
+  }
+  .home-memory-context{
+    max-width:760px !important;
+    width:100% !important;
+    margin:8px auto 0 !important;
+    font-size:11.5px !important;
+    line-height:1.4 !important;
+  }
+
+  /* Suggested for You gets a real desktop row; never allow clipping/overlap. */
+  .home-suggestion-label{
+    width:min(100%,1040px) !important;
+    margin:18px auto 9px !important;
+    padding:0 2px !important;
+    font-size:10px !important;
+    letter-spacing:.11em !important;
+    color:#777 !important;
+    text-align:left !important;
+  }
+  .quick-actions{
+    width:min(100%,1040px) !important;
+    margin:0 auto !important;
+    padding:0 !important;
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:12px !important;
+    overflow:visible !important;
+    align-items:stretch !important;
+  }
+  .quick-actions .action-card{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:96px !important;
+    min-height:96px !important;
+    max-height:96px !important;
+    padding:14px 15px !important;
+    box-sizing:border-box !important;
+    border-radius:14px !important;
+    border:1px solid #E8E8E8 !important;
+    background:#FFFFFF !important;
+    color:#111 !important;
+    box-shadow:0 5px 18px rgba(0,0,0,.035) !important;
+    white-space:normal !important;
+    text-align:left !important;
+  }
+  .quick-actions .action-card:hover{
+    transform:translateY(-2px) !important;
+    border-color:#D7D7D7 !important;
+    background:#FFFFFF !important;
+    box-shadow:0 10px 24px rgba(0,0,0,.06) !important;
+  }
+  .quick-actions .action-card-main{
+    min-width:0 !important;
+    gap:10px !important;
+    align-items:flex-start !important;
+  }
+  .quick-actions .action-card-icon{
+    width:28px !important;
+    height:28px !important;
+    min-width:28px !important;
+    border-radius:9px !important;
+    background:#F4F4F2 !important;
+    border:1px solid #E6E6E2 !important;
+    color:#666 !important;
+  }
+  .quick-actions .action-card-icon svg{width:15px !important;height:15px !important;}
+  .quick-actions .action-card-copy{
+    display:flex !important;
+    flex-direction:column !important;
+    min-width:0 !important;
+    gap:4px !important;
+  }
+  .quick-actions .action-card-copy strong{
+    font-size:13px !important;
+    line-height:1.2 !important;
+    font-weight:800 !important;
+    color:#181818 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+  .quick-actions .action-card-copy small{
+    display:block !important;
+    font-size:10.5px !important;
+    line-height:1.35 !important;
+    color:#777 !important;
+    white-space:normal !important;
+    display:-webkit-box !important;
+    -webkit-line-clamp:2 !important;
+    -webkit-box-orient:vertical !important;
+    overflow:hidden !important;
+  }
+  .quick-actions .action-arrow{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    align-self:flex-end !important;
+    margin-left:auto !important;
+    color:var(--oddi-accent) !important;
+    font-size:15px !important;
+    line-height:1 !important;
+  }
+
+  /* Learning becomes a lighter horizontal context card. */
+  #homeLearningMount{
+    width:min(100%,1040px) !important;
+    margin:16px auto 0 !important;
+  }
+  #homeLearningMount .home-learning-card{
+    min-height:82px !important;
+    height:auto !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:20px !important;
+    padding:14px 17px !important;
+    border-radius:14px !important;
+    border:1px solid #E8E8E8 !important;
+    background:#FFFFFF !important;
+    box-shadow:0 5px 20px rgba(0,0,0,.035) !important;
+  }
+  #homeLearningMount .home-learning-main{
+    width:auto !important;
+    min-width:0 !important;
+    gap:4px !important;
+  }
+  #homeLearningMount .home-learning-kicker{font-size:9.5px !important;letter-spacing:.11em !important;color:#777 !important;}
+  #homeLearningMount .home-learning-title{font-size:17px !important;line-height:1.2 !important;color:#181818 !important;}
+  #homeLearningMount .home-learning-goal{font-size:11px !important;line-height:1.35 !important;color:#777 !important;}
+  #homeLearningMount .home-learning-btn{
+    align-self:center !important;
+    min-height:37px !important;
+    height:37px !important;
+    padding:0 13px !important;
+    border-radius:10px !important;
+    background:#F5F5F5 !important;
+    color:#171717 !important;
+    border:1px solid #E0E0E0 !important;
+    font-size:10.5px !important;
+  }
+  #homeLearningMount .home-learning-btn:hover{background:#EDEDED !important;border-color:#D2D2D2 !important;}
+
+  /* Learn → Decide → Act: bring the next move up and make its CTA primary. */
+  .home-next-move{
+    width:min(100%,1040px) !important;
+    margin:18px auto 0 !important;
+    padding:0 !important;
+    text-align:center !important;
+  }
+  .home-next-move-kicker{font-size:10px !important;letter-spacing:.11em !important;color:#777 !important;}
+  .home-next-move h3{margin:6px 0 4px !important;font-size:17px !important;line-height:1.25 !important;color:#171717 !important;}
+  .home-next-move p{margin:0 0 10px !important;font-size:11.5px !important;line-height:1.4 !important;color:#777 !important;}
+  .home-next-move-btn{
+    min-height:40px !important;
+    padding:0 16px !important;
+    border-radius:11px !important;
+    border:1px solid #111 !important;
+    background:#111 !important;
+    color:#fff !important;
+    font-size:11px !important;
+    font-weight:800 !important;
+    box-shadow:0 6px 16px rgba(0,0,0,.12) !important;
+  }
+  .home-next-move-btn span{color:var(--oddi-accent) !important;font-size:14px !important;}
+  .home-next-move-btn:hover{transform:translateY(-1px) !important;background:#171717 !important;border-color:#171717 !important;box-shadow:0 9px 20px rgba(0,0,0,.14) !important;}
+
+  /* Composer stays wide but joins the same alignment grid. */
+  .input-area{
+    width:min(1040px,calc(100vw - 150px)) !important;
+    height:58px !important;
+    min-height:58px !important;
+    bottom:12px !important;
+    border-radius:16px !important;
+    border-color:#E4E4E4 !important;
+    background:rgba(255,255,255,.96) !important;
+    box-shadow:0 12px 34px rgba(0,0,0,.10) !important;
+  }
+  .input-area .send-btn:not(:disabled){background:var(--oddi-accent) !important;color:#08130d !important;}
+
+  /* Desktop-only rail clarity: the controls keep their current function but gain clearer hit targets. */
+  .menu-btn,.sidebar-utility-btn{width:46px !important;height:46px !important;border-radius:13px !important;}
+  .menu-btn{top:84px !important;}
+  .sidebar-utility-buttons{top:140px !important;gap:9px !important;}
+
+  /* Subtle dark-mode counterpart. */
+  body.dark-mode .chatbox{
+    background:
+      radial-gradient(circle at 50% 10%, rgba(22,199,107,.035), transparent 28%),
+      #0B0B0B !important;
+  }
+  body.dark-mode .home-suggestion-label{color:#858585 !important;}
+  body.dark-mode .quick-actions .action-card{background:#121212 !important;border-color:#292929 !important;color:#f2f2f2 !important;box-shadow:none !important;}
+  body.dark-mode .quick-actions .action-card:hover{background:#151515 !important;border-color:#373737 !important;}
+  body.dark-mode .quick-actions .action-card-icon{background:#1A1A1A !important;border-color:#2D2D2D !important;color:#BDBDBD !important;}
+  body.dark-mode .quick-actions .action-card-copy strong{color:#f2f2f2 !important;}
+  body.dark-mode .quick-actions .action-card-copy small{color:#9A9A9A !important;}
+  body.dark-mode #homeLearningMount .home-learning-card{background:#121212 !important;border-color:#292929 !important;box-shadow:none !important;}
+  body.dark-mode #homeLearningMount .home-learning-kicker{color:#858585 !important;}
+  body.dark-mode #homeLearningMount .home-learning-title{color:#f2f2f2 !important;}
+  body.dark-mode #homeLearningMount .home-learning-goal{color:#999 !important;}
+  body.dark-mode #homeLearningMount .home-learning-btn{background:#1B1B1B !important;border-color:#333 !important;color:#f2f2f2 !important;}
+  body.dark-mode .home-next-move-kicker{color:#858585 !important;}
+  body.dark-mode .home-next-move h3{color:#f2f2f2 !important;}
+  body.dark-mode .home-next-move p{color:#969696 !important;}
+  body.dark-mode .home-next-move-btn{background:#16C76B !important;border-color:#16C76B !important;color:#07110B !important;box-shadow:none !important;}
+  body.dark-mode .home-next-move-btn span{color:#07110B !important;}
+  body.dark-mode .input-area{background:rgba(17,17,17,.96) !important;border-color:#292929 !important;}
+
+  /* Avoid accidental overlap at shorter laptop viewports. */
+  @media (max-height:760px){
+    .chatbox{padding-top:12px !important;padding-bottom:104px !important;}
+    .welcome-message{padding-top:10px !important;padding-bottom:40px !important;}
+    .welcome-message h2{font-size:30px !important;}
+    .quick-actions .action-card{height:88px !important;min-height:88px !important;}
+    #homeLearningMount .home-learning-card{min-height:72px !important;padding-top:12px !important;padding-bottom:12px !important;}
+    .home-next-move{margin-top:13px !important;}
+    .home-next-move p{margin-bottom:7px !important;}
+    .home-next-move-btn{min-height:36px !important;}
+  }
+}
+
+@media (min-width:769px){
+  /* Accessible desktop tooltips via native title where buttons exist. */
+  #menuBtn{title:auto;}
+}
+</style>
+
+
+<style id="oddi-basic-main-screen-suggestion-fix">
+/* Basic main-screen cleanup only: center Suggested for You and keep all copy inside each card. */
+@media (min-width:769px){
+  .home-suggestion-label{
+    width:100% !important;
+    max-width:none !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    text-align:center !important;
+  }
+  .quick-actions{
+    width:100% !important;
+    max-width:none !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    display:flex !important;
+    justify-content:center !important;
+    align-items:stretch !important;
+    gap:12px !important;
+    overflow:visible !important;
+  }
+  .quick-actions .action-card{
+    flex:0 0 184px !important;
+    width:184px !important;
+    min-width:184px !important;
+    max-width:184px !important;
+    height:104px !important;
+    min-height:104px !important;
+    max-height:104px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+  }
+  .quick-actions .action-card-copy{
+    min-width:0 !important;
+    max-width:100% !important;
+    width:100% !important;
+    overflow:hidden !important;
+  }
+  .quick-actions .action-card-copy strong,
+  .quick-actions .action-card-copy small{
+    display:block !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    overflow-wrap:break-word !important;
+    word-break:normal !important;
+  }
+  .quick-actions .action-arrow{
+    display:block !important;
+    margin-top:auto !important;
+  }
+}
+</style>
+
+<style id="oddi-suggestion-center-final">
+/* Main homepage desktop only: center the three suggestion cards as one group
+   and give their content enough room to remain fully visible. */
+@media (min-width:769px){
+  .home-suggestion-label{
+    width:min(620px,calc(100% - 24px)) !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+    text-align:center !important;
+  }
+
+  .quick-actions{
+    width:min(620px,calc(100% - 24px)) !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding:0 !important;
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    justify-content:center !important;
+    align-items:stretch !important;
+    gap:10px !important;
+    overflow:visible !important;
+  }
+
+  .quick-actions .action-card{
+    flex:0 0 184px !important;
+    width:184px !important;
+    min-width:184px !important;
+    max-width:184px !important;
+    height:78px !important;
+    min-height:78px !important;
+    max-height:78px !important;
+    box-sizing:border-box !important;
+    padding:10px 12px !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:0 !important;
+    overflow:hidden !important;
+    text-align:center !important;
+  }
+
+  .quick-actions .action-card-main{
+    width:100% !important;
+    min-width:0 !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:4px !important;
+  }
+
+  .quick-actions .action-card-icon{
+    width:24px !important;
+    height:24px !important;
+    min-width:24px !important;
+    min-height:24px !important;
+    flex:0 0 24px !important;
+    border-radius:7px !important;
+  }
+
+  .quick-actions .action-card-copy{
+    width:100% !important;
+    min-width:0 !important;
+    max-width:100% !important;
+    display:flex !important;
+    flex-direction:column !important;
+    align-items:center !important;
+    justify-content:center !important;
+    text-align:center !important;
+    overflow:visible !important;
+  }
+
+  .quick-actions .action-card-copy strong{
+    display:block !important;
+    width:100% !important;
+    white-space:nowrap !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    text-align:center !important;
+    font-size:13px !important;
+    line-height:1.2 !important;
+  }
+
+  .quick-actions .action-card-copy small{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    overflow-wrap:normal !important;
+    word-break:normal !important;
+    text-align:center !important;
+    font-size:10px !important;
+    line-height:1.3 !important;
+  }
+
+  .quick-actions .action-arrow{
+    display:none !important;
+  }
+}
+</style>
+
+
+<style id="oddi-two-suggestion-only">
+@media (min-width:769px){
+  /* Change 1: center the complete Suggested for You card group. */
+  .quick-actions{
+    justify-content:center !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+  }
+
+  /* Change 2: remove suggestion icons and let the copy use the full card. */
+  .quick-actions .action-card > svg,
+  .quick-actions .action-card > i,
+  .quick-actions .action-card .action-card-icon,
+  .quick-actions .action-card .action-icon{
+    display:none !important;
+  }
+
+  .quick-actions .action-card{
+    text-align:center !important;
+  }
+
+  .quick-actions .action-card-copy{
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    text-align:center !important;
+  }
+
+  .quick-actions .action-card-copy strong,
+  .quick-actions .action-card-copy small{
+    display:block !important;
+    width:100% !important;
+    max-width:100% !important;
+    white-space:normal !important;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    overflow-wrap:break-word !important;
+    word-break:normal !important;
+    text-align:center !important;
+  }
+}
+</style>
+
+
+<style id="oddi-sidebar-9plus-desktop-pass">
+@media (min-width:769px){
+  /* 1. Give the laptop sidebar a little more breathing room. */
+  #sidebar.sidebar{
+    width:300px !important;
+    min-width:300px !important;
+    max-width:300px !important;
+    padding:16px 12px 12px !important;
+    box-sizing:border-box !important;
+    background:#FAFAF9 !important;
+    border-right:1px solid #E8E7E3 !important;
+    box-shadow:12px 0 30px rgba(28,27,24,.055) !important;
+  }
+
+  /* Keep the sidebar header quiet and product-like. */
+  #sidebar .oddi-sidebar-brand{
+    height:50px !important;
+    min-height:50px !important;
+    padding:0 8px !important;
+    margin:0 0 8px !important;
+    border-bottom:1px solid #ECEAE5 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+    box-sizing:border-box !important;
+  }
+  #sidebar .oddi-sidebar-brand span:first-child{
+    font-size:17px !important;
+    line-height:1 !important;
+    font-weight:800 !important;
+    letter-spacing:-.55px !important;
+    color:#20211F !important;
+  }
+  #sidebar .oddi-sidebar-brand span:nth-child(2){display:none !important;}
+  #sidebar .oddi-sidebar-brand #oddiMobileSidebarSearch{
+    width:32px !important;
+    height:32px !important;
+    min-width:32px !important;
+    padding:0 !important;
+    margin:0 !important;
+    border:1px solid #E3E1DC !important;
+    border-radius:50% !important;
+    background:#F4F3EF !important;
+    color:#696862 !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    font-size:17px !important;
+    line-height:1 !important;
+    cursor:pointer !important;
+  }
+  #sidebar .oddi-sidebar-brand #oddiMobileSidebarSearch:hover{
+    background:#ECEBE7 !important;
+    color:#2A2B28 !important;
+  }
+
+  /* 4. New chat becomes the clear starting action. */
+  #sidebar .new-chat-btn{
+    width:100% !important;
+    min-height:40px !important;
+    height:40px !important;
+    margin:0 0 4px !important;
+    padding:0 11px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:9px !important;
+    border:1px solid #E4E9E5 !important;
+    border-radius:10px !important;
+    background:#F2F7F4 !important;
+    color:#22231F !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+    box-shadow:none !important;
+    cursor:pointer !important;
+  }
+  #sidebar .new-chat-btn:hover{
+    background:#EAF4EE !important;
+    border-color:#D6E5DB !important;
+  }
+  #sidebar .new-chat-icon{
+    width:17px !important;
+    height:17px !important;
+    min-width:17px !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    color:#16C76B !important;
+    font-size:18px !important;
+    line-height:1 !important;
+  }
+  #sidebar .new-chat-icon::after{content:"+" !important;}
+
+  /* Search / Archived / Settings share one calm navigation rhythm. */
+  #sidebar .sidebar-nav-row,
+  #sidebar .sidebar-bottom-nav,
+  #sidebar .sidebar-select-controls{
+    width:100% !important;
+  }
+  #sidebar .sidebar-nav-btn,
+  #sidebar .sidebar-bottom-btn,
+  #sidebar .sidebar-select-controls .sidebar-select-btn{
+    width:100% !important;
+    min-height:38px !important;
+    height:38px !important;
+    margin:0 !important;
+    padding:0 10px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:9px !important;
+    border:1px solid transparent !important;
+    border-radius:9px !important;
+    background:transparent !important;
+    color:#3A3B38 !important;
+    font-size:13px !important;
+    font-weight:550 !important;
+    box-shadow:none !important;
+    text-align:left !important;
+  }
+  #sidebar .sidebar-nav-btn:hover,
+  #sidebar .sidebar-bottom-btn:hover,
+  #sidebar .sidebar-select-controls .sidebar-select-btn:hover{
+    background:#F2F1EE !important;
+    color:#22231F !important;
+    border-color:#ECEAE5 !important;
+  }
+  #sidebar .sidebar-nav-icon,
+  #sidebar .sidebar-bottom-icon,
+  #sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{
+    width:17px !important;
+    min-width:17px !important;
+    height:17px !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    color:#6E6E68 !important;
+    font-size:15px !important;
+    line-height:1 !important;
+  }
+
+  /* 6. Add breathing room between navigation and history. */
+  #sidebar .sidebar-main{
+    padding-top:2px !important;
+  }
+  #sidebar .sidebar-nav-row{
+    margin-bottom:2px !important;
+  }
+  #sidebar .sidebar-bottom-nav{
+    margin-top:2px !important;
+    margin-bottom:20px !important;
+  }
+  #sidebar .chat-history{
+    gap:0 !important;
+    padding:0 2px 10px !important;
+  }
+
+  /* 2. Checkboxes appear only in Select mode. */
+  #sidebar .chat-select-check{
+    display:none !important;
+  }
+  #sidebar.is-selecting .chat-select-check,
+  #sidebar .history-item.chat-selected .chat-select-check{
+    display:inline-flex !important;
+  }
+
+  /* Pinned / Recents labels use the homepage's small-label language. */
+  #sidebar .pinned-history-section,
+  #sidebar .normal-history-section{
+    border:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    overflow-x:hidden !important;
+  }
+  #sidebar .pinned-history-section{
+    max-height:170px !important;
+    margin:0 0 20px !important;
+    padding:0 !important;
+  }
+  #sidebar .normal-history-section{
+    padding:0 0 10px !important;
+  }
+  #sidebar .pinned-history-section::before,
+  #sidebar .normal-history-section::before{
+    display:block !important;
+    padding:0 9px 8px !important;
+    margin:0 !important;
+    color:#9A9993 !important;
+    font-size:10px !important;
+    font-weight:800 !important;
+    letter-spacing:.11em !important;
+    line-height:1 !important;
+    background:transparent !important;
+    position:static !important;
+  }
+
+  /* 3 + 7. Conversation rows become readable, subtle cards. */
+  #sidebar .history-item{
+    min-height:54px !important;
+    height:54px !important;
+    width:100% !important;
+    margin:2px 0 !important;
+    padding:7px 10px !important;
+    box-sizing:border-box !important;
+    border:1px solid transparent !important;
+    border-radius:10px !important;
+    background:transparent !important;
+    color:#242522 !important;
+    box-shadow:none !important;
+    transition:background .16s ease,border-color .16s ease,transform .16s ease !important;
+  }
+  #sidebar .history-item:hover{
+    background:#F3F4F6 !important;
+    border-color:transparent !important;
+    transform:translateY(-1px) !important;
+    box-shadow:none !important;
+  }
+  #sidebar .history-item.active-chat{
+    background:#EEF8F2 !important;
+    border-color:transparent !important;
+    color:#20231F !important;
+    box-shadow:none !important;
+  }
+  #sidebar .history-main{
+    min-width:0 !important;
+    flex:1 1 auto !important;
+  }
+  #sidebar .history-title{
+    min-width:0 !important;
+    display:block !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    color:#262723 !important;
+    font-size:14px !important;
+    font-weight:600 !important;
+    line-height:1.25 !important;
+  }
+  #sidebar .history-title::before{
+    width:4px !important;
+    height:4px !important;
+    margin-right:7px !important;
+    background:#B2B1AA !important;
+  }
+  #sidebar .history-item.active-chat .history-title::before{
+    width:5px !important;
+    height:12px !important;
+    margin-right:7px !important;
+    background:#16C76B !important;
+    border-radius:999px !important;
+  }
+  #sidebar .history-item.active-chat .history-title{
+    color:#1F2822 !important;
+    font-weight:650 !important;
+  }
+  #sidebar .history-preview{
+    color:#8A8A84 !important;
+    font-size:12px !important;
+    font-weight:400 !important;
+    line-height:1.3 !important;
+  }
+  #sidebar .history-meta{
+    color:#A0A098 !important;
+    font-size:11px !important;
+    font-weight:400 !important;
+    line-height:1.2 !important;
+  }
+
+  /* 5. Clean, consistent section toggles. */
+  #sidebar .sidebar-section-toggle{
+    min-height:34px !important;
+    height:34px !important;
+    margin:0 0 4px !important;
+    padding:0 9px !important;
+    border:0 !important;
+    border-radius:9px !important;
+    background:transparent !important;
+    color:#9A9993 !important;
+    font-size:10px !important;
+    font-weight:800 !important;
+    letter-spacing:.11em !important;
+    text-transform:uppercase !important;
+  }
+  #sidebar .sidebar-section-toggle:hover{
+    background:#F4F3F0 !important;
+    color:#77766F !important;
+  }
+  #sidebar .sidebar-section-chevron{
+    width:24px !important;
+    height:24px !important;
+    font-size:15px !important;
+    color:#A3A29B !important;
+  }
+
+  /* 7. Date group labels such as TODAY become easy scan points. */
+  #sidebar .history-date-group{
+    margin:8px 0 4px !important;
+  }
+  #sidebar .history-date-group-label{
+    padding:4px 9px 5px !important;
+    color:#AAA9A2 !important;
+    font-size:9px !important;
+    font-weight:800 !important;
+    letter-spacing:.1em !important;
+    text-transform:uppercase !important;
+  }
+
+  /* Select-mode checkbox is compact and only appears when selection is active. */
+  #sidebar .chat-select-check{
+    flex:0 0 19px !important;
+    width:19px !important;
+    height:19px !important;
+    margin:0 9px 0 0 !important;
+    border:1px solid #BDBCB6 !important;
+    border-radius:6px !important;
+    background:#fff !important;
+    color:#fff !important;
+  }
+
+  /* 9. Profile footer: clear separation, stronger account hierarchy. */
+  #sidebar .oddi-account-footer{
+    flex:0 0 66px !important;
+    height:66px !important;
+    min-height:66px !important;
+    margin:0 !important;
+    padding:10px 6px 8px !important;
+    box-sizing:border-box !important;
+    border-top:1px solid #ECEAE5 !important;
+    background:transparent !important;
+    gap:10px !important;
+    display:flex !important;
+    align-items:center !important;
+  }
+  #sidebar .oddi-account-avatar{
+    width:36px !important;
+    height:36px !important;
+    min-width:36px !important;
+    border-radius:50% !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    background:linear-gradient(135deg,#DFF7E8,#E9C98D) !important;
+    color:#285B3B !important;
+    font-size:11px !important;
+    font-weight:800 !important;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.55) !important;
+  }
+  #sidebar .oddi-account-copy{
+    min-width:0 !important;
+    flex:1 1 auto !important;
+  }
+  #sidebar .oddi-account-name{
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    color:#242522 !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+    line-height:1.25 !important;
+  }
+  #sidebar .oddi-account-plan{
+    margin-top:2px !important;
+    color:#999892 !important;
+    font-size:10.5px !important;
+    font-weight:400 !important;
+    line-height:1.2 !important;
+  }
+  #sidebar .oddi-install-area{
+    flex:0 0 auto !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+  }
+  #sidebar .oddi-install-icon{
+    display:none !important;
+  }
+  #sidebar .oddi-install-area .install-btn{
+    width:32px !important;
+    height:32px !important;
+    min-width:32px !important;
+    min-height:32px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:1px solid #E3E1DC !important;
+    border-radius:50% !important;
+    background:transparent !important;
+    color:#77766F !important;
+    box-shadow:none !important;
+  }
+  #sidebar .oddi-install-area .install-btn:hover{
+    background:#F1F0EC !important;
+    color:#2B2C29 !important;
+  }
+
+  /* Dark-mode counterpart. */
+  body.dark-mode #sidebar.sidebar{
+    background:#0E0E0E !important;
+    border-right-color:#242424 !important;
+    box-shadow:12px 0 30px rgba(0,0,0,.30) !important;
+  }
+  body.dark-mode #sidebar .oddi-sidebar-brand{
+    border-bottom-color:#242424 !important;
+  }
+  body.dark-mode #sidebar .oddi-sidebar-brand span:first-child{
+    color:#F2F2F2 !important;
+  }
+  body.dark-mode #sidebar .oddi-sidebar-brand #oddiMobileSidebarSearch{
+    background:#171717 !important;
+    border-color:#2A2A2A !important;
+    color:#A6A6A0 !important;
+  }
+  body.dark-mode #sidebar .new-chat-btn{
+    background:#142018 !important;
+    border-color:#1D3927 !important;
+    color:#F0F3F0 !important;
+  }
+  body.dark-mode #sidebar .new-chat-btn:hover{background:#18271E !important;}
+  body.dark-mode #sidebar .sidebar-nav-btn,
+  body.dark-mode #sidebar .sidebar-bottom-btn,
+  body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn{
+    color:#D7D7D2 !important;
+  }
+  body.dark-mode #sidebar .sidebar-nav-btn:hover,
+  body.dark-mode #sidebar .sidebar-bottom-btn:hover,
+  body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn:hover{
+    background:#191919 !important;
+    border-color:#292929 !important;
+    color:#FFF !important;
+  }
+  body.dark-mode #sidebar .pinned-history-section,
+  body.dark-mode #sidebar .normal-history-section{
+    background:transparent !important;
+  }
+  body.dark-mode #sidebar .pinned-history-section::before,
+  body.dark-mode #sidebar .normal-history-section::before{
+    color:#777 !important;
+  }
+  body.dark-mode #sidebar .history-item{color:#EDEDE9 !important;}
+  body.dark-mode #sidebar .history-item:hover{background:#191919 !important;}
+  body.dark-mode #sidebar .history-item.active-chat{
+    background:#14251A !important;
+    color:#F1F7F2 !important;
+  }
+  body.dark-mode #sidebar .history-item.active-chat .history-title{color:#F1F7F2 !important;}
+  body.dark-mode #sidebar .history-title{color:#E6E6E1 !important;}
+  body.dark-mode #sidebar .history-preview{color:#989891 !important;}
+  body.dark-mode #sidebar .history-meta{color:#77776F !important;}
+  body.dark-mode #sidebar .history-date-group-label{color:#777 !important;}
+  body.dark-mode #sidebar .chat-select-check{background:#111 !important;border-color:#565650 !important;}
+  body.dark-mode #sidebar .oddi-account-footer{border-top-color:#242424 !important;}
+  body.dark-mode #sidebar .oddi-account-name{color:#F0F0EC !important;}
+  body.dark-mode #sidebar .oddi-account-plan{color:#85857E !important;}
+  body.dark-mode #sidebar .oddi-account-avatar{background:linear-gradient(135deg,#183522,#55452A) !important;color:#CBE8D5 !important;}
+  body.dark-mode #sidebar .oddi-install-area .install-btn{
+    border-color:#2D2D2D !important;
+    color:#A4A49D !important;
+  }
+}
+</style>
+
+
+<style id="oddi-sidebar-search-polish">
+@media (min-width:769px){
+  #sidebar .oddi-sidebar-brand{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+  }
+
+  #sidebar #oddiMobileSidebarSearch{
+    width:34px !important;
+    height:34px !important;
+    min-width:34px !important;
+    min-height:34px !important;
+    padding:0 !important;
+    margin:0 !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-sizing:border-box !important;
+    border:1px solid #E4E2DD !important;
+    border-radius:50% !important;
+    background:#F5F4F1 !important;
+    color:#5F605B !important;
+    line-height:1 !important;
+    font-size:0 !important;
+    box-shadow:none !important;
+    cursor:pointer !important;
+  }
+
+  #sidebar #oddiMobileSidebarSearch span{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:100% !important;
+    height:100% !important;
+    font-size:16px !important;
+    line-height:1 !important;
+    color:inherit !important;
+    transform:translateY(-1px) !important;
+  }
+
+  #sidebar #oddiMobileSidebarSearch:hover{
+    background:#ECEBE7 !important;
+    border-color:#D9D7D1 !important;
+    color:#2D2E2A !important;
+    transform:translateY(-1px) !important;
+  }
+
+  body.dark-mode #sidebar #oddiMobileSidebarSearch{
+    background:#171717 !important;
+    border-color:#2B2B2B !important;
+    color:#B8B8B2 !important;
+  }
+
+  body.dark-mode #sidebar #oddiMobileSidebarSearch:hover{
+    background:#202020 !important;
+    border-color:#393939 !important;
+    color:#F1F1EC !important;
+  }
+}
+</style>
+
+
+<style id="oddi-sidebar-search-icon-repair">
+@media (min-width:769px){
+  /* Repair only the sidebar header search icon; functionality is unchanged. */
+  #sidebar #oddiMobileSidebarSearch{
+    font-size:0 !important;
+  }
+  #sidebar #oddiMobileSidebarSearch > span{
+    display:none !important;
+  }
+  #sidebar #oddiMobileSidebarSearch::before{
+    content:"" !important;
+    display:block !important;
+    width:12px !important;
+    height:12px !important;
+    box-sizing:border-box !important;
+    border:1.8px solid currentColor !important;
+    border-radius:50% !important;
+    transform:translate(-1px,-1px) !important;
+  }
+  #sidebar #oddiMobileSidebarSearch::after{
+    content:"" !important;
+    position:absolute !important;
+    width:6px !important;
+    height:1.8px !important;
+    border-radius:2px !important;
+    background:currentColor !important;
+    transform:translate(5px,5px) rotate(45deg) !important;
+    transform-origin:left center !important;
+  }
+}
+</style>
+
+
+<style id="oddi-sidebar-13-change-pass">
+/*
+  ODDI laptop sidebar — 13-change visual refinement.
+  Desktop only. Mobile sidebar/homepage is intentionally untouched.
+*/
+@media (min-width:769px){
+  /* 1. Width: stable 300px workspace. */
+  #sidebar.sidebar{
+    width:300px !important;
+    min-width:300px !important;
+    max-width:300px !important;
+    box-sizing:border-box !important;
+    padding:14px 12px 10px !important;
+    background:#FAFAF9 !important;
+    border-right:1px solid #E8E7E3 !important;
+    box-shadow:12px 0 30px rgba(28,27,24,.055) !important;
+  }
+
+  /* 2 + 15. Header/search: aligned, restrained, and easy to scan. */
+  #sidebar .oddi-sidebar-brand{
+    height:50px !important;
+    min-height:50px !important;
+    padding:0 7px !important;
+    margin:0 0 10px !important;
+    border-bottom:1px solid #ECEAE5 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+  }
+  #sidebar .oddi-sidebar-brand span:first-child{
+    color:#20211F !important;
+    font-size:17px !important;
+    font-weight:800 !important;
+    line-height:1 !important;
+    letter-spacing:-.55px !important;
+  }
+  #sidebar .oddi-sidebar-brand #oddiMobileSidebarSearch{
+    width:34px !important;
+    height:34px !important;
+    min-width:34px !important;
+    min-height:34px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:1px solid #E4E2DD !important;
+    border-radius:50% !important;
+    background:#F5F4F1 !important;
+    color:#686762 !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-shadow:none !important;
+    font-size:0 !important;
+    position:relative !important;
+  }
+
+  /* 3. New chat gets primary-action treatment without becoming loud. */
+  #sidebar .new-chat-btn{
+    width:100% !important;
+    min-height:40px !important;
+    height:40px !important;
+    margin:0 0 5px !important;
+    padding:0 11px !important;
+    border:1px solid #DFE9E2 !important;
+    border-radius:10px !important;
+    background:#F1F7F3 !important;
+    color:#252722 !important;
+    font-size:13px !important;
+    font-weight:700 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:9px !important;
+    box-shadow:none !important;
+    text-align:left !important;
+  }
+  #sidebar .new-chat-btn:hover{
+    background:#EAF7F0 !important;
+    border-color:#D5E5DB !important;
+  }
+  #sidebar .new-chat-icon{
+    color:#16C76B !important;
+    width:17px !important;
+    min-width:17px !important;
+    height:17px !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    font-size:18px !important;
+    line-height:1 !important;
+  }
+  #sidebar .new-chat-icon::after{content:"+" !important;}
+
+  /* 4 + 5. Select/Search/Archived/Settings share one navigation rhythm. */
+  #sidebar .sidebar-select-controls,
+  #sidebar .sidebar-nav-row,
+  #sidebar .sidebar-bottom-nav{
+    width:100% !important;
+  }
+  #sidebar .sidebar-select-controls,
+  #sidebar .sidebar-nav-row{
+    margin-bottom:1px !important;
+  }
+  #sidebar .sidebar-select-controls .sidebar-select-btn,
+  #sidebar .sidebar-nav-btn,
+  #sidebar .sidebar-bottom-btn{
+    width:100% !important;
+    min-height:38px !important;
+    height:38px !important;
+    margin:0 !important;
+    padding:0 10px !important;
+    border:1px solid transparent !important;
+    border-radius:9px !important;
+    background:transparent !important;
+    color:#363733 !important;
+    font-size:13px !important;
+    font-weight:550 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:9px !important;
+    box-shadow:none !important;
+    text-align:left !important;
+  }
+  #sidebar .sidebar-select-controls .sidebar-select-btn:hover,
+  #sidebar .sidebar-nav-btn:hover,
+  #sidebar .sidebar-bottom-btn:hover{
+    background:#F5F4F1 !important;
+    border-color:#ECEAE5 !important;
+    color:#20211F !important;
+  }
+  #sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child,
+  #sidebar .sidebar-nav-icon,
+  #sidebar .sidebar-bottom-icon{
+    width:17px !important;
+    min-width:17px !important;
+    height:17px !important;
+    color:#74736D !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    font-size:15px !important;
+    line-height:1 !important;
+  }
+
+  /* 6. Section spacing: deliberately calm, never crowded. */
+  #sidebar .sidebar-bottom-nav{
+    margin-top:3px !important;
+    margin-bottom:22px !important;
+  }
+  #sidebar .chat-history{
+    gap:0 !important;
+    padding:0 2px 8px !important;
+  }
+  #sidebar .pinned-history-section{
+    margin:0 0 22px !important;
+  }
+
+  /* 7. Refined PINNED / RECENTS labels. */
+  #sidebar .pinned-history-section::before,
+  #sidebar .normal-history-section::before{
+    display:block !important;
+    padding:0 9px 8px !important;
+    margin:0 !important;
+    color:#999 !important;
+    font-size:10px !important;
+    font-weight:700 !important;
+    letter-spacing:.08em !important;
+    line-height:1.2 !important;
+    text-transform:uppercase !important;
+    background:transparent !important;
+    position:static !important;
+  }
+  #sidebar .pinned-history-section,
+  #sidebar .normal-history-section{
+    border:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+  }
+
+  /* 8 + 9 + 11. Readable conversation cards + TODAY hierarchy. */
+  #sidebar .history-item{
+    min-height:60px !important;
+    height:60px !important;
+    margin:2px 0 !important;
+    padding:9px 10px !important;
+    box-sizing:border-box !important;
+    border:1px solid transparent !important;
+    border-radius:10px !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    transform:none !important;
+    color:#242522 !important;
+    transition:background .16s ease,transform .16s ease,box-shadow .16s ease !important;
+  }
+  #sidebar .history-item:hover{
+    background:#F5F7F6 !important;
+    transform:translateY(-1px) !important;
+    box-shadow:none !important;
+  }
+  #sidebar .history-item.active-chat{
+    background:#EEF8F2 !important;
+    border-color:transparent !important;
+    box-shadow:none !important;
+  }
+  #sidebar .history-main{
+    min-width:0 !important;
+    flex:1 1 auto !important;
+    width:auto !important;
+  }
+  #sidebar .history-title{
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    color:#242424 !important;
+    font-size:14px !important;
+    font-weight:600 !important;
+    line-height:1.25 !important;
+  }
+  #sidebar .history-preview{
+    min-width:0 !important;
+    max-width:100% !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    color:#858585 !important;
+    font-size:12px !important;
+    font-weight:400 !important;
+    line-height:1.3 !important;
+  }
+  #sidebar .history-meta{
+    color:#A0A0A0 !important;
+    font-size:11px !important;
+    font-weight:400 !important;
+    line-height:1.2 !important;
+    white-space:nowrap !important;
+  }
+  #sidebar .history-date-group{
+    margin:3px 0 4px !important;
+  }
+  #sidebar .history-date-group-label{
+    padding:5px 9px 4px !important;
+    color:#999 !important;
+    font-size:10px !important;
+    font-weight:700 !important;
+    letter-spacing:.07em !important;
+    text-transform:uppercase !important;
+  }
+  #sidebar .history-title::before{
+    width:4px !important;
+    height:4px !important;
+    margin-right:7px !important;
+    background:#B3B2AC !important;
+  }
+  #sidebar .history-item.active-chat .history-title{
+    color:#202820 !important;
+    font-weight:650 !important;
+  }
+  #sidebar .history-item.active-chat .history-title::before{
+    width:4px !important;
+    height:12px !important;
+    border-radius:999px !important;
+    background:#16C76B !important;
+  }
+
+  /* 10. Checkboxes are invisible until Select mode is actually active. */
+  #sidebar .chat-select-check{
+    display:none !important;
+  }
+  #sidebar.is-selecting .chat-select-check,
+  #sidebar .history-item.chat-selected .chat-select-check{
+    display:inline-flex !important;
+  }
+
+  /* 12. Scrollbar is intentionally quiet. */
+  #sidebar .pinned-history-section,
+  #sidebar .normal-history-section{
+    scrollbar-width:thin !important;
+    scrollbar-color:#D4D4D4 transparent !important;
+  }
+  #sidebar .pinned-history-section::-webkit-scrollbar,
+  #sidebar .normal-history-section::-webkit-scrollbar{
+    width:5px !important;
+  }
+  #sidebar .pinned-history-section::-webkit-scrollbar-track,
+  #sidebar .normal-history-section::-webkit-scrollbar-track{
+    background:transparent !important;
+  }
+  #sidebar .pinned-history-section::-webkit-scrollbar-thumb,
+  #sidebar .normal-history-section::-webkit-scrollbar-thumb{
+    background:#D4D4D4 !important;
+    border-radius:999px !important;
+  }
+
+  /* 13. Profile becomes the quiet account entry point. */
+  #sidebar .oddi-account-footer{
+    flex:0 0 70px !important;
+    height:70px !important;
+    min-height:70px !important;
+    margin:0 !important;
+    padding:10px 6px 8px !important;
+    border-top:1px solid #ECEAE5 !important;
+    background:transparent !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:10px !important;
+    box-sizing:border-box !important;
+    border-radius:10px !important;
+    transition:background .16s ease !important;
+  }
+  #sidebar .oddi-account-footer:hover{background:#F5F7F6 !important;}
+  #sidebar .oddi-account-avatar{
+    width:34px !important;
+    height:34px !important;
+    min-width:34px !important;
+    border-radius:50% !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    background:linear-gradient(135deg,#DDF6E6,#E8C98E) !important;
+    color:#2D5C3C !important;
+    font-size:10px !important;
+    font-weight:800 !important;
+  }
+  #sidebar .oddi-account-copy{
+    min-width:0 !important;
+    flex:1 1 auto !important;
+  }
+  #sidebar .oddi-account-name{
+    font-size:13px !important;
+    font-weight:700 !important;
+    line-height:1.25 !important;
+    color:#242522 !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+  }
+  #sidebar .oddi-account-plan{
+    margin-top:2px !important;
+    font-size:10.5px !important;
+    line-height:1.2 !important;
+    color:#92918B !important;
+  }
+
+  /* Turn the existing install action into a quiet chevron-style secondary affordance
+     while preserving its existing click handler/functionality. */
+  #sidebar .oddi-install-area{
+    flex:0 0 auto !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+  }
+  #sidebar .oddi-install-area .install-btn{
+    width:30px !important;
+    height:30px !important;
+    min-width:30px !important;
+    min-height:30px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border:1px solid transparent !important;
+    border-radius:50% !important;
+    background:transparent !important;
+    color:#77766F !important;
+    box-shadow:none !important;
+    font-size:0 !important;
+  }
+  #sidebar .oddi-install-area .install-btn .oddi-download-svg{
+    display:none !important;
+  }
+  #sidebar .oddi-install-area .install-btn::after{
+    content:"›" !important;
+    display:block !important;
+    font-size:22px !important;
+    line-height:28px !important;
+    font-weight:400 !important;
+  }
+  #sidebar .oddi-install-area .install-btn:hover{
+    background:#ECEBE7 !important;
+    color:#292A27 !important;
+  }
+
+  /* Keep existing action buttons functional, but quieter and hover-only. */
+  #sidebar .history-actions{
+    opacity:0 !important;
+    pointer-events:none !important;
+    transform:translateX(3px) !important;
+    transition:opacity .16s ease,transform .16s ease !important;
+  }
+  #sidebar .history-item:hover .history-actions,
+  #sidebar .history-item:focus-within .history-actions{
+    opacity:1 !important;
+    pointer-events:auto !important;
+    transform:translateX(0) !important;
+  }
+  #sidebar .history-actions button{
+    width:28px !important;
+    height:28px !important;
+    padding:0 !important;
+    border:0 !important;
+    border-radius:8px !important;
+    background:transparent !important;
+    color:#777 !important;
+    font-size:12px !important;
+    filter:grayscale(1) !important;
+  }
+  #sidebar .history-actions button:hover{
+    background:#E9EAE8 !important;
+    color:#222 !important;
+  }
+
+  /* Dark mode mirrors the same restraint. */
+  body.dark-mode #sidebar.sidebar{
+    background:#0E0E0E !important;
+    border-right-color:#252525 !important;
+    box-shadow:12px 0 30px rgba(0,0,0,.30) !important;
+  }
+  body.dark-mode #sidebar .oddi-sidebar-brand{border-bottom-color:#252525 !important;}
+  body.dark-mode #sidebar .oddi-sidebar-brand span:first-child{color:#F2F2F2 !important;}
+  body.dark-mode #sidebar .oddi-sidebar-brand #oddiMobileSidebarSearch{
+    background:#151515 !important;
+    border-color:#2A2A2A !important;
+    color:#A6A6A0 !important;
+  }
+  body.dark-mode #sidebar .new-chat-btn{
+    background:#142018 !important;
+    border-color:#1D3927 !important;
+    color:#F0F3F0 !important;
+  }
+  body.dark-mode #sidebar .new-chat-btn:hover{background:#18271E !important;}
+  body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn,
+  body.dark-mode #sidebar .sidebar-nav-btn,
+  body.dark-mode #sidebar .sidebar-bottom-btn{color:#D7D7D2 !important;}
+  body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn:hover,
+  body.dark-mode #sidebar .sidebar-nav-btn:hover,
+  body.dark-mode #sidebar .sidebar-bottom-btn:hover{
+    background:#191919 !important;
+    border-color:#292929 !important;
+    color:#FFF !important;
+  }
+  body.dark-mode #sidebar .pinned-history-section::before,
+  body.dark-mode #sidebar .normal-history-section::before,
+  body.dark-mode #sidebar .history-date-group-label{color:#777 !important;}
+  body.dark-mode #sidebar .history-item:hover{background:#191A19 !important;}
+  body.dark-mode #sidebar .history-item.active-chat{background:#14251A !important;}
+  body.dark-mode #sidebar .history-title{color:#E6E6E1 !important;}
+  body.dark-mode #sidebar .history-preview{color:#999 !important;}
+  body.dark-mode #sidebar .history-meta{color:#777 !important;}
+  body.dark-mode #sidebar .history-title::before{background:#686862 !important;}
+  body.dark-mode #sidebar .history-item.active-chat .history-title{color:#F1F7F2 !important;}
+  body.dark-mode #sidebar .history-item.active-chat .history-title::before{background:#20C76B !important;}
+  body.dark-mode #sidebar .history-actions button{color:#AAA !important;}
+  body.dark-mode #sidebar .history-actions button:hover{background:#242424 !important;color:#FFF !important;}
+  body.dark-mode #sidebar .oddi-account-footer{border-top-color:#252525 !important;}
+  body.dark-mode #sidebar .oddi-account-footer:hover{background:#171817 !important;}
+  body.dark-mode #sidebar .oddi-account-name{color:#F0F0EC !important;}
+  body.dark-mode #sidebar .oddi-account-plan{color:#85857E !important;}
+  body.dark-mode #sidebar .oddi-account-avatar{
+    background:linear-gradient(135deg,#183522,#55452A) !important;
+    color:#CBE8D5 !important;
+  }
+  body.dark-mode #sidebar .oddi-install-area .install-btn{color:#A4A49D !important;}
+  body.dark-mode #sidebar .oddi-install-area .install-btn:hover{background:#202020 !important;color:#F1F1EC !important;}
+  body.dark-mode #sidebar .pinned-history-section,
+  body.dark-mode #sidebar .normal-history-section{
+    scrollbar-color:#3A3A3A transparent !important;
+  }
+  body.dark-mode #sidebar .pinned-history-section::-webkit-scrollbar-thumb,
+  body.dark-mode #sidebar .normal-history-section::-webkit-scrollbar-thumb{
+    background:#3A3A3A !important;
+  }
+}
+</style>
+
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
@@ -1948,7 +3674,7 @@ body.dark-mode .memory-footer{border-top-color:#333;}
 <div class="app">
     <div class="left-line"></div>
     <aside id="sidebar" class="sidebar" aria-label="Oddi AI sidebar">
-        <div class="oddi-sidebar-brand" aria-label="Oddi AI version"><span>Oddi-AI</span><span> </span></div><div class="sidebar-main">
+        <div class="oddi-sidebar-brand" aria-label="Oddi AI sidebar header"><span>Oddi-AI</span><span> </span><button id="oddiMobileSidebarSearch" type="button" aria-label="Search chats" title="Search chats"><span aria-hidden="true">⌕</span></button></div><div class="sidebar-main">
             <button id="newChatBtn" class="new-chat-btn" type="button">
                 <span class="new-chat-icon" aria-hidden="true"></span>
                 <span>New chat</span>
@@ -1956,7 +3682,7 @@ body.dark-mode .memory-footer{border-top-color:#333;}
             <div id="sidebarSelectControls" class="sidebar-select-controls" aria-label="Select chats">
                 <button id="selectChatsBtn" class="sidebar-select-btn" type="button" aria-pressed="false">
                     <span aria-hidden="true">☑</span>
-                    <span id="selectChatsLabel">Select</span>
+                    <span id="selectChatsLabel">Select button</span>
                 </button>
                 <div id="bulkChatActions" class="bulk-chat-actions" hidden>
                     <button id="bulkMoveToBinBtn" class="bulk-chat-action" type="button" disabled>
@@ -2008,7 +3734,7 @@ body.dark-mode .memory-footer{border-top-color:#333;}
             <div class="oddi-account-avatar" aria-hidden="true">{{ username[:2]|upper if logged_in else 'GU' }}</div>
             <div class="oddi-account-copy">
                 <div class="oddi-account-name">{{ username if logged_in else 'Guest' }}</div>
-                <div class="oddi-account-plan">{{ 'Go' if logged_in else 'Guest' }}</div>
+                <div class="oddi-account-plan">Your profile</div>
             </div>
             <div class="oddi-install-area" title="Add to Home Screen" aria-label="Add to Home Screen">
                 <span class="oddi-install-icon" aria-hidden="true">⌂</span>
@@ -2063,42 +3789,66 @@ body.dark-mode .memory-footer{border-top-color:#333;}
     <div class="sidebar-utility-buttons" aria-label="Sidebar tools">
         <button id="binBtn" class="sidebar-utility-btn" type="button" title="Recently deleted chats" aria-label="Recently deleted chats">🗑️</button>
         <button id="shortcutsBtn" class="sidebar-utility-btn" type="button" title="Keyboard shortcuts" aria-label="Keyboard shortcuts">⌨️</button>
-        <button id="memoryBtn" class="sidebar-utility-btn" type="button" title="My memory" aria-label="My memory">🧠</button>
+        <button id="memoryBtn" class="sidebar-utility-btn" type="button" title="My memory" aria-label="My memory">🗂️</button>
     </div>
 <main id="chatbox" class="chatbox">
         <div class="welcome-message" id="welcomeContainer">
             <h2>
                 {% if logged_in %}
-                    <span class="welcome-line">Welcome back,</span>
-                    <span class="welcome-line">{{ username }}! 👋</span>
+                    <span class="welcome-line">Ready to level up your</span>
+                    <span class="welcome-line">career, {{ username }}? <span class="welcome-wave" aria-hidden="true">👋</span></span>
                 {% else %}
-                   <span class="welcome-line">Where should we begin?</span>
+                    <span class="welcome-line">What would you like to</span>
+                    <span class="welcome-line">work on today?</span>
                 {% endif %}
             </h2>
-            <p>How can I help you today?</p>
+            <p id="welcomeSubtitle">Explore opportunities, build skills, and prepare for what's next.</p>
+            <div id="homeMemoryContext" class="home-memory-context" aria-live="polite" hidden></div>
+            <div class="home-suggestion-label">SUGGESTED FOR YOU</div>
             <div class="quick-actions">
                 <button type="button" class="action-card"
-                     data-message="Find jobs for me"
+                    data-message="Improve my resume"
+                    data-prompt="I want you to improve my resume. Review it for gaps, clarity, job suitability and stronger wording, then help me make it more effective.">
+                    <span class="action-card-main">
+                        <span class="action-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 12h6"/><path d="M9 16h5"/><path d="M9 8h2"/></svg>
+                        </span>
+                        <span class="action-card-copy"><strong>Improve my resume</strong><small>Find gaps and make it stronger</small></span>
+                    </span>
+                    <span class="action-arrow" aria-hidden="true">→</span>
+                </button>
+                <button type="button" class="action-card"
+                    data-message="Find jobs for me"
                     data-prompt="I want to find suitable jobs for me. Ask me for my preferred job role, skills, location, experience and other relevant details, then help me find suitable opportunities.">
-                    💼 Find jobs for me
+                    <span class="action-card-main">
+                        <span class="action-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 11h18"/><path d="M10 12v1h4v-1"/></svg>
+                        </span>
+                        <span class="action-card-copy"><strong>Find jobs for me</strong><small>Discover roles that match your skills and goals</small></span>
+                    </span>
+                    <span class="action-arrow" aria-hidden="true">→</span>
                 </button>
                 <button type="button" class="action-card"
-                    data-message="Analyze my resume"
-                    data-prompt="I want you to analyze my resume. Review it for strengths, weaknesses, missing skills, clarity, job suitability and improvements.">
-                    📄 Analyze my resume
-                </button>
-                <button type="button" class="action-card"
-                    data-message="Search jobs & companies"
-                    data-prompt="Help me search for suitable jobs and companies. Ask me for my preferred role, location, experience level, skills and other relevant preferences.">
-                    🌐 Search jobs & companies
-                </button>
-                <button type="button" class="action-card"
-                    data-message="Prepare me for an interview"
-                    data-prompt="Help me prepare for a job interview. Ask me for the job role, company and relevant details, then begin an interview preparation session.">
-                    🎯 Prepare me for an interview
+                    data-message="Build my career roadmap"
+                    data-prompt="Help me build a practical career roadmap based on what you know about my learning, skills and goal. Start with the most useful next steps and ask only for missing details.">
+                    <span class="action-card-main">
+                        <span class="action-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V5"/><path d="M5 7h10l-2.5 3L15 13H5"/><path d="M18 16v3"/><path d="M16.5 17.5h3"/></svg>
+                        </span>
+                        <span class="action-card-copy"><strong>Career roadmap</strong><small>Plan your next steps toward your goal</small></span>
+                    </span>
+                    <span class="action-arrow" aria-hidden="true">→</span>
                 </button>
             </div>
-    </div>
+            <div id="homeLearningMount" aria-live="polite"></div>
+            <div id="continueCardMount"></div>
+            <section class="home-next-move" aria-label="Your next career move">
+                <div class="home-next-move-kicker">YOUR NEXT CAREER MOVE</div>
+                <h3>What are you aiming for?</h3>
+                <p>Tell me your goal and I’ll help you plan the next step.</p>
+                <button type="button" class="home-next-move-btn" id="homeNextMoveBtn">Tell me your goal <span aria-hidden="true">→</span></button>
+            </section>
+        </div>
     </main>
     <div id="attachmentPreview" class="attachment-preview" style="display:none;">
         <div class="attachment-header">
@@ -2134,7 +3884,7 @@ body.dark-mode .memory-footer{border-top-color:#333;}
         <textarea
             id="userInput"
             rows="1"
-            placeholder="Ask anything..."
+            placeholder="Ask your career AI anything…"
         ></textarea>
         <button id="dictation-btn" class="dictation-btn" title="Type with your voice" aria-label="Type with your voice">
             <svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true">
@@ -2197,7 +3947,7 @@ body.dark-mode .memory-footer{border-top-color:#333;}
     <div class="utility-box memory-box" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle">
         <div class="utility-header">
             <div>
-                <h3 id="memoryModalTitle">🧠 My Memory</h3>
+                <h3 id="memoryModalTitle">🗂️ My Memory</h3>
                 <p class="memory-subtitle">These are the things ODDI remembers about you.</p>
             </div>
             <button id="closeMemory" class="utility-close" type="button" aria-label="Close memory">✕</button>
@@ -3919,6 +5669,7 @@ if (SpeechRecognition) {
  */
 
 let conversations = [];
+Object.defineProperty(window, "oddiConversations", { configurable: true, get: () => conversations });
 
 const historyContainer =
     document.getElementById(
@@ -4672,7 +6423,573 @@ ${bodyHtml}
 
 
 
-\n\n</body></html>`;
+\n\n
+
+<style id="oddi-home-final-visual-correction">
+/* =========================================================
+   ODDI HOME — FINAL VISUAL CORRECTION
+   Keeps the existing functionality intact; only resolves the
+   overly-compressed mobile composition and conflicting overrides.
+   ========================================================= */
+
+/* Desktop/tablet: balanced vertical composition. */
+.welcome-message{
+    width:min(820px,100%) !important;
+    margin:0 auto !important;
+    padding:54px 18px 90px !important;
+    box-sizing:border-box !important;
+}
+.welcome-message::before{
+    margin:0 auto 12px !important;
+    font-size:10px !important;
+    letter-spacing:.08em !important;
+    color:#777 !important;
+}
+.welcome-message h2{
+    font-size:clamp(30px,4vw,42px) !important;
+    line-height:1.08 !important;
+    margin:0 auto 12px !important;
+}
+.welcome-message > p{
+    font-size:15px !important;
+    line-height:1.5 !important;
+}
+.home-memory-context{
+    margin:14px auto 0 !important;
+    font-size:12px !important;
+    line-height:1.45 !important;
+}
+.home-suggestion-label{
+    width:min(760px,100%) !important;
+    margin:18px auto 10px !important;
+    padding:0 4px !important;
+    font-size:10px !important;
+    text-align:left !important;
+}
+
+/* Suggestions are chips, never stacked cards. */
+.quick-actions{
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    justify-content:flex-start !important;
+    align-items:center !important;
+    width:min(760px,100%) !important;
+    margin:0 auto !important;
+    padding:2px 4px 7px !important;
+    gap:9px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    scrollbar-width:none !important;
+}
+.quick-actions::-webkit-scrollbar{display:none !important;}
+.action-card{
+    display:flex !important;
+    flex:0 0 auto !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    min-height:44px !important;
+    height:44px !important;
+    padding:0 15px !important;
+    margin:0 !important;
+    border:1px solid #dedede !important;
+    border-radius:999px !important;
+    background:#f8f8f8 !important;
+    color:#202020 !important;
+    white-space:nowrap !important;
+    box-shadow:none !important;
+}
+.action-card-main{
+    display:flex !important;
+    flex:0 0 auto !important;
+    align-items:center !important;
+    gap:8px !important;
+    width:auto !important;
+    min-width:max-content !important;
+}
+.action-card-icon{
+    flex:0 0 22px !important;
+    width:22px !important;
+    min-width:22px !important;
+    height:22px !important;
+}
+.action-card-copy{
+    display:block !important;
+    width:auto !important;
+    min-width:max-content !important;
+}
+.action-card-copy strong{
+    display:block !important;
+    font-size:12px !important;
+    line-height:1 !important;
+    white-space:nowrap !important;
+}
+.action-card-copy small,.action-arrow{display:none !important;}
+
+/* Continue card: readable, proportional, and not a miniature widget. */
+#continueCardMount{
+    width:min(620px,100%) !important;
+    margin:16px auto 0 !important;
+}
+.continue-card{
+    width:100% !important;
+    min-height:96px !important;
+    margin:0 !important;
+    padding:16px 17px !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:16px !important;
+    border:1px solid #dedede !important;
+    border-radius:16px !important;
+    background:#fafafa !important;
+    box-shadow:0 5px 18px rgba(0,0,0,.045) !important;
+}
+.continue-main{
+    min-width:0 !important;
+    flex:1 1 auto !important;
+    display:flex !important;
+    flex-direction:column !important;
+    gap:4px !important;
+}
+.continue-label{
+    font-size:10px !important;
+    line-height:1.2 !important;
+    letter-spacing:.08em !important;
+    color:#888 !important;
+}
+.continue-title{
+    font-size:14px !important;
+    line-height:1.25 !important;
+    font-weight:780 !important;
+    color:#202020 !important;
+}
+.continue-preview{
+    font-size:11px !important;
+    line-height:1.4 !important;
+    color:#777 !important;
+}
+.continue-btn{
+    flex:0 0 auto !important;
+    min-height:38px !important;
+    height:38px !important;
+    padding:0 13px !important;
+    border:1px solid #d5d5d5 !important;
+    border-radius:10px !important;
+    background:#fff !important;
+    color:#222 !important;
+    font-size:11px !important;
+    font-weight:750 !important;
+    white-space:nowrap !important;
+}
+
+/* Composer remains the primary interaction and never clips. */
+.input-area{
+    box-sizing:border-box !important;
+    min-height:62px !important;
+    height:62px !important;
+}
+.input-area textarea{
+    min-width:0 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+}
+.input-area textarea::placeholder{white-space:nowrap !important;}
+
+/* Dark mode surfaces. */
+body.dark-mode .chatbox{background:#0d0d0d !important;}
+body.dark-mode .welcome-message::before{color:#858585 !important;}
+body.dark-mode .home-memory-context{color:#9b9b9b !important;}
+body.dark-mode .home-suggestion-label{color:#777 !important;}
+body.dark-mode .action-card{
+    background:#151515 !important;
+    border-color:#2b2b2b !important;
+    color:#f2f2f2 !important;
+}
+body.dark-mode .action-card-icon{background:#1c1c1c !important;border-color:#2e2e2e !important;color:#bcbcbc !important;}
+body.dark-mode .action-card-copy strong{color:#f2f2f2 !important;}
+body.dark-mode .continue-card{background:#121212 !important;border-color:#2a2a2a !important;box-shadow:none !important;}
+body.dark-mode .continue-label{color:#858585 !important;}
+body.dark-mode .continue-title{color:#f0f0f0 !important;}
+body.dark-mode .continue-preview{color:#999 !important;}
+body.dark-mode .continue-btn{background:#1a1a1a !important;border-color:#363636 !important;color:#f2f2f2 !important;}
+body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !important;}
+
+/* Mobile: correct the compressed screenshot while preserving horizontal chips. */
+@media (max-width:768px) and (pointer:coarse){
+    .chatbox{
+        padding:0 10px 92px !important;
+        overflow-x:hidden !important;
+        overflow-y:auto !important;
+    }
+    .welcome-message{
+        width:100% !important;
+        padding:46px 4px 80px !important;
+        min-height:0 !important;
+        max-height:none !important;
+    }
+    .welcome-message::before{
+        margin-bottom:10px !important;
+        font-size:9px !important;
+    }
+    .welcome-message h2{
+        width:100% !important;
+        max-width:330px !important;
+        margin:0 auto 10px !important;
+        font-size:27px !important;
+        line-height:1.08 !important;
+        letter-spacing:-.65px !important;
+    }
+    .welcome-message > p{
+        width:min(100%,330px) !important;
+        margin:0 auto !important;
+        font-size:12px !important;
+        line-height:1.45 !important;
+    }
+    .home-memory-context{
+        width:min(100%,340px) !important;
+        margin:11px auto 0 !important;
+        font-size:10.5px !important;
+        line-height:1.4 !important;
+        white-space:nowrap !important;
+        overflow:hidden !important;
+        text-overflow:ellipsis !important;
+    }
+    .home-suggestion-label{
+        width:min(100%,340px) !important;
+        margin:16px auto 8px !important;
+        padding:0 !important;
+        font-size:9.5px !important;
+        line-height:1.2 !important;
+    }
+    .quick-actions{
+        width:calc(100% + 8px) !important;
+        margin:0 -4px !important;
+        padding:2px 4px 8px !important;
+        gap:8px !important;
+        overflow-x:auto !important;
+        overflow-y:hidden !important;
+        flex-wrap:nowrap !important;
+        justify-content:flex-start !important;
+        align-items:center !important;
+    }
+    .action-card{
+        min-height:42px !important;
+        height:42px !important;
+        padding:0 13px !important;
+        border-radius:999px !important;
+        flex:0 0 auto !important;
+    }
+    .action-card-icon{width:21px !important;height:21px !important;min-width:21px !important;}
+    .action-card-copy strong{font-size:11px !important;}
+    #continueCardMount{
+        width:100% !important;
+        margin:18px auto 0 !important;
+    }
+    .continue-card{
+        min-height:96px !important;
+        padding:15px !important;
+        gap:12px !important;
+    }
+    .continue-label{font-size:9px !important;}
+    .continue-title{font-size:13px !important;}
+    .continue-preview{font-size:10.5px !important;}
+    .continue-btn{
+        height:36px !important;
+        min-height:36px !important;
+        padding:0 12px !important;
+        font-size:10px !important;
+    }
+    .input-area{
+        left:7px !important;
+        right:7px !important;
+        bottom:max(7px,env(safe-area-inset-bottom)) !important;
+        width:auto !important;
+        height:60px !important;
+        min-height:60px !important;
+        border-radius:19px !important;
+    }
+    .input-area textarea{
+        font-size:14px !important;
+        line-height:1.25 !important;
+        padding:12px 9px !important;
+    }
+}
+
+@media (max-width:420px) and (pointer:coarse){
+    .welcome-message{padding-top:50px !important;}
+    .welcome-message h2{font-size:26px !important;max-width:320px !important;}
+    .welcome-message > p{font-size:11.5px !important;}
+    .home-memory-context{font-size:10px !important;}
+    .home-suggestion-label{font-size:9px !important;}
+    .continue-card{min-height:94px !important;}
+}
+
+/* Mobile tools stay completely hidden until + is tapped. */
+@media (max-width:768px) and (pointer:coarse){
+    #mobileToolMenu{
+        display:none !important;
+        visibility:hidden !important;
+        pointer-events:none !important;
+    }
+    #mobileToolMenu.open{
+        display:grid !important;
+        visibility:visible !important;
+        pointer-events:auto !important;
+    }
+}
+</style>
+
+<style id="oddi-two-final-adjustments-v2">
+/* Exactly the two requested home-screen fixes. */
+@media (max-width:768px) and (pointer:coarse){
+    /* 1) Start the welcome/header message lower, at the previous headline's starting zone. */
+    .welcome-message{
+        padding-top:104px !important;
+    }
+
+    /* 2) Stack all four suggestion cards vertically at one identical size. */
+    .quick-actions{
+        flex-direction:column !important;
+        flex-wrap:nowrap !important;
+        align-items:center !important;
+        justify-content:flex-start !important;
+        width:100% !important;
+        overflow-x:visible !important;
+        overflow-y:visible !important;
+        gap:7px !important;
+    }
+    .action-card{
+        flex:0 0 42px !important;
+        width:150px !important;
+        min-width:150px !important;
+        max-width:150px !important;
+        height:42px !important;
+        min-height:42px !important;
+        max-height:42px !important;
+        box-sizing:border-box !important;
+    }
+}
+</style>
+
+<style id="oddi-sidebar-9of10-final-pass">
+/* Sidebar 9/10 refinement — visual polish only, no navigation/functionality changes. */
+@media (max-width:768px) and (pointer:coarse){
+  :root{
+    --oddi-sidebar-bg:#f8f7f4;
+    --oddi-sidebar-hover:#f2f1ee;
+    --oddi-sidebar-active:#eef8f2;
+    --oddi-sidebar-line:#e4e2dc;
+    --oddi-sidebar-ink:#292a27;
+    --oddi-sidebar-muted:#6f6e68;
+  }
+
+  /* 1 + 7. Make the drawer feel like a continuation of the warm homepage. */
+  #sidebar.sidebar{
+    background:var(--oddi-sidebar-bg) !important;
+    border-right:1px solid var(--oddi-sidebar-line) !important;
+    box-shadow:8px 0 24px rgba(39,37,32,.055) !important;
+  }
+
+  /* 2. Keep the compact 194px footprint. */
+  #sidebar.sidebar{width:194px !important;min-width:194px !important;max-width:194px !important;}
+
+  /* 3. Header: quieter, cleaner, aligned with the homepage controls. */
+  #sidebar .oddi-sidebar-brand{
+    height:52px !important;
+    min-height:52px !important;
+    border-bottom:1px solid var(--oddi-sidebar-line) !important;
+  }
+  #sidebar .oddi-sidebar-brand span:first-child::after{
+    font-size:16.5px !important;
+    font-weight:800 !important;
+    letter-spacing:-.5px !important;
+  }
+  #oddiMobileSidebarSearch{
+    width:31px !important;height:31px !important;min-width:31px !important;
+    border:1px solid #e7e5df !important;
+    background:#f4f3ef !important;
+    color:#686762 !important;
+  }
+  #oddiMobileSidebarSearch:hover,#oddiMobileSidebarSearch:active{
+    background:#ecebe7 !important;color:#2a2b28 !important;
+  }
+
+  /* 4 + 18. Slightly stronger text and more deliberate row rhythm. */
+  #sidebar .new-chat-btn,#sidebar .sidebar-nav-btn,#sidebar .sidebar-bottom-btn,#sidebar .sidebar-select-controls .sidebar-select-btn{
+    min-height:38px !important;height:38px !important;
+    padding:0 10px !important;
+    border-radius:10px !important;
+    color:var(--oddi-sidebar-ink) !important;
+    font-size:12.5px !important;
+    font-weight:600 !important;
+  }
+  #sidebar .new-chat-btn{
+    background:#f1f7f3 !important;
+    border:1px solid rgba(32,199,107,.09) !important;
+    margin-bottom:4px !important;
+  }
+  #sidebar .new-chat-btn:hover{background:#eaf5ee !important;}
+  #sidebar .sidebar-nav-btn:hover,#sidebar .sidebar-bottom-btn:hover{background:var(--oddi-sidebar-hover) !important;}
+
+  /* 6. One deliberately restrained icon treatment. */
+  #sidebar .new-chat-icon,#sidebar .sidebar-nav-icon,#sidebar .sidebar-bottom-icon,#sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{
+    width:17px !important;min-width:17px !important;height:17px !important;
+    color:#6c6c66 !important;
+    font-size:0 !important;
+    opacity:.92 !important;
+  }
+  #sidebar .new-chat-icon::after{content:"+" !important;font-size:18px !important;font-weight:500 !important;}
+  #sidebar .sidebar-nav-icon::after{content:"⌕" !important;font-size:18px !important;font-weight:400 !important;}
+  #sidebar #archivedBtn .sidebar-bottom-icon::after{content:"□" !important;font-size:16px !important;font-weight:400 !important;}
+  #sidebar #settingsBtn .sidebar-bottom-icon::after{content:"⚙" !important;font-size:14px !important;font-weight:400 !important;}
+
+  /* 8. Section labels are visible enough to scan without becoming loud. */
+  #sidebar .sidebar-section-toggle{
+    min-height:34px !important;height:34px !important;
+    margin:10px 0 3px !important;
+    padding:0 9px !important;
+    color:#74736d !important;
+    font-size:9.5px !important;
+    font-weight:800 !important;
+    letter-spacing:.12em !important;
+  }
+  #sidebar .sidebar-section-chevron{
+    width:25px !important;height:25px !important;
+    color:#96948d !important;
+    font-size:16px !important;
+  }
+  #sidebar .sidebar-section-toggle:hover .sidebar-section-chevron{background:#ecebe7 !important;color:#65645e !important;}
+
+  /* 9 + 11 + 13. Conversation rows stay quiet, readable and cleanly truncated. */
+  #sidebar .history-item{
+    min-height:39px !important;height:39px !important;
+    margin:2px 0 !important;
+    padding:0 9px !important;
+    border:1px solid transparent !important;
+    border-radius:9px !important;
+  }
+  #sidebar .history-title{
+    font-size:11.7px !important;
+    font-weight:560 !important;
+    line-height:39px !important;
+    color:#3b3c38 !important;
+  }
+  #sidebar .history-title::before{
+    width:4px !important;height:4px !important;
+    margin-right:8px !important;
+    background:#aaa8a0 !important;
+  }
+  #sidebar .history-item:hover{background:#f2f1ee !important;}
+
+  /* 9. Active conversation is now unmistakably selected, but still subtle. */
+  #sidebar .history-item.active-chat{
+    background:var(--oddi-sidebar-active) !important;
+    border-color:rgba(32,199,107,.11) !important;
+    box-shadow:none !important;
+  }
+  #sidebar .history-item.active-chat .history-title{
+    color:#252823 !important;
+    font-weight:680 !important;
+  }
+  #sidebar .history-item.active-chat .history-title::before{
+    width:4px !important;height:12px !important;
+    margin-right:8px !important;
+    border-radius:3px !important;
+    background:var(--oddi-accent,#20c76b) !important;
+  }
+
+  /* 10. Checkboxes remain a selection-mode-only affordance. */
+  #sidebar .chat-select-check{display:none !important;}
+  #sidebar.sidebar.is-selecting .chat-select-check,#sidebar .history-item.chat-selected .chat-select-check{display:inline-flex !important;}
+
+  /* 15 + 16. Profile gets a clearer hierarchy and breathing room. */
+  #sidebar .oddi-account-footer{
+    flex-basis:64px !important;height:64px !important;min-height:64px !important;
+    margin-top:0 !important;
+    padding:10px 6px max(10px,env(safe-area-inset-bottom)) !important;
+    border-top:1px solid var(--oddi-sidebar-line) !important;
+    gap:9px !important;
+    background:var(--oddi-sidebar-bg) !important;
+  }
+  #sidebar .oddi-account-avatar{
+    width:31px !important;height:31px !important;min-width:31px !important;
+    font-size:9px !important;font-weight:800 !important;
+  }
+  #sidebar .oddi-account-name{
+    font-size:12px !important;
+    font-weight:750 !important;
+    line-height:1.25 !important;
+    color:#292a27 !important;
+  }
+  #sidebar .oddi-account-plan{
+    margin-top:3px !important;
+    font-size:9.5px !important;
+    color:#77766f !important;
+    line-height:1.2 !important;
+  }
+
+  /* 5 + 14. Rounded controls and larger chevron hit areas, without extra UI. */
+  #sidebar .sidebar-bottom-nav{gap:2px !important;}
+  #sidebar .sidebar-bottom-btn{border-radius:10px !important;}
+
+  /* Dark mode keeps the same hierarchy rather than inverting the whole design. */
+  body.dark-mode #sidebar.sidebar{
+    background:#0e0e0e !important;
+    border-right-color:#292929 !important;
+    box-shadow:8px 0 24px rgba(0,0,0,.28) !important;
+  }
+  body.dark-mode #sidebar .oddi-sidebar-brand{border-bottom-color:#292929 !important;}
+  body.dark-mode #oddiMobileSidebarSearch{background:#151515 !important;border-color:#292929 !important;color:#aaa !important;}
+  body.dark-mode #oddiMobileSidebarSearch:hover,body.dark-mode #oddiMobileSidebarSearch:active{background:#1d1d1d !important;color:#fff !important;}
+  body.dark-mode #sidebar .new-chat-btn{background:#142219 !important;border-color:rgba(32,199,107,.14) !important;}
+  body.dark-mode #sidebar .new-chat-btn:hover{background:#182b20 !important;}
+  body.dark-mode #sidebar .sidebar-nav-btn:hover,body.dark-mode #sidebar .sidebar-bottom-btn:hover{background:#181818 !important;}
+  body.dark-mode #sidebar .sidebar-section-toggle{color:#999 !important;}
+  body.dark-mode #sidebar .history-title{color:#d1d1cd !important;}
+  body.dark-mode #sidebar .history-title::before{background:#66665f !important;}
+  body.dark-mode #sidebar .history-item:hover{background:#181818 !important;}
+  body.dark-mode #sidebar .history-item.active-chat{background:#15231b !important;border-color:rgba(32,199,107,.15) !important;}
+  body.dark-mode #sidebar .history-item.active-chat .history-title{color:#f1f1ee !important;}
+  body.dark-mode #sidebar .oddi-account-footer{background:#0e0e0e !important;border-top-color:#292929 !important;}
+  body.dark-mode #sidebar .oddi-account-name{color:#eee !important;}
+  body.dark-mode #sidebar .oddi-account-plan{color:#8d8d87 !important;}
+}
+</style>
+
+
+<style id="oddi-basic-center-suggestions">
+  /* Basic visual correction: center the section label and suggestion-card content. */
+  .home-suggestion-label{
+    text-align:center !important;
+    width:min(100%,1000px) !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+  .quick-actions .action-card{
+    text-align:center !important;
+  }
+  .quick-actions .action-card-main{
+    justify-content:center !important;
+    align-items:center !important;
+  }
+  .quick-actions .action-card-copy{
+    align-items:center !important;
+    text-align:center !important;
+  }
+  .quick-actions .action-arrow{
+    display:none !important;
+  }
+</style>
+</body></html>`;
 }
 
 function buildPlainTextExport(conversation) {
@@ -5027,7 +7344,291 @@ function buildDocxHtml(conversation, clone) {
 }
 </style>
 
-</head><body><h1>${title}</h1><p>Exported from Oddi AI · ${escapeHtml(new Date().toLocaleString())}</p>${clone?.innerHTML || ""}</body></html>`;
+<style id="oddi-desktop-viewport-adaptive-home-final">
+/* Desktop home: keep the same design while adapting the vertical rhythm to shorter laptop viewports. */
+@media (min-width:769px){
+  /* Prevent the fixed composer from visually covering the final home sections. */
+  .chatbox{padding-bottom:clamp(96px,14vh,112px) !important;}
+
+  /* Normal laptop browser heights (~580–680px content area). */
+  @media (max-height:680px){
+    .chatbox{padding-top:10px !important;padding-left:24px !important;padding-right:24px !important;}
+    .welcome-message{padding-top:6px !important;padding-bottom:34px !important;}
+    .welcome-message::before{margin-bottom:5px !important;font-size:9px !important;}
+    .welcome-message h2{max-width:560px !important;font-size:29px !important;line-height:1.04 !important;letter-spacing:-1px !important;margin-bottom:5px !important;}
+    .welcome-message > p{font-size:12px !important;line-height:1.35 !important;}
+    .home-memory-context{margin-top:6px !important;font-size:10px !important;}
+    .home-suggestion-label{margin-top:12px !important;margin-bottom:6px !important;font-size:9px !important;}
+    .quick-actions{gap:9px !important;}
+    .quick-actions .action-card{height:74px !important;min-height:74px !important;max-height:74px !important;padding:11px 13px !important;border-radius:13px !important;}
+    .quick-actions .action-card-main{gap:8px !important;}
+    .quick-actions .action-card-icon{width:25px !important;height:25px !important;min-width:25px !important;border-radius:8px !important;}
+    .quick-actions .action-card-icon svg{width:13px !important;height:13px !important;}
+    .quick-actions .action-card-copy{gap:2px !important;}
+    .quick-actions .action-card-copy strong{font-size:12px !important;}
+    .quick-actions .action-card-copy small{font-size:9.5px !important;line-height:1.28 !important;}
+    #homeLearningMount{margin-top:12px !important;}
+    #homeLearningMount .home-learning-card{min-height:70px !important;padding:11px 15px !important;border-radius:13px !important;}
+    #homeLearningMount .home-learning-kicker{font-size:8.5px !important;}
+    #homeLearningMount .home-learning-title{font-size:15px !important;}
+    #homeLearningMount .home-learning-goal{font-size:10px !important;}
+    #homeLearningMount .home-learning-btn{height:34px !important;min-height:34px !important;padding:0 11px !important;font-size:10px !important;border-radius:9px !important;}
+    .home-next-move{margin-top:10px !important;}
+    .home-next-move-kicker{font-size:8.5px !important;}
+    .home-next-move h3{margin:4px 0 3px !important;font-size:15px !important;}
+    .home-next-move p{margin-bottom:7px !important;font-size:10px !important;line-height:1.3 !important;}
+    .home-next-move-btn{min-height:34px !important;padding:0 13px !important;font-size:10px !important;border-radius:9px !important;}
+    .input-area{bottom:8px !important;}
+  }
+
+  /* Very short laptop viewports (~560–620px): compress further instead of allowing overlap. */
+  @media (max-height:620px){
+    .chatbox{padding-top:6px !important;padding-bottom:92px !important;}
+    .welcome-message{padding-top:2px !important;padding-bottom:24px !important;}
+    .welcome-message::before{margin-bottom:3px !important;font-size:8.5px !important;}
+    .welcome-message h2{font-size:26px !important;line-height:1.02 !important;letter-spacing:-.85px !important;margin-bottom:4px !important;}
+    .welcome-message > p{font-size:11px !important;}
+    .home-memory-context{margin-top:4px !important;font-size:9px !important;}
+    .home-suggestion-label{margin-top:9px !important;margin-bottom:5px !important;font-size:8.5px !important;}
+    .quick-actions{gap:7px !important;}
+    .quick-actions .action-card{height:64px !important;min-height:64px !important;max-height:64px !important;padding:9px 11px !important;border-radius:11px !important;}
+    .quick-actions .action-card-main{gap:7px !important;}
+    .quick-actions .action-card-icon{width:22px !important;height:22px !important;min-width:22px !important;border-radius:7px !important;}
+    .quick-actions .action-card-icon svg{width:12px !important;height:12px !important;}
+    .quick-actions .action-card-copy strong{font-size:11px !important;}
+    .quick-actions .action-card-copy small{font-size:8.75px !important;line-height:1.22 !important;}
+    #homeLearningMount{margin-top:9px !important;}
+    #homeLearningMount .home-learning-card{min-height:62px !important;padding:9px 13px !important;border-radius:11px !important;}
+    #homeLearningMount .home-learning-main{gap:2px !important;}
+    #homeLearningMount .home-learning-kicker{font-size:8px !important;}
+    #homeLearningMount .home-learning-title{font-size:14px !important;}
+    #homeLearningMount .home-learning-goal{font-size:9px !important;}
+    #homeLearningMount .home-learning-btn{height:31px !important;min-height:31px !important;padding:0 10px !important;font-size:9px !important;border-radius:8px !important;}
+    .home-next-move{margin-top:8px !important;}
+    .home-next-move-kicker{font-size:8px !important;}
+    .home-next-move h3{margin:3px 0 2px !important;font-size:14px !important;}
+    .home-next-move p{margin-bottom:5px !important;font-size:9px !important;}
+    .home-next-move-btn{min-height:31px !important;padding:0 12px !important;font-size:9px !important;border-radius:8px !important;}
+    .input-area{bottom:6px !important;height:54px !important;min-height:54px !important;}
+    .input-area textarea{font-size:13px !important;min-height:40px !important;padding:9px 12px !important;}
+    .input-area .attach-btn,.input-area .dictation-btn,.input-area .voice-btn,.input-area .send-btn{width:40px !important;height:40px !important;min-width:40px !important;min-height:40px !important;border-radius:11px !important;}
+  }
+}
+</style>
+
+</head><body><h1>${title}</h1><p>Exported from Oddi AI · ${escapeHtml(new Date().toLocaleString())}</p>${clone?.innerHTML || ""}
+<style id="oddi-sidebar-9of10-final-pass">
+/* Sidebar 9/10 refinement — visual polish only, no navigation/functionality changes. */
+@media (max-width:768px) and (pointer:coarse){
+  :root{
+    --oddi-sidebar-bg:#f8f7f4;
+    --oddi-sidebar-hover:#f2f1ee;
+    --oddi-sidebar-active:#eef8f2;
+    --oddi-sidebar-line:#e4e2dc;
+    --oddi-sidebar-ink:#292a27;
+    --oddi-sidebar-muted:#6f6e68;
+  }
+
+  /* 1 + 7. Make the drawer feel like a continuation of the warm homepage. */
+  #sidebar.sidebar{
+    background:var(--oddi-sidebar-bg) !important;
+    border-right:1px solid var(--oddi-sidebar-line) !important;
+    box-shadow:8px 0 24px rgba(39,37,32,.055) !important;
+  }
+
+  /* 2. Keep the compact 194px footprint. */
+  #sidebar.sidebar{width:194px !important;min-width:194px !important;max-width:194px !important;}
+
+  /* 3. Header: quieter, cleaner, aligned with the homepage controls. */
+  #sidebar .oddi-sidebar-brand{
+    height:52px !important;
+    min-height:52px !important;
+    border-bottom:1px solid var(--oddi-sidebar-line) !important;
+  }
+  #sidebar .oddi-sidebar-brand span:first-child::after{
+    font-size:16.5px !important;
+    font-weight:800 !important;
+    letter-spacing:-.5px !important;
+  }
+  #oddiMobileSidebarSearch{
+    width:31px !important;height:31px !important;min-width:31px !important;
+    border:1px solid #e7e5df !important;
+    background:#f4f3ef !important;
+    color:#686762 !important;
+  }
+  #oddiMobileSidebarSearch:hover,#oddiMobileSidebarSearch:active{
+    background:#ecebe7 !important;color:#2a2b28 !important;
+  }
+
+  /* 4 + 18. Slightly stronger text and more deliberate row rhythm. */
+  #sidebar .new-chat-btn,#sidebar .sidebar-nav-btn,#sidebar .sidebar-bottom-btn,#sidebar .sidebar-select-controls .sidebar-select-btn{
+    min-height:38px !important;height:38px !important;
+    padding:0 10px !important;
+    border-radius:10px !important;
+    color:var(--oddi-sidebar-ink) !important;
+    font-size:12.5px !important;
+    font-weight:600 !important;
+  }
+  #sidebar .new-chat-btn{
+    background:#f1f7f3 !important;
+    border:1px solid rgba(32,199,107,.09) !important;
+    margin-bottom:4px !important;
+  }
+  #sidebar .new-chat-btn:hover{background:#eaf5ee !important;}
+  #sidebar .sidebar-nav-btn:hover,#sidebar .sidebar-bottom-btn:hover{background:var(--oddi-sidebar-hover) !important;}
+
+  /* 6. One deliberately restrained icon treatment. */
+  #sidebar .new-chat-icon,#sidebar .sidebar-nav-icon,#sidebar .sidebar-bottom-icon,#sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{
+    width:17px !important;min-width:17px !important;height:17px !important;
+    color:#6c6c66 !important;
+    font-size:0 !important;
+    opacity:.92 !important;
+  }
+  #sidebar .new-chat-icon::after{content:"+" !important;font-size:18px !important;font-weight:500 !important;}
+  #sidebar .sidebar-nav-icon::after{content:"⌕" !important;font-size:18px !important;font-weight:400 !important;}
+  #sidebar #archivedBtn .sidebar-bottom-icon::after{content:"□" !important;font-size:16px !important;font-weight:400 !important;}
+  #sidebar #settingsBtn .sidebar-bottom-icon::after{content:"⚙" !important;font-size:14px !important;font-weight:400 !important;}
+
+  /* 8. Section labels are visible enough to scan without becoming loud. */
+  #sidebar .sidebar-section-toggle{
+    min-height:34px !important;height:34px !important;
+    margin:10px 0 3px !important;
+    padding:0 9px !important;
+    color:#74736d !important;
+    font-size:9.5px !important;
+    font-weight:800 !important;
+    letter-spacing:.12em !important;
+  }
+  #sidebar .sidebar-section-chevron{
+    width:25px !important;height:25px !important;
+    color:#96948d !important;
+    font-size:16px !important;
+  }
+  #sidebar .sidebar-section-toggle:hover .sidebar-section-chevron{background:#ecebe7 !important;color:#65645e !important;}
+
+  /* 9 + 11 + 13. Conversation rows stay quiet, readable and cleanly truncated. */
+  #sidebar .history-item{
+    min-height:39px !important;height:39px !important;
+    margin:2px 0 !important;
+    padding:0 9px !important;
+    border:1px solid transparent !important;
+    border-radius:9px !important;
+  }
+  #sidebar .history-title{
+    font-size:11.7px !important;
+    font-weight:560 !important;
+    line-height:39px !important;
+    color:#3b3c38 !important;
+  }
+  #sidebar .history-title::before{
+    width:4px !important;height:4px !important;
+    margin-right:8px !important;
+    background:#aaa8a0 !important;
+  }
+  #sidebar .history-item:hover{background:#f2f1ee !important;}
+
+  /* 9. Active conversation is now unmistakably selected, but still subtle. */
+  #sidebar .history-item.active-chat{
+    background:var(--oddi-sidebar-active) !important;
+    border-color:rgba(32,199,107,.11) !important;
+    box-shadow:none !important;
+  }
+  #sidebar .history-item.active-chat .history-title{
+    color:#252823 !important;
+    font-weight:680 !important;
+  }
+  #sidebar .history-item.active-chat .history-title::before{
+    width:4px !important;height:12px !important;
+    margin-right:8px !important;
+    border-radius:3px !important;
+    background:var(--oddi-accent,#20c76b) !important;
+  }
+
+  /* 10. Checkboxes remain a selection-mode-only affordance. */
+  #sidebar .chat-select-check{display:none !important;}
+  #sidebar.sidebar.is-selecting .chat-select-check,#sidebar .history-item.chat-selected .chat-select-check{display:inline-flex !important;}
+
+  /* 15 + 16. Profile gets a clearer hierarchy and breathing room. */
+  #sidebar .oddi-account-footer{
+    flex-basis:64px !important;height:64px !important;min-height:64px !important;
+    margin-top:0 !important;
+    padding:10px 6px max(10px,env(safe-area-inset-bottom)) !important;
+    border-top:1px solid var(--oddi-sidebar-line) !important;
+    gap:9px !important;
+    background:var(--oddi-sidebar-bg) !important;
+  }
+  #sidebar .oddi-account-avatar{
+    width:31px !important;height:31px !important;min-width:31px !important;
+    font-size:9px !important;font-weight:800 !important;
+  }
+  #sidebar .oddi-account-name{
+    font-size:12px !important;
+    font-weight:750 !important;
+    line-height:1.25 !important;
+    color:#292a27 !important;
+  }
+  #sidebar .oddi-account-plan{
+    margin-top:3px !important;
+    font-size:9.5px !important;
+    color:#77766f !important;
+    line-height:1.2 !important;
+  }
+
+  /* 5 + 14. Rounded controls and larger chevron hit areas, without extra UI. */
+  #sidebar .sidebar-bottom-nav{gap:2px !important;}
+  #sidebar .sidebar-bottom-btn{border-radius:10px !important;}
+
+  /* Dark mode keeps the same hierarchy rather than inverting the whole design. */
+  body.dark-mode #sidebar.sidebar{
+    background:#0e0e0e !important;
+    border-right-color:#292929 !important;
+    box-shadow:8px 0 24px rgba(0,0,0,.28) !important;
+  }
+  body.dark-mode #sidebar .oddi-sidebar-brand{border-bottom-color:#292929 !important;}
+  body.dark-mode #oddiMobileSidebarSearch{background:#151515 !important;border-color:#292929 !important;color:#aaa !important;}
+  body.dark-mode #oddiMobileSidebarSearch:hover,body.dark-mode #oddiMobileSidebarSearch:active{background:#1d1d1d !important;color:#fff !important;}
+  body.dark-mode #sidebar .new-chat-btn{background:#142219 !important;border-color:rgba(32,199,107,.14) !important;}
+  body.dark-mode #sidebar .new-chat-btn:hover{background:#182b20 !important;}
+  body.dark-mode #sidebar .sidebar-nav-btn:hover,body.dark-mode #sidebar .sidebar-bottom-btn:hover{background:#181818 !important;}
+  body.dark-mode #sidebar .sidebar-section-toggle{color:#999 !important;}
+  body.dark-mode #sidebar .history-title{color:#d1d1cd !important;}
+  body.dark-mode #sidebar .history-title::before{background:#66665f !important;}
+  body.dark-mode #sidebar .history-item:hover{background:#181818 !important;}
+  body.dark-mode #sidebar .history-item.active-chat{background:#15231b !important;border-color:rgba(32,199,107,.15) !important;}
+  body.dark-mode #sidebar .history-item.active-chat .history-title{color:#f1f1ee !important;}
+  body.dark-mode #sidebar .oddi-account-footer{background:#0e0e0e !important;border-top-color:#292929 !important;}
+  body.dark-mode #sidebar .oddi-account-name{color:#eee !important;}
+  body.dark-mode #sidebar .oddi-account-plan{color:#8d8d87 !important;}
+}
+</style>
+
+
+<style id="oddi-basic-center-suggestions">
+  /* Basic visual correction: center the section label and suggestion-card content. */
+  .home-suggestion-label{
+    text-align:center !important;
+    width:min(100%,1000px) !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+  .quick-actions .action-card{
+    text-align:center !important;
+  }
+  .quick-actions .action-card-main{
+    justify-content:center !important;
+    align-items:center !important;
+  }
+  .quick-actions .action-card-copy{
+    align-items:center !important;
+    text-align:center !important;
+  }
+  .quick-actions .action-arrow{
+    display:none !important;
+  }
+</style>
+</body></html>`;
 }
 
 function exportCurrentChatAsDocx() {
@@ -7127,6 +9728,8 @@ chat.addEventListener("keydown", event => {
     openOddiUploadedFile(fileElement.dataset.fileKey);
 });
 
+window.__oddiOpenConversation = openConversation;
+
 /* 
    NEW CHAT
  */
@@ -7180,22 +9783,17 @@ async function newChat() {
         const welcomeHeading = welcome.querySelector(".welcome-message h2");
         const welcomeText = welcome.querySelector(".welcome-message > p");
         const newChatHeadings = [
-            "Let's start something new.",
-            "A fresh chat, whenever you're ready.",
-            "What shall we explore this time?",
-            "Starting fresh.",
-            "Let's work on something new.",
-            "Ready for a fresh start?"
+            "What would you like to work on today?",
+            "Ready for your next career move?",
+            "What should we tackle together?",
+            "Where should we start?"
         ];
         const welcomeMessages = [
-            "Take your time. What would you like to explore?",
-            "Whenever you're ready, we can get started.",
-            "What would you like a hand with today?",
-            "Let's figure it out together.",
-            "What are you curious about right now?",
-            "Start anywhere — I'm here to help.",
-            "What would you like to work through?",
-            "Ready when you are. What should we look at?"
+            "Jobs, resumes, interviews, career advice — tell me what you need.",
+            "Bring me a goal, a question, or a career problem to solve.",
+            "Start with anything on your mind. I’ll help you work through it.",
+            "We can explore opportunities, strengthen your profile, or plan your next step.",
+            "Tell me what you’re working toward and we’ll take it from there."
         ];
 
         let lastWelcome = "";
@@ -7208,8 +9806,7 @@ async function newChat() {
 
         const nextHeading = newChatHeadings[Math.floor(Math.random() * newChatHeadings.length)];
 
-        /* New Chat gets a fresh, subtle prompt — never the first-page
-           "Welcome back, Vedanssh!" identity greeting. */
+        /* New Chat keeps the same career-assistant identity without repeating the home greeting. */
         if (welcomeHeading) {
             welcomeHeading.innerHTML = `<span class="welcome-line">${nextHeading}</span>`;
         }
@@ -7305,7 +9902,7 @@ quickActions.forEach(card => {
 
             if (
                 message ===
-                "Analyze my resume"
+                "Improve my resume"
             ) {
 
                 input.value =
@@ -9854,7 +12451,7 @@ loadConversations();
             </button>
             <button type="button" class="mobile-tool-item" id="mobileAnalyzeBtn">
                 <span class="mobile-tool-icon" aria-hidden="true">📄</span>
-                <span>Analyze</span>
+                <span>Review resume</span>
             </button>
         `;
 
@@ -10078,7 +12675,7 @@ loadConversations();
         memoryAction.type = "button";
         memoryAction.id = "mobileMyMemoryBtn";
         memoryAction.className = "header-more-action";
-        memoryAction.innerHTML = "🧠 <span>My Memory</span>";
+        memoryAction.innerHTML = "🗂️ <span>My Memory</span>";
 
         memoryAction.addEventListener("click", function (event) {
             event.preventDefault();
@@ -10161,7 +12758,7 @@ loadConversations();
         max-width: none !important;
         padding: 0 2px 3px !important;
         box-sizing: border-box !important;
-        display: flex !important;
+        display: none !important;
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 1px !important;
@@ -10181,6 +12778,15 @@ loadConversations();
 
     /* Hidden after typing / opening another major UI surface. */
     body.mobile-tools-hidden #mobileToolMenu {
+        display: none !important;
+        pointer-events: none !important;
+    }
+
+    #mobileToolMenu.open {
+        display: flex !important;
+    }
+
+    body:has(.utility-modal.show) #mobileToolMenu {
         display: none !important;
         pointer-events: none !important;
     }
@@ -10233,171 +12839,10 @@ loadConversations();
 </style>
 
 <script id="oddi-mobile-permanent-tools-final-js">
-(function () {
+(function(){
     "use strict";
-
-    /* Use width only so mobile works in Chrome device emulation as well as on phones. */
-    if (!window.matchMedia("(max-width: 768px)").matches) return;
-
-    const input = document.getElementById("userInput");
-    const attachBtn = document.getElementById("attach-btn");
-    const fileInput = document.getElementById("fileInput");
-    const menuBtn = document.getElementById("menuBtn");
-    const settingsBtn = document.getElementById("settingsBtn");
-    const accountBtn = document.getElementById("headerMoreAccount");
-    const overlay = document.getElementById("overlay");
-
-    if (!input || !fileInput) return;
-
-    /* Create the requested three-button layer if the older mobile script did not. */
-    let toolMenu = document.getElementById("mobileToolMenu");
-    const createdToolMenu = !toolMenu;
-    if (!toolMenu) {
-        toolMenu = document.createElement("div");
-        toolMenu.id = "mobileToolMenu";
-        toolMenu.setAttribute("aria-label", "Message tools");
-        toolMenu.innerHTML = `
-            <button type="button" class="mobile-tool-item" id="mobileCameraBtn">
-                <span class="mobile-tool-icon" aria-hidden="true">📷</span>
-                <span>Camera</span>
-            </button>
-            <button type="button" class="mobile-tool-item" id="mobileAttachFileBtn">
-                <span class="mobile-tool-icon" aria-hidden="true">📎</span>
-                <span>Attach file</span>
-            </button>
-            <button type="button" class="mobile-tool-item" id="mobileAnalyzeBtn">
-                <span class="mobile-tool-icon" aria-hidden="true">📄</span>
-                <span>Analyze</span>
-            </button>`;
-        document.body.appendChild(toolMenu);
-    }
-
-    const cameraBtn = document.getElementById("mobileCameraBtn");
-    const attachFileBtn = document.getElementById("mobileAttachFileBtn");
-    const analyzeBtn = document.getElementById("mobileAnalyzeBtn");
-
-    function hasChatMessages() {
-        const chatbox = document.getElementById("chatbox");
-        return !!chatbox?.querySelector(".user-message, .bot-message");
-    }
-
-    function isHomeEmpty() {
-        return input.value.trim() === "" && !hasChatMessages();
-    }
-
-    let hideAnimationTimer = null;
-
-    function showPermanentTools() {
-        if (!isHomeEmpty()) return;
-        if (hideAnimationTimer) {
-            clearTimeout(hideAnimationTimer);
-            hideAnimationTimer = null;
-        }
-        document.body.classList.remove("mobile-tools-hidden");
-        toolMenu.classList.remove("mobile-tools-hiding");
-        toolMenu.classList.add("open");
-        toolMenu.setAttribute("aria-hidden", "false");
-    }
-
-    function hidePermanentTools(animate = false) {
-        if (hideAnimationTimer) {
-            clearTimeout(hideAnimationTimer);
-            hideAnimationTimer = null;
-        }
-
-        if (animate && toolMenu.classList.contains("open")) {
-            toolMenu.classList.add("mobile-tools-hiding");
-            toolMenu.setAttribute("aria-hidden", "true");
-            hideAnimationTimer = setTimeout(function () {
-                toolMenu.classList.remove("open", "mobile-tools-hiding");
-                document.body.classList.add("mobile-tools-hidden");
-                hideAnimationTimer = null;
-            }, 270);
-            return;
-        }
-
-        toolMenu.classList.remove("open", "mobile-tools-hiding");
-        document.body.classList.add("mobile-tools-hidden");
-        toolMenu.setAttribute("aria-hidden", "true");
-    }
-
-    function chooseFiles(accept = "", capture = null) {
-        hidePermanentTools();
-        if (accept) fileInput.setAttribute("accept", accept);
-        else fileInput.removeAttribute("accept");
-        if (capture) fileInput.setAttribute("capture", capture);
-        else fileInput.removeAttribute("capture");
-        fileInput.value = "";
-        fileInput.click();
-    }
-
-    /* If the older mobile script already created/wired this menu, keep its
-       existing handlers so Analyze cannot fire twice. */
-    if (createdToolMenu) {
-        cameraBtn?.addEventListener("click", () => {
-            chooseFiles("image/*", "environment");
-        });
-
-        attachFileBtn?.addEventListener("click", () => {
-            chooseFiles();
-        });
-
-        let analyzeAfterFilePick = false;
-        analyzeBtn?.addEventListener("click", () => {
-            analyzeAfterFilePick = true;
-            chooseFiles(".pdf,.doc,.docx,.txt,.rtf,.odt,.jpg,.jpeg,.png,.webp");
-        });
-
-        fileInput.addEventListener("change", function () {
-            if (!analyzeAfterFilePick || !fileInput.files.length) return;
-            analyzeAfterFilePick = false;
-            setTimeout(function () {
-                if (typeof selectedFiles !== "undefined" && selectedFiles.length && typeof sendMessage === "function") {
-                    input.value = "Analyze my resume";
-                    if (typeof updateActionButton === "function") updateActionButton();
-                    sendMessage("Analyze my resume");
-                }
-            }, 0);
-        });
-    }
-
-    /* The layer is visible on the empty home screen, then disappears on typing. */
-    showPermanentTools();
-    input.addEventListener("input", function () {
-        if (input.value.trim() !== "") hidePermanentTools(true);
-        else if (isHomeEmpty()) showPermanentTools();
-    }, true);
-
-    /* Sidebar, Settings and Account always hide the layer. */
-    menuBtn?.addEventListener("click", hidePermanentTools, true);
-    settingsBtn?.addEventListener("click", hidePermanentTools, true);
-    accountBtn?.addEventListener("click", hidePermanentTools, true);
-
-    overlay?.addEventListener("click", function () {
-        setTimeout(function () {
-            if (isHomeEmpty()) showPermanentTools();
-        }, 0);
-    }, true);
-
-    /* New Chat clears the chatbox, so restore the layer when that happens. */
-    const chatbox = document.getElementById("chatbox");
-    if (chatbox) {
-        const observer = new MutationObserver(function () {
-            if (isHomeEmpty()) showPermanentTools();
-            else hidePermanentTools();
-        });
-        observer.observe(chatbox, { childList: true, subtree: true });
-    }
-
-    /* + no longer controls visibility; the three tools remain directly above the composer. */
-    attachBtn?.setAttribute("aria-expanded", "false");
-    attachBtn?.setAttribute("aria-label", "Add files or tools");
-    if (attachBtn) {
-        attachBtn.onclick = function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-        };
-    }
+    /* Legacy permanent-tools behavior intentionally disabled.
+       The final home composer controls tools through + only. */
 })();
 </script>
 
@@ -10817,6 +13262,9 @@ loadConversations();
     const refreshMemoryBtn = document.getElementById("refreshMemoryBtn");
 
     function openMemory() {
+        const mobileToolMenu = document.getElementById("mobileToolMenu");
+        mobileToolMenu?.classList.remove("open", "mobile-tools-hiding");
+        mobileToolMenu?.setAttribute("aria-hidden", "true");
         memoryModal?.classList.add("show");
         memoryModal?.setAttribute("aria-hidden", "false");
         loadMemory();
@@ -10877,7 +13325,7 @@ loadConversations();
             const memories = normalizeMemories(payload);
 
             if (!memories.length) {
-                memoryList.innerHTML = '<div class="memory-empty">ODDI does not have any saved memories about you yet. 🧠</div>';
+                memoryList.innerHTML = '<div class="memory-empty">ODDI does not have any saved memories about you yet. 🗂️</div>';
                 return;
             }
 
@@ -10959,7 +13407,7 @@ loadConversations();
                         textarea.readOnly = true;
                         card.classList.remove("editing");
                         saveRow.hidden = true;
-                        setMemoryStatus("Memory updated. 🧠", "success");
+                        setMemoryStatus("Memory updated. 🗂️", "success");
                     } catch (error) {
                         console.error("Memory update error:", error);
                         setMemoryStatus("Could not update memory yet.", "error");
@@ -10989,7 +13437,7 @@ loadConversations();
                         card.remove();
                         setMemoryStatus("Memory deleted. 🗑️", "success");
                         if (!memoryList.querySelector(".memory-card")) {
-                            memoryList.innerHTML = '<div class="memory-empty">No saved memories yet. 🧠</div>';
+                            memoryList.innerHTML = '<div class="memory-empty">No saved memories yet. 🗂️</div>';
                         }
                     } catch (error) {
                         console.error("Memory delete error:", error);
@@ -11020,6 +13468,218 @@ loadConversations();
     });
 })();
 </script>
+
+<style id="oddi-sidebar-9of10-final-pass">
+/* Sidebar 9/10 refinement — visual polish only, no navigation/functionality changes. */
+@media (max-width:768px) and (pointer:coarse){
+  :root{
+    --oddi-sidebar-bg:#f8f7f4;
+    --oddi-sidebar-hover:#f2f1ee;
+    --oddi-sidebar-active:#eef8f2;
+    --oddi-sidebar-line:#e4e2dc;
+    --oddi-sidebar-ink:#292a27;
+    --oddi-sidebar-muted:#6f6e68;
+  }
+
+  /* 1 + 7. Make the drawer feel like a continuation of the warm homepage. */
+  #sidebar.sidebar{
+    background:var(--oddi-sidebar-bg) !important;
+    border-right:1px solid var(--oddi-sidebar-line) !important;
+    box-shadow:8px 0 24px rgba(39,37,32,.055) !important;
+  }
+
+  /* 2. Keep the compact 194px footprint. */
+  #sidebar.sidebar{width:194px !important;min-width:194px !important;max-width:194px !important;}
+
+  /* 3. Header: quieter, cleaner, aligned with the homepage controls. */
+  #sidebar .oddi-sidebar-brand{
+    height:52px !important;
+    min-height:52px !important;
+    border-bottom:1px solid var(--oddi-sidebar-line) !important;
+  }
+  #sidebar .oddi-sidebar-brand span:first-child::after{
+    font-size:16.5px !important;
+    font-weight:800 !important;
+    letter-spacing:-.5px !important;
+  }
+  #oddiMobileSidebarSearch{
+    width:31px !important;height:31px !important;min-width:31px !important;
+    border:1px solid #e7e5df !important;
+    background:#f4f3ef !important;
+    color:#686762 !important;
+  }
+  #oddiMobileSidebarSearch:hover,#oddiMobileSidebarSearch:active{
+    background:#ecebe7 !important;color:#2a2b28 !important;
+  }
+
+  /* 4 + 18. Slightly stronger text and more deliberate row rhythm. */
+  #sidebar .new-chat-btn,#sidebar .sidebar-nav-btn,#sidebar .sidebar-bottom-btn,#sidebar .sidebar-select-controls .sidebar-select-btn{
+    min-height:38px !important;height:38px !important;
+    padding:0 10px !important;
+    border-radius:10px !important;
+    color:var(--oddi-sidebar-ink) !important;
+    font-size:12.5px !important;
+    font-weight:600 !important;
+  }
+  #sidebar .new-chat-btn{
+    background:#f1f7f3 !important;
+    border:1px solid rgba(32,199,107,.09) !important;
+    margin-bottom:4px !important;
+  }
+  #sidebar .new-chat-btn:hover{background:#eaf5ee !important;}
+  #sidebar .sidebar-nav-btn:hover,#sidebar .sidebar-bottom-btn:hover{background:var(--oddi-sidebar-hover) !important;}
+
+  /* 6. One deliberately restrained icon treatment. */
+  #sidebar .new-chat-icon,#sidebar .sidebar-nav-icon,#sidebar .sidebar-bottom-icon,#sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{
+    width:17px !important;min-width:17px !important;height:17px !important;
+    color:#6c6c66 !important;
+    font-size:0 !important;
+    opacity:.92 !important;
+  }
+  #sidebar .new-chat-icon::after{content:"+" !important;font-size:18px !important;font-weight:500 !important;}
+  #sidebar .sidebar-nav-icon::after{content:"⌕" !important;font-size:18px !important;font-weight:400 !important;}
+  #sidebar #archivedBtn .sidebar-bottom-icon::after{content:"□" !important;font-size:16px !important;font-weight:400 !important;}
+  #sidebar #settingsBtn .sidebar-bottom-icon::after{content:"⚙" !important;font-size:14px !important;font-weight:400 !important;}
+
+  /* 8. Section labels are visible enough to scan without becoming loud. */
+  #sidebar .sidebar-section-toggle{
+    min-height:34px !important;height:34px !important;
+    margin:10px 0 3px !important;
+    padding:0 9px !important;
+    color:#74736d !important;
+    font-size:9.5px !important;
+    font-weight:800 !important;
+    letter-spacing:.12em !important;
+  }
+  #sidebar .sidebar-section-chevron{
+    width:25px !important;height:25px !important;
+    color:#96948d !important;
+    font-size:16px !important;
+  }
+  #sidebar .sidebar-section-toggle:hover .sidebar-section-chevron{background:#ecebe7 !important;color:#65645e !important;}
+
+  /* 9 + 11 + 13. Conversation rows stay quiet, readable and cleanly truncated. */
+  #sidebar .history-item{
+    min-height:39px !important;height:39px !important;
+    margin:2px 0 !important;
+    padding:0 9px !important;
+    border:1px solid transparent !important;
+    border-radius:9px !important;
+  }
+  #sidebar .history-title{
+    font-size:11.7px !important;
+    font-weight:560 !important;
+    line-height:39px !important;
+    color:#3b3c38 !important;
+  }
+  #sidebar .history-title::before{
+    width:4px !important;height:4px !important;
+    margin-right:8px !important;
+    background:#aaa8a0 !important;
+  }
+  #sidebar .history-item:hover{background:#f2f1ee !important;}
+
+  /* 9. Active conversation is now unmistakably selected, but still subtle. */
+  #sidebar .history-item.active-chat{
+    background:var(--oddi-sidebar-active) !important;
+    border-color:rgba(32,199,107,.11) !important;
+    box-shadow:none !important;
+  }
+  #sidebar .history-item.active-chat .history-title{
+    color:#252823 !important;
+    font-weight:680 !important;
+  }
+  #sidebar .history-item.active-chat .history-title::before{
+    width:4px !important;height:12px !important;
+    margin-right:8px !important;
+    border-radius:3px !important;
+    background:var(--oddi-accent,#20c76b) !important;
+  }
+
+  /* 10. Checkboxes remain a selection-mode-only affordance. */
+  #sidebar .chat-select-check{display:none !important;}
+  #sidebar.sidebar.is-selecting .chat-select-check,#sidebar .history-item.chat-selected .chat-select-check{display:inline-flex !important;}
+
+  /* 15 + 16. Profile gets a clearer hierarchy and breathing room. */
+  #sidebar .oddi-account-footer{
+    flex-basis:64px !important;height:64px !important;min-height:64px !important;
+    margin-top:0 !important;
+    padding:10px 6px max(10px,env(safe-area-inset-bottom)) !important;
+    border-top:1px solid var(--oddi-sidebar-line) !important;
+    gap:9px !important;
+    background:var(--oddi-sidebar-bg) !important;
+  }
+  #sidebar .oddi-account-avatar{
+    width:31px !important;height:31px !important;min-width:31px !important;
+    font-size:9px !important;font-weight:800 !important;
+  }
+  #sidebar .oddi-account-name{
+    font-size:12px !important;
+    font-weight:750 !important;
+    line-height:1.25 !important;
+    color:#292a27 !important;
+  }
+  #sidebar .oddi-account-plan{
+    margin-top:3px !important;
+    font-size:9.5px !important;
+    color:#77766f !important;
+    line-height:1.2 !important;
+  }
+
+  /* 5 + 14. Rounded controls and larger chevron hit areas, without extra UI. */
+  #sidebar .sidebar-bottom-nav{gap:2px !important;}
+  #sidebar .sidebar-bottom-btn{border-radius:10px !important;}
+
+  /* Dark mode keeps the same hierarchy rather than inverting the whole design. */
+  body.dark-mode #sidebar.sidebar{
+    background:#0e0e0e !important;
+    border-right-color:#292929 !important;
+    box-shadow:8px 0 24px rgba(0,0,0,.28) !important;
+  }
+  body.dark-mode #sidebar .oddi-sidebar-brand{border-bottom-color:#292929 !important;}
+  body.dark-mode #oddiMobileSidebarSearch{background:#151515 !important;border-color:#292929 !important;color:#aaa !important;}
+  body.dark-mode #oddiMobileSidebarSearch:hover,body.dark-mode #oddiMobileSidebarSearch:active{background:#1d1d1d !important;color:#fff !important;}
+  body.dark-mode #sidebar .new-chat-btn{background:#142219 !important;border-color:rgba(32,199,107,.14) !important;}
+  body.dark-mode #sidebar .new-chat-btn:hover{background:#182b20 !important;}
+  body.dark-mode #sidebar .sidebar-nav-btn:hover,body.dark-mode #sidebar .sidebar-bottom-btn:hover{background:#181818 !important;}
+  body.dark-mode #sidebar .sidebar-section-toggle{color:#999 !important;}
+  body.dark-mode #sidebar .history-title{color:#d1d1cd !important;}
+  body.dark-mode #sidebar .history-title::before{background:#66665f !important;}
+  body.dark-mode #sidebar .history-item:hover{background:#181818 !important;}
+  body.dark-mode #sidebar .history-item.active-chat{background:#15231b !important;border-color:rgba(32,199,107,.15) !important;}
+  body.dark-mode #sidebar .history-item.active-chat .history-title{color:#f1f1ee !important;}
+  body.dark-mode #sidebar .oddi-account-footer{background:#0e0e0e !important;border-top-color:#292929 !important;}
+  body.dark-mode #sidebar .oddi-account-name{color:#eee !important;}
+  body.dark-mode #sidebar .oddi-account-plan{color:#8d8d87 !important;}
+}
+</style>
+
+
+<style id="oddi-basic-center-suggestions">
+  /* Basic visual correction: center the section label and suggestion-card content. */
+  .home-suggestion-label{
+    text-align:center !important;
+    width:min(100%,1000px) !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+  .quick-actions .action-card{
+    text-align:center !important;
+  }
+  .quick-actions .action-card-main{
+    justify-content:center !important;
+    align-items:center !important;
+  }
+  .quick-actions .action-card-copy{
+    align-items:center !important;
+    text-align:center !important;
+  }
+  .quick-actions .action-arrow{
+    display:none !important;
+  }
+</style>
 </body>
 
 
@@ -12437,7 +15097,7 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
         selectBtn.setAttribute("aria-pressed", window.__oddiSelectMode ? "true" : "false");
         selectLabel.textContent = window.__oddiSelectMode
             ? (count ? `${count} selected` : "Cancel")
-            : "Select";
+            : "Select Button";
         bulkActions.hidden = !window.__oddiSelectMode;
         moveBtn.disabled = count === 0;
         shareBtn.disabled = count === 0;
@@ -12611,3 +15271,1343 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
     window.__oddiClearChatSelection = clearSelection;
 })();
 </script>
+
+<style id="oddi-home-10-pass-final">
+/* =========================================================
+   ODDI HOME — 15 IMPROVEMENTS / FINAL POLISH
+   ========================================================= */
+
+/* 1–2. Tighten the vertical composition + improve secondary typography. */
+.welcome-message{
+    box-sizing:border-box !important;
+    width:min(820px,100%) !important;
+    margin:0 auto !important;
+    padding:38px 18px 120px !important;
+    max-height:none !important;
+}
+.welcome-message h2{
+    margin:0 auto 10px !important;
+    font-size:clamp(30px,4vw,42px) !important;
+    line-height:1.08 !important;
+    letter-spacing:-1.2px !important;
+}
+.welcome-message > p{
+    max-width:680px !important;
+    margin:0 auto !important;
+    font-size:15px !important;
+    line-height:1.5 !important;
+}
+.home-memory-context{
+    width:min(620px,calc(100% - 24px)) !important;
+    margin:12px auto 0 !important;
+    font-size:12px !important;
+    line-height:1.45 !important;
+    font-weight:550 !important;
+    color:#6f6f6f !important;
+}
+.home-suggestion-label{
+    margin:16px auto 9px !important;
+    width:min(760px,100%) !important;
+    padding:0 4px !important;
+    text-align:left !important;
+    font-size:10px !important;
+    line-height:1.2 !important;
+    letter-spacing:.09em !important;
+    color:#888 !important;
+}
+
+/* 3–4. Compact suggested actions, readable and horizontally scrollable. */
+.quick-actions{
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    justify-content:flex-start !important;
+    align-items:center !important;
+    width:min(760px,100%) !important;
+    margin:0 auto !important;
+    gap:9px !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    padding:2px 4px 6px !important;
+    scrollbar-width:none !important;
+}
+.quick-actions::-webkit-scrollbar{display:none !important;}
+.action-card{
+    flex:0 0 auto !important;
+    width:auto !important;
+    min-width:max-content !important;
+    min-height:44px !important;
+    height:44px !important;
+    padding:0 15px !important;
+    border:1px solid #dedede !important;
+    border-radius:999px !important;
+    background:#f9f9f9 !important;
+    color:#222 !important;
+    box-shadow:none !important;
+    gap:8px !important;
+    white-space:nowrap !important;
+    text-align:left !important;
+    transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease !important;
+}
+.action-card-main{gap:8px !important;}
+.action-card-icon{
+    width:22px !important;
+    height:22px !important;
+    min-width:22px !important;
+    border-radius:50% !important;
+    background:#f1f1f1 !important;
+    border:1px solid #e5e5e5 !important;
+    color:#666 !important;
+}
+.action-card-icon svg{width:14px !important;height:14px !important;}
+.action-card-copy{display:block !important;}
+.action-card-copy strong{
+    font-size:12px !important;
+    line-height:1 !important;
+    font-weight:750 !important;
+    color:#202020 !important;
+    white-space:nowrap !important;
+}
+.action-card-copy small,.action-arrow{display:none !important;}
+.action-card:hover{
+    transform:translateY(-1px) !important;
+    border-color:#c9c9c9 !important;
+    background:#f4f4f4 !important;
+    box-shadow:0 5px 14px rgba(0,0,0,.06) !important;
+}
+.action-card:active{transform:scale(.985) !important;}
+
+/* 5. Continue card is a real readable resume of the latest conversation. */
+.continue-card{
+    width:min(620px,100%) !important;
+    min-height:92px !important;
+    margin:16px auto 0 !important;
+    padding:15px 16px !important;
+    border:1px solid #dfdfdf !important;
+    border-radius:16px !important;
+    background:#fafafa !important;
+    box-shadow:0 4px 18px rgba(0,0,0,.045) !important;
+}
+.continue-main{min-width:0 !important;gap:4px !important;}
+.continue-label{
+    font-size:10px !important;
+    line-height:1.2 !important;
+    letter-spacing:.09em !important;
+    color:#8b8b8b !important;
+}
+.continue-title{
+    font-size:14px !important;
+    line-height:1.25 !important;
+    font-weight:780 !important;
+    color:#202020 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+}
+.continue-preview{
+    font-size:11px !important;
+    line-height:1.4 !important;
+    color:#767676 !important;
+    white-space:normal !important;
+    display:-webkit-box !important;
+    -webkit-line-clamp:2 !important;
+    -webkit-box-orient:vertical !important;
+    overflow:hidden !important;
+}
+.continue-btn{
+    flex:0 0 auto !important;
+    min-height:38px !important;
+    padding:0 13px !important;
+    border:1px solid #d6d6d6 !important;
+    border-radius:10px !important;
+    background:#fff !important;
+    color:#222 !important;
+    font-size:11px !important;
+    font-weight:750 !important;
+}
+.continue-btn:hover{background:#f2f2f2 !important;transform:translateY(-1px);}
+
+/* 6. Subtle AI identity, no avatar/robot. */
+.welcome-message::before{
+    content:"✦ Career AI";
+    display:block !important;
+    width:max-content !important;
+    margin:0 auto 9px !important;
+    color:#858585 !important;
+    font-size:10px !important;
+    line-height:1 !important;
+    font-weight:750 !important;
+    letter-spacing:.09em !important;
+    text-transform:uppercase !important;
+}
+
+/* 7. Keep the composer as the primary interaction. */
+.input-area{
+    min-height:62px !important;
+    height:62px !important;
+    border-radius:20px !important;
+}
+.input-area textarea{
+    min-width:0 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+}
+.input-area textarea::placeholder{white-space:nowrap !important;}
+
+/* 8. Remove accidental visual noise around the home state. */
+.chatbox{background:#fff !important;}
+
+/* 9. Dark-mode layer separation. */
+body.dark-mode .chatbox{background:#0d0d0d !important;}
+body.dark-mode .welcome-message > p{color:#a0a0a0 !important;}
+body.dark-mode .home-memory-context{color:#9b9b9b !important;}
+body.dark-mode .home-suggestion-label{color:#777 !important;}
+body.dark-mode .action-card{
+    background:#151515 !important;
+    border-color:#2b2b2b !important;
+    color:#f2f2f2 !important;
+}
+body.dark-mode .action-card-icon{background:#1c1c1c !important;border-color:#2e2e2e !important;color:#bcbcbc !important;}
+body.dark-mode .action-card-copy strong{color:#f2f2f2 !important;}
+body.dark-mode .action-card:hover{background:#1b1b1b !important;border-color:#3b3b3b !important;}
+body.dark-mode .continue-card{background:#121212 !important;border-color:#2a2a2a !important;box-shadow:none !important;}
+body.dark-mode .continue-label{color:#858585 !important;}
+body.dark-mode .continue-title{color:#f0f0f0 !important;}
+body.dark-mode .continue-preview{color:#999 !important;}
+body.dark-mode .continue-btn{background:#1a1a1a !important;border-color:#363636 !important;color:#f2f2f2 !important;}
+body.dark-mode .continue-btn:hover{background:#222 !important;}
+body.dark-mode .home-learning-card{background:#121212 !important;border-color:#2a2a2a !important;box-shadow:none !important;}
+body.dark-mode .home-learning-title{color:#f2f2f2 !important;}
+body.dark-mode .home-learning-goal{color:#9a9a9a !important;}
+body.dark-mode .home-learning-btn{background:#171717 !important;color:#f2f2f2 !important;border-color:#2b2b2b !important;}
+body.dark-mode .action-card{background:#151515 !important;border-color:#2b2b2b !important;color:#f2f2f2 !important;}
+body.dark-mode .action-card:hover{background:#1b1b1b !important;border-color:#3b3b3b !important;box-shadow:none !important;}
+body.dark-mode .action-card-icon{background:#1b1b1b !important;border-color:#2f2f2f !important;color:#c8c8c8 !important;}
+body.dark-mode .action-card-copy strong{color:#f2f2f2 !important;}
+body.dark-mode .home-next-move h3{color:#e7e7e7 !important;}
+body.dark-mode .home-next-move p{color:#858585 !important;}
+body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !important;}
+
+/* 10. Accessibility: visible keyboard focus. */
+.action-card:focus-visible,.continue-btn:focus-visible,.home-prompt-chip:focus-visible,
+.input-area button:focus-visible,.menu-btn:focus-visible,.header-more-btn:focus-visible,#themeBtn:focus-visible{
+    outline:2px solid #8a8a8a !important;
+    outline-offset:3px !important;
+}
+
+/* 11–14. Mobile: move content upward, enlarge secondary text, preserve spacing,
+   and make the composer safe-area aware. */
+@media (max-width:768px) and (pointer:coarse){
+    .chatbox{padding:0 10px 96px !important;}
+    .welcome-message{
+        width:100% !important;
+        min-height:auto !important;
+        max-height:none !important;
+        padding:22px 4px 112px !important;
+        justify-content:flex-start !important;
+        transform:none !important;
+    }
+    .welcome-message::before{margin-bottom:8px !important;font-size:9.5px !important;}
+    .welcome-message h2{
+        font-size:clamp(24px,7.2vw,30px) !important;
+        line-height:1.08 !important;
+        letter-spacing:-.65px !important;
+        margin-bottom:9px !important;
+    }
+    .welcome-message > p{
+        max-width:330px !important;
+        font-size:12.5px !important;
+        line-height:1.45 !important;
+    }
+    .home-memory-context{
+        width:min(100%,340px) !important;
+        margin-top:10px !important;
+        font-size:10.5px !important;
+        line-height:1.4 !important;
+        font-weight:550 !important;
+    }
+    .home-suggestion-label{
+        width:min(100%,340px) !important;
+        margin:15px auto 8px !important;
+        padding:0 !important;
+        font-size:9px !important;
+    }
+    .quick-actions{
+        width:100% !important;
+        margin:0 !important;
+        gap:7px !important;
+        padding:2px 0 6px !important;
+    }
+    .action-card{
+        min-height:42px !important;
+        height:42px !important;
+        padding:0 13px !important;
+    }
+    .action-card-icon{width:21px !important;height:21px !important;min-width:21px !important;}
+    .action-card-copy strong{font-size:10.5px !important;}
+    .continue-card{
+        width:100% !important;
+        min-height:88px !important;
+        margin-top:14px !important;
+        padding:14px !important;
+    }
+    .continue-label{font-size:9px !important;}
+    .continue-title{font-size:12.5px !important;}
+    .continue-preview{font-size:10px !important;}
+    .continue-btn{min-height:36px !important;font-size:10px !important;padding:0 11px !important;}
+    .input-area{
+        left:6px !important;
+        right:6px !important;
+        bottom:max(6px,env(safe-area-inset-bottom)) !important;
+        width:auto !important;
+        height:60px !important;
+        min-height:60px !important;
+        border-radius:19px !important;
+    }
+    .input-area textarea{
+        font-size:14px !important;
+        line-height:1.2 !important;
+        padding:12px 10px !important;
+    }
+}
+@media (max-width:420px) and (pointer:coarse){
+    .welcome-message{padding-top:18px !important;}
+    .welcome-message h2{font-size:24px !important;}
+    .welcome-message > p{font-size:12px !important;}
+    .home-memory-context{font-size:10px !important;}
+    .continue-card{min-height:84px !important;padding:12px !important;}
+    .continue-title{font-size:12px !important;}
+    .continue-preview{font-size:9.5px !important;}
+}
+
+/* 15. Mobile tools: hidden by default; open only from +. */
+@media (max-width:768px) and (pointer:coarse){
+    #mobileToolMenu{
+        position:fixed !important;
+        left:50% !important;
+        right:auto !important;
+        bottom:calc(max(6px,env(safe-area-inset-bottom)) + 69px) !important;
+        transform:translateX(-50%) translateY(8px) !important;
+        width:min(340px,calc(100vw - 24px)) !important;
+        max-width:340px !important;
+        box-sizing:border-box !important;
+        display:none !important;
+        grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+        align-items:stretch !important;
+        gap:6px !important;
+        padding:7px !important;
+        border:1px solid #dedede !important;
+        border-radius:15px !important;
+        background:rgba(255,255,255,.98) !important;
+        box-shadow:0 16px 40px rgba(0,0,0,.16) !important;
+        backdrop-filter:blur(16px) !important;
+        -webkit-backdrop-filter:blur(16px) !important;
+        z-index:2147483001 !important;
+        opacity:0 !important;
+        pointer-events:none !important;
+    }
+    #mobileToolMenu.open{
+        display:grid !important;
+        opacity:1 !important;
+        pointer-events:auto !important;
+        transform:translateX(-50%) translateY(0) !important;
+        transition:opacity .16s ease,transform .16s ease !important;
+    }
+    #mobileToolMenu .mobile-tool-item{
+        width:100% !important;
+        min-height:48px !important;
+        height:48px !important;
+        padding:7px 5px !important;
+        box-sizing:border-box !important;
+        display:flex !important;
+        flex-direction:column !important;
+        align-items:center !important;
+        justify-content:center !important;
+        gap:4px !important;
+        border:0 !important;
+        border-radius:10px !important;
+        background:transparent !important;
+        color:#333 !important;
+        font-size:10px !important;
+        font-weight:650 !important;
+        line-height:1.1 !important;
+        white-space:nowrap !important;
+    }
+    #mobileToolMenu .mobile-tool-item:hover,#mobileToolMenu .mobile-tool-item:active{background:#f1f1f1 !important;}
+    #mobileToolMenu .mobile-tool-icon{font-size:18px !important;line-height:1 !important;width:auto !important;min-width:0 !important;}
+    #mobileToolMenu .mobile-tool-item:nth-child(3)::after{content:"Review resume";font-size:0;}
+    #mobileToolMenu .mobile-tool-item:nth-child(3)>span:last-child{font-size:0 !important;}
+    #mobileToolMenu .mobile-tool-item:nth-child(3)>span:last-child::after{content:"Review resume";font-size:10px;}
+    body.dark-mode #mobileToolMenu{background:rgba(18,18,18,.98) !important;border-color:#2d2d2d !important;box-shadow:0 20px 50px rgba(0,0,0,.45) !important;}
+    body.dark-mode #mobileToolMenu .mobile-tool-item{color:#f0f0f0 !important;}
+    body.dark-mode #mobileToolMenu .mobile-tool-item:hover,body.dark-mode #mobileToolMenu .mobile-tool-item:active{background:#222 !important;}
+}
+
+@media (prefers-reduced-motion:reduce){
+    .action-card,.continue-btn,#mobileToolMenu,#mobileToolMenu .mobile-tool-item{transition:none !important;}
+}
+</style>
+<script id="oddi-home-10-pass-js">
+(function () {
+    "use strict";
+
+    const welcome = document.getElementById("welcomeContainer");
+    const input = document.getElementById("userInput");
+    if (!welcome) return;
+
+    async function loadHomeMemory() {
+        const mount = document.getElementById("homeMemoryContext");
+        if (!mount) return;
+        if (document.body?.dataset?.loggedIn === "false") return;
+        try {
+            const response = await fetch("/api/memory", {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin",
+                cache: "no-store"
+            });
+            if (!response.ok) return;
+            const payload = await response.json();
+            let memories = [];
+            if (Array.isArray(payload)) memories = payload;
+            else if (Array.isArray(payload?.memories)) memories = payload.memories;
+            else if (payload && typeof payload.memories === "object") {
+                memories = Object.entries(payload.memories).map(([category, memory]) => ({ category, memory }));
+            } else if (payload && typeof payload === "object") {
+                memories = Object.entries(payload).map(([category, memory]) => ({ category, memory }));
+            }
+
+            const wanted = new Map();
+            memories.forEach(item => {
+                const category = String(item?.category ?? item?.memory_key ?? "").trim().toLowerCase();
+                const memory = String(item?.memory ?? item?.memory_value ?? item?.value ?? "").trim();
+                if (category && memory) wanted.set(category, memory);
+            });
+
+            const clean = (value) => String(value)
+                .replace(/^the user'?s?\s+/i, "")
+                .replace(/^the user is currently learning\s+/i, "")
+                .replace(/^learning\s+/i, "")
+                .replace(/^the user'?s? goal is\s+/i, "")
+                .replace(/^goal:\s*/i, "")
+                .trim();
+
+            const learning = clean(wanted.get("learning") || "");
+            const goal = clean(wanted.get("goal") || "");
+            const role = clean(wanted.get("preferred_job_role") || "");
+            const skills = clean(wanted.get("skills") || "");
+            const parts = [];
+            if (learning) parts.push(`Learning ${learning}`);
+            if (goal) parts.push(`Goal: ${goal}`);
+            if (!parts.length && role) parts.push(`Role focus: ${role}`);
+            if (!parts.length && skills) parts.push(`Skills: ${skills}`);
+            if (!parts.length) return;
+
+            mount.textContent = parts.slice(0, 2).join(" · ");
+            mount.hidden = false;
+        } catch (_) {
+            /* Memory is optional UI context; never block the home screen. */
+        }
+    }
+
+    function getHomeConversations() {
+        return Array.isArray(window.oddiConversations) ? window.oddiConversations : null;
+    }
+
+    function latestRealConversation(list) {
+        const usable = list.filter(item => item && item.id && Array.isArray(item.messages) && item.messages.length);
+        if (!usable.length) return null;
+        usable.sort((a, b) => {
+            const aa = Date.parse(a.updated_at || a.created_at || "") || 0;
+            const bb = Date.parse(b.updated_at || b.created_at || "") || 0;
+            return bb - aa;
+        });
+        return usable[0];
+    }
+
+    function renderContinueCard() {
+        const mount = document.getElementById("continueCardMount");
+        if (!mount) return;
+        if (document.querySelector(".chatbox.ui-scrolled")) return;
+
+        const list = getHomeConversations();
+        if (!list) return;
+        const candidate = latestRealConversation(list);
+        if (!candidate) {
+            mount.replaceChildren();
+            return;
+        }
+
+        const previewMessage = [...candidate.messages].reverse().find(item =>
+            item && (item.content || item.text || item.message)
+        );
+        const preview = String(
+            previewMessage?.content || previewMessage?.text || previewMessage?.message || ""
+        ).replace(/\s+/g, " ").trim();
+
+        mount.innerHTML = `
+            <div class="continue-card" id="continueHomeCard">
+                <div class="continue-main">
+                    <span class="continue-label">Continue where you left off</span>
+                    <span class="continue-title"></span>
+                    <span class="continue-preview"></span>
+                </div>
+                <button type="button" class="continue-btn" id="continueHomeBtn">Continue →</button>
+            </div>`;
+
+        const titleEl = mount.querySelector(".continue-title");
+        const previewEl = mount.querySelector(".continue-preview");
+        if (titleEl) titleEl.textContent = String(candidate.title || "Recent conversation");
+        if (previewEl) previewEl.textContent = preview || "Open your latest conversation";
+
+        mount.querySelector("#continueHomeBtn")?.addEventListener("click", () => {
+            const currentList = getHomeConversations() || [];
+            const index = currentList.findIndex(item => String(item?.id) === String(candidate.id));
+            if (index >= 0 && typeof window.__oddiOpenConversation === "function") {
+                window.__oddiOpenConversation(index);
+            } else {
+                document.getElementById("menuBtn")?.click();
+            }
+        });
+    }
+
+    function setupMobileTools() {
+        const isMobile = () => window.matchMedia("(max-width:768px) and (pointer:coarse)").matches;
+        const attachBtn = document.getElementById("attach-btn");
+        const menu = document.getElementById("mobileToolMenu");
+        if (!attachBtn || !menu) return;
+
+        function closeMenu() {
+            menu.classList.remove("open", "mobile-tools-hiding");
+            menu.setAttribute("aria-hidden", "true");
+            attachBtn.setAttribute("aria-expanded", "false");
+            attachBtn.setAttribute("aria-label", "Add files or tools");
+            attachBtn.title = "Add files or tools";
+            document.body.classList.add("mobile-tools-hidden");
+        }
+
+        function openMenu() {
+            if (!isMobile()) return;
+            menu.classList.remove("mobile-tools-hiding");
+            menu.classList.add("open");
+            menu.setAttribute("aria-hidden", "false");
+            attachBtn.setAttribute("aria-expanded", "true");
+            attachBtn.setAttribute("aria-label", "Close message tools");
+            attachBtn.title = "Close message tools";
+            document.body.classList.remove("mobile-tools-hidden");
+        }
+
+        /* Final + behavior wins over all previous mobile composer scripts. */
+        attachBtn.onclick = function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!isMobile()) return;
+            if (menu.classList.contains("open")) closeMenu();
+            else openMenu();
+        };
+
+        menu.addEventListener("click", function (event) {
+            if (event.target.closest("#mobileAnalyzeBtn")) {
+                const text = "Review my resume";
+                if (input) {
+                    input.value = text;
+                    input.dispatchEvent(new Event("input", { bubbles: true }));
+                }
+                closeMenu();
+            } else if (event.target.closest(".mobile-tool-item")) {
+                closeMenu();
+            }
+        }, true);
+
+        document.addEventListener("click", function (event) {
+            if (!isMobile() || !menu.classList.contains("open")) return;
+            if (menu.contains(event.target) || attachBtn.contains(event.target)) return;
+            closeMenu();
+        }, true);
+
+        input?.addEventListener("input", function () {
+            if (isMobile() && input.value.trim()) closeMenu();
+        }, true);
+
+        ["menuBtn","settingsBtn","headerMoreBtn","memoryBtn","binBtn","shortcutsBtn"].forEach(id => {
+            document.getElementById(id)?.addEventListener("click", closeMenu, true);
+        });
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "Escape" && isMobile()) closeMenu();
+        }, true);
+
+        closeMenu();
+    }
+
+    loadHomeMemory();
+    renderContinueCard();
+    setTimeout(renderContinueCard, 600);
+    setTimeout(renderContinueCard, 1400);
+    setTimeout(renderContinueCard, 2600);
+
+    const chatbox = document.getElementById("chatbox");
+    if (chatbox) {
+        new MutationObserver(() => {
+            if (chatbox.classList.contains("ui-scrolled")) {
+                document.getElementById("continueHomeCard")?.remove();
+            }
+        }).observe(chatbox, { attributes: true, attributeFilter: ["class"] });
+    }
+
+    setupMobileTools();
+})();
+</script>
+
+
+
+<script id="oddi-career-home-learning-js">
+(function(){
+    "use strict";
+    const mount=document.getElementById("homeLearningMount");
+    if(!mount) return;
+
+    async function loadLearningCard(){
+        if(document.body?.dataset?.loggedIn === "false") return;
+        try{
+            const response=await fetch("/api/memory",{
+                method:"GET",
+                headers:{"Accept":"application/json"},
+                credentials:"same-origin",
+                cache:"no-store"
+            });
+            if(!response.ok) return;
+            const payload=await response.json();
+            let memories=[];
+            if(Array.isArray(payload)) memories=payload;
+            else if(Array.isArray(payload?.memories)) memories=payload.memories;
+            else if(payload && typeof payload.memories === "object") memories=Object.entries(payload.memories).map(([category,memory])=>({category,memory}));
+            else if(payload && typeof payload === "object") memories=Object.entries(payload).map(([category,memory])=>({category,memory}));
+
+            const getValue=(wanted)=>{
+                const item=memories.find(entry=>String(entry?.category ?? entry?.memory_key ?? "").trim().toLowerCase()===wanted);
+                return String(item?.memory ?? item?.memory_value ?? item?.value ?? "").trim();
+            };
+            const clean=value=>String(value)
+                .replace(/^the user'?s?\s+/i,"")
+                .replace(/^the user is currently learning\s+/i,"")
+                .replace(/^learning\s+/i,"")
+                .replace(/^the user'?s? goal is\s+/i,"")
+                .replace(/^goal:\s*/i,"")
+                .trim();
+
+            const learning=clean(getValue("learning"));
+            const goal=clean(getValue("goal"));
+            if(!learning && !goal) return;
+
+            mount.innerHTML=`
+                <article class="home-learning-card">
+                    <div class="home-learning-main">
+                        <span class="home-learning-kicker">What I'm learning</span>
+                        <strong class="home-learning-title"></strong>
+                        <span class="home-learning-goal"></span>
+                    </div>
+                    <button type="button" class="home-learning-btn" id="homeLearningBtn">Continue learning →</button>
+                </article>`;
+            document.getElementById("continueCardMount")?.replaceChildren();
+
+            const title=mount.querySelector(".home-learning-title");
+            const goalEl=mount.querySelector(".home-learning-goal");
+            if(title) title.textContent=learning || "Your current focus";
+            if(goalEl) goalEl.textContent=goal ? `Goal: ${goal}` : "Keep building toward your next milestone";
+
+            mount.querySelector("#homeLearningBtn")?.addEventListener("click",()=>{
+                const list=Array.isArray(window.oddiConversations)?window.oddiConversations:[];
+                if(typeof window.__oddiOpenConversation === "function" && list.length){
+                    const usable=list.filter(item=>item && item.id && Array.isArray(item.messages) && item.messages.length);
+                    usable.sort((a,b)=>(Date.parse(b?.updated_at||b?.created_at||"")||0)-(Date.parse(a?.updated_at||a?.created_at||"")||0));
+                    const latest=usable[0];
+                    if(latest){
+                        const index=list.findIndex(item=>String(item?.id)===String(latest.id));
+                        if(index>=0){window.__oddiOpenConversation(index);return;}
+                    }
+                }
+                document.getElementById("userInput")?.focus();
+            });
+        }catch(_){
+            /* Optional home-memory enhancement: never break the page. */
+        }
+    }
+
+    loadLearningCard();
+})();
+</script>
+<style id="oddi-two-final-adjustments">
+/* Final 2-request polish: mobile home positioning + equal suggestion chip sizing. */
+@media (max-width:768px) and (pointer:coarse){
+    /* 1) Give the header breathing room, then start the home content noticeably lower. */
+    .header{
+        transform:none !important;
+    }
+    .welcome-message{
+        padding-top:0 !important;
+    }
+
+    /* 2) Keep all four suggestion chips in one horizontal row and make every chip
+       exactly the same width, matching the largest action instead of auto-sizing. */
+    .quick-actions{
+        flex-direction:row !important;
+        flex-wrap:nowrap !important;
+        align-items:stretch !important;
+        justify-content:flex-start !important;
+        overflow-x:auto !important;
+        overflow-y:hidden !important;
+    }
+    .action-card{
+        flex:0 0 auto !important;
+        width:auto !important;
+        min-width:max-content !important;
+        max-width:none !important;
+        height:44px !important;
+        min-height:44px !important;
+        max-height:44px !important;
+        box-sizing:border-box !important;
+    }
+}
+</style>
+
+<style id="oddi-career-home-14-final">
+/* ODDI CAREER HOME — final 14-improvement implementation. */
+:root{
+    --oddi-accent:#20c76b;
+    --oddi-home-bg:#0d0d0d;
+    --oddi-home-surface:#121212;
+    --oddi-home-input:#111111;
+    --oddi-home-border:#242424;
+    --oddi-home-text:#f2f2f2;
+    --oddi-home-muted:#9a9a9a;
+    --oddi-home-tertiary:#6f6f6f;
+}
+
+/* 1–2 + 10. Intentional composition and consistent spacing. */
+@media (min-width:769px){
+    .chatbox{padding:28px 28px 132px !important;}
+    .welcome-message{
+        width:min(760px,100%) !important;
+        margin:0 auto !important;
+        padding:30px 18px 90px !important;
+        text-align:center !important;
+    }
+    .welcome-message::before{margin:0 auto 12px !important;}
+    .welcome-message h2{
+        max-width:700px !important;
+        margin:0 auto 9px !important;
+        font-size:30px !important;
+        line-height:1.08 !important;
+        letter-spacing:-.8px !important;
+    }
+    .welcome-message > p{font-size:14px !important;line-height:1.48 !important;}
+}
+
+/* 3. More recognizable Career AI identity. */
+.welcome-message::before{
+    content:"✦ CAREER AI" !important;
+    color:var(--oddi-accent) !important;
+    font-size:10px !important;
+    font-weight:800 !important;
+    letter-spacing:.12em !important;
+}
+
+/* 4–5. Learning card: one-glance, memory-backed, actionable. */
+#homeLearningMount{
+    width:min(620px,100%) !important;
+    margin:24px auto 0 !important;
+}
+.home-learning-card{
+    width:100% !important;
+    box-sizing:border-box !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:18px !important;
+    padding:17px 18px !important;
+    border:1px solid #e3e3e3 !important;
+    border-radius:16px !important;
+    background:#fafafa !important;
+    box-shadow:0 8px 28px rgba(0,0,0,.06) !important;
+    text-align:left !important;
+}
+.home-learning-main{min-width:0 !important;flex:1 1 auto !important;display:flex !important;flex-direction:column !important;gap:5px !important;}
+.home-learning-kicker{
+    font-size:9px !important;
+    line-height:1.2 !important;
+    letter-spacing:.11em !important;
+    text-transform:uppercase !important;
+    color:#858585 !important;
+    font-weight:800 !important;
+}
+.home-learning-title{
+    font-size:16px !important;
+    line-height:1.2 !important;
+    color:#202020 !important;
+    font-weight:800 !important;
+}
+.home-learning-goal{font-size:11.5px !important;line-height:1.4 !important;color:#777 !important;}
+.home-learning-btn{
+    flex:0 0 auto !important;
+    min-height:38px !important;
+    height:38px !important;
+    padding:0 13px !important;
+    border:1px solid #2b2b2b !important;
+    border-radius:10px !important;
+    background:#171717 !important;
+    color:#f2f2f2 !important;
+    font-size:11px !important;
+    font-weight:800 !important;
+    white-space:nowrap !important;
+    cursor:pointer !important;
+    transition:transform .18s ease,background .18s ease,border-color .18s ease !important;
+}
+.home-learning-btn:hover{transform:translateY(-1px) !important;background:#1c1c1c !important;border-color:#3a3a3a !important;}
+
+/* 6. Suggested actions feel like AI actions, not mini-cards. */
+.home-suggestion-label{
+    color:#a4a4a4 !important;
+    font-size:10px !important;
+    font-weight:800 !important;
+    letter-spacing:.1em !important;
+}
+.quick-actions{
+    gap:10px !important;
+    padding:2px 2px 6px !important;
+}
+.action-card{
+    height:44px !important;
+    min-height:44px !important;
+    flex:0 0 auto !important;
+    padding:0 15px !important;
+    border:1px solid #dedede !important;
+    border-radius:999px !important;
+    background:#f9f9f9 !important;
+    color:#202020 !important;
+    box-shadow:none !important;
+}
+.action-card:hover{background:#f3f3f3 !important;border-color:#c6c6c6 !important;box-shadow:0 5px 14px rgba(0,0,0,.05) !important;}
+.action-card-icon{background:#f1f1f1 !important;border-color:#e5e5e5 !important;color:#666 !important;}
+.action-card-copy strong{font-size:12px !important;color:#202020 !important;}
+
+/* 7. Composer gets a deliberate interaction hierarchy. */
+.input-area{transition:border-color .2s ease,box-shadow .2s ease,background .2s ease !important;}
+.input-area:focus-within{
+    border-color:rgba(32,199,107,.55) !important;
+    box-shadow:0 0 0 3px rgba(32,199,107,.08),0 14px 40px rgba(0,0,0,.18) !important;
+}
+.input-area textarea:focus::placeholder{color:#666 !important;}
+.input-area .send-btn:not(:disabled){background:var(--oddi-accent) !important;color:#08130d !important;}
+
+/* 8. One accent color: brand green only on active/focus/identity states. */
+.continue-btn:hover,.home-learning-btn:hover,.home-prompt-chip:hover{border-color:rgba(32,199,107,.45) !important;}
+
+/* 9. Top-right controls: clearer touch targets without redesigning them. */
+.header-more-btn,#themeBtn{
+    min-width:40px !important;
+    min-height:40px !important;
+}
+
+/* 10–11. Softer depth and surface separation. */
+body.dark-mode .app,body.dark-mode .chatbox{background:var(--oddi-home-bg) !important;}
+body.dark-mode .header{background:rgba(13,13,13,.96) !important;border-bottom-color:var(--oddi-home-border) !important;}
+body.dark-mode .sidebar{background:#0f0f0f !important;}
+body.dark-mode .continue-card{background:var(--oddi-home-surface) !important;border-color:var(--oddi-home-border) !important;}
+body.dark-mode .input-area{background:var(--oddi-home-input) !important;border-color:var(--oddi-home-border) !important;}
+
+/* 12. Micro-interactions. */
+.action-card,.home-learning-btn,.continue-btn{transition:transform .18s ease,background .18s ease,border-color .18s ease,box-shadow .18s ease !important;}
+.action-card:active,.home-learning-btn:active,.continue-btn:active{transform:scale(.98) !important;}
+
+/* 13. Empty state: give the lower space a purpose without another card. */
+.home-next-move{
+    width:min(620px,100%) !important;
+    margin:24px auto 0 !important;
+    padding:5px 4px 0 !important;
+    text-align:center !important;
+}
+.home-next-move-kicker{
+    font-size:9px !important;
+    line-height:1.2 !important;
+    letter-spacing:.11em !important;
+    color:#737373 !important;
+    font-weight:800 !important;
+}
+.home-next-move h3{
+    margin:7px 0 4px !important;
+    font-size:14px !important;
+    line-height:1.3 !important;
+    color:#242424 !important;
+    font-weight:750 !important;
+}
+.home-next-move p{
+    margin:0 !important;
+    font-size:11px !important;
+    line-height:1.45 !important;
+    color:#777 !important;
+}
+
+/* 14. Guardrail: no extra dashboard clutter. */
+.home-next-move + *{margin-top:0;}
+.welcome-message:has(#homeLearningMount:not(:empty)) #continueCardMount{display:none !important;}
+
+@media (max-width:768px) and (pointer:coarse){
+    .chatbox{padding:0 10px 92px !important;}
+    .welcome-message{
+        width:100% !important;
+        padding:64px 6px 72px !important;
+        margin:0 auto !important;
+    }
+    .welcome-message::before{margin-bottom:11px !important;font-size:9px !important;}
+    .welcome-message h2{
+        max-width:340px !important;
+        margin:0 auto 10px !important;
+        font-size:28px !important;
+        line-height:1.08 !important;
+        letter-spacing:-.65px !important;
+    }
+    .welcome-message > p{
+        max-width:340px !important;
+        font-size:13px !important;
+        line-height:1.45 !important;
+    }
+    .home-memory-context{
+        width:min(100%,340px) !important;
+        margin:12px auto 0 !important;
+        font-size:11px !important;
+        line-height:1.4 !important;
+    }
+    .home-suggestion-label{
+        width:min(100%,340px) !important;
+        margin:18px auto 9px !important;
+        font-size:9.5px !important;
+    }
+    .quick-actions{
+        width:calc(100% + 10px) !important;
+        margin:0 -5px !important;
+        gap:8px !important;
+        padding:2px 5px 8px !important;
+        overflow-x:auto !important;
+        scrollbar-width:none !important;
+    }
+    .quick-actions::-webkit-scrollbar{display:none !important;}
+    .action-card{
+        height:44px !important;
+        min-height:44px !important;
+        padding:0 14px !important;
+    }
+    .action-card-copy strong{font-size:11.5px !important;}
+    #homeLearningMount{width:100% !important;margin-top:20px !important;}
+    .home-learning-card{
+        min-height:96px !important;
+        padding:15px !important;
+        gap:12px !important;
+    }
+    .home-learning-title{font-size:15px !important;}
+    .home-learning-goal{font-size:10.5px !important;}
+    .home-learning-btn{height:36px !important;min-height:36px !important;padding:0 11px !important;font-size:10px !important;}
+    #continueCardMount{margin-top:14px !important;}
+    .home-next-move{
+        width:100% !important;
+        margin-top:22px !important;
+        padding-top:4px !important;
+    }
+    .home-next-move h3{font-size:13px !important;}
+    .home-next-move p{font-size:10.5px !important;}
+    .input-area{
+        height:60px !important;
+        min-height:60px !important;
+        bottom:max(8px,env(safe-area-inset-bottom)) !important;
+    }
+}
+
+@media (prefers-reduced-motion:reduce){
+    .action-card,.home-learning-btn,.continue-btn,.input-area{transition:none !important;}
+}
+</style>
+
+<style id="oddi-career-home-7-polish">
+/* Final 7-item polish pass: intentional carousel, stronger learning card, consistent accent. */
+:root{--oddi-accent:#20c76b;}
+
+/* 1. Three intentional suggestion chips; the row is a real horizontal carousel. */
+.quick-actions{display:flex !important;flex-direction:row !important;flex-wrap:nowrap !important;justify-content:flex-start !important;align-items:stretch !important;overflow-x:auto !important;overflow-y:hidden !important;scrollbar-width:none !important;gap:10px !important;}
+.quick-actions::-webkit-scrollbar{display:none !important;}
+.quick-actions .action-card{flex:0 0 auto !important;width:184px !important;min-width:184px !important;max-width:184px !important;height:46px !important;min-height:46px !important;max-height:46px !important;box-sizing:border-box !important;}
+
+/* 2 + 6. Give Next Career Move a clear CTA and deliberate section rhythm. */
+.home-next-move{margin-top:24px !important;padding:0 4px 4px !important;}
+.home-next-move-kicker{color:#777 !important;font-size:10px !important;letter-spacing:.11em !important;}
+.home-next-move h3{margin:8px 0 5px !important;font-size:15px !important;line-height:1.3 !important;font-weight:800 !important;}
+.home-next-move p{margin:0 0 12px !important;font-size:12px !important;line-height:1.45 !important;}
+.home-next-move-btn{display:inline-flex !important;align-items:center !important;justify-content:center !important;gap:7px !important;min-height:38px !important;padding:0 14px !important;border:1px solid #e2e2e2 !important;border-radius:10px !important;background:#f5f5f5 !important;color:#171717 !important;font-size:11px !important;font-weight:800 !important;cursor:pointer !important;transition:transform .18s ease,background .18s ease,border-color .18s ease !important;}
+.home-next-move-btn span{color:var(--oddi-accent) !important;font-size:14px !important;}
+.home-next-move-btn:hover{transform:translateY(-1px) !important;background:#ededed !important;border-color:#d4d4d4 !important;}
+
+/* 3. Learning card breathes vertically instead of packing everything into one line. */
+.home-learning-card{align-items:flex-start !important;flex-direction:column !important;gap:14px !important;padding:18px 16px !important;}
+.home-learning-main{width:100% !important;gap:6px !important;}
+.home-learning-title{font-size:17px !important;}
+.home-learning-goal{font-size:12px !important;}
+.home-learning-btn{align-self:flex-end !important;}
+
+/* 4. Keep the hero intentionally narrow. */
+.welcome-message h2{max-width:300px !important;margin-left:auto !important;margin-right:auto !important;}
+
+/* 5. One green accent everywhere important. */
+.welcome-message::before{color:var(--oddi-accent) !important;}
+.input-area:focus-within{border-color:rgba(32,199,107,.58) !important;box-shadow:0 0 0 3px rgba(32,199,107,.08),0 14px 40px rgba(0,0,0,.18) !important;}
+.input-area .send-btn:not(:disabled){background:var(--oddi-accent) !important;color:#08130d !important;}
+.home-learning-btn:hover,.continue-btn:hover{border-color:rgba(32,199,107,.5) !important;}
+
+/* 6. Relationship-based spacing. */
+.home-memory-context{margin-top:12px !important;}
+.home-suggestion-label{margin-top:18px !important;margin-bottom:9px !important;}
+#homeLearningMount{margin-top:20px !important;}
+#continueCardMount{margin-top:18px !important;}
+
+/* 7. Preserve the minimalist rule: no extra visual dashboard elements. */
+@media (max-width:768px) and (pointer:coarse){
+    .welcome-message h2{max-width:300px !important;font-size:28px !important;}
+    .quick-actions{width:calc(100% + 10px) !important;margin-left:-5px !important; padding-left:5px !important;padding-right:5px !important;}
+    .quick-actions .action-card{width:184px !important;min-width:184px !important;max-width:184px !important;height:46px !important;min-height:46px !important;}
+    .action-card-copy strong{font-size:11.5px !important;}
+    .home-learning-card{min-height:0 !important;padding:17px 16px !important;gap:14px !important;}
+    .home-learning-btn{align-self:flex-end !important;}
+    .home-next-move{margin-top:22px !important;}
+    .home-next-move h3{font-size:14px !important;}
+    .home-next-move p{font-size:11px !important;}
+}
+body.dark-mode .home-next-move-btn{background:#1F2421 !important;color:#fff !important;border-color:#2b332f !important;}
+body.dark-mode .home-next-move-btn:hover{background:#252d29 !important;border-color:#344039 !important;}
+@media (prefers-reduced-motion:reduce){.home-next-move-btn{transition:none !important;}}
+</style>
+<script id="oddi-career-home-next-move-js">
+(function(){
+    "use strict";
+    const button=document.getElementById("homeNextMoveBtn");
+    const input=document.getElementById("userInput");
+    if(!button || !input) return;
+    button.addEventListener("click",function(){
+        input.focus();
+        try{ input.scrollIntoView({behavior:"smooth",block:"nearest"}); }catch(_){}
+    });
+})();
+</script>
+
+<style id="oddi-sidebar-9of10-phone-redesign">
+@media (max-width:768px) and (pointer:coarse){
+  :root{--oddi-sidebar-w:194px;--oddi-sidebar-bg:#faf9f6;--oddi-sidebar-hover:#f5f5f3;--oddi-sidebar-active:#eef8f2;--oddi-sidebar-line:#e9e7e2;--oddi-sidebar-ink:#20211f;}
+  #sidebar.sidebar{width:var(--oddi-sidebar-w) !important;min-width:var(--oddi-sidebar-w) !important;max-width:var(--oddi-sidebar-w) !important;padding:0 8px !important;background:var(--oddi-sidebar-bg) !important;border-right:1px solid var(--oddi-sidebar-line) !important;border-radius:0 !important;box-shadow:14px 0 34px rgba(30,28,24,.07) !important;}
+  #sidebar .oddi-sidebar-brand{flex:0 0 54px !important;height:54px !important;min-height:54px !important;padding:0 5px !important;margin:0 !important;border-bottom:1px solid var(--oddi-sidebar-line) !important;display:flex !important;align-items:center !important;justify-content:space-between !important;gap:8px !important;}
+  #sidebar .oddi-sidebar-brand span:first-child{font-size:0 !important;font-weight:800 !important;letter-spacing:-.35px !important;}
+  #sidebar .oddi-sidebar-brand span:first-child::after{content:"ODDI" !important;font-size:17px !important;font-weight:800 !important;letter-spacing:-.55px !important;color:var(--oddi-sidebar-ink) !important;}
+  #sidebar .oddi-sidebar-brand span:last-child{display:none !important;}
+  #oddiMobileSidebarSearch{width:30px !important;height:30px !important;min-width:30px !important;padding:0 !important;margin:0 !important;border:1px solid transparent !important;border-radius:50% !important;background:transparent !important;color:#6f6e69 !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;cursor:pointer !important;font-size:18px !important;line-height:1 !important;transition:background .16s ease,color .16s ease !important;}
+  #oddiMobileSidebarSearch:hover,#oddiMobileSidebarSearch:active{background:#f1f0ec !important;color:#20211f !important;}
+  #sidebar .sidebar-main{padding-top:8px !important;}
+  #sidebar .new-chat-btn,#sidebar .sidebar-nav-btn,#sidebar .sidebar-bottom-btn,#sidebar .sidebar-select-controls .sidebar-select-btn{min-height:38px !important;height:38px !important;padding:0 9px !important;margin:0 !important;border:1px solid transparent !important;border-radius:9px !important;gap:9px !important;background:transparent !important;color:var(--oddi-sidebar-ink) !important;font-size:12.5px !important;font-weight:550 !important;line-height:1 !important;box-shadow:none !important;transition:background .16s ease,color .16s ease,transform .12s ease !important;}
+  #sidebar .new-chat-btn{font-weight:700 !important;margin-bottom:2px !important;background:#f4f8f5 !important;}
+  #sidebar .new-chat-btn .new-chat-icon{color:var(--oddi-accent,#20c76b) !important;}
+  #sidebar .new-chat-btn:hover,#sidebar .sidebar-nav-btn:hover,#sidebar .sidebar-bottom-btn:hover,#sidebar .sidebar-select-controls .sidebar-select-btn:hover{background:var(--oddi-sidebar-hover) !important;color:#171815 !important;}
+  #sidebar .new-chat-btn:active,#sidebar .sidebar-nav-btn:active,#sidebar .sidebar-bottom-btn:active,#sidebar .sidebar-select-controls .sidebar-select-btn:active{transform:scale(.985) !important;}
+  #sidebar .new-chat-icon,#sidebar .sidebar-nav-icon,#sidebar .sidebar-bottom-icon,#sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{width:18px !important;min-width:18px !important;flex:0 0 18px !important;height:18px !important;font-size:0 !important;line-height:18px !important;text-align:center !important;color:#686863 !important;font-weight:600 !important;}
+  #sidebar .new-chat-icon::after{content:"+" !important;font-size:19px !important;font-weight:500 !important;}
+  #sidebar .sidebar-nav-icon::after{content:"⌕" !important;font-size:20px !important;font-weight:400 !important;}
+  #sidebar #archivedBtn .sidebar-bottom-icon::after{content:"□" !important;font-size:17px !important;font-weight:400 !important;}
+  #sidebar #settingsBtn .sidebar-bottom-icon::after{content:"⚙" !important;font-size:15px !important;font-weight:400 !important;}
+  #sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child::after{content:"✓" !important;font-size:13px !important;font-weight:700 !important;}
+  #sidebar .sidebar-select-controls{margin:0 0 4px !important;}
+  #sidebar .chat-select-check{display:none !important;}
+  #sidebar.sidebar.is-selecting .chat-select-check,#sidebar .history-item.chat-selected .chat-select-check{display:inline-flex !important;}
+  #sidebar .chat-history{padding:8px 0 10px !important;}
+  #sidebar .sidebar-section-toggle{min-height:32px !important;height:32px !important;padding:0 8px !important;margin:7px 0 2px !important;border-radius:8px !important;color:#8a8984 !important;font-size:9.5px !important;font-weight:800 !important;letter-spacing:.12em !important;text-transform:uppercase !important;}
+  #sidebar .sidebar-section-toggle:hover{background:transparent !important;color:#65645f !important;}
+  #sidebar .sidebar-section-label{letter-spacing:.12em !important;}
+  #sidebar .sidebar-section-label::before{display:none !important;content:none !important;}
+  #sidebar .sidebar-section-chevron{width:24px !important;height:24px !important;font-size:16px !important;color:#aaa8a2 !important;border-radius:7px !important;}
+  #sidebar .sidebar-section-toggle:hover .sidebar-section-chevron{background:#f1f0ec !important;color:#686762 !important;}
+  #sidebar .history-item{min-height:38px !important;height:38px !important;margin:1px 0 !important;padding:0 8px !important;border:1px solid transparent !important;border-radius:9px !important;background:transparent !important;box-shadow:none !important;}
+  #sidebar .history-item:hover{background:var(--oddi-sidebar-hover) !important;border-color:transparent !important;}
+  #sidebar .history-main{min-width:0 !important;width:100% !important;}
+  #sidebar .history-title{display:block !important;min-width:0 !important;width:100% !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;font-size:11.5px !important;font-weight:520 !important;line-height:38px !important;color:#353631 !important;}
+  #sidebar .history-title::before{content:"" !important;display:inline-block !important;width:4px !important;height:4px !important;margin:0 8px 2px 1px !important;border-radius:50% !important;background:#a5a49e !important;vertical-align:middle !important;}
+  #sidebar .history-item.active-chat{background:var(--oddi-sidebar-active) !important;border-color:rgba(32,199,107,.08) !important;}
+  #sidebar .history-item.active-chat .history-title{color:#20221f !important;font-weight:650 !important;}
+  #sidebar .history-item.active-chat .history-title::before{background:var(--oddi-accent,#20c76b) !important;}
+  #sidebar .history-preview,#sidebar .history-meta,#sidebar .history-actions,#sidebar .history-pin-mark{display:none !important;}
+  #sidebar .history-date-group{margin:7px 0 2px !important;}
+  #sidebar .history-date-group-label{padding:5px 8px 2px !important;color:#aaa9a3 !important;font-size:8.5px !important;font-weight:800 !important;letter-spacing:.11em !important;}
+  #sidebar .pinned-empty-state{padding:6px 8px 8px !important;font-size:10px !important;color:#aaa9a3 !important;}
+  #sidebar .guest-save-message{display:none !important;}
+  #sidebar .sidebar-bottom-nav{display:contents !important;}
+  #sidebar .sidebar-main > .new-chat-btn{order:1 !important;}
+  #sidebar .sidebar-main > .sidebar-select-controls{order:2 !important;}
+  #sidebar .sidebar-main > .guest-save-message{order:3 !important;}
+  #sidebar .sidebar-main > .chat-history{order:4 !important;}
+  #sidebar .sidebar-main > .sidebar-bottom-nav{order:6 !important;}
+  #sidebar .oddi-account-footer{flex:0 0 58px !important;height:58px !important;min-height:58px !important;margin:0 !important;padding:8px 5px max(8px,env(safe-area-inset-bottom)) !important;box-sizing:border-box !important;border-top:1px solid var(--oddi-sidebar-line) !important;background:var(--oddi-sidebar-bg) !important;display:flex !important;align-items:center !important;gap:8px !important;}
+  #sidebar .oddi-account-avatar{width:30px !important;height:30px !important;min-width:30px !important;border-radius:50% !important;background:linear-gradient(135deg,#20c76b,#f1a12b) !important;color:#fff !important;font-size:9px !important;font-weight:800 !important;box-shadow:0 0 0 1px rgba(0,0,0,.05) !important;}
+  #sidebar .oddi-account-copy{min-width:0 !important;flex:1 1 auto !important;}
+  #sidebar .oddi-account-name{font-size:11.5px !important;font-weight:700 !important;line-height:1.2 !important;color:#252622 !important;overflow:hidden !important;text-overflow:ellipsis !important;white-space:nowrap !important;}
+  #sidebar .oddi-account-plan{display:block !important;margin-top:2px !important;font-size:9px !important;line-height:1.2 !important;color:#8a8983 !important;font-weight:500 !important;}
+  #sidebar .oddi-install-area{display:none !important;}
+  body.dark-mode #sidebar.sidebar{background:#0b0b0b !important;border-right-color:#252525 !important;box-shadow:14px 0 34px rgba(0,0,0,.22) !important;}
+  body.dark-mode #sidebar .oddi-sidebar-brand{border-bottom-color:#252525 !important;}
+  body.dark-mode #sidebar .oddi-sidebar-brand span:first-child::after{color:#f2f2f2 !important;}
+  body.dark-mode #oddiMobileSidebarSearch{color:#aaa !important;}
+  body.dark-mode #oddiMobileSidebarSearch:hover,body.dark-mode #oddiMobileSidebarSearch:active{background:#181818 !important;color:#fff !important;}
+  body.dark-mode #sidebar .new-chat-btn,body.dark-mode #sidebar .sidebar-nav-btn,body.dark-mode #sidebar .sidebar-bottom-btn,body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn{color:#e7e7e4 !important;}
+  body.dark-mode #sidebar .new-chat-btn{background:#15231b !important;}
+  body.dark-mode #sidebar .new-chat-btn .new-chat-icon{color:var(--oddi-accent,#20c76b) !important;}
+  body.dark-mode #sidebar .new-chat-icon,body.dark-mode #sidebar .sidebar-nav-icon,body.dark-mode #sidebar .sidebar-bottom-icon,body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{color:#aaa !important;}
+  body.dark-mode #sidebar .new-chat-btn:hover,body.dark-mode #sidebar .sidebar-nav-btn:hover,body.dark-mode #sidebar .sidebar-bottom-btn:hover,body.dark-mode #sidebar .sidebar-select-controls .sidebar-select-btn:hover{background:#171717 !important;}
+  body.dark-mode #sidebar .sidebar-section-toggle{color:#858585 !important;}
+  body.dark-mode #sidebar .sidebar-section-toggle:hover{color:#aaa !important;}
+  body.dark-mode #sidebar .sidebar-section-toggle:hover .sidebar-section-chevron{background:#181818 !important;color:#bbb !important;}
+  body.dark-mode #sidebar .history-item:hover{background:#171717 !important;}
+  body.dark-mode #sidebar .history-title{color:#d8d8d5 !important;}
+  body.dark-mode #sidebar .history-title::before{background:#686862 !important;}
+  body.dark-mode #sidebar .history-item.active-chat{background:#15231b !important;border-color:rgba(32,199,107,.14) !important;}
+  body.dark-mode #sidebar .history-item.active-chat .history-title{color:#f1f1ef !important;}
+  body.dark-mode #sidebar .history-item.active-chat .history-title::before{background:var(--oddi-accent,#20c76b) !important;}
+  body.dark-mode #sidebar .history-date-group-label,body.dark-mode #sidebar .pinned-empty-state{color:#696965 !important;}
+  body.dark-mode #sidebar .oddi-account-footer{background:#0b0b0b !important;border-top-color:#252525 !important;}
+  body.dark-mode #sidebar .oddi-account-name{color:#e8e8e5 !important;}
+  body.dark-mode #sidebar .oddi-account-plan{color:#858580 !important;}
+}
+</style>
+<script id="oddi-sidebar-9of10-phone-search-js">
+(function(){
+  "use strict";
+  const mobileSearch=document.getElementById("oddiMobileSidebarSearch");
+  const desktopSearch=document.getElementById("sidebarSearchBtn");
+  const sidebar=document.getElementById("sidebar");
+  const selectBtn=document.getElementById("selectChatsBtn");
+  if(mobileSearch && desktopSearch){ mobileSearch.addEventListener("click",function(){ desktopSearch.click(); }); }
+  if(sidebar && selectBtn){
+    const syncSelectionClass=()=>sidebar.classList.toggle("is-selecting",selectBtn.getAttribute("aria-pressed")==="true");
+    new MutationObserver(syncSelectionClass).observe(selectBtn,{attributes:true,attributeFilter:["aria-pressed"]});
+    syncSelectionClass();
+  }
+})();
+</script>
+
+<style id="oddi-sidebar-9of10-final-pass">
+/* Sidebar 9/10 refinement — visual polish only, no navigation/functionality changes. */
+@media (max-width:768px) and (pointer:coarse){
+  :root{
+    --oddi-sidebar-bg:#f8f7f4;
+    --oddi-sidebar-hover:#f2f1ee;
+    --oddi-sidebar-active:#eef8f2;
+    --oddi-sidebar-line:#e4e2dc;
+    --oddi-sidebar-ink:#292a27;
+    --oddi-sidebar-muted:#6f6e68;
+  }
+
+  /* 1 + 7. Make the drawer feel like a continuation of the warm homepage. */
+  #sidebar.sidebar{
+    background:var(--oddi-sidebar-bg) !important;
+    border-right:1px solid var(--oddi-sidebar-line) !important;
+    box-shadow:8px 0 24px rgba(39,37,32,.055) !important;
+  }
+
+  /* 2. Keep the compact 194px footprint. */
+  #sidebar.sidebar{width:194px !important;min-width:194px !important;max-width:194px !important;}
+
+  /* 3. Header: quieter, cleaner, aligned with the homepage controls. */
+  #sidebar .oddi-sidebar-brand{
+    height:52px !important;
+    min-height:52px !important;
+    border-bottom:1px solid var(--oddi-sidebar-line) !important;
+  }
+  #sidebar .oddi-sidebar-brand span:first-child::after{
+    font-size:16.5px !important;
+    font-weight:800 !important;
+    letter-spacing:-.5px !important;
+  }
+  #oddiMobileSidebarSearch{
+    width:31px !important;height:31px !important;min-width:31px !important;
+    border:1px solid #e7e5df !important;
+    background:#f4f3ef !important;
+    color:#686762 !important;
+  }
+  #oddiMobileSidebarSearch:hover,#oddiMobileSidebarSearch:active{
+    background:#ecebe7 !important;color:#2a2b28 !important;
+  }
+
+  /* 4 + 18. Slightly stronger text and more deliberate row rhythm. */
+  #sidebar .new-chat-btn,#sidebar .sidebar-nav-btn,#sidebar .sidebar-bottom-btn,#sidebar .sidebar-select-controls .sidebar-select-btn{
+    min-height:38px !important;height:38px !important;
+    padding:0 10px !important;
+    border-radius:10px !important;
+    color:var(--oddi-sidebar-ink) !important;
+    font-size:12.5px !important;
+    font-weight:600 !important;
+  }
+  #sidebar .new-chat-btn{
+    background:#f1f7f3 !important;
+    border:1px solid rgba(32,199,107,.09) !important;
+    margin-bottom:4px !important;
+  }
+  #sidebar .new-chat-btn:hover{background:#eaf5ee !important;}
+  #sidebar .sidebar-nav-btn:hover,#sidebar .sidebar-bottom-btn:hover{background:var(--oddi-sidebar-hover) !important;}
+
+  /* 6. One deliberately restrained icon treatment. */
+  #sidebar .new-chat-icon,#sidebar .sidebar-nav-icon,#sidebar .sidebar-bottom-icon,#sidebar .sidebar-select-controls .sidebar-select-btn > span:first-child{
+    width:17px !important;min-width:17px !important;height:17px !important;
+    color:#6c6c66 !important;
+    font-size:0 !important;
+    opacity:.92 !important;
+  }
+  #sidebar .new-chat-icon::after{content:"+" !important;font-size:18px !important;font-weight:500 !important;}
+  #sidebar .sidebar-nav-icon::after{content:"⌕" !important;font-size:18px !important;font-weight:400 !important;}
+  #sidebar #archivedBtn .sidebar-bottom-icon::after{content:"□" !important;font-size:16px !important;font-weight:400 !important;}
+  #sidebar #settingsBtn .sidebar-bottom-icon::after{content:"⚙" !important;font-size:14px !important;font-weight:400 !important;}
+
+  /* 8. Section labels are visible enough to scan without becoming loud. */
+  #sidebar .sidebar-section-toggle{
+    min-height:34px !important;height:34px !important;
+    margin:10px 0 3px !important;
+    padding:0 9px !important;
+    color:#74736d !important;
+    font-size:9.5px !important;
+    font-weight:800 !important;
+    letter-spacing:.12em !important;
+  }
+  #sidebar .sidebar-section-chevron{
+    width:25px !important;height:25px !important;
+    color:#96948d !important;
+    font-size:16px !important;
+  }
+  #sidebar .sidebar-section-toggle:hover .sidebar-section-chevron{background:#ecebe7 !important;color:#65645e !important;}
+
+  /* 9 + 11 + 13. Conversation rows stay quiet, readable and cleanly truncated. */
+  #sidebar .history-item{
+    min-height:39px !important;height:39px !important;
+    margin:2px 0 !important;
+    padding:0 9px !important;
+    border:1px solid transparent !important;
+    border-radius:9px !important;
+  }
+  #sidebar .history-title{
+    font-size:11.7px !important;
+    font-weight:560 !important;
+    line-height:39px !important;
+    color:#3b3c38 !important;
+  }
+  #sidebar .history-title::before{
+    width:4px !important;height:4px !important;
+    margin-right:8px !important;
+    background:#aaa8a0 !important;
+  }
+  #sidebar .history-item:hover{background:#f2f1ee !important;}
+
+  /* 9. Active conversation is now unmistakably selected, but still subtle. */
+  #sidebar .history-item.active-chat{
+    background:var(--oddi-sidebar-active) !important;
+    border-color:rgba(32,199,107,.11) !important;
+    box-shadow:none !important;
+  }
+  #sidebar .history-item.active-chat .history-title{
+    color:#252823 !important;
+    font-weight:680 !important;
+  }
+  #sidebar .history-item.active-chat .history-title::before{
+    width:4px !important;height:12px !important;
+    margin-right:8px !important;
+    border-radius:3px !important;
+    background:var(--oddi-accent,#20c76b) !important;
+  }
+
+  /* 10. Checkboxes remain a selection-mode-only affordance. */
+  #sidebar .chat-select-check{display:none !important;}
+  #sidebar.sidebar.is-selecting .chat-select-check,#sidebar .history-item.chat-selected .chat-select-check{display:inline-flex !important;}
+
+  /* 15 + 16. Profile gets a clearer hierarchy and breathing room. */
+  #sidebar .oddi-account-footer{
+    flex-basis:64px !important;height:64px !important;min-height:64px !important;
+    margin-top:0 !important;
+    padding:10px 6px max(10px,env(safe-area-inset-bottom)) !important;
+    border-top:1px solid var(--oddi-sidebar-line) !important;
+    gap:9px !important;
+    background:var(--oddi-sidebar-bg) !important;
+  }
+  #sidebar .oddi-account-avatar{
+    width:31px !important;height:31px !important;min-width:31px !important;
+    font-size:9px !important;font-weight:800 !important;
+  }
+  #sidebar .oddi-account-name{
+    font-size:12px !important;
+    font-weight:750 !important;
+    line-height:1.25 !important;
+    color:#292a27 !important;
+  }
+  #sidebar .oddi-account-plan{
+    margin-top:3px !important;
+    font-size:9.5px !important;
+    color:#77766f !important;
+    line-height:1.2 !important;
+  }
+
+  /* 5 + 14. Rounded controls and larger chevron hit areas, without extra UI. */
+  #sidebar .sidebar-bottom-nav{gap:2px !important;}
+  #sidebar .sidebar-bottom-btn{border-radius:10px !important;}
+
+  /* Dark mode keeps the same hierarchy rather than inverting the whole design. */
+  body.dark-mode #sidebar.sidebar{
+    background:#0e0e0e !important;
+    border-right-color:#292929 !important;
+    box-shadow:8px 0 24px rgba(0,0,0,.28) !important;
+  }
+  body.dark-mode #sidebar .oddi-sidebar-brand{border-bottom-color:#292929 !important;}
+  body.dark-mode #oddiMobileSidebarSearch{background:#151515 !important;border-color:#292929 !important;color:#aaa !important;}
+  body.dark-mode #oddiMobileSidebarSearch:hover,body.dark-mode #oddiMobileSidebarSearch:active{background:#1d1d1d !important;color:#fff !important;}
+  body.dark-mode #sidebar .new-chat-btn{background:#142219 !important;border-color:rgba(32,199,107,.14) !important;}
+  body.dark-mode #sidebar .new-chat-btn:hover{background:#182b20 !important;}
+  body.dark-mode #sidebar .sidebar-nav-btn:hover,body.dark-mode #sidebar .sidebar-bottom-btn:hover{background:#181818 !important;}
+  body.dark-mode #sidebar .sidebar-section-toggle{color:#999 !important;}
+  body.dark-mode #sidebar .history-title{color:#d1d1cd !important;}
+  body.dark-mode #sidebar .history-title::before{background:#66665f !important;}
+  body.dark-mode #sidebar .history-item:hover{background:#181818 !important;}
+  body.dark-mode #sidebar .history-item.active-chat{background:#15231b !important;border-color:rgba(32,199,107,.15) !important;}
+  body.dark-mode #sidebar .history-item.active-chat .history-title{color:#f1f1ee !important;}
+  body.dark-mode #sidebar .oddi-account-footer{background:#0e0e0e !important;border-top-color:#292929 !important;}
+  body.dark-mode #sidebar .oddi-account-name{color:#eee !important;}
+  body.dark-mode #sidebar .oddi-account-plan{color:#8d8d87 !important;}
+}
+</style>
+
+
+<style id="oddi-basic-center-suggestions">
+  /* Basic visual correction: center the section label and suggestion-card content. */
+  .home-suggestion-label{
+    text-align:center !important;
+    width:min(100%,1000px) !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+    padding-left:0 !important;
+    padding-right:0 !important;
+  }
+  .quick-actions .action-card{
+    transform: translateX(50px);
+    text-align:center !important;
+    margin-left: 10px !important;
+
+  }
+  .quick-actions .action-card-main{
+    justify-content:center !important;
+    align-items:center !important;
+  }
+  .quick-actions .action-card-copy{
+    align-items:center !important;
+    text-align:center !important;
+  }
+  .quick-actions .action-arrow{
+    display:none !important;
+    
+  }
+</style>
+</body>
+</html>
