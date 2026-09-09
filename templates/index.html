@@ -16622,3 +16622,93 @@ body.dark-mode .home-next-move-btn:hover{background:#252d29 !important;border-co
 
 </body>
 </html>
+<style id="oddi-mobile-composer-quick-fix-v1">
+/* Quick mobile composer fix: compact, balanced, and keep the text clear of controls. */
+@media (max-width:768px) and (pointer:coarse) {
+  .input-area {
+    left:14px !important;
+    right:14px !important;
+    bottom:max(18px, calc(env(safe-area-inset-bottom) + 12px)) !important;
+    width:auto !important;
+    height:60px !important;
+    min-height:60px !important;
+    max-height:60px !important;
+    padding:6px 8px !important;
+    gap:4px !important;
+    border-radius:9999px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+  }
+
+  .input-area textarea {
+    flex:1 1 0 !important;
+    width:0 !important;
+    min-width:0 !important;
+    height:44px !important;
+    min-height:44px !important;
+    max-height:44px !important;
+    margin:0 !important;
+    padding:11px 4px !important;
+    box-sizing:border-box !important;
+    font-size:15px !important;
+    line-height:1.4 !important;
+    overflow:hidden !important;
+  }
+
+  .input-area textarea::placeholder {
+    font-size:15px !important;
+    white-space:nowrap !important;
+  }
+
+  .input-area > .attach-btn,
+  .input-area > .dictation-btn,
+  .input-area > .action-button-slot,
+  .input-area > .action-button-slot .voice-btn,
+  .input-area > .action-button-slot .send-btn {
+    width:40px !important;
+    height:40px !important;
+    min-width:40px !important;
+    min-height:40px !important;
+    flex:0 0 40px !important;
+    flex-basis:40px !important;
+    box-sizing:border-box !important;
+    align-self:center !important;
+  }
+
+  .input-area > .attach-btn { font-size:21px !important; }
+  .input-area > .dictation-btn svg,
+  .input-area > .action-button-slot .voice-btn svg {
+    width:19px !important;
+    height:19px !important;
+  }
+  .input-area > .action-button-slot .send-btn { font-size:20px !important; }
+
+  /* Typing state stays compact too; never lets controls squeeze the text. */
+  body.mobile-composer-typing .input-area {
+    height:64px !important;
+    min-height:64px !important;
+    max-height:64px !important;
+    padding:7px 8px !important;
+  }
+
+  body.mobile-composer-typing .input-area textarea {
+    height:48px !important;
+    min-height:48px !important;
+    max-height:48px !important;
+    padding:13px 4px !important;
+    font-size:15px !important;
+  }
+
+  body.mobile-composer-typing .input-area > .attach-btn,
+  body.mobile-composer-typing .input-area > .dictation-btn,
+  body.mobile-composer-typing .input-area > .action-button-slot,
+  body.mobile-composer-typing .input-area > .action-button-slot .voice-btn,
+  body.mobile-composer-typing .input-area > .action-button-slot .send-btn {
+    width:42px !important;
+    height:42px !important;
+    min-width:42px !important;
+    min-height:42px !important;
+    flex-basis:42px !important;
+  }
+}
+</style>
