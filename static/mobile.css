@@ -1,48 +1,7 @@
-#mobileSplash {
-    display: none !important;
-    position: fixed;
-    inset: 0;
-    width: 100vw;
-    height: 100dvh;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: #000;
-    z-index: 2147483647;
-    opacity: 1;
-    visibility: visible;
-    transition: opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-#mobileSplash img {
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    max-height: none;
-    display: block;
-    object-fit: cover;
-    object-position: center center;
-}
-
-#mobileSplash.hide {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
 
 @media (max-width: 768px) {
 
-    #splash-screen {
-        display: none !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-    }
-
-    #mobileSplash {
-        display: flex !important;
-    }
-
+ 
     /* =========================================
         MOBILE BASE
     ========================================= */
@@ -661,82 +620,6 @@
 
 
     /* =========================================
-        MOBILE SPLASH SCREEN
-    ========================================= */
-
-    #mobileSplash {
-        position: fixed;
-        inset: 0;
-
-        width: 100%;
-        height: 100dvh;
-
-        display: flex;
-        align-items: center;
-        justify-content: center;
-
-        background: #000;
-
-        z-index: 99999;
-
-        opacity: 1;
-        visibility: visible;
-
-        transition:
-            opacity 1.5s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-
-    #mobileSplash img {
-        width: 94%;
-        max-width: 94%;
-        height: 94%;
-        max-height: 94%;
-        display: block;
-        object-fit: cover;
-        object-position: center center;
-
-        transform: scale(1);
-
-        animation: mobileSplashZoom 5s ease forwards;
-    }
-
-
-    @keyframes mobileSplashZoom {
-
-        from {
-            transform: scale(1);
-        }
-
-        to {
-            transform: scale(1.05);
-        }
-
-    }
-
-
-    /* Same fade-out behaviour as laptop */
-
-    #mobileSplash.hide {
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-    }
-
-
-    /* =========================================
-        HIDE OLD DESKTOP SPLASH ON MOBILE
-    ========================================= */
-
-    #splash-screen {
-        display: none !important;
-        opacity: 0 !important;
-        visibility: hidden !important;
-        pointer-events: none !important;
-    }
-
-
-    /* =========================================
         SIDEBAR & OVERLAY
     ========================================= */
 
@@ -1044,9 +927,7 @@
         z-index: 1 !important;
     }
 
-    #mobileSplash {
-        z-index: 2147483647 !important;
-    }
+  
 }
 /* =====================================================
    FINAL FIX — MOBILE SIDEBAR MUST COVER HEADER
@@ -1080,11 +961,7 @@
         z-index: 100 !important;
     }
 
-    /* Splash remains the absolute top layer */
-    #mobileSplash,
-    #splash-screen {
-        z-index: 2147483647 !important;
-    }
+    
 }
 /* =========================================================
    MOBILE CLICKABLE UPLOADED FILES
