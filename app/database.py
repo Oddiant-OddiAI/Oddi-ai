@@ -1,13 +1,20 @@
 import sqlite3
 import json
+import os
+import uuid
 
-DATABASE = "users.db"
+DATABASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "users.db")
 
 
 def get_db():
-    conn = sqlite3.connect(DATABASE)
+    conn = sqlite3.connect(DATABASE, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA busy_timeout = 10000")
+    try:
+        conn.execute("PRAGMA journal_mode = WAL")
+    except sqlite3.DatabaseError:
+        pass
     return conn
 
 
@@ -34,6 +41,8 @@ def create_tables():
             title TEXT NOT NULL DEFAULT 'New Chat',
             messages TEXT NOT NULL DEFAULT '[]',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            revision INTEGER NOT NULL DEFAULT 0,
             pinned INTEGER NOT NULL DEFAULT 0,
             archived INTEGER NOT NULL DEFAULT 0,
             deleted_at TIMESTAMP NULL,
@@ -46,9 +55,12 @@ def create_tables():
 
     # Safe migrations for databases created by older ODDI versions.
     columns = {row[1] for row in conn.execute("PRAGMA table_info(conversations)").fetchall()}
+    if "updated_at" not in columns:
+        conn.execute("ALTER TABLE conversations ADD COLUMN updated_at TIMESTAMP")
+        conn.execute("UPDATE conversations SET updated_at = COALESCE(created_at, CURRENT_TIMESTAMP) WHERE updated_at IS NULL")
+    if "revision" not in columns:
+        conn.execute("ALTER TABLE conversations ADD COLUMN revision INTEGER NOT NULL DEFAULT 0")
     if "pinned" not in columns:
-        conn.execute("ALTER TABLE conversations ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
-    if "archived" not in columns:
         conn.execute("ALTER TABLE conversations ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
     if "deleted_at" not in columns:
         conn.execute("ALTER TABLE conversations ADD COLUMN deleted_at TIMESTAMP NULL")
@@ -127,8 +139,8 @@ def create_conversation(user_id, title="New Chat"):
     cursor = conn.execute(
         """
         INSERT INTO conversations
-        (user_id, title, messages)
-        VALUES (?, ?, ?)
+        (user_id, title, messages, revision)
+        VALUES (?, ?, ?, 0)
         """,
         (user_id, title, json.dumps([]))
     )
@@ -141,13 +153,29 @@ def create_conversation(user_id, title="New Chat"):
     return conversation_id
 
 
+def _normalize_messages_for_storage(messages, conversation_id):
+    normalized = []
+    for index, message in enumerate(messages if isinstance(messages, list) else []):
+        item = dict(message) if isinstance(message, dict) else {
+            "role": "assistant",
+            "text": str(message)
+        }
+        if not item.get("id"):
+            item["id"] = f"legacy-{conversation_id}-{index}"
+        normalized.append(item)
+    return normalized
+
+
 def _conversation_dict(row):
+    messages = json.loads(row["messages"])
     return {
         "id": row["id"],
         "user_id": row["user_id"],
         "title": row["title"],
-        "messages": json.loads(row["messages"]),
+        "messages": _normalize_messages_for_storage(messages, row["id"]),
         "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
+        "revision": int(row["revision"] or 0),
         "pinned": bool(row["pinned"]),
         "archived": bool(row["archived"]),
         "deleted": bool(row["deleted_at"]),
@@ -158,7 +186,7 @@ def _conversation_dict(row):
 def get_conversations(user_id):
     conn = get_db()
     rows = conn.execute("""
-        SELECT id, user_id, title, messages, created_at, pinned, archived, deleted_at
+        SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
         FROM conversations
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY id DESC
@@ -170,7 +198,7 @@ def get_conversations(user_id):
 def get_deleted_conversations(user_id):
     conn = get_db()
     rows = conn.execute("""
-        SELECT id, user_id, title, messages, created_at, pinned, archived, deleted_at
+        SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
         FROM conversations
         WHERE user_id = ? AND deleted_at IS NOT NULL
         ORDER BY deleted_at DESC, id DESC
@@ -182,7 +210,7 @@ def get_deleted_conversations(user_id):
 def get_conversation(conversation_id, user_id):
     conn = get_db()
     row = conn.execute("""
-        SELECT id, user_id, title, messages, created_at, pinned, archived, deleted_at
+        SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
         FROM conversations
         WHERE id = ? AND user_id = ?
     """, (conversation_id, user_id)).fetchone()
@@ -192,16 +220,186 @@ def get_conversation(conversation_id, user_id):
     return _conversation_dict(row)
 
 
-def update_conversation(conversation_id, user_id, title, messages):
+def update_conversation(conversation_id, user_id, title, messages, expected_revision=None):
     conn = get_db()
-    cursor = conn.execute("""
-        UPDATE conversations
-        SET title = ?, messages = ?
-        WHERE id = ? AND user_id = ?
-    """, (title, json.dumps(messages), conversation_id, user_id))
-    conn.commit()
-    conn.close()
-    return cursor.rowcount > 0
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+
+        if not row:
+            conn.rollback()
+            return {"ok": False, "found": False, "conflict": False, "conversation": None}
+
+        current_revision = int(row["revision"] or 0)
+        if expected_revision is not None and int(expected_revision) != current_revision:
+            conversation = _conversation_dict(row)
+            conn.rollback()
+            return {"ok": False, "found": True, "conflict": True, "conversation": conversation}
+
+        normalized = _normalize_messages_for_storage(messages, conversation_id)
+        next_revision = current_revision + 1
+        conn.execute("""
+            UPDATE conversations
+            SET title = ?, messages = ?, updated_at = CURRENT_TIMESTAMP, revision = ?
+            WHERE id = ? AND user_id = ?
+        """, (
+            title or "New Chat",
+            json.dumps(normalized),
+            next_revision,
+            conversation_id,
+            user_id
+        ))
+        conn.commit()
+
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+        return {"ok": True, "found": True, "conflict": False, "conversation": _conversation_dict(row)}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def append_conversation_message(conversation_id, user_id, message):
+    conn = get_db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+        if not row:
+            conn.rollback()
+            return None
+
+        current_messages = _normalize_messages_for_storage(json.loads(row["messages"]), conversation_id)
+        item = dict(message) if isinstance(message, dict) else {"role": "assistant", "text": str(message)}
+        if not item.get("id"):
+            item["id"] = str(uuid.uuid4())
+
+        existing_ids = {str(m.get("id")) for m in current_messages if m.get("id")}
+        if str(item["id"]) in existing_ids:
+            conn.rollback()
+            return _conversation_dict(row)
+
+        current_messages.append(item)
+
+        next_revision = int(row["revision"] or 0) + 1
+        conn.execute("""
+            UPDATE conversations
+            SET messages = ?, updated_at = CURRENT_TIMESTAMP, revision = ?
+            WHERE id = ? AND user_id = ?
+        """, (json.dumps(current_messages), next_revision, conversation_id, user_id))
+        conn.commit()
+
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+        return _conversation_dict(row)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def update_conversation_message(conversation_id, user_id, message_id, patch):
+    conn = get_db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+        if not row:
+            conn.rollback()
+            return None
+
+        messages = _normalize_messages_for_storage(json.loads(row["messages"]), conversation_id)
+        found = False
+        for message in messages:
+            if str(message.get("id")) == str(message_id):
+                for key, value in (patch or {}).items():
+                    if key in {"text", "content", "pinned", "feedback", "stopped"}:
+                        message[key] = value
+                found = True
+                break
+
+        if not found:
+            conn.rollback()
+            return None
+
+        next_revision = int(row["revision"] or 0) + 1
+        conn.execute("""
+            UPDATE conversations
+            SET messages = ?, updated_at = CURRENT_TIMESTAMP, revision = ?
+            WHERE id = ? AND user_id = ?
+        """, (json.dumps(messages), next_revision, conversation_id, user_id))
+        conn.commit()
+
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+        return _conversation_dict(row)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def delete_conversation_message(conversation_id, user_id, message_id):
+    conn = get_db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+        if not row:
+            conn.rollback()
+            return None
+
+        messages = _normalize_messages_for_storage(json.loads(row["messages"]), conversation_id)
+        new_messages = [m for m in messages if str(m.get("id")) != str(message_id)]
+        if len(new_messages) == len(messages):
+            conn.rollback()
+            return None
+
+        next_revision = int(row["revision"] or 0) + 1
+        conn.execute("""
+            UPDATE conversations
+            SET messages = ?, updated_at = CURRENT_TIMESTAMP, revision = ?
+            WHERE id = ? AND user_id = ?
+        """, (json.dumps(new_messages), next_revision, conversation_id, user_id))
+        conn.commit()
+
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+        return _conversation_dict(row)
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None):
@@ -221,11 +419,13 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
         next_archived = 0
     conn.execute("""
         UPDATE conversations
-        SET pinned = ?, archived = ?, deleted_at = ?
+        SET pinned = ?, archived = ?, deleted_at = ?,
+            updated_at = CURRENT_TIMESTAMP,
+            revision = revision + 1
         WHERE id = ? AND user_id = ?
     """, (next_pinned, next_archived, next_deleted, conversation_id, user_id))
     conn.commit()
-    row = conn.execute("""SELECT id, user_id, title, messages, created_at, pinned, archived, deleted_at FROM conversations WHERE id = ? AND user_id = ?""", (conversation_id, user_id)).fetchone()
+    row = conn.execute("""SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at FROM conversations WHERE id = ? AND user_id = ?""", (conversation_id, user_id)).fetchone()
     conn.close()
     return _conversation_dict(row) if row else None
 

@@ -3303,7 +3303,7 @@ body.dark-mode .memory-footer{border-top-color:#333;}
 </style>
 
 </head>
-<body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
+<body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
 <div id="oddi-video-splash" class="oddi-video-splash" aria-hidden="false">
     <video
@@ -4402,19 +4402,22 @@ function stopGeneration() {
 
             const stoppedIndex = conversation.messages.length;
 
-            conversation.messages.push({
+            const stoppedMessage = {
+                id: makeMessageId(),
                 role: 'assistant',
                 text: 'Generation stopped.',
                 pinned: false,
                 feedback: null,
                 stopped: true
-            });
+            };
+
+            conversation.messages.push(stoppedMessage);
 
             botMessage.dataset.messageIndex = stoppedIndex;
             botMessage.querySelector('.thinking-actions')?.remove();
             addBotMessageActions(botMessage, stoppedIndex, conversationIndex);
 
-            saveConversation(conversation);
+            appendConversationMessage(conversation, stoppedMessage);
         }
     } else {
         const thinking = document.querySelector('.bot-message .thinking-indicator');
@@ -5676,29 +5679,52 @@ const historyContainer =
         "chatHistory"
     );
 
-const ODDI_CHAT_RECOVERY_PREFIX = "oddi_chat_recovery_v3";
+const ODDI_CHAT_RECOVERY_PREFIX = "oddi_chat_recovery_v4";
 let conversationSyncInFlight = false;
 let conversationSyncTimer = null;
 let conversationSyncStarted = false;
 const conversationSaveInFlight = new Set();
+const conversationDirtyLocal = new Set();
+
+function makeMessageId() {
+    try {
+        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    } catch (_) {}
+    return `msg-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function ensureConversationMessageIds(conversation) {
+    if (!conversation || !Array.isArray(conversation.messages)) return;
+    conversation.messages.forEach((message, index) => {
+        if (!message || typeof message !== "object") return;
+        if (!message.id) message.id = `legacy-${conversation.id ?? "local"}-${index}`;
+    });
+}
+
+function normalizeConversationObject(conversation) {
+    if (!conversation) return conversation;
+    ensureConversationMessageIds(conversation);
+    conversation.revision = Number.isFinite(Number(conversation.revision)) ? Number(conversation.revision) : 0;
+    return conversation;
+}
 
 function getOddiChatRecoveryKey(conversationId) {
+    const userId = String(document.body?.dataset?.userId || "").trim();
     const username = String(document.body?.dataset?.username || "").trim().toLowerCase();
-    const userPart = isLoggedIn && username ? username : "guest";
+    const userPart = isLoggedIn && userId ? `user-${userId}` : (isLoggedIn && username ? `name-${username}` : "guest");
     return `${ODDI_CHAT_RECOVERY_PREFIX}:${userPart}:${String(conversationId)}`;
 }
 
 function backupOddiConversation(conversation) {
     if (!conversation?.id) return;
     try {
-        localStorage.setItem(
-            getOddiChatRecoveryKey(conversation.id),
-            JSON.stringify({
-                ...conversation,
-                messages: Array.isArray(conversation.messages) ? conversation.messages : [],
-                __recoverySavedAt: Date.now()
-            })
-        );
+        normalizeConversationObject(conversation);
+        localStorage.setItem(getOddiChatRecoveryKey(conversation.id), JSON.stringify({
+            ...conversation,
+            messages: Array.isArray(conversation.messages) ? conversation.messages : [],
+            __recoverySavedAt: Date.now(),
+            __recoveryDirty: true
+        }));
     } catch (error) {
         console.warn("Could not create local chat recovery copy:", error);
     }
@@ -5706,9 +5732,7 @@ function backupOddiConversation(conversation) {
 
 function removeOddiConversationBackup(conversationId) {
     if (conversationId === null || conversationId === undefined) return;
-    try {
-        localStorage.removeItem(getOddiChatRecoveryKey(conversationId));
-    } catch (_) {}
+    try { localStorage.removeItem(getOddiChatRecoveryKey(conversationId)); } catch (_) {}
 }
 
 function getOddiLocalChatBackups() {
@@ -5720,7 +5744,7 @@ function getOddiLocalChatBackups() {
             if (!key || !key.startsWith(prefix)) continue;
             try {
                 const value = JSON.parse(localStorage.getItem(key) || "null");
-                if (value?.id) backups.push(value);
+                if (value?.id) backups.push(normalizeConversationObject(value));
             } catch (_) {}
         }
     } catch (error) {
@@ -5732,95 +5756,85 @@ function getOddiLocalChatBackups() {
 function conversationDataIsSame(a, b) {
     return !!a && !!b
         && String(a.title || "New Chat") === String(b.title || "New Chat")
-        && JSON.stringify(Array.isArray(a.messages) ? a.messages : [])
-            === JSON.stringify(Array.isArray(b.messages) ? b.messages : []);
+        && JSON.stringify(Array.isArray(a.messages) ? a.messages : []) === JSON.stringify(Array.isArray(b.messages) ? b.messages : []);
+}
+
+function mergeConversationForRetry(localConversation, serverConversation) {
+    normalizeConversationObject(localConversation);
+    normalizeConversationObject(serverConversation);
+    const result = Array.isArray(serverConversation.messages) ? serverConversation.messages.map(message => ({ ...message })) : [];
+    const serverIds = new Set(result.filter(message => message?.id).map(message => String(message.id)));
+    for (const localMessage of (Array.isArray(localConversation.messages) ? localConversation.messages : [])) {
+        if (!localMessage || typeof localMessage !== "object") continue;
+        const id = String(localMessage.id || makeMessageId());
+        // Preserve all server-side messages and only add truly local messages.
+        // This prevents a stale device from reverting another device's edits.
+        if (!serverIds.has(id)) result.push({ ...localMessage, id });
+    }
+    return normalizeConversationObject({
+        ...serverConversation,
+        title: localConversation.title || serverConversation.title || "New Chat",
+        messages: result,
+        revision: Number(serverConversation.revision || 0)
+    });
 }
 
 function mergeConversationFromServer(localConversation, serverConversation) {
     if (!localConversation || !serverConversation) return false;
-    if (conversationDataIsSame(localConversation, serverConversation)) return false;
-
-    localConversation.title = serverConversation.title || "New Chat";
-    localConversation.messages = Array.isArray(serverConversation.messages)
-        ? serverConversation.messages
-        : [];
-    localConversation.created_at = serverConversation.created_at;
-    if (serverConversation.updated_at !== undefined) {
+    normalizeConversationObject(localConversation);
+    normalizeConversationObject(serverConversation);
+    if (conversationDataIsSame(localConversation, serverConversation) && Number(localConversation.revision || 0) === Number(serverConversation.revision || 0)) {
         localConversation.updated_at = serverConversation.updated_at;
+        return false;
     }
+    localConversation.title = serverConversation.title || "New Chat";
+    localConversation.messages = Array.isArray(serverConversation.messages) ? serverConversation.messages.map(message => ({ ...message })) : [];
+    localConversation.created_at = serverConversation.created_at;
+    localConversation.updated_at = serverConversation.updated_at;
+    localConversation.revision = Number(serverConversation.revision || 0);
     if (serverConversation.pinned !== undefined) localConversation.pinned = !!serverConversation.pinned;
     if (serverConversation.archived !== undefined) localConversation.archived = !!serverConversation.archived;
     return true;
 }
 
 async function loadConversations() {
-    if (!isLoggedIn) {
-        conversations = [];
-        currentConversation = null;
-        return;
-    }
-
+    if (!isLoggedIn) { conversations = []; currentConversation = null; return; }
     try {
-        const response = await fetch("/api/conversations", {
-            credentials: "same-origin",
-            cache: "no-store",
-            headers: { "Cache-Control": "no-cache" }
-        });
-
-        if (!response.ok) {
-            throw new Error(`Load conversations failed (${response.status})`);
-        }
-
+        const response = await fetch("/api/conversations", { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+        if (!response.ok) throw new Error(`Load conversations failed (${response.status})`);
         const loadedConversations = await response.json();
-        const serverConversations = Array.isArray(loadedConversations)
-            ? loadedConversations
-            : [];
+        const serverConversations = Array.isArray(loadedConversations) ? loadedConversations.map(normalizeConversationObject) : [];
+        const serverById = new Map(serverConversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => [String(c.id), c]));
+        conversations = serverConversations.slice();
 
-        conversations = serverConversations;
-
-        // Recover chats whose final PUT was interrupted. A recovery copy is
-        // only used when the server does not already have that conversation.
-        const serverIds = new Set(
-            conversations
-                .filter(c => c?.id !== null && c?.id !== undefined)
-                .map(c => String(c.id))
-        );
-        const recoverableBackups = getOddiLocalChatBackups().filter(
-            backup => backup?.id && !serverIds.has(String(backup.id))
-        );
-
-        if (recoverableBackups.length) {
-            conversations = conversations.concat(
-                recoverableBackups.map(backup => ({
-                    ...backup,
-                    __recoveredLocally: true
-                }))
-            );
-            renderHistory();
-
-            // Retry interrupted server saves in the background.
-            for (const backup of recoverableBackups) {
-                saveConversation(backup).catch(() => {});
+        for (const backup of getOddiLocalChatBackups()) {
+            const id = String(backup.id);
+            const serverConversation = serverById.get(id);
+            if (!serverConversation) {
+                conversationDirtyLocal.add(id);
+                conversations.push({ ...backup, __recoveredLocally: true });
+                continue;
+            }
+            if (!conversationDataIsSame(backup, serverConversation)) {
+                conversationDirtyLocal.add(id);
+                const merged = mergeConversationForRetry(backup, serverConversation);
+                const index = conversations.findIndex(c => String(c.id) === id);
+                if (index >= 0) conversations[index] = merged;
+                saveConversation(merged).catch(() => {});
+            } else {
+                removeOddiConversationBackup(id);
             }
         }
 
-        // Preserve the existing legacy pin/archive migration behavior.
         await migrateLegacyConversationState();
-
         currentConversation = null;
         renderHistory();
         startConversationSync();
     } catch (error) {
         console.error("Load conversations error:", error);
-
-        // If the API is temporarily unavailable, show the user's local
-        // recovery copies instead of making the chat list appear empty.
         const backups = getOddiLocalChatBackups();
         if (backups.length) {
-            conversations = backups.map(backup => ({
-                ...backup,
-                __recoveredLocally: true
-            }));
+            conversations = backups.map(backup => ({ ...normalizeConversationObject(backup), __recoveredLocally: true }));
             currentConversation = null;
             renderHistory();
         }
@@ -5829,52 +5843,39 @@ async function loadConversations() {
 
 async function saveConversation(conversation) {
     if (!conversation?.id) return false;
-
+    normalizeConversationObject(conversation);
     const conversationId = String(conversation.id);
-    const payload = {
-        title: conversation.title || "New Chat",
-        messages: Array.isArray(conversation.messages) ? conversation.messages : []
-    };
-
-    // Write the recovery copy BEFORE the network request. This prevents a
-    // laptop refresh, tab crash, or temporary network failure from silently
-    // destroying the newest local copy.
-    backupOddiConversation({ ...conversation, ...payload });
+    conversationDirtyLocal.add(conversationId);
+    backupOddiConversation(conversation);
     conversationSaveInFlight.add(conversationId);
-
+    let working = conversation;
     try {
-        let lastError = null;
-
-        // A short retry protects against transient mobile/laptop network
-        // failures and Render wake-up delays.
-        for (let attempt = 0; attempt < 3; attempt++) {
-            try {
-                const response = await fetch(`/api/conversations/${conversation.id}`, {
-                    method: "PUT",
-                    credentials: "same-origin",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Cache-Control": "no-cache"
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`Save conversation failed (${response.status})`);
-                }
-
-                removeOddiConversationBackup(conversation.id);
-                conversation.__recoveredLocally = false;
+        for (let attempt = 0; attempt < 4; attempt++) {
+            const response = await fetch(`/api/conversations/${working.id}`, {
+                method: "PUT", credentials: "same-origin",
+                headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+                body: JSON.stringify({
+                    title: working.title || "New Chat",
+                    messages: Array.isArray(working.messages) ? working.messages : [],
+                    expected_revision: Number(working.revision || 0)
+                })
+            });
+            if (response.ok) {
+                const data = await response.json();
+                if (data?.conversation) Object.assign(working, normalizeConversationObject(data.conversation));
+                conversationDirtyLocal.delete(conversationId);
+                removeOddiConversationBackup(conversationId);
+                working.__recoveredLocally = false;
                 return true;
-            } catch (error) {
-                lastError = error;
-                if (attempt < 2) {
-                    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
-                }
             }
+            if (response.status !== 409) throw new Error(`Save conversation failed (${response.status})`);
+            const conflict = await response.json();
+            if (!conflict?.conversation) throw new Error("Conversation conflict did not include server state.");
+            working = mergeConversationForRetry(working, conflict.conversation);
+            conversations = conversations.map(item => String(item?.id) === conversationId ? working : item);
+            await new Promise(resolve => setTimeout(resolve, 80 * (attempt + 1)));
         }
-
-        throw lastError || new Error("Save conversation failed");
+        throw new Error("Conversation conflict could not be resolved after retries.");
     } catch (error) {
         console.error("Save conversation error:", error);
         return false;
@@ -5883,165 +5884,156 @@ async function saveConversation(conversation) {
     }
 }
 
+async function appendConversationMessage(conversation, message) {
+    if (!conversation?.id || !message) return false;
+    normalizeConversationObject(conversation);
+    if (!message.id) message.id = makeMessageId();
+    const conversationId = String(conversation.id);
+    conversationDirtyLocal.add(conversationId);
+    backupOddiConversation(conversation);
+    try {
+        const response = await fetch(`/api/conversations/${conversation.id}/messages`, {
+            method: "POST", credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message })
+        });
+        if (!response.ok) throw new Error(`Append message failed (${response.status})`);
+        const data = await response.json();
+        if (data?.conversation) Object.assign(conversation, normalizeConversationObject(data.conversation));
+        conversationDirtyLocal.delete(conversationId);
+        removeOddiConversationBackup(conversationId);
+        conversation.__recoveredLocally = false;
+        return true;
+    } catch (error) {
+        console.error("Append conversation message error:", error);
+        return false;
+    }
+}
+
+async function updateConversationMessageRemote(conversation, messageId, patch) {
+    if (!conversation?.id || !messageId) return false;
+    const conversationId = String(conversation.id);
+    conversationDirtyLocal.add(conversationId);
+    backupOddiConversation(conversation);
+    try {
+        const response = await fetch(`/api/conversations/${conversation.id}/messages/${encodeURIComponent(messageId)}`, {
+            method: "PUT", credentials: "same-origin",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ patch })
+        });
+        if (!response.ok) throw new Error(`Update message failed (${response.status})`);
+        const data = await response.json();
+        if (data?.conversation) Object.assign(conversation, normalizeConversationObject(data.conversation));
+        conversationDirtyLocal.delete(conversationId);
+        removeOddiConversationBackup(conversationId);
+        conversation.__recoveredLocally = false;
+        return true;
+    } catch (error) {
+        console.error("Update conversation message error:", error);
+        return false;
+    }
+}
+
+async function deleteConversationMessageRemote(conversation, messageId) {
+    if (!conversation?.id || !messageId) return false;
+    const conversationId = String(conversation.id);
+    conversationDirtyLocal.add(conversationId);
+    backupOddiConversation(conversation);
+    try {
+        const response = await fetch(`/api/conversations/${conversation.id}/messages/${encodeURIComponent(messageId)}`, { method: "DELETE", credentials: "same-origin" });
+        if (!response.ok) throw new Error(`Delete message failed (${response.status})`);
+        const data = await response.json();
+        if (data?.conversation) Object.assign(conversation, normalizeConversationObject(data.conversation));
+        conversationDirtyLocal.delete(conversationId);
+        removeOddiConversationBackup(conversationId);
+        conversation.__recoveredLocally = false;
+        return true;
+    } catch (error) {
+        console.error("Delete conversation message error:", error);
+        return false;
+    }
+}
+
 async function createServerConversation(title = "New Chat") {
     try {
-        const response = await fetch("/api/conversations", {
-            method: "POST",
-            credentials: "same-origin",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ title })
-        });
-
-        if (!response.ok) {
-            throw new Error(`Create conversation failed (${response.status})`);
-        }
-
-        return await response.json();
+        const response = await fetch("/api/conversations", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" }, body: JSON.stringify({ title }) });
+        if (!response.ok) throw new Error(`Create conversation failed (${response.status})`);
+        return normalizeConversationObject(await response.json());
     } catch (error) {
         console.error("Create conversation error:", error);
         return null;
     }
 }
 
+async function retryDirtyConversationRecoveries() {
+    if (!isLoggedIn) return;
+    for (const backup of getOddiLocalChatBackups()) {
+        const id = String(backup.id);
+        if (!conversationDirtyLocal.has(id) || conversationSaveInFlight.has(id)) continue;
+        await saveConversation(backup);
+    }
+}
+
 async function syncConversationsFromServer(options = {}) {
     if (!isLoggedIn || conversationSyncInFlight) return;
-
     conversationSyncInFlight = true;
     try {
-        const response = await fetch("/api/conversations", {
-            method: "GET",
-            credentials: "same-origin",
-            cache: "no-store",
-            headers: { "Cache-Control": "no-cache" }
-        });
-
+        const response = await fetch("/api/conversations", { method: "GET", credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) return;
-
         const loaded = await response.json();
         if (!Array.isArray(loaded)) return;
-
-        const serverConversations = loaded;
-        const serverIds = new Set(
-            serverConversations
-                .filter(c => c?.id !== null && c?.id !== undefined)
-                .map(c => String(c.id))
-        );
-
-        const currentId =
-            currentConversation !== null &&
-            conversations[currentConversation]?.id !== null &&
-            conversations[currentConversation]?.id !== undefined
-                ? String(conversations[currentConversation].id)
-                : null;
-
-        const localById = new Map(
-            conversations
-                .filter(c => c?.id !== null && c?.id !== undefined)
-                .map(c => [String(c.id), c])
-        );
-
+        const serverConversations = loaded.map(normalizeConversationObject);
+        const serverIds = new Set(serverConversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => String(c.id)));
+        const currentId = currentConversation !== null && conversations[currentConversation]?.id !== null && conversations[currentConversation]?.id !== undefined ? String(conversations[currentConversation].id) : null;
+        const localById = new Map(conversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => [String(c.id), c]));
         let listChanged = false;
         let openConversationChanged = false;
 
         for (const serverConversation of serverConversations) {
-            if (!serverConversation?.id) continue;
-
             const id = String(serverConversation.id);
             const localConversation = localById.get(id);
-
-            if (!localConversation) {
-                conversations.push({ ...serverConversation });
-                listChanged = true;
-                continue;
-            }
-
-            // Never let a polling response overwrite a local PUT that is
-            // currently in flight.
-            if (conversationSaveInFlight.has(id)) continue;
-
-            // Never overwrite the currently generating conversation.
-            if (currentId === id && generationActive) continue;
-
-            if (mergeConversationFromServer(localConversation, serverConversation)) {
-                listChanged = true;
-                if (currentId === id) openConversationChanged = true;
+            if (!localConversation) { conversations.push({ ...serverConversation }); listChanged = true; continue; }
+            if (conversationDirtyLocal.has(id) || conversationSaveInFlight.has(id)) continue;
+            const localRevision = Number(localConversation.revision || 0);
+            const serverRevision = Number(serverConversation.revision || 0);
+            if (serverRevision > localRevision || (serverRevision === localRevision && !conversationDataIsSame(localConversation, serverConversation))) {
+                if (mergeConversationFromServer(localConversation, serverConversation)) {
+                    listChanged = true;
+                    if (currentId === id) openConversationChanged = true;
+                }
             }
         }
 
-        // Any locally recovered chat that now exists on the server can have
-        // its recovery copy removed. Normal server-backed chats are retained.
-        for (const serverConversation of serverConversations) {
-            if (serverConversation?.id) removeOddiConversationBackup(serverConversation.id);
-        }
-
-        // If the server legitimately removed a chat (e.g. Bin/permanent
-        // deletion), remove it locally too. A conversation still being saved
-        // is kept until that save finishes.
         const beforeLength = conversations.length;
         conversations = conversations.filter(conversation => {
             if (!conversation?.id) return true;
             const id = String(conversation.id);
-            return serverIds.has(id) || conversationSaveInFlight.has(id);
+            return serverIds.has(id) || conversationDirtyLocal.has(id) || conversationSaveInFlight.has(id);
         });
         if (conversations.length !== beforeLength) listChanged = true;
 
         if (currentId !== null) {
-            const restoredIndex = conversations.findIndex(
-                conversation => conversation?.id && String(conversation.id) === currentId
-            );
+            const restoredIndex = conversations.findIndex(c => c?.id && String(c.id) === currentId);
             currentConversation = restoredIndex >= 0 ? restoredIndex : null;
         }
-
         if (listChanged) renderHistory();
-
-        // If another device changed the open chat, redraw it only when it is
-        // safe to do so. This is what makes phone → laptop updates visible.
-        if (
-            openConversationChanged &&
-            options.refreshOpen !== false &&
-            !generationActive &&
-            currentConversation !== null
-        ) {
-            openConversation(currentConversation);
-        }
+        if (openConversationChanged && options.refreshOpen !== false && !generationActive && currentConversation !== null) openConversation(currentConversation);
+        await retryDirtyConversationRecoveries();
     } catch (error) {
         console.debug("Conversation sync skipped:", error);
-    } finally {
-        conversationSyncInFlight = false;
-    }
+    } finally { conversationSyncInFlight = false; }
 }
 
 function startConversationSync() {
     if (!isLoggedIn) return;
-
-    if (conversationSyncTimer) {
-        clearInterval(conversationSyncTimer);
-    }
-
-    conversationSyncTimer = setInterval(() => {
-        syncConversationsFromServer();
-    }, 4000);
-
+    if (conversationSyncTimer) clearInterval(conversationSyncTimer);
+    conversationSyncTimer = setInterval(() => syncConversationsFromServer(), 2500);
     if (!conversationSyncStarted) {
         conversationSyncStarted = true;
-
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "visible") {
-                syncConversationsFromServer();
-            }
-        });
-
-        window.addEventListener("focus", () => {
-            syncConversationsFromServer();
-        });
-
-        window.addEventListener("online", () => {
-            syncConversationsFromServer();
-        });
+        document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncConversationsFromServer(); });
+        window.addEventListener("focus", () => syncConversationsFromServer());
+        window.addEventListener("online", () => syncConversationsFromServer());
     }
-
     syncConversationsFromServer({ refreshOpen: false });
 }
 
@@ -8004,7 +7996,11 @@ async function togglePinMessage(button) {
     button.textContent = result.message.pinned ? "📌 Pinned" : "📌 Pin";
     button.title = result.message.pinned ? "Unpin message" : "Pin important message";
 
-    await saveConversation(conversations[currentConversation]);
+    await updateConversationMessageRemote(
+        conversations[currentConversation],
+        result.message.id,
+        { pinned: result.message.pinned }
+    );
 }
 
 async function setMessageFeedback(button, type) {
@@ -8028,9 +8024,11 @@ async function setMessageFeedback(button, type) {
         }
     }
 
-    /* Feedback is stored with the message and sent through the existing
-       conversation save endpoint, so the host can inspect it with chat data. */
-    await saveConversation(conversations[currentConversation]);
+    await updateConversationMessageRemote(
+        conversations[currentConversation],
+        result.message.id,
+        { feedback: result.message.feedback }
+    );
 }
 
 async function regenerateResponse(button) {
@@ -8058,8 +8056,12 @@ async function regenerateResponse(button) {
     const userMessage = messages[userIndex].text;
 
     /* Regenerate the latest answer without duplicating the user's message. */
+    const removedMessageId = result.message.id;
     messages.splice(result.index, 1);
-    await saveConversation(conversations[currentConversation]);
+    await deleteConversationMessageRemote(
+        conversations[currentConversation],
+        removedMessageId
+    );
 
     await sendMessage(null, false, {
         skipUserMessage: true,
@@ -8264,11 +8266,11 @@ async function sendMessage(
             }
 
             conversations.unshift({
-                id:
-                    serverConversation.id,
+                ...serverConversation,
                 title: message,
                 messages: [],
-                pinned: false
+                revision: Number(serverConversation.revision || 0),
+                pinned: !!serverConversation.pinned
             });
 
             currentConversation = 0;
@@ -8368,9 +8370,8 @@ async function sendMessage(
 
         oddiSmartScroll(true);
 
-        conversations[
-            currentConversation
-        ].messages.push({
+        const newUserMessage = {
+            id: makeMessageId(),
             role: "user",
             text: message,
             files:
@@ -8379,16 +8380,19 @@ async function sendMessage(
                 ),
             fileRefs,
             pinned: false
-        });
+        };
+
+        conversations[
+            currentConversation
+        ].messages.push(newUserMessage);
 
         touchConversation(
             conversations[currentConversation]
         );
 
-        await saveConversation(
-            conversations[
-                currentConversation
-            ]
+        await appendConversationMessage(
+            conversations[currentConversation],
+            newUserMessage
         );
 
         renderHistory();
@@ -8849,14 +8853,17 @@ async function finishAIMessage(
     const assistantIndex =
         conversations[currentConversation].messages.length;
 
-    conversations[
-        currentConversation
-    ].messages.push({
+    const newAssistantMessage = {
+        id: makeMessageId(),
         role: "assistant",
         text: reply,
         pinned: false,
         feedback: null
-    });
+    };
+
+    conversations[
+        currentConversation
+    ].messages.push(newAssistantMessage);
 
     const botMessage = typing?.closest(".bot-message");
 
@@ -8872,10 +8879,9 @@ async function finishAIMessage(
         conversations[currentConversation]
     );
 
-    await saveConversation(
-        conversations[
-            currentConversation
-        ]
+    await appendConversationMessage(
+        conversations[currentConversation],
+        newAssistantMessage
     );
 
     renderHistory();

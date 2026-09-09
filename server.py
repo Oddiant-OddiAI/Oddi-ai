@@ -22,6 +22,9 @@ from app.database import (
     delete_all_conversations,
     get_deleted_conversations,
     update_conversation_metadata,
+    append_conversation_message,
+    update_conversation_message,
+    delete_conversation_message,
     get_memory,
     save_memory,
     delete_memory
@@ -43,11 +46,19 @@ create_tables()
 @app.route("/")
 def home():
 
-    return render_template(
+    response = render_template(
         "index.html",
         logged_in=("user_id" in session),
-        username=session.get("username")
+        username=session.get("username"),
+        user_id=session.get("user_id")
     )
+    # The page contains the live conversation-sync JavaScript inline. Never
+    # serve an older cached copy after a deployment, especially on mobile.
+    rendered = app.make_response(response)
+    rendered.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    rendered.headers["Pragma"] = "no-cache"
+    rendered.headers["Expires"] = "0"
+    return rendered
 
 @app.route("/login")
 def login_page():
@@ -151,10 +162,14 @@ def api_create_conversation():
         title
     )
 
+    conversation = get_conversation(
+        conversation_id,
+        session["user_id"]
+    )
+
     return jsonify({
         "success": True,
-        "id": conversation_id,
-        "title": title
+        **(conversation or {"id": conversation_id, "title": title, "messages": [], "revision": 0})
     }), 201
 
 
@@ -218,26 +233,107 @@ def api_update_conversation(conversation_id):
 
     title = data.get("title", "New Chat")
     messages = data.get("messages", [])
+    expected_revision = data.get("expected_revision")
 
-    conversation = get_conversation(
+    result = update_conversation(
         conversation_id,
-        session["user_id"]
+        session["user_id"],
+        title,
+        messages,
+        expected_revision=expected_revision
     )
 
-    if not conversation:
+    if not result.get("found"):
         return jsonify({
             "error": "Conversation not found."
         }), 404
 
-    update_conversation(
-        conversation_id,
-        session["user_id"],
-        title,
-        messages
-    )
+    if result.get("conflict"):
+        return jsonify({
+            "success": False,
+            "conflict": True,
+            "conversation": result["conversation"]
+        }), 409
 
     return jsonify({
-        "success": True
+        "success": True,
+        "conversation": result["conversation"]
+    })
+
+
+@app.route("/api/conversations/<int:conversation_id>/messages", methods=["POST"])
+def api_append_conversation_message(conversation_id):
+
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+
+    data = request.get_json(silent=True) or {}
+    message = data.get("message")
+
+    if not isinstance(message, dict):
+        return jsonify({"error": "Message object is required."}), 400
+
+    conversation = append_conversation_message(
+        conversation_id,
+        session["user_id"],
+        message
+    )
+
+    if not conversation:
+        return jsonify({"error": "Conversation not found."}), 404
+
+    return jsonify({
+        "success": True,
+        "conversation": conversation
+    })
+
+
+@app.route("/api/conversations/<int:conversation_id>/messages/<message_id>", methods=["PUT"])
+def api_update_conversation_message(conversation_id, message_id):
+
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+
+    data = request.get_json(silent=True) or {}
+    patch = data.get("patch", data)
+
+    if not isinstance(patch, dict):
+        return jsonify({"error": "Message patch must be an object."}), 400
+
+    conversation = update_conversation_message(
+        conversation_id,
+        session["user_id"],
+        message_id,
+        patch
+    )
+
+    if not conversation:
+        return jsonify({"error": "Conversation or message not found."}), 404
+
+    return jsonify({
+        "success": True,
+        "conversation": conversation
+    })
+
+
+@app.route("/api/conversations/<int:conversation_id>/messages/<message_id>", methods=["DELETE"])
+def api_delete_conversation_message(conversation_id, message_id):
+
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+
+    conversation = delete_conversation_message(
+        conversation_id,
+        session["user_id"],
+        message_id
+    )
+
+    if not conversation:
+        return jsonify({"error": "Conversation or message not found."}), 404
+
+    return jsonify({
+        "success": True,
+        "conversation": conversation
     })
 
 
