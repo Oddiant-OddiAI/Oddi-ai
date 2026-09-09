@@ -16609,5 +16609,16 @@ body.dark-mode .home-next-move-btn:hover{background:#252d29 !important;border-co
     
   }
 </style>
+
+<style id="oddi-phone-hide-suggestions-final">
+/* Phone only: remove the Suggested for You section from the home screen. */
+@media (max-width:768px) and (pointer:coarse){
+  .home-suggestion-label,
+  .quick-actions{
+    display:none !important;
+  }
+}
+</style>
+
 </body>
 </html>
