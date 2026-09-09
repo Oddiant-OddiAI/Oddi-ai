@@ -3920,6 +3920,83 @@ const historyContainer =
         "chatHistory"
     );
 
+const ODDI_CHAT_RECOVERY_PREFIX = "oddi_chat_recovery_v3";
+let conversationSyncInFlight = false;
+let conversationSyncTimer = null;
+let conversationSyncStarted = false;
+const conversationSaveInFlight = new Set();
+
+function getOddiChatRecoveryKey(conversationId) {
+    const username = String(document.body?.dataset?.username || "").trim().toLowerCase();
+    const userPart = isLoggedIn && username ? username : "guest";
+    return `${ODDI_CHAT_RECOVERY_PREFIX}:${userPart}:${String(conversationId)}`;
+}
+
+function backupOddiConversation(conversation) {
+    if (!conversation?.id) return;
+    try {
+        localStorage.setItem(
+            getOddiChatRecoveryKey(conversation.id),
+            JSON.stringify({
+                ...conversation,
+                messages: Array.isArray(conversation.messages) ? conversation.messages : [],
+                __recoverySavedAt: Date.now()
+            })
+        );
+    } catch (error) {
+        console.warn("Could not create local chat recovery copy:", error);
+    }
+}
+
+function removeOddiConversationBackup(conversationId) {
+    if (conversationId === null || conversationId === undefined) return;
+    try {
+        localStorage.removeItem(getOddiChatRecoveryKey(conversationId));
+    } catch (_) {}
+}
+
+function getOddiLocalChatBackups() {
+    const backups = [];
+    try {
+        const prefix = `${ODDI_CHAT_RECOVERY_PREFIX}:`;
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!key || !key.startsWith(prefix)) continue;
+            try {
+                const value = JSON.parse(localStorage.getItem(key) || "null");
+                if (value?.id) backups.push(value);
+            } catch (_) {}
+        }
+    } catch (error) {
+        console.warn("Could not read local chat recovery copies:", error);
+    }
+    return backups;
+}
+
+function conversationDataIsSame(a, b) {
+    return !!a && !!b
+        && String(a.title || "New Chat") === String(b.title || "New Chat")
+        && JSON.stringify(Array.isArray(a.messages) ? a.messages : [])
+            === JSON.stringify(Array.isArray(b.messages) ? b.messages : []);
+}
+
+function mergeConversationFromServer(localConversation, serverConversation) {
+    if (!localConversation || !serverConversation) return false;
+    if (conversationDataIsSame(localConversation, serverConversation)) return false;
+
+    localConversation.title = serverConversation.title || "New Chat";
+    localConversation.messages = Array.isArray(serverConversation.messages)
+        ? serverConversation.messages
+        : [];
+    localConversation.created_at = serverConversation.created_at;
+    if (serverConversation.updated_at !== undefined) {
+        localConversation.updated_at = serverConversation.updated_at;
+    }
+    if (serverConversation.pinned !== undefined) localConversation.pinned = !!serverConversation.pinned;
+    if (serverConversation.archived !== undefined) localConversation.archived = !!serverConversation.archived;
+    return true;
+}
+
 async function loadConversations() {
     if (!isLoggedIn) {
         conversations = [];
@@ -3928,87 +4005,288 @@ async function loadConversations() {
     }
 
     try {
-        const response = await fetch("/api/conversations", { credentials: "same-origin" });
-        if (!response.ok) throw new Error(`Load conversations failed (${response.status})`);
+        const response = await fetch("/api/conversations", {
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache" }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Load conversations failed (${response.status})`);
+        }
 
         const loadedConversations = await response.json();
-        conversations = Array.isArray(loadedConversations) ? loadedConversations : [];
+        const serverConversations = Array.isArray(loadedConversations)
+            ? loadedConversations
+            : [];
 
-        // Migrate any old device-local pin/bin state once. The server then
-        // becomes the single source of truth for every device.
-        await migrateLegacyConversationState();
+        conversations = serverConversations;
 
-        const fresh = await fetch("/api/conversations", { credentials: "same-origin" });
-        if (fresh.ok) {
-            const latest = await fresh.json();
-            conversations = Array.isArray(latest) ? latest : conversations;
+        // Recover chats whose final PUT was interrupted. A recovery copy is
+        // only used when the server does not already have that conversation.
+        const serverIds = new Set(
+            conversations
+                .filter(c => c?.id !== null && c?.id !== undefined)
+                .map(c => String(c.id))
+        );
+        const recoverableBackups = getOddiLocalChatBackups().filter(
+            backup => backup?.id && !serverIds.has(String(backup.id))
+        );
+
+        if (recoverableBackups.length) {
+            conversations = conversations.concat(
+                recoverableBackups.map(backup => ({
+                    ...backup,
+                    __recoveredLocally: true
+                }))
+            );
+            renderHistory();
+
+            // Retry interrupted server saves in the background.
+            for (const backup of recoverableBackups) {
+                saveConversation(backup).catch(() => {});
+            }
         }
+
+        // Preserve the existing legacy pin/archive migration behavior.
+        await migrateLegacyConversationState();
 
         currentConversation = null;
         renderHistory();
+        startConversationSync();
     } catch (error) {
         console.error("Load conversations error:", error);
+
+        // If the API is temporarily unavailable, show the user's local
+        // recovery copies instead of making the chat list appear empty.
+        const backups = getOddiLocalChatBackups();
+        if (backups.length) {
+            conversations = backups.map(backup => ({
+                ...backup,
+                __recoveredLocally: true
+            }));
+            currentConversation = null;
+            renderHistory();
+        }
     }
 }
 
 async function saveConversation(conversation) {
     if (!conversation?.id) return false;
+
+    const conversationId = String(conversation.id);
+    const payload = {
+        title: conversation.title || "New Chat",
+        messages: Array.isArray(conversation.messages) ? conversation.messages : []
+    };
+
+    // Write the recovery copy BEFORE the network request. This prevents a
+    // laptop refresh, tab crash, or temporary network failure from silently
+    // destroying the newest local copy.
+    backupOddiConversation({ ...conversation, ...payload });
+    conversationSaveInFlight.add(conversationId);
+
     try {
-        const response = await fetch(`/api/conversations/${conversation.id}`, {
-            method: "PUT",
-            credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                title: conversation.title || "New Chat",
-                messages: Array.isArray(conversation.messages) ? conversation.messages : []
-            })
-        });
-        if (!response.ok) throw new Error(`Save conversation failed (${response.status})`);
-        return true;
+        let lastError = null;
+
+        // A short retry protects against transient mobile/laptop network
+        // failures and Render wake-up delays.
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                const response = await fetch(`/api/conversations/${conversation.id}`, {
+                    method: "PUT",
+                    credentials: "same-origin",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Cache-Control": "no-cache"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Save conversation failed (${response.status})`);
+                }
+
+                removeOddiConversationBackup(conversation.id);
+                conversation.__recoveredLocally = false;
+                return true;
+            } catch (error) {
+                lastError = error;
+                if (attempt < 2) {
+                    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
+                }
+            }
+        }
+
+        throw lastError || new Error("Save conversation failed");
     } catch (error) {
         console.error("Save conversation error:", error);
         return false;
+    } finally {
+        conversationSaveInFlight.delete(conversationId);
     }
 }
 
-async function createServerConversation(
-    title = "New Chat"
-) {
-
+async function createServerConversation(title = "New Chat") {
     try {
-
-        const response =
-            await fetch(
-                "/api/conversations",
-                {
-                    method: "POST",
-
-                    headers: {
-                        "Content-Type":
-                            "application/json"
-                    },
-
-                    body: JSON.stringify({
-                        title
-                    })
-                }
-            );
+        const response = await fetch("/api/conversations", {
+            method: "POST",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ title })
+        });
 
         if (!response.ok) {
-            return null;
+            throw new Error(`Create conversation failed (${response.status})`);
         }
 
         return await response.json();
-
     } catch (error) {
-
-        console.error(
-            "Create conversation error:",
-            error
-        );
-
+        console.error("Create conversation error:", error);
         return null;
     }
+}
+
+async function syncConversationsFromServer(options = {}) {
+    if (!isLoggedIn || conversationSyncInFlight) return;
+
+    conversationSyncInFlight = true;
+    try {
+        const response = await fetch("/api/conversations", {
+            method: "GET",
+            credentials: "same-origin",
+            cache: "no-store",
+            headers: { "Cache-Control": "no-cache" }
+        });
+
+        if (!response.ok) return;
+
+        const loaded = await response.json();
+        if (!Array.isArray(loaded)) return;
+
+        const serverConversations = loaded;
+        const serverIds = new Set(
+            serverConversations
+                .filter(c => c?.id !== null && c?.id !== undefined)
+                .map(c => String(c.id))
+        );
+
+        const currentId =
+            currentConversation !== null &&
+            conversations[currentConversation]?.id !== null &&
+            conversations[currentConversation]?.id !== undefined
+                ? String(conversations[currentConversation].id)
+                : null;
+
+        const localById = new Map(
+            conversations
+                .filter(c => c?.id !== null && c?.id !== undefined)
+                .map(c => [String(c.id), c])
+        );
+
+        let listChanged = false;
+        let openConversationChanged = false;
+
+        for (const serverConversation of serverConversations) {
+            if (!serverConversation?.id) continue;
+
+            const id = String(serverConversation.id);
+            const localConversation = localById.get(id);
+
+            if (!localConversation) {
+                conversations.push({ ...serverConversation });
+                listChanged = true;
+                continue;
+            }
+
+            // Never let a polling response overwrite a local PUT that is
+            // currently in flight.
+            if (conversationSaveInFlight.has(id)) continue;
+
+            // Never overwrite the currently generating conversation.
+            if (currentId === id && generationActive) continue;
+
+            if (mergeConversationFromServer(localConversation, serverConversation)) {
+                listChanged = true;
+                if (currentId === id) openConversationChanged = true;
+            }
+        }
+
+        // Any locally recovered chat that now exists on the server can have
+        // its recovery copy removed. Normal server-backed chats are retained.
+        for (const serverConversation of serverConversations) {
+            if (serverConversation?.id) removeOddiConversationBackup(serverConversation.id);
+        }
+
+        // If the server legitimately removed a chat (e.g. Bin/permanent
+        // deletion), remove it locally too. A conversation still being saved
+        // is kept until that save finishes.
+        const beforeLength = conversations.length;
+        conversations = conversations.filter(conversation => {
+            if (!conversation?.id) return true;
+            const id = String(conversation.id);
+            return serverIds.has(id) || conversationSaveInFlight.has(id);
+        });
+        if (conversations.length !== beforeLength) listChanged = true;
+
+        if (currentId !== null) {
+            const restoredIndex = conversations.findIndex(
+                conversation => conversation?.id && String(conversation.id) === currentId
+            );
+            currentConversation = restoredIndex >= 0 ? restoredIndex : null;
+        }
+
+        if (listChanged) renderHistory();
+
+        // If another device changed the open chat, redraw it only when it is
+        // safe to do so. This is what makes phone → laptop updates visible.
+        if (
+            openConversationChanged &&
+            options.refreshOpen !== false &&
+            !generationActive &&
+            currentConversation !== null
+        ) {
+            openConversation(currentConversation);
+        }
+    } catch (error) {
+        console.debug("Conversation sync skipped:", error);
+    } finally {
+        conversationSyncInFlight = false;
+    }
+}
+
+function startConversationSync() {
+    if (!isLoggedIn) return;
+
+    if (conversationSyncTimer) {
+        clearInterval(conversationSyncTimer);
+    }
+
+    conversationSyncTimer = setInterval(() => {
+        syncConversationsFromServer();
+    }, 4000);
+
+    if (!conversationSyncStarted) {
+        conversationSyncStarted = true;
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") {
+                syncConversationsFromServer();
+            }
+        });
+
+        window.addEventListener("focus", () => {
+            syncConversationsFromServer();
+        });
+
+        window.addEventListener("online", () => {
+            syncConversationsFromServer();
+        });
+    }
+
+    syncConversationsFromServer({ refreshOpen: false });
 }
 
 /* 
