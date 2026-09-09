@@ -4,7 +4,7 @@ EXIT_COMMAND = "exit"
 
 ERROR_MESSAGE = "⚠️ Oddi AI: Unable to get a response right now. Please try again later."
 
-VERSION = "0.1"
+VERSION = "1.0"
 APP_NAME = "Oddi AI"
 VERSION = "1.0"
 CREATOR = "Oddiant"

@@ -21,7 +21,10 @@ from app.database import (
     delete_conversation,
     delete_all_conversations,
     get_deleted_conversations,
-    update_conversation_metadata
+    update_conversation_metadata,
+    get_memory,
+    save_memory,
+    delete_memory
 )
 
 from app.engine import process_message
@@ -281,6 +284,74 @@ def api_clear_conversations():
     return jsonify({
         "success": True
     })
+# =========================================================
+# MEMORY CONTROLS
+# =========================================================
+@app.route("/api/memory", methods=["GET"])
+def api_get_memory():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+
+    memories = get_memory(session["user_id"]) or {}
+
+    return jsonify({
+        "memories": [
+            {"category": key, "memory": value}
+            for key, value in memories.items()
+        ]
+    })
+
+
+@app.route("/api/memory", methods=["PUT"])
+def api_update_memory():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+
+    data = request.get_json(silent=True) or {}
+    key = str(data.get("key") or data.get("category") or "").strip()
+    memory = str(data.get("memory") or data.get("value") or "").strip()
+
+    if not key:
+        return jsonify({"error": "Memory key is required."}), 400
+    if not memory:
+        return jsonify({"error": "Memory cannot be empty."}), 400
+
+    existing = get_memory(session["user_id"], key)
+    if existing is None:
+        return jsonify({"error": "Memory not found."}), 404
+
+    save_memory(session["user_id"], key, memory)
+
+    return jsonify({
+        "success": True,
+        "category": key,
+        "memory": memory
+    })
+
+
+@app.route("/api/memory", methods=["DELETE"])
+def api_delete_memory():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+
+    data = request.get_json(silent=True) or {}
+    key = str(data.get("key") or data.get("category") or "").strip()
+
+    if not key:
+        return jsonify({"error": "Memory key is required."}), 400
+
+    existing = get_memory(session["user_id"], key)
+    if existing is None:
+        return jsonify({"error": "Memory not found."}), 404
+
+    delete_memory(session["user_id"], key)
+
+    return jsonify({
+        "success": True,
+        "deleted": key
+    })
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
 

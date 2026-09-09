@@ -1536,6 +1536,41 @@ body.dark-mode .user-message .user-expand-btn:hover{
 }
 </style>
 
+
+<style id="oddi-memory-ui">
+.memory-box{width:min(680px,calc(100vw - 30px));}
+.memory-subtitle{margin:3px 0 0;color:#777;font-size:12px;line-height:1.4;}
+.memory-list{display:flex;flex-direction:column;gap:10px;max-height:56vh;overflow:auto;padding:2px 2px 4px;}
+.memory-card{border:1px solid #e3e3e3;border-radius:13px;padding:13px;background:#fafafa;}
+.memory-card-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+.memory-category{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#777;}
+.memory-actions{display:flex;gap:6px;}
+.memory-action-btn{border:1px solid #ddd;border-radius:8px;padding:6px 9px;background:#fff;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
+.memory-action-btn:hover{background:#f0f0f0;}
+.memory-action-btn.danger{color:#c92323;}
+.memory-text{width:100%;box-sizing:border-box;min-height:54px;resize:vertical;border:1px solid #ddd;border-radius:10px;padding:10px 11px;background:#fff;color:#111;font:inherit;font-size:14px;line-height:1.5;outline:none;}
+.memory-text:focus{border-color:#999;box-shadow:0 0 0 3px rgba(0,0,0,.045);}
+.memory-card.editing .memory-text{background:#fff;}
+.memory-save-row{display:flex;justify-content:flex-end;gap:7px;margin-top:8px;}
+.memory-save-btn{border:0;border-radius:9px;padding:8px 12px;background:#0a0a0a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;}
+.memory-cancel-btn{border:1px solid #ddd;border-radius:9px;padding:8px 12px;background:#f5f5f5;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
+.memory-loading,.memory-empty{padding:28px 12px;text-align:center;color:#888;font-size:13px;}
+.memory-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #eee;}
+.memory-status{font-size:12px;color:#777;min-height:18px;}
+.memory-status.success{color:#176b3a;font-weight:700;}
+.memory-status.error{color:#c92323;font-weight:700;}
+.memory-secondary-btn{border:1px solid #ddd;border-radius:9px;padding:8px 12px;background:#f5f5f5;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
+.memory-secondary-btn:hover,.memory-cancel-btn:hover{background:#eaeaea;}
+body.dark-mode .memory-subtitle{color:#999;}
+body.dark-mode .memory-card{background:#151515;border-color:#303030;}
+body.dark-mode .memory-category{color:#999;}
+body.dark-mode .memory-action-btn,body.dark-mode .memory-text{background:#1c1c1c;color:#fff;border-color:#3a3a3a;}
+body.dark-mode .memory-action-btn:hover,body.dark-mode .memory-secondary-btn:hover,body.dark-mode .memory-cancel-btn:hover{background:#252525;}
+body.dark-mode .memory-save-btn{background:#f5f5f5;color:#111;}
+body.dark-mode .memory-cancel-btn,body.dark-mode .memory-secondary-btn{background:#222;color:#fff;border-color:#3a3a3a;}
+body.dark-mode .memory-footer{border-top-color:#333;}
+@media (max-width:600px){.memory-box{width:calc(100vw - 20px);padding:17px;}.memory-card{padding:11px;}.memory-actions{gap:4px;}.memory-action-btn{padding:6px 8px;}}
+</style>
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
@@ -2023,6 +2058,7 @@ body.dark-mode .user-message .user-expand-btn:hover{
     <div class="sidebar-utility-buttons" aria-label="Sidebar tools">
         <button id="binBtn" class="sidebar-utility-btn" type="button" title="Recently deleted chats" aria-label="Recently deleted chats">🗑️</button>
         <button id="shortcutsBtn" class="sidebar-utility-btn" type="button" title="Keyboard shortcuts" aria-label="Keyboard shortcuts">⌨️</button>
+        <button id="memoryBtn" class="sidebar-utility-btn" type="button" title="My memory" aria-label="My memory">🧠</button>
     </div>
 <main id="chatbox" class="chatbox">
         <div class="welcome-message" id="welcomeContainer">
@@ -2149,6 +2185,24 @@ body.dark-mode .user-message .user-expand-btn:hover{
             <div class="shortcut-row"><span>Move through chats</span><span class="shortcut-key">↑ / ↓</span></div>
             <div class="shortcut-row"><span>Open selected chat</span><span class="shortcut-key">Enter</span></div>
             <div class="shortcut-row"><span>Close search / dialogs</span><span class="shortcut-key">Esc</span></div>
+        </div>
+    </div>
+</div>
+<div id="memoryModal" class="utility-modal" aria-hidden="true">
+    <div class="utility-box memory-box" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle">
+        <div class="utility-header">
+            <div>
+                <h3 id="memoryModalTitle">🧠 My Memory</h3>
+                <p class="memory-subtitle">These are the things ODDI remembers about you.</p>
+            </div>
+            <button id="closeMemory" class="utility-close" type="button" aria-label="Close memory">✕</button>
+        </div>
+        <div id="memoryList" class="memory-list">
+            <div class="memory-loading">Loading your memory…</div>
+        </div>
+        <div class="memory-footer">
+            <span id="memoryStatus" class="memory-status" aria-live="polite"></span>
+            <button id="refreshMemoryBtn" class="memory-secondary-btn" type="button">↻ Refresh</button>
         </div>
     </div>
 </div>
@@ -4335,7 +4389,7 @@ ${bodyHtml}
 
 
 
-</body></html>`;
+\n\n</body></html>`;
 }
 
 function buildPlainTextExport(conversation) {
@@ -5278,6 +5332,8 @@ function speakAIMessage(button) {
    MAIN SEND FUNCTION
    THIS IS THE IMPORTANT FIX
  */
+
+
 
 async function sendMessage(
     displayMessage = null,
@@ -9728,6 +9784,37 @@ loadConversations();
         morePanel.appendChild(recentDeleted);
     }
 
+    /* =========================================================
+       MY MEMORY INSIDE PHONE ⋮ MENU
+       The desktop memory button remains in the sidebar. On phones,
+       expose the same memory control from the three-dots menu only.
+       ========================================================= */
+
+    if (morePanel && !document.getElementById("mobileMyMemoryBtn")) {
+        const memoryAction = document.createElement("button");
+        memoryAction.type = "button";
+        memoryAction.id = "mobileMyMemoryBtn";
+        memoryAction.className = "header-more-action";
+        memoryAction.innerHTML = "🧠 <span>My Memory</span>";
+
+        memoryAction.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+
+            /* Close the phone ⋮ menu before opening the memory dialog. */
+            const overlay = document.getElementById("headerMoreOverlay");
+            overlay?.classList.remove("show");
+            overlay?.setAttribute("aria-hidden", "true");
+            document.getElementById("headerMoreBtn")?.setAttribute("aria-expanded", "false");
+
+            /* Reuse the existing My Memory button/handler so there is
+               only one memory-opening implementation. */
+            document.getElementById("memoryBtn")?.click();
+        });
+
+        morePanel.appendChild(memoryAction);
+    }
+
     /* Close + menu when another major UI element opens. */
     document.getElementById("menuBtn")?.addEventListener(
         "click",
@@ -10437,7 +10524,220 @@ loadConversations();
 })();
 </script>
 
-\n\n</body>
+<script id="oddi-memory-ui-script">
+(function () {
+    const memoryBtn = document.getElementById("memoryBtn");
+    const memoryModal = document.getElementById("memoryModal");
+    const closeMemory = document.getElementById("closeMemory");
+    const memoryList = document.getElementById("memoryList");
+    const memoryStatus = document.getElementById("memoryStatus");
+    const refreshMemoryBtn = document.getElementById("refreshMemoryBtn");
+
+    function openMemory() {
+        memoryModal?.classList.add("show");
+        memoryModal?.setAttribute("aria-hidden", "false");
+        loadMemory();
+    }
+
+    function closeMemoryModal() {
+        memoryModal?.classList.remove("show");
+        memoryModal?.setAttribute("aria-hidden", "true");
+    }
+
+    function setMemoryStatus(text, type = "") {
+        if (!memoryStatus) return;
+        memoryStatus.textContent = text || "";
+        memoryStatus.className = "memory-status" + (type ? " " + type : "");
+    }
+
+    function escapeMemoryText(value) {
+        const div = document.createElement("div");
+        div.textContent = String(value ?? "");
+        return div.innerHTML;
+    }
+
+    function normalizeMemories(payload) {
+        if (Array.isArray(payload)) return payload;
+        if (Array.isArray(payload?.memories)) return payload.memories;
+        if (payload && typeof payload.memories === "object") {
+            return Object.entries(payload.memories).map(([category, memory]) => ({
+                category,
+                memory
+            }));
+        }
+        if (payload && typeof payload === "object") {
+            return Object.entries(payload).map(([category, memory]) => ({
+                category,
+                memory
+            }));
+        }
+        return [];
+    }
+
+    async function loadMemory() {
+        if (!memoryList) return;
+        setMemoryStatus("");
+        memoryList.innerHTML = '<div class="memory-loading">Loading your memory…</div>';
+
+        try {
+            const response = await fetch("/api/memory", {
+                method: "GET",
+                headers: { "Accept": "application/json" },
+                credentials: "same-origin"
+            });
+
+            if (!response.ok) {
+                throw new Error(await response.text() || `HTTP ${response.status}`);
+            }
+
+            const payload = await response.json();
+            const memories = normalizeMemories(payload);
+
+            if (!memories.length) {
+                memoryList.innerHTML = '<div class="memory-empty">ODDI does not have any saved memories about you yet. 🧠</div>';
+                return;
+            }
+
+            memoryList.innerHTML = memories.map((item, index) => {
+                const category = String(item.category ?? item.memory_key ?? `Memory ${index + 1}`);
+                const memory = String(item.memory ?? item.memory_value ?? item.value ?? "");
+                const key = String(item.id ?? item.memory_key ?? category);
+                return `
+                    <div class="memory-card" data-memory-key="${encodeURIComponent(key)}">
+                        <div class="memory-card-header">
+                            <span class="memory-category">${escapeMemoryText(category)}</span>
+                            <div class="memory-actions">
+                                <button type="button" class="memory-action-btn memory-edit-btn">✏️ Edit</button>
+                                <button type="button" class="memory-action-btn danger memory-delete-btn">Delete</button>
+                            </div>
+                        </div>
+                        <textarea class="memory-text" readonly>${escapeMemoryText(memory)}</textarea>
+                        <div class="memory-save-row" hidden>
+                            <button type="button" class="memory-cancel-btn memory-cancel-btn-inner">Cancel</button>
+                            <button type="button" class="memory-save-btn memory-save-btn-inner">Save</button>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+
+            memoryList.querySelectorAll(".memory-card").forEach(card => {
+                const editBtn = card.querySelector(".memory-edit-btn");
+                const deleteBtn = card.querySelector(".memory-delete-btn");
+                const cancelBtn = card.querySelector(".memory-cancel-btn-inner");
+                const saveBtn = card.querySelector(".memory-save-btn-inner");
+                const textarea = card.querySelector(".memory-text");
+                const saveRow = card.querySelector(".memory-save-row");
+                const key = decodeURIComponent(card.dataset.memoryKey || "");
+                let original = textarea?.value || "";
+
+                editBtn?.addEventListener("click", () => {
+                    original = textarea.value;
+                    textarea.readOnly = false;
+                    card.classList.add("editing");
+                    saveRow.hidden = false;
+                    textarea.focus();
+                });
+
+                cancelBtn?.addEventListener("click", () => {
+                    textarea.value = original;
+                    textarea.readOnly = true;
+                    card.classList.remove("editing");
+                    saveRow.hidden = true;
+                });
+
+                saveBtn?.addEventListener("click", async () => {
+                    const memory = textarea.value.trim();
+                    if (!memory) {
+                        setMemoryStatus("Memory cannot be empty.", "error");
+                        return;
+                    }
+
+                    saveBtn.disabled = true;
+                    try {
+                        const response = await fetch("/api/memory", {
+                            method: "PUT",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Accept": "application/json"
+                            },
+                            credentials: "same-origin",
+                            body: JSON.stringify({
+                                key,
+                                category: key,
+                                memory
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(await response.text() || `HTTP ${response.status}`);
+                        }
+
+                        original = memory;
+                        textarea.readOnly = true;
+                        card.classList.remove("editing");
+                        saveRow.hidden = true;
+                        setMemoryStatus("Memory updated. 🧠", "success");
+                    } catch (error) {
+                        console.error("Memory update error:", error);
+                        setMemoryStatus("Could not update memory yet.", "error");
+                    } finally {
+                        saveBtn.disabled = false;
+                    }
+                });
+
+                deleteBtn?.addEventListener("click", async () => {
+                    if (!confirm("Delete this memory from ODDI?")) return;
+                    deleteBtn.disabled = true;
+                    try {
+                        const response = await fetch("/api/memory", {
+                            method: "DELETE",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Accept": "application/json"
+                            },
+                            credentials: "same-origin",
+                            body: JSON.stringify({ key, category: key })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(await response.text() || `HTTP ${response.status}`);
+                        }
+
+                        card.remove();
+                        setMemoryStatus("Memory deleted. 🗑️", "success");
+                        if (!memoryList.querySelector(".memory-card")) {
+                            memoryList.innerHTML = '<div class="memory-empty">No saved memories yet. 🧠</div>';
+                        }
+                    } catch (error) {
+                        console.error("Memory delete error:", error);
+                        setMemoryStatus("Could not delete memory yet.", "error");
+                    } finally {
+                        deleteBtn.disabled = false;
+                    }
+                });
+            });
+        } catch (error) {
+            console.error("Memory load error:", error);
+            memoryList.innerHTML = '<div class="memory-empty">Memory controls are not connected yet.</div>';
+            setMemoryStatus("Memory API is unavailable.", "error");
+        }
+    }
+
+    memoryBtn?.addEventListener("click", openMemory);
+    closeMemory?.addEventListener("click", closeMemoryModal);
+    refreshMemoryBtn?.addEventListener("click", loadMemory);
+    memoryModal?.addEventListener("click", event => {
+        if (event.target === memoryModal) closeMemoryModal();
+    });
+
+    window.addEventListener("keydown", event => {
+        if (event.key === "Escape" && memoryModal?.classList.contains("show")) {
+            closeMemoryModal();
+        }
+    });
+})();
+</script>
+</body>
 
 
 <style id="oddi-mobile-composer-buttons-v5">

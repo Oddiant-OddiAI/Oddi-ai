@@ -23,10 +23,11 @@ from app.config import client
 from app.database import (
     get_vector_store_id,
     save_vector_store_id,
-    save_memory
+    save_memory,
+    get_memory
 )
 from app import state
-
+from app.memory_ai import analyze_memory
 
 RESUME_ANALYSIS_TRIGGERS = {
     "analyze my resume",
@@ -701,12 +702,55 @@ def process_message(
 
             # ---------- POWERPOINT ----------
 
+    # ==========================================
+    # 2. GROQ MEMORY AI
+    # ==========================================
+    # Run Memory AI BEFORE fast responses so that short/direct replies
+    # can also create memories in real time.
+    memory_notice = ""
+
+    if user_id is not None:
+        try:
+            memory_result = analyze_memory(user_message)
+
+            # memory_ai.py may return either a dict or a JSON string.
+            if isinstance(memory_result, str):
+                import json
+                memory_result = json.loads(memory_result)
+
+            if (
+                isinstance(memory_result, dict)
+                and memory_result.get("action") == "ADD"
+            ):
+                memory_key = memory_result.get("category", "").strip()
+                memory_value = memory_result.get("memory", "").strip()
+
+                if memory_key and memory_value:
+                    save_memory(
+                        user_id,
+                        memory_key,
+                        memory_value
+                    )
+
+                    memory_notice = "🧠 Memory Saved!"
+
+                    print(
+                        f"🧠 Memory AI saved for user {user_id}: "
+                        f"[{memory_key}] {memory_value}"
+                    )
+
+        except Exception as memory_error:
+            # A Memory AI/API failure must not break normal ODDI chat.
+            print("⚠️ Memory AI error:", memory_error)
+
     # 2. Fast Responses
     if not uploaded_files:
 
         fast_reply = fast_response(user_message)
 
         if fast_reply:
+            if memory_notice:
+                return fast_reply + "\n\n" + memory_notice
             return fast_reply
 
 
@@ -790,16 +834,51 @@ def process_message(
                     return memory_reply
 
 
-    # 4. Save Memory
-    if user_id is not None and is_memory_message(user_message):
+    # ==========================================
+    # 5. LOAD CURRENT USER'S SAVED MEMORIES
+    # ==========================================
+    user_memories = {}
 
-        return remember(user_message, user_id)
+    if user_id is not None:
+        try:
+            user_memories = get_memory(user_id) or {}
+        except Exception as memory_load_error:
+            print("⚠️ Could not load user memories:", memory_load_error)
 
-    # 5. Chatgpt
+    memory_context = ""
+
+    if user_memories:
+        memory_lines = [
+            "ODDI USER MEMORY",
+            "",
+            "The following are saved facts about the current user.",
+            "Use them naturally when relevant.",
+            "Do not mention the memory system unless the user asks.",
+            "Do not invent memories that are not listed.",
+            ""
+        ]
+
+        for key, value in user_memories.items():
+            memory_lines.append(f"- {key}: {value}")
+
+        memory_context = "\n".join(memory_lines)
+
+    # ==========================================
+    # 6. MAIN ODDI MESSAGE
+    # ==========================================
+    current_user_text = user_message
+
+    if memory_context:
+        current_user_text = (
+            memory_context
+            + "\n\nCURRENT USER MESSAGE:\n"
+            + user_message
+        )
+
     content = [
         {
             "type": "input_text",
-            "text": user_message
+            "text": current_user_text
         }
     ]
     if media_transcripts:
@@ -920,7 +999,12 @@ def process_message(
 
     print("Sending request to OpenAI...")
 
-    return get_response(
+    response = get_response(
         chat_history,
         vector_store_id
     )
+
+    if memory_notice:
+        return response + "\n\n" + memory_notice
+
+    return response
