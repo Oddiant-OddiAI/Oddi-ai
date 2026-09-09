@@ -13,7 +13,3 @@ client = OpenAI(
 groq_client = Groq(
     api_key=os.getenv("GROQ_API_KEY")
 )
-
-mistral_client = Mistral(
-    api_key=os.getenv("MISTRAL_API_KEY")
-)
