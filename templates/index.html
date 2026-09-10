@@ -3320,6 +3320,17 @@ body.dark-mode .memory-footer{border-top-color:#333;}
 }
 </style>
 
+
+<style id="oddi-quick-new-chat-utility">
+@media (min-width:769px){
+  .sidebar-utility-buttons .sidebar-new-chat-utility-btn svg{
+    width:21px !important;height:21px !important;display:block !important;
+  }
+  .sidebar-utility-buttons .sidebar-new-chat-utility-btn:hover svg{
+    transform:translateY(-.5px) !important;
+  }
+}
+</style>
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
@@ -3805,6 +3816,13 @@ body.dark-mode .memory-footer{border-top-color:#333;}
         </svg>
     </button>
     <div class="sidebar-utility-buttons" aria-label="Sidebar tools">
+        <button id="quickNewChatBtn" class="sidebar-utility-btn sidebar-new-chat-utility-btn" type="button" title="New chat" aria-label="New chat">
+            <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                <path d="M19 11.5V6.8A2.8 2.8 0 0 0 16.2 4H6.8A2.8 2.8 0 0 0 4 6.8v8.4A2.8 2.8 0 0 0 6.8 18H10"/>
+                <path d="M8 9h7M8 12h4"/>
+                <path d="M17.5 14v6M14.5 17h6"/>
+            </svg>
+        </button>
         <button id="binBtn" class="sidebar-utility-btn" type="button" title="Recently deleted chats" aria-label="Recently deleted chats">🗑️</button>
         <button id="shortcutsBtn" class="sidebar-utility-btn" type="button" title="Keyboard shortcuts" aria-label="Keyboard shortcuts">⌨️</button>
         <button id="memoryBtn" class="sidebar-utility-btn" type="button" title="My memory" aria-label="My memory">🗂️</button>
@@ -3813,8 +3831,7 @@ body.dark-mode .memory-footer{border-top-color:#333;}
         <div class="welcome-message" id="welcomeContainer">
             <h2>
                 {% if logged_in %}
-                    <span class="welcome-line">Ready to level up your</span>
-                    <span class="welcome-line">career, {{ username }}? <span class="welcome-wave" aria-hidden="true">👋</span></span>
+                    <span class="welcome-line">Ready to level up, {{ username }}? 🚀</span>
                 {% else %}
                     <span class="welcome-line">What would you like to</span>
                     <span class="welcome-line">work on today?</span>
@@ -10118,6 +10135,16 @@ const newChatBtn =
 newChatBtn.onclick =
     newChat;
 
+const quickNewChatBtn =
+    document.getElementById(
+        "quickNewChatBtn"
+    );
+
+if (quickNewChatBtn) {
+    quickNewChatBtn.onclick =
+        newChat;
+}
+
 const renameModal =
     document.getElementById(
         "renameModal"
@@ -15919,6 +15946,7 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
 
             const learning=clean(getValue("learning"));
             const goal=clean(getValue("goal"));
+            const progressRaw=clean(getValue("learning_progress") || getValue("progress"));
             if(!learning && !goal) return;
 
             mount.innerHTML=`
@@ -15927,8 +15955,13 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
                         <span class="home-learning-kicker">What I'm learning</span>
                         <strong class="home-learning-title"></strong>
                         <span class="home-learning-goal"></span>
+                        <div class="home-learning-progress" id="homeLearningProgress" hidden>
+                            <span class="home-learning-progress-track"><span class="home-learning-progress-fill"></span></span>
+                            <span class="home-learning-progress-label"></span>
+                        </div>
+                        <div class="home-learning-insight" id="homeLearningInsight" hidden></div>
                     </div>
-                    <button type="button" class="home-learning-btn" id="homeLearningBtn">Continue learning →</button>
+                    <button type="button" class="home-learning-btn" id="homeLearningBtn">Continue learning <span aria-hidden="true">→</span></button>
                 </article>`;
             document.getElementById("continueCardMount")?.replaceChildren();
 
@@ -15936,6 +15969,24 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
             const goalEl=mount.querySelector(".home-learning-goal");
             if(title) title.textContent=learning || "Your current focus";
             if(goalEl) goalEl.textContent=goal ? `Goal: ${goal}` : "Keep building toward your next milestone";
+
+            const progress = Math.max(0, Math.min(100, parseFloat(String(progressRaw).replace(/[^0-9.]/g, "")) || 0));
+            if(progressRaw && progress > 0){
+                const progressWrap=mount.querySelector("#homeLearningProgress");
+                const fill=mount.querySelector(".home-learning-progress-fill");
+                const label=mount.querySelector(".home-learning-progress-label");
+                if(progressWrap) progressWrap.hidden=false;
+                if(fill) fill.style.width=`${progress}%`;
+                if(label) label.textContent=`${Math.round(progress)}% progress`;
+            }
+
+            if(learning && goal){
+                const insight=mount.querySelector("#homeLearningInsight");
+                if(insight){
+                    insight.hidden=false;
+                    insight.textContent=`✦ ODDI insight: Your current learning in ${learning} connects with your goal to ${goal}.`;
+                }
+            }
 
             mount.querySelector("#homeLearningBtn")?.addEventListener("click",()=>{
                 const list=Array.isArray(window.oddiConversations)?window.oddiConversations:[];
@@ -16652,5 +16703,397 @@ body.dark-mode .home-next-move-btn:hover{background:#252d29 !important;border-co
 }
 </style>
 
+
+<style id="oddi-premium-9x">
+/* =========================================================
+   ODDI PREMIUM POLISH — 9+ VISUAL PASS
+   Desktop + mobile-safe. Functionality remains unchanged.
+   ========================================================= */
+:root{
+  --oddi-accent:#20c76b;
+  --oddi-premium-shadow:0 18px 48px rgba(0,0,0,.08);
+}
+
+/* 1. Signature ambient background using the supplied ODDI subtle mark. */
+.chatbox{position:relative !important;isolation:isolate !important;}
+.chatbox::before{
+  content:"";
+  position:absolute;
+  z-index:-2;
+  pointer-events:none;
+  width:min(720px,70vw);
+  aspect-ratio:1;
+  left:50%;
+  top:40px;
+  transform:translateX(-50%);
+  background:
+    radial-gradient(circle at 50% 38%,rgba(32,199,107,.045),transparent 42%),
+    url("/static/subtle.png") center/72% auto no-repeat;
+  opacity:.42;
+  filter:saturate(.9);
+}
+.chatbox::after{
+  content:"";
+  position:absolute;
+  z-index:-3;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(circle at 10% 22%,rgba(73,172,255,.035),transparent 28%),
+    radial-gradient(circle at 92% 70%,rgba(32,199,107,.028),transparent 30%);
+}
+body.dark-mode .chatbox::before{
+  background:
+    radial-gradient(circle at 50% 38%,rgba(32,199,107,.05),transparent 42%),
+    url("/static/subtle-dark.png") center/72% auto no-repeat;
+  filter:invert(1);
+  opacity:.20;
+  mix-blend-mode:screen;
+}
+body.dark-mode .chatbox::after{
+  background:
+    radial-gradient(circle at 18% 22%,rgba(32,199,107,.035),transparent 26%),
+    radial-gradient(circle at 88% 72%,rgba(95,150,255,.025),transparent 28%);
+}
+
+/* 2. Premium action-card interaction: icon, lift, focus ring and press state. */
+.quick-actions .action-card{position:relative;overflow:hidden;}
+.quick-actions .action-card::after{
+  content:"";
+  position:absolute;inset:0;
+  background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,.5) 48%,transparent 78%);
+  transform:translateX(-120%);
+  transition:transform .5s ease;
+  pointer-events:none;
+}
+.quick-actions .action-card:hover::after{transform:translateX(120%);}
+.quick-actions .action-card-icon{transition:transform .2s cubic-bezier(.22,1,.36,1),background .2s ease,color .2s ease;}
+.quick-actions .action-card:hover .action-card-icon{transform:translateY(-1px) scale(1.06);background:#ededed !important;color:#303030 !important;}
+.quick-actions .action-card:focus-visible,
+.home-goal-chip:focus-visible,
+.home-learning-btn:focus-visible,
+.home-next-move-btn:focus-visible{
+  outline:none !important;
+  box-shadow:0 0 0 3px rgba(32,199,107,.14),0 8px 20px rgba(0,0,0,.07) !important;
+}
+
+/* 3. Learning card becomes a small, genuinely useful progress module when progress exists. */
+.home-learning-card{transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,border-color .2s ease !important;}
+.home-learning-card:hover{transform:translateY(-2px) !important;box-shadow:0 14px 34px rgba(0,0,0,.085) !important;border-color:#d8d8d8 !important;}
+.home-learning-btn span{display:inline-block;transition:transform .2s ease;}
+.home-learning-btn:hover span{transform:translateX(3px);}
+.home-learning-progress{display:flex;align-items:center;gap:9px;margin-top:6px;min-height:10px;}
+.home-learning-progress-track{display:block;width:min(180px,38vw);height:5px;border-radius:999px;background:#e8e8e8;overflow:hidden;}
+.home-learning-progress-fill{display:block;height:100%;width:0;border-radius:999px;background:var(--oddi-accent);transition:width .7s cubic-bezier(.22,1,.36,1);}
+.home-learning-progress-label{font-size:9.5px;color:#858585;font-weight:750;white-space:nowrap;}
+.home-learning-insight{margin-top:7px;font-size:10.5px;line-height:1.4;color:#6d6d6d;}
+body.dark-mode .home-learning-card{background:#121212 !important;border-color:#2a2a2a !important;}
+body.dark-mode .home-learning-card:hover{border-color:#3a3a3a !important;box-shadow:0 18px 42px rgba(0,0,0,.33) !important;}
+body.dark-mode .home-learning-progress-track{background:#292929;}
+body.dark-mode .home-learning-progress-label,.home-learning-insight{color:#959595 !important;}
+
+/* 4. ODDI's personality language is visible but understated. */
+.home-learning-insight::first-letter{color:var(--oddi-accent);}
+.home-next-move::before{
+  content:"✦ ODDI recommends";
+  display:block;
+  margin-bottom:5px;
+  font-size:8.5px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--oddi-accent);
+  font-weight:800;
+  opacity:.86;
+}
+
+/* 5. Goal chips make the lower area useful without adding another heavy card. */
+.home-goal-chips{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:7px;margin:11px auto 13px;}
+.home-goal-chip{
+  border:1px solid #e3e3e3;border-radius:999px;background:#fbfbfb;color:#606060;
+  padding:7px 11px;font-size:10px;font-weight:750;line-height:1;cursor:pointer;
+  transition:transform .18s ease,border-color .18s ease,background .18s ease,color .18s ease,box-shadow .18s ease;
+}
+.home-goal-chip:hover{transform:translateY(-1px);border-color:rgba(32,199,107,.38);background:#f7fffa;color:#1d5e3b;box-shadow:0 6px 16px rgba(0,0,0,.055);}
+.home-goal-chip:active{transform:scale(.97);}
+body.dark-mode .home-goal-chip{background:#141414;border-color:#2d2d2d;color:#a8a8a8;}
+body.dark-mode .home-goal-chip:hover{background:#152219;border-color:rgba(32,199,107,.28);color:#d9f7e6;}
+
+/* 6. Entrance choreography — gentle, fast, and accessibility-aware. */
+.welcome-message > *{animation:oddiHomeIn .48s cubic-bezier(.22,1,.36,1) both;}
+.welcome-message > *:nth-child(1){animation-delay:.02s;}
+.welcome-message > *:nth-child(2){animation-delay:.07s;}
+.welcome-message > *:nth-child(3){animation-delay:.12s;}
+.welcome-message > *:nth-child(4){animation-delay:.17s;}
+.welcome-message > *:nth-child(5){animation-delay:.22s;}
+.welcome-message > *:nth-child(6){animation-delay:.27s;}
+@keyframes oddiHomeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* 7. Sidebar tooltip layer on desktop. */
+@media (min-width:769px){
+  #menuBtn[title],.sidebar-utility-btn[title]{position:relative;}
+  #menuBtn::after,.sidebar-utility-btn::after{
+    content:attr(title);position:absolute;left:56px;top:50%;transform:translateY(-50%) translateX(-4px);
+    padding:7px 9px;border:1px solid #e3e3e3;border-radius:9px;background:rgba(255,255,255,.97);color:#292929;
+    font-size:11px;font-weight:700;white-space:nowrap;opacity:0;pointer-events:none;
+    box-shadow:0 10px 24px rgba(0,0,0,.09);transition:opacity .16s ease,transform .16s ease;z-index:5000;
+  }
+  #menuBtn:hover::after,.sidebar-utility-btn:hover::after{opacity:1;transform:translateY(-50%) translateX(0);}
+  body.dark-mode #menuBtn::after,body.dark-mode .sidebar-utility-btn::after{background:#171717;border-color:#303030;color:#f2f2f2;box-shadow:0 12px 30px rgba(0,0,0,.32);}
+}
+
+/* 8. Composer feels more like the primary interaction surface. */
+.input-area{transform:translateX(-50%) translateY(0) !important;transition:box-shadow .2s ease,border-color .2s ease,transform .2s cubic-bezier(.22,1,.36,1) !important;}
+.input-area:hover{box-shadow:0 16px 44px rgba(0,0,0,.14) !important;}
+.input-area:focus-within{transform:translateX(-50%) translateY(-1px) !important;}
+.input-area .send-btn:not(:disabled){box-shadow:0 7px 18px rgba(32,199,107,.20) !important;}
+.input-area .send-btn:not(:disabled):hover{transform:translateY(-1px) scale(1.035) !important;box-shadow:0 10px 22px rgba(32,199,107,.26) !important;}
+
+/* 9. Cleaner scroll treatment on desktop. */
+@media (min-width:769px){
+  .chatbox{scrollbar-width:thin;scrollbar-color:rgba(130,130,130,.38) transparent;}
+  .chatbox::-webkit-scrollbar{width:8px;}
+  .chatbox::-webkit-scrollbar-track{background:transparent;}
+  .chatbox::-webkit-scrollbar-thumb{background:rgba(130,130,130,.35);border-radius:999px;border:2px solid transparent;background-clip:padding-box;}
+  .chatbox::-webkit-scrollbar-thumb:hover{background:rgba(100,100,100,.55);border:2px solid transparent;background-clip:padding-box;}
+}
+
+/* 10. Compact/safe spacing on shorter laptop screens. */
+@media (min-width:769px) and (max-height:700px){
+  .chatbox::before{width:520px;top:5px;opacity:.28;}
+  .home-goal-chips{margin-top:7px;margin-bottom:9px;}
+  .home-goal-chip{padding:6px 9px;font-size:9px;}
+  .home-learning-insight{font-size:9.5px;}
+}
+@media (min-width:769px) and (min-height:851px){
+  .chatbox::before{width:820px;top:60px;opacity:.34;}
+  .home-goal-chips{margin-top:14px;margin-bottom:15px;}
+}
+
+/* Mobile remains compact; the same polish survives without overloading the viewport. */
+@media (max-width:768px) and (pointer:coarse){
+  .chatbox::before{width:560px;top:30px;opacity:.22;background-size:82% auto;}
+  body.dark-mode .chatbox::before{opacity:.12;}
+  .home-goal-chips{gap:6px;margin-top:9px;margin-bottom:11px;}
+  .home-goal-chip{padding:6px 9px;font-size:9px;}
+  .home-learning-insight{font-size:9px;}
+  .home-learning-progress-track{width:130px;}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .welcome-message > *, .home-learning-progress-fill{animation:none !important;transition:none !important;}
+}
+</style>
+<script id="oddi-premium-9x-js">
+(function(){
+  "use strict";
+  const input=document.getElementById("userInput");
+  const nextMove=document.getElementById("homeNextMoveBtn");
+  nextMove?.addEventListener("click",()=>{
+    input?.focus();
+    if(input){
+      input.dispatchEvent(new Event("focus",{bubbles:true}));
+    }
+  });
+})();
+</script>
 </body>
 </html>
+<style id="oddi-desktop-height-aware-home-final">
+/* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
+   Phone/tablet rules remain untouched. */
+@media (min-width:769px) and (max-height:700px){
+  /* NORMAL / SHORT LAPTOP WINDOW: keep the whole home composition visible. */
+  .chatbox{
+    padding:8px 24px 104px !important;
+  }
+  .welcome-message{
+    width:min(900px,calc(100vw - 130px)) !important;
+    padding:8px 16px 38px !important;
+  }
+  .welcome-message::before{
+    margin-bottom:5px !important;
+    font-size:9px !important;
+  }
+  .welcome-message h2{
+    max-width:330px !important;
+    margin-bottom:5px !important;
+    font-size:30px !important;
+    line-height:1.04 !important;
+  }
+  .welcome-message > p{
+    font-size:12.5px !important;
+    line-height:1.3 !important;
+  }
+  .home-memory-context{
+    margin-top:6px !important;
+    font-size:10.5px !important;
+    line-height:1.25 !important;
+  }
+  .home-suggestion-label{
+    margin-top:12px !important;
+    margin-bottom:6px !important;
+    font-size:9px !important;
+  }
+  .quick-actions{
+    gap:8px !important;
+  }
+  .quick-actions .action-card{
+    width:184px !important;
+    min-width:184px !important;
+    max-width:184px !important;
+    height:58px !important;
+    min-height:58px !important;
+    max-height:58px !important;
+    padding:8px 10px !important;
+  }
+  .quick-actions .action-card-copy strong{
+    font-size:12px !important;
+    line-height:1.15 !important;
+  }
+  .quick-actions .action-card-copy small{
+    font-size:9.5px !important;
+    line-height:1.2 !important;
+  }
+  #homeLearningMount{
+    margin-top:12px !important;
+  }
+  #homeLearningMount .home-learning-card{
+    min-height:68px !important;
+    padding:11px 14px !important;
+    gap:14px !important;
+  }
+  #homeLearningMount .home-learning-main{
+    gap:3px !important;
+  }
+  #homeLearningMount .home-learning-kicker{
+    font-size:8.5px !important;
+  }
+  #homeLearningMount .home-learning-title{
+    font-size:15px !important;
+  }
+  #homeLearningMount .home-learning-goal{
+    font-size:10px !important;
+  }
+  #homeLearningMount .home-learning-btn{
+    min-height:34px !important;
+    height:34px !important;
+    font-size:10px !important;
+  }
+  .home-next-move{
+    margin-top:11px !important;
+    padding-top:0 !important;
+  }
+  .home-next-move-kicker{
+    font-size:8.5px !important;
+  }
+  .home-next-move h3{
+    margin:4px 0 2px !important;
+    font-size:13px !important;
+  }
+  .home-next-move p{
+    margin-bottom:7px !important;
+    font-size:10px !important;
+    line-height:1.25 !important;
+  }
+  .home-next-move-btn{
+    min-height:34px !important;
+    font-size:10px !important;
+    padding:0 13px !important;
+  }
+  .input-area{
+    width:min(900px,calc(100vw - 130px)) !important;
+    height:54px !important;
+    min-height:54px !important;
+    bottom:8px !important;
+    border-radius:15px !important;
+  }
+  .input-area textarea{
+    min-height:44px !important;
+    padding-top:11px !important;
+    padding-bottom:11px !important;
+  }
+  .attach-btn,.dictation-btn,.voice-btn,.send-btn{
+    width:44px !important;
+    min-width:44px !important;
+    height:44px !important;
+    min-height:44px !important;
+    border-radius:12px !important;
+  }
+}
+
+@media (min-width:769px) and (min-height:701px) and (max-height:850px){
+  /* STANDARD FULL LAPTOP VIEW: the balanced version shown in the reference. */
+  .chatbox{
+    padding-top:16px !important;
+    padding-bottom:112px !important;
+  }
+  .welcome-message{
+    padding-top:14px !important;
+    padding-bottom:52px !important;
+  }
+}
+
+@media (min-width:769px) and (min-height:851px){
+  /* FULLSCREEN / TALL DISPLAY: use the extra height instead of leaving the page cramped at the top. */
+  .chatbox{
+    padding-top:28px !important;
+    padding-bottom:128px !important;
+  }
+  .welcome-message{
+    width:min(1040px,calc(100vw - 150px)) !important;
+    padding-top:34px !important;
+    padding-bottom:82px !important;
+  }
+  .welcome-message::before{
+    margin-bottom:10px !important;
+  }
+  .welcome-message h2{
+    font-size:36px !important;
+    line-height:1.06 !important;
+    margin-bottom:9px !important;
+  }
+  .welcome-message > p{
+    font-size:14.5px !important;
+  }
+  .home-memory-context{
+    margin-top:10px !important;
+  }
+  .home-suggestion-label{
+    margin-top:24px !important;
+    margin-bottom:10px !important;
+  }
+  .quick-actions{
+    gap:12px !important;
+  }
+  #homeLearningMount{
+    margin-top:22px !important;
+  }
+  #homeLearningMount .home-learning-card{
+    min-height:86px !important;
+    padding:16px 18px !important;
+  }
+  #homeLearningMount .home-learning-title{
+    font-size:18px !important;
+  }
+  .home-next-move{
+    margin-top:24px !important;
+  }
+  .home-next-move h3{
+    font-size:17px !important;
+  }
+  .home-next-move p{
+    font-size:12px !important;
+    margin-bottom:12px !important;
+  }
+  .home-next-move-btn{
+    min-height:40px !important;
+  }
+  .input-area{
+    width:min(1040px,calc(100vw - 150px)) !important;
+    bottom:16px !important;
+    height:60px !important;
+    min-height:60px !important;
+    border-radius:17px !important;
+  }
+}
+</style>
