@@ -1,4 +1,6 @@
 import json
+import logging
+import os
 from datetime import timedelta
 from flask import (
     Flask,
@@ -33,6 +35,8 @@ from app.database import (
 from app.engine import process_message
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("oddi.persistence")
 
 app.secret_key = "Oddi-AI_AI_2026_SuperSecretKey"
 
@@ -135,6 +139,7 @@ def signup():
 @app.route("/api/conversations", methods=["GET"])
 def api_get_conversations():
 
+    logger.info("HTTP GET /api/conversations pid=%s user=%s", os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({
             "error": "Not logged in."
@@ -148,6 +153,7 @@ def api_get_conversations():
 @app.route("/api/conversations", methods=["POST"])
 def api_create_conversation():
 
+    logger.info("HTTP POST /api/conversations pid=%s user=%s", os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({
             "error": "Not logged in."
@@ -182,6 +188,7 @@ def api_get_deleted_conversations():
 
 @app.route("/api/conversations/<int:conversation_id>/metadata", methods=["PUT"])
 def api_update_conversation_metadata(conversation_id):
+    logger.info("HTTP PUT /api/conversations/%s/metadata pid=%s user=%s", conversation_id, os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({"error": "Not logged in."}), 401
     data = request.get_json(silent=True) or {}
@@ -224,6 +231,7 @@ def api_get_conversation(conversation_id):
 @app.route("/api/conversations/<int:conversation_id>", methods=["PUT"])
 def api_update_conversation(conversation_id):
 
+    logger.info("HTTP PUT /api/conversations/%s pid=%s user=%s", conversation_id, os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({
             "error": "Not logged in."
@@ -264,6 +272,7 @@ def api_update_conversation(conversation_id):
 @app.route("/api/conversations/<int:conversation_id>/messages", methods=["POST"])
 def api_append_conversation_message(conversation_id):
 
+    logger.info("HTTP POST /api/conversations/%s/messages pid=%s user=%s", conversation_id, os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({"error": "Not logged in."}), 401
 
@@ -291,6 +300,7 @@ def api_append_conversation_message(conversation_id):
 @app.route("/api/conversations/<int:conversation_id>/messages/<message_id>", methods=["PUT"])
 def api_update_conversation_message(conversation_id, message_id):
 
+    logger.info("HTTP PUT /api/conversations/%s/messages/%s pid=%s user=%s", conversation_id, message_id, os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({"error": "Not logged in."}), 401
 
@@ -319,6 +329,7 @@ def api_update_conversation_message(conversation_id, message_id):
 @app.route("/api/conversations/<int:conversation_id>/messages/<message_id>", methods=["DELETE"])
 def api_delete_conversation_message(conversation_id, message_id):
 
+    logger.warning("HTTP DELETE /api/conversations/%s/messages/%s pid=%s user=%s", conversation_id, message_id, os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({"error": "Not logged in."}), 401
 
@@ -340,6 +351,7 @@ def api_delete_conversation_message(conversation_id, message_id):
 @app.route("/api/conversations/<int:conversation_id>", methods=["DELETE"])
 def api_delete_conversation(conversation_id):
 
+    logger.warning("HTTP DELETE /api/conversations/%s pid=%s user=%s", conversation_id, os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({
             "error": "Not logged in."
@@ -368,6 +380,7 @@ def api_delete_conversation(conversation_id):
 @app.route("/api/conversations/clear", methods=["DELETE"])
 def api_clear_conversations():
 
+    logger.warning("HTTP DELETE /api/conversations/clear pid=%s user=%s", os.getpid(), session.get("user_id"))
     if "user_id" not in session:
         return jsonify({
             "error": "Not logged in."
