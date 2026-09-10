@@ -1543,38 +1543,56 @@ body.dark-mode .user-message .user-expand-btn:hover{
 
 
 <style id="oddi-memory-ui">
-.memory-box{width:min(680px,calc(100vw - 30px));}
-.memory-subtitle{margin:3px 0 0;color:#777;font-size:12px;line-height:1.4;}
-.memory-list{display:flex;flex-direction:column;gap:10px;max-height:56vh;overflow:auto;padding:2px 2px 4px;}
-.memory-card{border:1px solid #e3e3e3;border-radius:13px;padding:13px;background:#fafafa;}
-.memory-card-header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
-.memory-category{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#777;}
-.memory-actions{display:flex;gap:6px;}
-.memory-action-btn{border:1px solid #ddd;border-radius:8px;padding:6px 9px;background:#fff;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
-.memory-action-btn:hover{background:#f0f0f0;}
-.memory-action-btn.danger{color:#c92323;}
-.memory-text{width:100%;box-sizing:border-box;min-height:54px;resize:vertical;border:1px solid #ddd;border-radius:10px;padding:10px 11px;background:#fff;color:#111;font:inherit;font-size:14px;line-height:1.5;outline:none;}
-.memory-text:focus{border-color:#999;box-shadow:0 0 0 3px rgba(0,0,0,.045);}
-.memory-card.editing .memory-text{background:#fff;}
-.memory-save-row{display:flex;justify-content:flex-end;gap:7px;margin-top:8px;}
-.memory-save-btn{border:0;border-radius:9px;padding:8px 12px;background:#0a0a0a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;}
-.memory-cancel-btn{border:1px solid #ddd;border-radius:9px;padding:8px 12px;background:#f5f5f5;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
-.memory-loading,.memory-empty{padding:28px 12px;text-align:center;color:#888;font-size:13px;}
-.memory-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid #eee;}
+/* Single-document memory view: one container, continuous content, one scrollbar. */
+.memory-box{width:min(720px,calc(100vw - 30px));}
+.memory-box .utility-header{padding-bottom:8px;}
+.memory-box #memoryModalTitle{font-size:19px;letter-spacing:-.02em;}
+.memory-subtitle{margin:3px 0 0;color:#777;font-size:12px;line-height:1.45;}
+.memory-list{max-height:58vh;overflow-y:auto;overflow-x:hidden;padding:8px 10px 18px 2px;scrollbar-width:thin;}
+.memory-document{display:block;}
+.memory-entry{padding:16px 8px 18px;border-bottom:1px solid #ededed;}
+.memory-entry:last-child{border-bottom:0;}
+.memory-entry-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px;}
+.memory-category{font-size:12px;font-weight:800;text-transform:none;letter-spacing:.01em;color:#555;}
+.memory-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;}
+.memory-action-btn{border:0;border-radius:7px;padding:4px 6px;background:transparent;color:#777;font-size:15px;line-height:1;cursor:pointer;opacity:.72;}
+.memory-action-btn:hover{background:#f2f2f2;color:#111;opacity:1;}
+.memory-action-btn.danger{color:#c92323;font-size:12px;opacity:.45;}
+.memory-action-btn.danger:hover{background:#fff2f2;color:#b51e1e;opacity:1;}
+.memory-text{display:block;width:100%;box-sizing:border-box;min-height:28px;padding:0;border:0;border-radius:0;background:transparent;color:#171717;font:inherit;font-size:14px;line-height:1.65;resize:vertical;outline:none;overflow:hidden;}
+.memory-text[readonly]{cursor:default;}
+.memory-text:not([readonly]){padding:9px 10px;border:1px solid #d8d8d8;border-radius:8px;background:#fff;}
+.memory-text:not([readonly]):focus{border-color:#999;box-shadow:0 0 0 3px rgba(0,0,0,.045);}
+.memory-save-row{display:flex;justify-content:flex-end;gap:7px;margin-top:9px;}
+.memory-save-btn{border:0;border-radius:8px;padding:7px 11px;background:#0a0a0a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;}
+.memory-cancel-btn{border:1px solid #ddd;border-radius:8px;padding:7px 11px;background:#f5f5f5;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
+.memory-loading,.memory-empty{padding:34px 12px;text-align:center;color:#888;font-size:13px;}
+.memory-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-top:11px;border-top:1px solid #eee;}
 .memory-status{font-size:12px;color:#777;min-height:18px;}
 .memory-status.success{color:#176b3a;font-weight:700;}
 .memory-status.error{color:#c92323;font-weight:700;}
 .memory-secondary-btn{border:1px solid #ddd;border-radius:9px;padding:8px 12px;background:#f5f5f5;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
 .memory-secondary-btn:hover,.memory-cancel-btn:hover{background:#eaeaea;}
 body.dark-mode .memory-subtitle{color:#999;}
-body.dark-mode .memory-card{background:#151515;border-color:#303030;}
-body.dark-mode .memory-category{color:#999;}
-body.dark-mode .memory-action-btn,body.dark-mode .memory-text{background:#1c1c1c;color:#fff;border-color:#3a3a3a;}
-body.dark-mode .memory-action-btn:hover,body.dark-mode .memory-secondary-btn:hover,body.dark-mode .memory-cancel-btn:hover{background:#252525;}
+body.dark-mode .memory-entry{border-bottom-color:#303030;}
+body.dark-mode .memory-category{color:#aaa;}
+body.dark-mode .memory-text{color:#f5f5f5;}
+body.dark-mode .memory-action-btn{color:#aaa;}
+body.dark-mode .memory-action-btn:hover{background:#252525;color:#fff;}
+body.dark-mode .memory-action-btn.danger:hover{background:#321b1b;color:#ff8c8c;}
+body.dark-mode .memory-text:not([readonly]){background:#1c1c1c;color:#fff;border-color:#3a3a3a;}
 body.dark-mode .memory-save-btn{background:#f5f5f5;color:#111;}
 body.dark-mode .memory-cancel-btn,body.dark-mode .memory-secondary-btn{background:#222;color:#fff;border-color:#3a3a3a;}
+body.dark-mode .memory-secondary-btn:hover,body.dark-mode .memory-cancel-btn:hover{background:#2b2b2b;}
 body.dark-mode .memory-footer{border-top-color:#333;}
-@media (max-width:600px){.memory-box{width:calc(100vw - 20px);padding:17px;}.memory-card{padding:11px;}.memory-actions{gap:4px;}.memory-action-btn{padding:6px 8px;}}
+@media (max-width:600px){
+    .memory-box{width:calc(100vw - 20px);padding:16px;}
+    .memory-list{max-height:61vh;padding-right:6px;}
+    .memory-entry{padding:14px 5px 16px;}
+    .memory-category{font-size:11px;}
+    .memory-text{font-size:14px;line-height:1.6;}
+    .memory-action-btn{padding:5px;}
+}
 </style>
 <style id="oddi-home-single-position-fix">
 /* Mobile home: move the ENTIRE welcome message down so its first visible line
@@ -3947,13 +3965,15 @@ body.dark-mode .memory-footer{border-top-color:#333;}
     <div class="utility-box memory-box" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle">
         <div class="utility-header">
             <div>
-                <h3 id="memoryModalTitle">🗂️ My Memory</h3>
+                <h3 id="memoryModalTitle">🧠 Your Memory Summarization</h3>
                 <p class="memory-subtitle">These are the things ODDI remembers about you.</p>
             </div>
             <button id="closeMemory" class="utility-close" type="button" aria-label="Close memory">✕</button>
         </div>
         <div id="memoryList" class="memory-list">
-            <div class="memory-loading">Loading your memory…</div>
+            <div class="memory-document">
+                <div class="memory-loading">Loading your memory…</div>
+            </div>
         </div>
         <div class="memory-footer">
             <span id="memoryStatus" class="memory-status" aria-live="polite"></span>
@@ -8270,7 +8290,8 @@ async function sendMessage(
                 title: message,
                 messages: [],
                 revision: Number(serverConversation.revision || 0),
-                pinned: !!serverConversation.pinned
+                pinned: !!serverConversation.pinned,
+                __newConversationSave: true
             });
 
             currentConversation = 0;
@@ -8390,10 +8411,18 @@ async function sendMessage(
             conversations[currentConversation]
         );
 
-        await appendConversationMessage(
-            conversations[currentConversation],
-            newUserMessage
-        );
+        const activeConversation = conversations[currentConversation];
+
+        if (activeConversation.__newConversationSave) {
+            // New conversations use the same full-conversation persistence
+            // path as the established conversation saver.
+            await saveConversation(activeConversation);
+        } else {
+            await appendConversationMessage(
+                activeConversation,
+                newUserMessage
+            );
+        }
 
         renderHistory();
     }
@@ -8879,10 +8908,20 @@ async function finishAIMessage(
         conversations[currentConversation]
     );
 
-    await appendConversationMessage(
-        conversations[currentConversation],
-        newAssistantMessage
-    );
+    const activeConversation = conversations[currentConversation];
+
+    if (activeConversation.__newConversationSave) {
+        // Keep the new conversation on the same persistence lifecycle.
+        const saved = await saveConversation(activeConversation);
+        if (saved) {
+            activeConversation.__newConversationSave = false;
+        }
+    } else {
+        await appendConversationMessage(
+            activeConversation,
+            newAssistantMessage
+        );
+    }
 
     renderHistory();
 
@@ -13316,12 +13355,12 @@ loadConversations();
                 const memory = String(item.memory ?? item.memory_value ?? item.value ?? "");
                 const key = String(item.id ?? item.memory_key ?? category);
                 return `
-                    <div class="memory-card" data-memory-key="${encodeURIComponent(key)}">
-                        <div class="memory-card-header">
+                    <section class="memory-entry" data-memory-key="${encodeURIComponent(key)}">
+                        <div class="memory-entry-header">
                             <span class="memory-category">${escapeMemoryText(category)}</span>
                             <div class="memory-actions">
-                                <button type="button" class="memory-action-btn memory-edit-btn">✏️ Edit</button>
-                                <button type="button" class="memory-action-btn danger memory-delete-btn">Delete</button>
+                                <button type="button" class="memory-action-btn memory-edit-btn" title="Edit memory" aria-label="Edit ${escapeMemoryText(category)}">✏️</button>
+                                <button type="button" class="memory-action-btn danger memory-delete-btn" title="Delete memory" aria-label="Delete ${escapeMemoryText(category)}">Delete</button>
                             </div>
                         </div>
                         <textarea class="memory-text" readonly>${escapeMemoryText(memory)}</textarea>
@@ -13329,11 +13368,11 @@ loadConversations();
                             <button type="button" class="memory-cancel-btn memory-cancel-btn-inner">Cancel</button>
                             <button type="button" class="memory-save-btn memory-save-btn-inner">Save</button>
                         </div>
-                    </div>
+                    </section>
                 `;
             }).join("");
 
-            memoryList.querySelectorAll(".memory-card").forEach(card => {
+            memoryList.querySelectorAll(".memory-entry").forEach(card => {
                 const editBtn = card.querySelector(".memory-edit-btn");
                 const deleteBtn = card.querySelector(".memory-delete-btn");
                 const cancelBtn = card.querySelector(".memory-cancel-btn-inner");
@@ -13418,7 +13457,7 @@ loadConversations();
 
                         card.remove();
                         setMemoryStatus("Memory deleted. 🗑️", "success");
-                        if (!memoryList.querySelector(".memory-card")) {
+                        if (!memoryList.querySelector(".memory-entry")) {
                             memoryList.innerHTML = '<div class="memory-empty">No saved memories yet. 🗂️</div>';
                         }
                     } catch (error) {

@@ -142,25 +142,78 @@ def get_user_by_email(email):
     return user
 
 
-def create_conversation(user_id, title="New Chat"):
-
+def save_conversation(conversation_id, user_id, title, messages, expected_revision=None):
+    """Canonical conversation persistence path for new and existing chats."""
     conn = get_db()
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        normalized_messages = messages if isinstance(messages, list) else []
 
-    cursor = conn.execute(
-        """
-        INSERT INTO conversations
-        (user_id, title, messages, revision)
-        VALUES (?, ?, ?, 0)
-        """,
-        (user_id, title, json.dumps([]))
-    )
+        if conversation_id is None:
+            cursor = conn.execute(
+                """
+                INSERT INTO conversations
+                (user_id, title, messages, revision)
+                VALUES (?, ?, ?, 0)
+                """,
+                (user_id, title or "New Chat", json.dumps(normalized_messages))
+            )
+            conversation_id = cursor.lastrowid
+        else:
+            row = conn.execute("""
+                SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+                FROM conversations
+                WHERE id = ? AND user_id = ?
+            """, (conversation_id, user_id)).fetchone()
 
-    conversation_id = cursor.lastrowid
+            if not row:
+                conn.rollback()
+                return {"ok": False, "found": False, "conflict": False, "conversation": None}
 
-    conn.commit()
-    conn.close()
+            current_revision = int(row["revision"] or 0)
+            if expected_revision is not None and int(expected_revision) != current_revision:
+                conversation = _conversation_dict(row)
+                conn.rollback()
+                return {"ok": False, "found": True, "conflict": True, "conversation": conversation}
 
-    return conversation_id
+            normalized_messages = _normalize_messages_for_storage(normalized_messages, conversation_id)
+            next_revision = current_revision + 1
+            conn.execute("""
+                UPDATE conversations
+                SET title = ?, messages = ?, updated_at = CURRENT_TIMESTAMP, revision = ?
+                WHERE id = ? AND user_id = ?
+            """, (
+                title or "New Chat",
+                json.dumps(normalized_messages),
+                next_revision,
+                conversation_id,
+                user_id
+            ))
+
+        conn.commit()
+
+        row = conn.execute("""
+            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
+            FROM conversations
+            WHERE id = ? AND user_id = ?
+        """, (conversation_id, user_id)).fetchone()
+
+        if not row:
+            return {"ok": False, "found": False, "conflict": False, "conversation": None}
+
+        return {"ok": True, "found": True, "conflict": False, "conversation": _conversation_dict(row)}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def create_conversation(user_id, title="New Chat"):
+    result = save_conversation(None, user_id, title, [])
+    if not result.get("ok"):
+        raise RuntimeError("Failed to create conversation")
+    return result["conversation"]["id"]
 
 
 def _normalize_messages_for_storage(messages, conversation_id):
@@ -231,97 +284,52 @@ def get_conversation(conversation_id, user_id):
 
 
 def update_conversation(conversation_id, user_id, title, messages, expected_revision=None):
-    conn = get_db()
-    try:
-        conn.execute("BEGIN IMMEDIATE")
-        row = conn.execute("""
-            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
-            FROM conversations
-            WHERE id = ? AND user_id = ?
-        """, (conversation_id, user_id)).fetchone()
-
-        if not row:
-            conn.rollback()
-            return {"ok": False, "found": False, "conflict": False, "conversation": None}
-
-        current_revision = int(row["revision"] or 0)
-        if expected_revision is not None and int(expected_revision) != current_revision:
-            conversation = _conversation_dict(row)
-            conn.rollback()
-            return {"ok": False, "found": True, "conflict": True, "conversation": conversation}
-
-        normalized = _normalize_messages_for_storage(messages, conversation_id)
-        next_revision = current_revision + 1
-        conn.execute("""
-            UPDATE conversations
-            SET title = ?, messages = ?, updated_at = CURRENT_TIMESTAMP, revision = ?
-            WHERE id = ? AND user_id = ?
-        """, (
-            title or "New Chat",
-            json.dumps(normalized),
-            next_revision,
-            conversation_id,
-            user_id
-        ))
-        conn.commit()
-
-        row = conn.execute("""
-            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
-            FROM conversations
-            WHERE id = ? AND user_id = ?
-        """, (conversation_id, user_id)).fetchone()
-        return {"ok": True, "found": True, "conflict": False, "conversation": _conversation_dict(row)}
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+    return save_conversation(
+        conversation_id,
+        user_id,
+        title,
+        messages,
+        expected_revision=expected_revision
+    )
 
 
 def append_conversation_message(conversation_id, user_id, message):
+    """Compatibility wrapper that persists the full conversation via save_conversation()."""
     conn = get_db()
     try:
-        conn.execute("BEGIN IMMEDIATE")
         row = conn.execute("""
             SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
             FROM conversations
             WHERE id = ? AND user_id = ?
         """, (conversation_id, user_id)).fetchone()
-        if not row:
-            conn.rollback()
-            return None
-
-        current_messages = _normalize_messages_for_storage(json.loads(row["messages"]), conversation_id)
-        item = dict(message) if isinstance(message, dict) else {"role": "assistant", "text": str(message)}
-        if not item.get("id"):
-            item["id"] = str(uuid.uuid4())
-
-        existing_ids = {str(m.get("id")) for m in current_messages if m.get("id")}
-        if str(item["id"]) in existing_ids:
-            conn.rollback()
-            return _conversation_dict(row)
-
-        current_messages.append(item)
-
-        next_revision = int(row["revision"] or 0) + 1
-        conn.execute("""
-            UPDATE conversations
-            SET messages = ?, updated_at = CURRENT_TIMESTAMP, revision = ?
-            WHERE id = ? AND user_id = ?
-        """, (json.dumps(current_messages), next_revision, conversation_id, user_id))
-        conn.commit()
-
-        row = conn.execute("""
-            SELECT id, user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at
-            FROM conversations
-            WHERE id = ? AND user_id = ?
-        """, (conversation_id, user_id)).fetchone()
-        return _conversation_dict(row)
-    except Exception:
-        conn.rollback()
-        raise
     finally:
         conn.close()
+
+    if not row:
+        return None
+
+    current_messages = _normalize_messages_for_storage(json.loads(row["messages"]), conversation_id)
+    item = dict(message) if isinstance(message, dict) else {"role": "assistant", "text": str(message)}
+    if not item.get("id"):
+        item["id"] = str(uuid.uuid4())
+
+    existing_ids = {str(m.get("id")) for m in current_messages if m.get("id")}
+    if str(item["id"]) in existing_ids:
+        return _conversation_dict(row)
+
+    current_messages.append(item)
+    result = save_conversation(
+        conversation_id,
+        user_id,
+        row["title"],
+        current_messages,
+        expected_revision=int(row["revision"] or 0)
+    )
+
+    if not result.get("ok"):
+        return result.get("conversation") if result.get("conflict") else None
+
+    return result["conversation"]
 
 
 def update_conversation_message(conversation_id, user_id, message_id, patch):
