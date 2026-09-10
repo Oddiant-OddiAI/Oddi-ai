@@ -3,7 +3,17 @@ import json
 import os
 import uuid
 
-DATABASE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "users.db")
+# Production persistence:
+# Render web-service filesystems are ephemeral unless a Persistent Disk is
+# mounted. Prefer the mounted /var/data directory when it exists, while
+# keeping the project-local database as a development fallback. The path can
+# also be explicitly configured with ODDI_DATABASE_PATH.
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_DEFAULT_DATABASE = "/var/data/users.db" if os.path.isdir("/var/data") else os.path.join(_PROJECT_ROOT, "users.db")
+DATABASE = os.getenv("ODDI_DATABASE_PATH", _DEFAULT_DATABASE)
+_DATABASE_DIR = os.path.dirname(os.path.abspath(DATABASE))
+if _DATABASE_DIR:
+    os.makedirs(_DATABASE_DIR, exist_ok=True)
 
 
 def get_db():
@@ -61,7 +71,7 @@ def create_tables():
     if "revision" not in columns:
         conn.execute("ALTER TABLE conversations ADD COLUMN revision INTEGER NOT NULL DEFAULT 0")
     if "pinned" not in columns:
-        conn.execute("ALTER TABLE conversations ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
+        conn.execute("ALTER TABLE conversations ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0")
     if "deleted_at" not in columns:
         conn.execute("ALTER TABLE conversations ADD COLUMN deleted_at TIMESTAMP NULL")
 

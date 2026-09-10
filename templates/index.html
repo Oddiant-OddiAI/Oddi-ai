@@ -9836,41 +9836,17 @@ async function newChat() {
 
     selectedFiles = [];
 
-    if (isLoggedIn) {
+    /*
+       IMPORTANT: New Chat is only a UI state until the user sends the
+       first message. This deliberately uses the exact same lazy-create
+       path as starting a chat from the Home screen. That means both flows
+       create their server conversation in sendMessage() and then persist
+       messages through the same conversation endpoints.
+    */
+    conversations = [];
+    currentConversation = null;
 
-        const serverConversation =
-            await createServerConversation(
-                "New Chat"
-            );
-
-        if (!serverConversation) {
-            return;
-        }
-
-        conversations.unshift({
-            id:
-                serverConversation.id,
-            title:
-                serverConversation.title,
-            messages: [],
-            pinned: false
-        });
-
-        currentConversation = 0;
-
-        renderHistory();
-
-    } else {
-
-        conversations = [{
-            id: null,
-            title: "New Chat",
-            messages: [],
-            pinned: false
-        }];
-
-        currentConversation = 0;
-    }
+    renderHistory();
 
     updateActionButton();
 
