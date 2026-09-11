@@ -17247,3 +17247,186 @@ body.dark-mode .home-goal-chip:hover{background:#152219;border-color:rgba(32,199
   }
 }
 </style>
+
+
+<style id="oddi-mobile-ui-final-fix">
+/* =========================================================
+   ODDI MOBILE UI FINAL FIX
+   1) Restore the existing PWA install/download control in the
+      mobile sidebar; let its existing JS decide when to show it.
+   2) Make Account Settings compact on phone while retaining
+      internal scrolling.
+   3) Put the Settings modal above the fixed mobile composer.
+   ========================================================= */
+
+@media (max-width:768px) and (pointer:coarse){
+
+  /* 1. Restore the existing sidebar install area.
+     Do not force the button itself visible: installBtn's existing
+     beforeinstallprompt logic controls that state. */
+  #sidebar .oddi-install-area{
+    display:flex !important;
+    flex:0 0 auto !important;
+    align-items:center !important;
+    justify-content:center !important;
+    visibility:visible !important;
+  }
+  #sidebar .oddi-install-area .install-btn{
+    width:32px !important;
+    height:32px !important;
+    min-width:32px !important;
+    min-height:32px !important;
+    padding:0 !important;
+    margin:0 !important;
+    align-items:center !important;
+    justify-content:center !important;
+    border-radius:50% !important;
+    box-sizing:border-box !important;
+    font-size:0 !important;
+  }
+  #sidebar .oddi-install-area .install-btn .oddi-download-svg{
+    display:block !important;
+    width:16px !important;
+    height:16px !important;
+    flex:0 0 16px !important;
+    color:currentColor !important;
+  }
+  #sidebar .oddi-install-area .install-btn::after{
+    display:none !important;
+    content:none !important;
+  }
+
+  /* 2. Account Settings: compact phone card, with the long
+     security section remaining scrollable inside the card. */
+  #accountSettingsModal{
+    padding:10px !important;
+    align-items:center !important;
+    justify-content:center !important;
+    overflow:hidden !important;
+  }
+  #accountSettingsModal .account-settings-card{
+    width:min(430px,calc(100vw - 20px)) !important;
+    max-width:430px !important;
+    max-height:calc(100dvh - 20px) !important;
+    padding:14px !important;
+    border-radius:17px !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    box-sizing:border-box !important;
+  }
+  #accountSettingsModal .account-settings-card-header{
+    margin-bottom:11px !important;
+    gap:9px !important;
+  }
+  #accountSettingsModal .account-settings-card-header h3{
+    font-size:18px !important;
+    line-height:1.2 !important;
+  }
+  #accountSettingsModal .account-settings-close{
+    width:32px !important;
+    height:32px !important;
+    min-width:32px !important;
+    flex-basis:32px !important;
+    font-size:18px !important;
+  }
+  #accountSettingsModal .account-current-card{
+    gap:9px !important;
+    padding:10px !important;
+    margin-bottom:11px !important;
+    border-radius:12px !important;
+  }
+  #accountSettingsModal .account-current-avatar{
+    width:38px !important;
+    height:38px !important;
+    flex-basis:38px !important;
+    font-size:18px !important;
+  }
+  #accountSettingsModal .account-current-name{
+    font-size:14px !important;
+  }
+  #accountSettingsModal .account-current-status{
+    font-size:10.5px !important;
+  }
+  #accountSettingsModal .account-section-title{
+    margin:12px 0 6px !important;
+    font-size:10px !important;
+  }
+  #accountSettingsModal .account-settings-action{
+    min-height:42px !important;
+    margin:4px 0 !important;
+    padding:8px 10px !important;
+    gap:9px !important;
+    border-radius:10px !important;
+    font-size:12.5px !important;
+  }
+  #accountSettingsModal .account-settings-action small{
+    font-size:9.5px !important;
+    line-height:1.25 !important;
+  }
+  #accountSettingsModal .app-lock-settings-card,
+  #accountSettingsModal .app-password-card{
+    padding:10px !important;
+    margin-bottom:10px !important;
+    border-radius:11px !important;
+  }
+  #accountSettingsModal .app-lock-change-card{
+    margin-top:8px !important;
+    padding-top:8px !important;
+  }
+  #accountSettingsModal .app-lock-change-note{
+    margin:-3px 0 8px !important;
+    font-size:10px !important;
+  }
+  #accountSettingsModal .app-password-note{
+    font-size:9.5px !important;
+    line-height:1.35 !important;
+  }
+  #accountSettingsModal .app-lock-now-btn{
+    min-height:38px !important;
+    margin-top:9px !important;
+    font-size:12px !important;
+  }
+
+  /* 3. Settings must sit above the fixed composer. The composer
+     stays fixed at the bottom; it no longer visually cuts through
+     this modal. */
+  #settingsModal{
+    position:fixed !important;
+    inset:0 !important;
+    z-index:2147483645 !important;
+    display:none !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-sizing:border-box !important;
+    padding:10px !important;
+    overflow:hidden !important;
+  }
+  #settingsModal.show{
+    display:flex !important;
+    z-index:2147483645 !important;
+  }
+  #settingsModal .rename-box{
+    position:relative !important;
+    z-index:2147483646 !important;
+    width:min(430px,calc(100vw - 20px)) !important;
+    max-width:430px !important;
+    max-height:calc(100dvh - 20px) !important;
+    margin:0 !important;
+    padding:18px !important;
+    box-sizing:border-box !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    border-radius:17px !important;
+  }
+  #settingsModal .rename-box h3{
+    margin-top:0 !important;
+    margin-bottom:12px !important;
+  }
+}
+
+/* Safety net for any later generic rule: both modals remain above
+   the mobile composer, while the composer itself remains untouched. */
+#settingsModal.show{
+  z-index:2147483645 !important;
+}
+</style>
