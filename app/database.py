@@ -33,7 +33,13 @@ class _DBConnection:
 # Production on Render: set DATABASE_URL to the Render Postgres internal URL.
 # Local development: if DATABASE_URL is absent, ODDI keeps using SQLite.
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+REQUIRE_POSTGRES = os.getenv("ODDI_REQUIRE_POSTGRES", "0").strip().lower() in {"1", "true", "yes", "on"}
 USE_POSTGRES = bool(DATABASE_URL)
+if REQUIRE_POSTGRES and not USE_POSTGRES:
+    raise RuntimeError(
+        "ODDI_REQUIRE_POSTGRES is enabled but DATABASE_URL is not set. "
+        "Configure the production PostgreSQL connection before starting ODDI."
+    )
 DATABASE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "users.db",

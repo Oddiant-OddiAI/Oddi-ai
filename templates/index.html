@@ -8477,6 +8477,11 @@ async function sendMessage(
     );
 
     formData.append(
+        "conversation_id",
+        String(conversations[currentConversation]?.id || "")
+    );
+
+    formData.append(
         "history",
         JSON.stringify(
             conversations[

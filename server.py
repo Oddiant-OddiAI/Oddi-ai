@@ -29,7 +29,10 @@ from app.database import (
     delete_conversation_message,
     get_memory,
     save_memory,
-    delete_memory
+    delete_memory,
+    register_file,
+    update_file_record,
+    get_files
 )
 
 from app.engine import process_message
@@ -461,12 +464,55 @@ def api_delete_memory():
     })
 
 
+def _uploaded_file_size(uploaded_file):
+    """Return upload size without consuming the Flask file stream."""
+    try:
+        current = uploaded_file.stream.tell()
+        uploaded_file.stream.seek(0, 2)
+        size = uploaded_file.stream.tell()
+        uploaded_file.stream.seek(current)
+        return int(size or 0)
+    except Exception:
+        return int(getattr(uploaded_file, "content_length", 0) or 0)
+
+
+@app.route("/api/files", methods=["GET"])
+def api_get_files():
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in."}), 401
+
+    conversation_id = request.args.get("conversation_id", type=int)
+    return jsonify(get_files(session["user_id"], conversation_id=conversation_id))
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
 
     message = request.form["message"]
 
     uploaded_files = request.files.getlist("files")
+    conversation_id = request.form.get("conversation_id", type=int)
+
+    # Record file metadata in the dedicated Files Neon database. The actual
+    # binary file remains in the existing upload/processing pipeline for now;
+    # this separation keeps chat PostgreSQL storage free of file metadata.
+    file_record_ids = []
+    if uploaded_files and session.get("user_id") is not None:
+        for uploaded_file in uploaded_files:
+            try:
+                file_record_id = register_file(
+                    user_id=session["user_id"],
+                    filename=uploaded_file.filename or "unnamed-file",
+                    mime_type=uploaded_file.mimetype,
+                    size_bytes=_uploaded_file_size(uploaded_file),
+                    conversation_id=conversation_id,
+                    status="received",
+                )
+                file_record_ids.append(file_record_id)
+            except Exception as file_db_error:
+                # File metadata persistence must never prevent the user from
+                # chatting or analyzing the upload.
+                logger.warning("File metadata save failed: %s", file_db_error)
 
     # Get conversation history from frontend
     history_json = request.form.get("history", "[]")
@@ -492,6 +538,20 @@ def chat():
         conversation_history,
         session.get("user_id")
     )
+
+    # Mark successfully handed-off uploads as processed. If ODDI raises before
+    # this point, their records intentionally remain "received" for diagnosis.
+    if file_record_ids:
+        for file_record_id in file_record_ids:
+            try:
+                update_file_record(
+                    file_record_id,
+                    session["user_id"],
+                    status="processed",
+                )
+            except Exception as file_db_error:
+                logger.warning("File metadata status update failed: %s", file_db_error)
+
     return reply
 
 
