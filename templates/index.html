@@ -1932,9 +1932,8 @@ body.dark-mode .memory-footer{border-top-color:#333;}
     line-height:1.35 !important;
     color:#777 !important;
     white-space:normal !important;
-    display:-webkit-box !important;
-    -webkit-line-clamp:2 !important;
-    -webkit-box-orient:vertical !important;
+    display:block !important;
+    max-height:2.7em !important;
     overflow:hidden !important;
   }
   .quick-actions .action-arrow{
@@ -2067,8 +2066,7 @@ body.dark-mode .memory-footer{border-top-color:#333;}
 }
 
 @media (min-width:769px){
-  /* Accessible desktop tooltips via native title where buttons exist. */
-  #menuBtn{title:auto;}
+  /* Accessible desktop tooltips are provided by the native HTML title attribute. */
 }
 </style>
 
@@ -8258,6 +8256,94 @@ function speakAIMessage(button) {
 
 
 
+/* -----------------------------------------
+   EXPLICIT MEMORY CAPTURE
+   Keep chat persistence and long-term memory
+   separate. Only save when the user explicitly
+   asks ODDI to remember something.
+----------------------------------------- */
+
+async function saveExplicitMemoryFromUserMessage(message) {
+    if (document.body?.dataset?.loggedIn !== "true") return false;
+
+    const text = String(message || "").trim();
+    if (!text) return false;
+
+    const lower = text.toLowerCase();
+
+    // Never treat a request to forget/delete memory as a save request.
+    if (/\b(?:forget|don't remember|do not remember|delete|remove)\b/.test(lower)) {
+        return false;
+    }
+
+    let key = "";
+    let memory = "";
+
+    // "remember my name" uses the authenticated account name already
+    // available to the page.
+    if (/^remember\s+my\s+name\s*[.!?]*$/i.test(text)) {
+        key = "name";
+        memory = String(document.body?.dataset?.username || "").trim();
+    } else {
+        // Examples:
+        //   remember my goal is to become an AI developer
+        //   remember my favorite language: C
+        //   remember that my college is ABC
+        const direct = text.match(
+            /^remember\s+(?:that\s+)?my\s+([a-z][a-z0-9 _-]{0,39})\s*(?:is|=|:)\s*(.+?)\s*[.!?]*$/i
+        );
+
+        if (direct) {
+            key = direct[1].trim().toLowerCase().replace(/\s+/g, "_");
+            memory = direct[2].trim();
+        } else {
+            // Also support natural "remember that I am ..." / "remember I ..."
+            const aboutMe = text.match(
+                /^remember\s+(?:that\s+)?i\s+(?:am|’m|'m)\s+(.+?)\s*[.!?]*$/i
+            );
+
+            if (aboutMe) {
+                key = "about_me";
+                memory = aboutMe[1].trim();
+            }
+        }
+    }
+
+    if (!key || !memory) return false;
+
+    try {
+        const response = await fetch("/api/memory", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Cache-Control": "no-cache"
+            },
+            credentials: "same-origin",
+            cache: "no-store",
+            body: JSON.stringify({
+                key,
+                category: key,
+                memory
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(await response.text() || `Memory save failed (${response.status})`);
+        }
+
+        // If the memory modal is currently open, refresh it immediately.
+        if (document.getElementById("memoryModal")?.classList.contains("show")) {
+            loadMemory();
+        }
+
+        return true;
+    } catch (error) {
+        console.error("Explicit memory save error:", error);
+        return false;
+    }
+}
+
 async function sendMessage(
     displayMessage = null,
     voiceReply = false,
@@ -8442,6 +8528,10 @@ async function sendMessage(
         }
 
         renderHistory();
+
+        // Save only explicit "remember ..." requests to long-term memory.
+        // Chat messages themselves remain in the Chat DB.
+        await saveExplicitMemoryFromUserMessage(message);
     }
 
     /* -----------------------------------------
@@ -15456,9 +15546,8 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
     line-height:1.4 !important;
     color:#767676 !important;
     white-space:normal !important;
-    display:-webkit-box !important;
-    -webkit-line-clamp:2 !important;
-    -webkit-box-orient:vertical !important;
+    display:block !important;
+    max-height:2.7em !important;
     overflow:hidden !important;
 }
 .continue-btn{

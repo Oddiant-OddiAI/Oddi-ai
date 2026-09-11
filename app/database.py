@@ -99,8 +99,8 @@ def get_db(kind="chat"):
 
     if url:
         try:
-            import psycopg
-            from psycopg.rows import dict_row
+            import psycopg  # type: ignore[import-not-found]
+            from psycopg.rows import dict_row  # type: ignore[import-not-found]
         except ImportError as exc:
             raise RuntimeError(
                 "A PostgreSQL DATABASE_URL is configured but psycopg is not installed. "
