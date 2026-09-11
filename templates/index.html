@@ -8285,10 +8285,6 @@ async function saveExplicitMemoryFromUserMessage(message) {
         key = "name";
         memory = String(document.body?.dataset?.username || "").trim();
     } else {
-        // Examples:
-        //   remember my goal is to become an AI developer
-        //   remember my favorite language: C
-        //   remember that my college is ABC
         const direct = text.match(
             /^remember\s+(?:that\s+)?my\s+([a-z][a-z0-9 _-]{0,39})\s*(?:is|=|:)\s*(.+?)\s*[.!?]*$/i
         );
@@ -8297,7 +8293,6 @@ async function saveExplicitMemoryFromUserMessage(message) {
             key = direct[1].trim().toLowerCase().replace(/\s+/g, "_");
             memory = direct[2].trim();
         } else {
-            // Also support natural "remember that I am ..." / "remember I ..."
             const aboutMe = text.match(
                 /^remember\s+(?:that\s+)?i\s+(?:am|’m|'m)\s+(.+?)\s*[.!?]*$/i
             );
@@ -8311,6 +8306,15 @@ async function saveExplicitMemoryFromUserMessage(message) {
 
     if (!key || !memory) return false;
 
+    const memoryPayload = {
+        key,
+        category: key,
+        memory
+    };
+
+    // The existing /api/memory PUT endpoint is an UPDATE endpoint: it
+    // deliberately returns 404 when this key does not exist yet. Use it
+    // first so existing memories continue to update normally.
     try {
         const response = await fetch("/api/memory", {
             method: "PUT",
@@ -8321,25 +8325,82 @@ async function saveExplicitMemoryFromUserMessage(message) {
             },
             credentials: "same-origin",
             cache: "no-store",
-            body: JSON.stringify({
-                key,
-                category: key,
-                memory
-            })
+            body: JSON.stringify(memoryPayload)
         });
 
-        if (!response.ok) {
+        if (response.ok) {
+            if (document.getElementById("memoryModal")?.classList.contains("show")) {
+                loadMemory();
+            }
+            return true;
+        }
+
+        // IMPORTANT: the backend has no POST /api/memory/create endpoint.
+        // For a brand-new memory, route the request through the existing
+        // engine memory pipeline using one of its supported memory phrases.
+        if (response.status !== 404) {
             throw new Error(await response.text() || `Memory save failed (${response.status})`);
         }
+    } catch (error) {
+        // A 404 is handled below. Other API errors are reported immediately.
+        if (!(error && /404/.test(String(error.message || "")))) {
+            console.error("Explicit memory API save error:", error);
+            return false;
+        }
+    }
 
-        // If the memory modal is currently open, refresh it immediately.
-        if (document.getElementById("memoryModal")?.classList.contains("show")) {
-            loadMemory();
+    const enginePhraseByKey = {
+        name: "my name is",
+        favorite_color: "my favorite color is",
+        college: "my college is",
+        university: "my university is",
+        hometown: "my hometown is",
+        age: "my age is",
+        company: "i work at",
+        hobby: "my hobby is",
+        goal: "my goal is",
+        favorite_subject: "my favorite subject is",
+        pet: "my pet is",
+        favorite_food: "my favorite food is",
+        dream_job: "my dream job is",
+        favorite_movie: "my favorite movie is",
+        favorite_music: "my favorite music is",
+        language: "i speak",
+        sport: "my favorite sport is",
+        favorite_book: "my favorite book is",
+        favorite_game: "my favorite game is"
+    };
+
+    const phrase = enginePhraseByKey[key];
+    if (!phrase) {
+        console.warn("Explicit memory key is not supported by the current engine memory rules:", key);
+        return false;
+    }
+
+    try {
+        const formData = new FormData();
+        formData.append("message", `${phrase} ${memory}`.trim());
+        formData.append("history", "[]");
+
+        const bridgeResponse = await fetch("/chat", {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin",
+            cache: "no-store"
+        });
+
+        if (!bridgeResponse.ok) {
+            throw new Error(await bridgeResponse.text() || `Memory engine save failed (${bridgeResponse.status})`);
         }
 
+        if (document.getElementById("memoryModal")?.classList.contains("show")) {
+            await loadMemory();
+        }
+
+        console.info("Explicit memory saved through engine pipeline:", key);
         return true;
     } catch (error) {
-        console.error("Explicit memory save error:", error);
+        console.error("Explicit memory engine save error:", error);
         return false;
     }
 }
