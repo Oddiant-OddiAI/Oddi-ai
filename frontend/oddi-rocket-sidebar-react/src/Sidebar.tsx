@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
   LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search,
-  Settings, Sun, X, Pencil, Trash2
+  Settings, Sun, X, Pencil, Trash2, Menu
 } from 'lucide-react';
 
 type Conversation = {
@@ -507,24 +507,18 @@ export default function Sidebar() {
       </div>
     )}
 
-    {!open && <div className="oddi-rs-rail" aria-label="Collapsed ODDI tools">
-      <button className="oddi-rs-launcher" onClick={() => setOpen(true)} title="Open sidebar" aria-label="Open sidebar">
-        <img
-          src={theme === 'dark' ? '/static/symbol-dark.png' : '/static/symbol.png'}
-          alt="Open sidebar"
-          style={{
-            background: theme === 'dark' ? '#fff' : 'transparent',
-            borderRadius: 5,
-            padding: theme === 'dark' ? 2 : 0,
-            display: 'block',
-          }}
-        />
-      </button>
-      <button onClick={newChat} title="New Chat" aria-label="New Chat"><Plus size={17} /></button>
-      <button onClick={() => openExistingModal('binModal')} title="Bin" aria-label="Bin"><Archive size={16} /></button>
-      <button onClick={() => openExistingModal('shortcutsModal')} title="Shortcuts" aria-label="Shortcuts"><MessageSquare size={16} /></button>
-      <button onClick={openMemory} title="Memory" aria-label="Memory"><Brain size={16} /></button>
-    </div>}
+    {!open && (
+      <div className="oddi-rs-rail" aria-label="Open ODDI sidebar">
+        <button
+          className="oddi-rs-launcher"
+          onClick={() => setOpen(true)}
+          title="Open sidebar"
+          aria-label="Open sidebar"
+        >
+          <Menu size={21} />
+        </button>
+      </div>
+    )}
 
   </>;
 }
