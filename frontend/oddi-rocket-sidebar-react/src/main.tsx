@@ -1,26 +1,26 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import MemoryManagement from './app/memory-management-screen/components/MemoryManagement';
+import Sidebar from './Sidebar';
 import './sidebar.css';
 
-function mountMemory() {
-  let root = document.getElementById('oddi-react-memory-root');
+function mountSidebar() {
+  let root = document.getElementById('oddi-react-sidebar-root');
 
   if (!root) {
     root = document.createElement('div');
-    root.id = 'oddi-react-memory-root';
+    root.id = 'oddi-react-sidebar-root';
     document.body.appendChild(root);
   }
 
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
-      <MemoryManagement />
+      <Sidebar />
     </React.StrictMode>
   );
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', mountMemory);
+  document.addEventListener('DOMContentLoaded', mountSidebar);
 } else {
-  mountMemory();
-} 
+  mountSidebar();
+}

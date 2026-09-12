@@ -123,6 +123,9 @@ export default function Sidebar() {
   const username = document.body.dataset.username?.trim() || '';
   const email = document.body.dataset.email?.trim() || '';
   const [installReady, setInstallReady] = useState(false);
+  const [isPhone, setIsPhone] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
+  );
 
   useEffect(() => {
     const root = document.getElementById('oddi-react-sidebar-root');
@@ -141,6 +144,15 @@ export default function Sidebar() {
     const observer = new MutationObserver(() => setTheme(document.body.classList.contains('dark-mode') ? 'dark' : 'light'));
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
+  }, []);
+
+  // Phone-only behavior: keep the desktop/sidebar rail exactly as it is.
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 768px)');
+    const syncPhone = () => setIsPhone(media.matches);
+    syncPhone();
+    media.addEventListener?.('change', syncPhone);
+    return () => media.removeEventListener?.('change', syncPhone);
   }, []);
 
   useEffect(() => {
@@ -507,18 +519,32 @@ export default function Sidebar() {
       </div>
     )}
 
-    {!open && (
-      <div className="oddi-rs-rail" aria-label="Open ODDI sidebar">
-        <button
-          className="oddi-rs-launcher"
-          onClick={() => setOpen(true)}
-          title="Open sidebar"
-          aria-label="Open sidebar"
-        >
-          <Menu size={21} />
-        </button>
-      </div>
-    )}
+    {!open && <div className="oddi-rs-rail" aria-label="Collapsed ODDI tools">
+      <button className={`oddi-rs-launcher ${isPhone ? 'oddi-rs-phone-launcher' : ''}`} onClick={() => setOpen(true)} title="Open sidebar" aria-label="Open sidebar">
+        {isPhone ? (
+          <Menu size={21} aria-hidden="true" />
+        ) : (
+          <img
+            src={theme === 'dark' ? '/static/symbol-dark.png' : '/static/symbol.png'}
+            alt="Open sidebar"
+            style={{
+              background: theme === 'dark' ? '#fff' : 'transparent',
+              borderRadius: 5,
+              padding: theme === 'dark' ? 2 : 0,
+              display: 'block',
+            }}
+          />
+        )}
+      </button>
+      {!isPhone && (
+        <>
+          <button onClick={newChat} title="New Chat" aria-label="New Chat"><Plus size={17} /></button>
+          <button onClick={() => openExistingModal('binModal')} title="Bin" aria-label="Bin"><Archive size={16} /></button>
+          <button onClick={() => openExistingModal('shortcutsModal')} title="Shortcuts" aria-label="Shortcuts"><MessageSquare size={16} /></button>
+          <button onClick={openMemory} title="Memory" aria-label="Memory"><Brain size={16} /></button>
+        </>
+      )}
+    </div>}
 
   </>;
 }

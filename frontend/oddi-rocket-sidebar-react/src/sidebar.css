@@ -470,3 +470,39 @@ body.dark-mode #oddi-react-sidebar-root {
 .oddi-rs-nav button b {
   margin-left: auto !important;
 }
+
+/* Phone-only closed rail:
+   show exactly one hamburger opener and hide every other rail shortcut.
+   Desktop/laptop behavior is intentionally unchanged. */
+@media (max-width: 768px) {
+  #oddi-react-sidebar-root .oddi-rs-rail {
+    left: 10px;
+    top: 12px;
+    z-index: 2147483001;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-rail > button {
+    display: none !important;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-launcher,
+  #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher {
+    display: flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    width: 40px;
+    height: 40px;
+    margin: 0 !important;
+    padding: 0;
+    background: var(--rs-bg) !important;
+    color: var(--rs-text) !important;
+    border: 1px solid var(--rs-border);
+    box-shadow: 0 7px 18px rgba(0,0,0,.22);
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-launcher:hover,
+  #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher:hover {
+    background: var(--rs-hover) !important;
+    color: var(--rs-text) !important;
+  }
+}
