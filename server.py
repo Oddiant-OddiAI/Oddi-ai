@@ -1,15 +1,22 @@
 import json
 import logging
 import os
+import secrets
 from datetime import timedelta
+
+from dotenv import load_dotenv
 from flask import (
     Flask,
+    jsonify,
+    redirect,
     render_template,
     request,
     session,
-    redirect,
-    jsonify
+    url_for,
 )
+
+from authlib.integrations.base_client import OAuthError
+from authlib.integrations.flask_client import OAuth
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import (
@@ -37,15 +44,47 @@ from app.database import (
 
 from app.engine import process_message
 
-app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("oddi.persistence")
+load_dotenv()
 
-app.secret_key = "Oddi-AI_AI_2026_SuperSecretKey"
+app = Flask(__name__)
+
+# Keep the secret server-side. In production, set FLASK_SECRET_KEY in .env
+# rather than hard-coding it in source control.
+app.secret_key = os.getenv(
+    "FLASK_SECRET_KEY",
+    "Oddi-AI_AI_2026_SuperSecretKey",
+)
 
 app.permanent_session_lifetime = timedelta(days=30)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("oddi.persistence")
+
+oauth = OAuth(app)
+
+google_client_id = os.getenv("GOOGLE_CLIENT_ID")
+google_client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+
+if google_client_id and google_client_secret:
+    oauth.register(
+        name="google",
+        server_metadata_url=(
+            "https://accounts.google.com/"
+            ".well-known/openid-configuration"
+        ),
+        client_id=google_client_id,
+        client_secret=google_client_secret,
+        client_kwargs={
+            "scope": "openid profile email",
+        },
+    )
+else:
+    logger.warning(
+        "Google OAuth is not configured. Set "
+        "GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env."
+    )
 
 create_tables()
 
@@ -138,6 +177,248 @@ def signup():
     return redirect("/")
 
 
+# =========================
+# React / Next.js Auth API
+# =========================
+
+@app.route("/api/auth/login", methods=["POST"])
+def api_login():
+    data = request.get_json(silent=True) or {}
+
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+
+    if not email or not password:
+        return jsonify({
+            "success": False,
+            "error": "Email and password are required."
+        }), 400
+
+    user = get_user_by_email(email)
+
+    if user is None:
+        return jsonify({
+            "success": False,
+            "error": "Email not found."
+        }), 401
+
+    if not check_password_hash(user["password_hash"], password):
+        return jsonify({
+            "success": False,
+            "error": "Incorrect password."
+        }), 401
+
+    session.permanent = True
+    session["user_id"] = user["id"]
+    session["username"] = user["username"]
+    session["email"] = user["email"]
+
+    return jsonify({
+        "success": True,
+        "user": {
+            "id": user["id"],
+            "name": user["username"],
+            "email": user["email"]
+        }
+    })
+
+
+@app.route("/api/auth/register", methods=["POST"])
+def api_register():
+    data = request.get_json(silent=True) or {}
+
+    username = data.get("name", "").strip()
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+
+    if not username or not email or not password:
+        return jsonify({
+            "success": False,
+            "error": "Name, email and password are required."
+        }), 400
+
+    existing_user = get_user_by_email(email)
+
+    if existing_user:
+        return jsonify({
+            "success": False,
+            "error": "An account with this email already exists."
+        }), 409
+
+    password_hash = generate_password_hash(password)
+
+    create_user(
+        username,
+        email,
+        password_hash
+    )
+
+    user = get_user_by_email(email)
+
+    if user is None:
+        return jsonify({
+            "success": False,
+            "error": "Account was created but could not be loaded."
+        }), 500
+
+    session.permanent = True
+    session["user_id"] = user["id"]
+    session["username"] = user["username"]
+    session["email"] = user["email"]
+
+    return jsonify({
+        "success": True,
+        "user": {
+            "id": user["id"],
+            "name": user["username"],
+            "email": user["email"]
+        }
+    })
+
+# =========================================================
+# GOOGLE OAUTH
+# =========================================================
+
+@app.route("/auth/google")
+def google_login():
+    if not google_client_id or not google_client_secret:
+        logger.error("Google OAuth requested but credentials are missing.")
+        return (
+            "Google sign-in is not configured. "
+            "Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env."
+        ), 503
+
+    redirect_uri = url_for(
+        "google_callback",
+        _external=True,
+    )
+
+    return oauth.google.authorize_redirect(
+        redirect_uri,
+    )
+
+
+@app.route("/auth/google/callback")
+def google_callback():
+    try:
+        token = oauth.google.authorize_access_token()
+    except OAuthError as error:
+        logger.warning("Google OAuth failed: %s", error)
+        return redirect("/login")
+
+    # With Google's OpenID Connect discovery, Authlib normally
+    # places the verified identity data in token["userinfo"].
+    userinfo = token.get("userinfo")
+
+    # Be defensive: if userinfo was not included, fetch it from
+    # Google's userinfo endpoint using the returned token.
+    if not userinfo:
+        try:
+            response = oauth.google.userinfo(token=token)
+            userinfo = response
+        except Exception as error:
+            logger.exception(
+                "Unable to retrieve Google user information: %s",
+                error,
+            )
+            return "Google account information could not be retrieved.", 502
+
+    email = str(
+        userinfo.get("email") or ""
+    ).strip().lower()
+
+    name = str(
+        userinfo.get("name") or ""
+    ).strip()
+
+    email_verified = userinfo.get(
+        "email_verified",
+        False,
+    )
+
+    if not email:
+        return "Google did not provide an email address.", 400
+
+    if email_verified is not True:
+        return "Google email is not verified.", 403
+
+    # ODDI currently accepts Gmail accounts only.
+    if not email.endswith("@gmail.com"):
+        return (
+            "Please use a Gmail account to sign in to ODDI."
+        ), 403
+
+    if not name:
+        name = email.split("@")[0]
+
+    # -----------------------------------------------------
+    # Find existing ODDI account
+    # -----------------------------------------------------
+    user = get_user_by_email(email)
+
+    # -----------------------------------------------------
+    # First Google login:
+    # create an ODDI account automatically.
+    # -----------------------------------------------------
+    if user is None:
+        temporary_password = secrets.token_urlsafe(32)
+
+        password_hash = generate_password_hash(
+            temporary_password
+        )
+
+        create_user(
+            name,
+            email,
+            password_hash,
+        )
+
+        user = get_user_by_email(email)
+
+    if user is None:
+        return (
+            "Google login succeeded, "
+            "but the ODDI account could not be created."
+        ), 500
+
+    # -----------------------------------------------------
+    # Use the same Flask session as normal ODDI login.
+    # -----------------------------------------------------
+    session.permanent = True
+    session["user_id"] = user["id"]
+    session["username"] = user["username"]
+    session["email"] = user["email"]
+    session["auth_provider"] = "google"
+
+    return redirect("/")
+
+@app.route("/api/auth/me", methods=["GET"])
+def api_auth_me():
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return jsonify({
+            "authenticated": False
+        }), 401
+
+    return jsonify({
+        "authenticated": True,
+        "user": {
+            "id": session.get("user_id"),
+            "name": session.get("username"),
+            "email": session.get("email"),
+        },
+        "auth_provider": session.get("auth_provider", "password"),
+    })
+
+
+@app.route("/api/auth/logout", methods=["POST"])
+def api_logout():
+    session.clear()
+
+    return jsonify({
+        "success": True
+    })
 
 @app.route("/api/conversations", methods=["GET"])
 def api_get_conversations():

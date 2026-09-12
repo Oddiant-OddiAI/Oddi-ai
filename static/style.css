@@ -2485,3 +2485,56 @@ body.dark-mode .voice-option.selected
         overflow: visible !important;
     }
 }
+
+
+/* =========================================================
+   FINAL MAIN-UI CLEANUP
+   React sidebar owns the branding.
+   Remove legacy ODDIANT header logo and separator lines.
+   ========================================================= */
+
+/* Completely remove the legacy ODDIANT logo/header branding. */
+.header .logo-box,
+.header .logo,
+.header .content-side,
+#logo {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    max-width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Remove the old vertical guide line. */
+.left-line {
+    display: none !important;
+    width: 0 !important;
+    background: transparent !important;
+}
+
+/* Remove the old horizontal header separator. */
+.header {
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Keep the main content clean and centered after removing legacy chrome. */
+.chatbox {
+    border-left: 0 !important;
+    border-right: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* Dark mode: no legacy separators either. */
+body.dark-mode .header {
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+}
+
+body.dark-mode .left-line {
+    display: none !important;
+    background: transparent !important;
+}
+

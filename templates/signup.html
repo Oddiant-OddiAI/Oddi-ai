@@ -1,89 +1,816 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Oddi-AI Sign Up</title>
-    <link rel="stylesheet" href="/static/auth.css">
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <meta name="theme-color" content="#0a0a0f">
+
+    <title>ODDI AI — Create Account</title>
+
+    <link
+        rel="stylesheet"
+        href="/static/auth.css"
+    >
 </head>
 
 <body>
 
-    <div class="auth-container">
+<div class="rocket-auth">
 
-        <div class="auth-card">
+    <!-- =====================================================
+         LEFT BRAND PANEL
+         ===================================================== -->
 
-            <img src="/static/logo.png" class="auth-logo">
+    <section class="auth-brand-panel">
 
-            <h1>Oddi AI</h1>
+        <div class="auth-brand-glow"></div>
+        <div class="auth-brand-grid"></div>
 
-            <h2>Create your account</h2>
+        <div class="brand-header">
 
-            <form action="/signup" method="POST">
-
-                <input
-                    type="text"
-                    name="username"
-                    placeholder="Username"
-                    required
+            <div class="brand-logo-wrap">
+                <img
+                    src="/static/logo.png"
+                    alt="ODDI AI"
+                    class="brand-logo"
                 >
+            </div>
 
-                
+            <div>
+                <h1>ODDI AI</h1>
 
-                <input
-                    type="email"
-                    name="email"
-                    placeholder="Email"
-                    required
+                <p>
+                    Your personal AI companion
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="brand-hero">
+
+            <h2>
+                Intelligence that
+                <span>grows with you.</span>
+            </h2>
+
+            <p>
+                Create your ODDI account and start building
+                a personal AI companion that remembers your
+                preferences, goals, conversations, and ideas.
+            </p>
+
+        </div>
+
+
+        <div class="brand-features">
+
+            <div class="feature-item">
+
+                <div class="feature-icon">
+                    🧠
+                </div>
+
+                <div>
+                    <strong>Persistent Memory</strong>
+
+                    <span>
+                        ODDI remembers your preferences,
+                        goals, and context.
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="feature-item">
+
+                <div class="feature-icon">
+                    💬
+                </div>
+
+                <div>
+                    <strong>Intelligent Conversations</strong>
+
+                    <span>
+                        Context-aware conversations
+                        that feel personal.
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="feature-item">
+
+                <div class="feature-icon">
+                    📁
+                </div>
+
+                <div>
+                    <strong>File Understanding</strong>
+
+                    <span>
+                        Upload documents and let ODDI
+                        understand them.
+                    </span>
+                </div>
+
+            </div>
+
+
+            <div class="feature-item">
+
+                <div class="feature-icon">
+                    🛡️
+                </div>
+
+                <div>
+                    <strong>Private by Design</strong>
+
+                    <span>
+                        Your conversations and memories
+                        stay under your control.
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <p class="brand-footer">
+            Built for students, developers,
+            and knowledge workers.
+        </p>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         RIGHT AUTH PANEL
+         ===================================================== -->
+
+    <main class="auth-form-panel">
+
+        <!-- Mobile logo -->
+
+        <div class="mobile-auth-logo">
+
+            <img
+                src="/static/logo.png"
+                alt="ODDI AI"
+            >
+
+            <span>
+                ODDI AI
+            </span>
+
+        </div>
+
+
+        <div class="auth-form-wrapper">
+
+            <!-- Login / Signup switch -->
+
+            <div class="auth-mode-switch">
+
+                <a
+                    href="/login"
+                    class="auth-mode"
                 >
+                    Sign In
+                </a>
 
-                
+                <a
+                    href="/signup"
+                    class="auth-mode active"
+                >
+                    Create Account
+                </a>
 
-                <div class="password-box">
+            </div>
+
+
+            <!-- Heading -->
+
+            <div class="auth-heading">
+
+                <h2>
+                    Create your account
+                </h2>
+
+                <p>
+                    Start your journey with ODDI AI today
+                </p>
+
+            </div>
+
+
+            <!-- Google -->
+
+            <a
+                href="/auth/google"
+                class="social-auth-button"
+                aria-label="Continue with Google"
+            >
+                <span class="google-icon">
+                    <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                    >
+                        <path
+                            d="M22.56 12.25c-.78 0-1.53-.07-2.25-.2H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c-1.92-1.92-4.74-3.28-8.09-3.28z"
+                            fill="#4285F4"
+                        />
+                        <path
+                            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                            fill="#34A853"
+                        />
+                        <path
+                            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                            fill="#FBBC05"
+                        />
+                        <path
+                            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                            fill="#EA4335"
+                        />
+                    </svg>
+                </span>
+
+                <span>
+                    Continue with Google
+                </span>
+            </a>
+
+
+            <!-- Divider -->
+
+            <div class="auth-divider">
+
+                <span></span>
+
+                <p>
+                    or sign up with email
+                </p>
+
+                <span></span>
+
+            </div>
+
+
+            <!-- =================================================
+                 REAL FLASK SIGNUP FORM
+                 ================================================= -->
+
+            <form
+                action="/signup"
+                method="POST"
+                class="rocket-login-form"
+                id="signupForm"
+            >
+
+                <!-- Username -->
+
+                <div class="field-group">
+
+                    <label for="username">
+                        Full name
+                    </label>
 
                     <input
-                        type="password"
-                        id="passwordInput"
-                        name="password"
-                        placeholder="Password"
+                        type="text"
+                        id="username"
+                        name="username"
+                        placeholder="Vedanssh Kumar"
+                        autocomplete="name"
+                        required
+                        minlength="2"
+                    >
+
+                    <small
+                        class="field-error"
+                        id="usernameError"
+                    ></small>
+
+                </div>
+
+
+                <!-- Email -->
+
+                <div class="field-group">
+
+                    <label for="email">
+                        Email address
+                    </label>
+
+                    <input
+                        type="email"
+                        id="email"
+                        name="email"
+                        placeholder="you@example.com"
+                        autocomplete="email"
                         required
                     >
 
-                    <span id="togglePassword" class="eye-btn">👁</span>
-                <br>
+                    <small
+                        class="field-error"
+                        id="emailError"
+                    ></small>
+
                 </div>
 
-                
 
-                <button type="submit">
-                    Create Account
+                <!-- Password -->
+
+                <div class="field-group">
+
+                    <label for="passwordInput">
+                        Password
+                    </label>
+
+                    <div class="password-field">
+
+                        <input
+                            type="password"
+                            id="passwordInput"
+                            name="password"
+                            placeholder="Minimum 8 characters"
+                            autocomplete="new-password"
+                            required
+                            minlength="8"
+                        >
+
+                        <button
+                            type="button"
+                            id="togglePassword"
+                            class="password-toggle"
+                            aria-label="Show password"
+                        >
+                            <span id="eyeIcon">
+                                👁
+                            </span>
+                        </button>
+
+                    </div>
+
+                    <!-- Password strength -->
+
+                    <div
+                        class="password-strength"
+                        id="passwordStrength"
+                        hidden
+                    >
+
+                        <div class="strength-bars">
+
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                            <span></span>
+
+                        </div>
+
+                        <span
+                            id="strengthLabel"
+                            class="strength-label"
+                        ></span>
+
+                    </div>
+
+                    <small
+                        class="field-error"
+                        id="passwordError"
+                    ></small>
+
+                </div>
+
+
+                <!-- Confirm password -->
+
+                <div class="field-group">
+
+                    <label for="confirmPassword">
+                        Confirm password
+                    </label>
+
+                    <div class="password-field">
+
+                        <input
+                            type="password"
+                            id="confirmPassword"
+                            placeholder="Repeat your password"
+                            autocomplete="new-password"
+                            required
+                        >
+
+                        <button
+                            type="button"
+                            id="toggleConfirm"
+                            class="password-toggle"
+                            aria-label="Show password"
+                        >
+                            <span id="confirmEyeIcon">
+                                👁
+                            </span>
+                        </button>
+
+                    </div>
+
+                    <small
+                        class="field-error"
+                        id="confirmError"
+                    ></small>
+
+                </div>
+
+
+                <!-- Terms -->
+
+                <label class="terms-row">
+
+                    <input
+                        type="checkbox"
+                        id="agreeTerms"
+                        required
+                    >
+
+                    <span>
+                        I agree to ODDI's
+                        <a
+                            href="#"
+                            onclick="return false;"
+                        >
+                            Terms of Service
+                        </a>
+                        and
+                        <a
+                            href="#"
+                            onclick="return false;"
+                        >
+                            Privacy Policy
+                        </a>
+                    </span>
+
+                </label>
+
+                <small
+                    class="field-error"
+                    id="termsError"
+                ></small>
+
+
+                <!-- Submit -->
+
+                <button
+                    type="submit"
+                    class="rocket-submit"
+                    id="signupButton"
+                >
+
+                    <span id="signupButtonText">
+                        Create ODDI Account
+                    </span>
+
+                    <span
+                        id="signupSpinner"
+                        class="login-spinner"
+                        hidden
+                    ></span>
+
                 </button>
 
             </form>
 
-            
 
-            <a href="/login">
+            <!-- Login -->
+
+            <p class="switch-auth-text">
+
                 Already have an account?
-            </a>
+
+                <a href="/login">
+                    Sign in
+                </a>
+
+            </p>
 
         </div>
 
-    </div>
+    </main>
+
+</div>
+
+
+
 <script>
-const passwordInput = document.getElementById("passwordInput");
-const eyeBtn = document.getElementById("togglePassword");
 
-eyeBtn.onclick = () => {
-    if (passwordInput.type === "password") {
-        passwordInput.type = "text";
-        eyeBtn.textContent = "🙈";
-    } else {
-        passwordInput.type = "password";
-        eyeBtn.textContent = "👁";
-    }
-};
+(function () {
+
+    const passwordInput =
+        document.getElementById("passwordInput");
+
+    const confirmPassword =
+        document.getElementById("confirmPassword");
+
+    const togglePassword =
+        document.getElementById("togglePassword");
+
+    const toggleConfirm =
+        document.getElementById("toggleConfirm");
+
+    const eyeIcon =
+        document.getElementById("eyeIcon");
+
+    const confirmEyeIcon =
+        document.getElementById("confirmEyeIcon");
+
+    const signupForm =
+        document.getElementById("signupForm");
+
+    const strengthBox =
+        document.getElementById("passwordStrength");
+
+    const strengthBars =
+        document.querySelectorAll(
+            ".strength-bars span"
+        );
+
+    const strengthLabel =
+        document.getElementById("strengthLabel");
+
+    const signupButton =
+        document.getElementById("signupButton");
+
+    const signupButtonText =
+        document.getElementById("signupButtonText");
+
+    const signupSpinner =
+        document.getElementById("signupSpinner");
+
+
+    /* =====================================================
+       PASSWORD VISIBILITY
+       ===================================================== */
+
+    togglePassword.addEventListener("click", function () {
+
+        const hidden =
+            passwordInput.type === "password";
+
+        passwordInput.type =
+            hidden ? "text" : "password";
+
+        eyeIcon.textContent =
+            hidden ? "🙈" : "👁";
+
+        togglePassword.setAttribute(
+            "aria-label",
+            hidden
+                ? "Hide password"
+                : "Show password"
+        );
+
+    });
+
+
+    toggleConfirm.addEventListener("click", function () {
+
+        const hidden =
+            confirmPassword.type === "password";
+
+        confirmPassword.type =
+            hidden ? "text" : "password";
+
+        confirmEyeIcon.textContent =
+            hidden ? "🙈" : "👁";
+
+        toggleConfirm.setAttribute(
+            "aria-label",
+            hidden
+                ? "Hide password"
+                : "Show password"
+        );
+
+    });
+
+
+    /* =====================================================
+       PASSWORD STRENGTH
+       ===================================================== */
+
+    passwordInput.addEventListener(
+        "input",
+        function () {
+
+            const password =
+                passwordInput.value;
+
+            if (!password) {
+
+                strengthBox.hidden = true;
+
+                return;
+
+            }
+
+            strengthBox.hidden = false;
+
+            let score = 0;
+
+            if (password.length >= 8) {
+                score++;
+            }
+
+            if (/[A-Z]/.test(password)) {
+                score++;
+            }
+
+            if (/[0-9]/.test(password)) {
+                score++;
+            }
+
+            if (/[^A-Za-z0-9]/.test(password)) {
+                score++;
+            }
+
+
+            const levels = [
+                "",
+                "Weak",
+                "Fair",
+                "Good",
+                "Strong"
+            ];
+
+
+            const classes = [
+                "",
+                "strength-weak",
+                "strength-fair",
+                "strength-good",
+                "strength-strong"
+            ];
+
+
+            strengthBars.forEach(
+                function (bar, index) {
+
+                    bar.className =
+                        index < score
+                            ? classes[score]
+                            : "";
+
+                }
+            );
+
+
+            strengthLabel.textContent =
+                levels[score];
+
+            strengthLabel.className =
+                "strength-label " +
+                classes[score];
+
+        }
+    );
+
+
+    /* =====================================================
+       SIGNUP VALIDATION
+       ===================================================== */
+
+    signupForm.addEventListener(
+        "submit",
+        function (event) {
+
+            const username =
+                document.getElementById("username");
+
+            const email =
+                document.getElementById("email");
+
+            const password =
+                document.getElementById("passwordInput");
+
+            const usernameError =
+                document.getElementById("usernameError");
+
+            const emailError =
+                document.getElementById("emailError");
+
+            const passwordError =
+                document.getElementById("passwordError");
+
+            const confirmError =
+                document.getElementById("confirmError");
+
+            const termsError =
+                document.getElementById("termsError");
+
+            usernameError.textContent = "";
+            emailError.textContent = "";
+            passwordError.textContent = "";
+            confirmError.textContent = "";
+            termsError.textContent = "";
+
+            let valid = true;
+
+
+            if (username.value.trim().length < 2) {
+
+                usernameError.textContent =
+                    "Name must be at least 2 characters.";
+
+                valid = false;
+
+            }
+
+
+            if (
+                !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+                    email.value.trim()
+                )
+            ) {
+
+                emailError.textContent =
+                    "Enter a valid email address.";
+
+                valid = false;
+
+            }
+
+
+            if (password.value.length < 8) {
+
+                passwordError.textContent =
+                    "Password must be at least 8 characters.";
+
+                valid = false;
+
+            }
+
+
+            if (
+                confirmPassword.value !==
+                password.value
+            ) {
+
+                confirmError.textContent =
+                    "Passwords do not match.";
+
+                valid = false;
+
+            }
+
+
+            if (
+                !document.getElementById(
+                    "agreeTerms"
+                ).checked
+            ) {
+
+                termsError.textContent =
+                    "You must agree to continue.";
+
+                valid = false;
+
+            }
+
+
+            if (!valid) {
+
+                event.preventDefault();
+
+                return;
+
+            }
+
+
+            /* Let Flask handle the real signup. */
+
+            signupButton.disabled = true;
+
+            signupButtonText.textContent =
+                "Creating account...";
+
+            signupSpinner.hidden = false;
+
+        }
+    );
+
+})();
+
 </script>
-</body>
 
+</body>
 </html>
