@@ -506,3 +506,16 @@ body.dark-mode #oddi-react-sidebar-root {
     color: var(--rs-text) !important;
   }
 }
+
+/* Desktop: when sidebar is closed, keep its region completely blank.
+   Phone keeps its hamburger opener. */
+@media (min-width: 769px) {
+  #oddi-react-sidebar-root .oddi-rs-sidebar.closed ~ .oddi-rs-rail {
+    display: none !important;
+  }
+}
+/* While the legacy Memory workspace is open, keep the closed launcher out of
+   the Memory surface. When Memory closes, the same launcher reappears automatically. */
+body:has(#memoryModal.show) #oddi-react-sidebar-root .oddi-rs-rail {
+  display: none !important;
+}

@@ -111,7 +111,7 @@ function openExistingModal(id: string) {
 }
 
 export default function Sidebar() {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches);
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Conversation[]>([]);
@@ -164,6 +164,11 @@ export default function Sidebar() {
     document.addEventListener('keydown', key);
     return () => { document.removeEventListener('click', close); document.removeEventListener('keydown', key); };
   }, []);
+
+  // Memory is a main-window view. The sidebar closes while Memory is open.
+  // The closed rail itself stays mounted; CSS hides it only while the Memory
+  // surface is visible. This keeps the phone opener reliable and avoids
+  // React mounting/unmounting the rail in response to legacy DOM mutations.
 
   async function load() {
     try {
@@ -303,7 +308,15 @@ export default function Sidebar() {
   }
 
   function openMemory() {
-    if (document.getElementById('memoryBtn')) { document.getElementById('memoryBtn')!.click(); return; }
+    // Memory is a main-window view: close the React sidebar first.
+    // The closed launcher remains mounted and CSS hides it while Memory is open.
+    setOpen(false);
+
+    if (document.getElementById('memoryBtn')) {
+      document.getElementById('memoryBtn')!.click();
+      return;
+    }
+
     openExistingModal('memoryModal');
     window.dispatchEvent(new CustomEvent('oddi:open-memory'));
   }

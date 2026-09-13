@@ -1460,55 +1460,448 @@ body.dark-mode .user-message .user-expand-btn:hover{
 
 
 <style id="oddi-memory-ui">
-/* Single-document memory view: one container, continuous content, one scrollbar. */
-.memory-box{width:min(720px,calc(100vw - 30px));}
-.memory-box .utility-header{padding-bottom:8px;}
-.memory-box #memoryModalTitle{font-size:19px;letter-spacing:-.02em;}
-.memory-subtitle{margin:3px 0 0;color:#777;font-size:12px;line-height:1.45;}
-.memory-list{max-height:58vh;overflow-y:auto;overflow-x:hidden;padding:8px 10px 18px 2px;scrollbar-width:thin;}
-.memory-document{display:block;}
-.memory-entry{padding:16px 8px 18px;border-bottom:1px solid #ededed;}
-.memory-entry:last-child{border-bottom:0;}
-.memory-entry-header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:7px;}
-.memory-category{font-size:12px;font-weight:800;text-transform:none;letter-spacing:.01em;color:#555;}
-.memory-actions{display:flex;align-items:center;gap:4px;flex:0 0 auto;}
-.memory-action-btn{border:0;border-radius:7px;padding:4px 6px;background:transparent;color:#777;font-size:15px;line-height:1;cursor:pointer;opacity:.72;}
-.memory-action-btn:hover{background:#f2f2f2;color:#111;opacity:1;}
-.memory-action-btn.danger{color:#c92323;font-size:12px;opacity:.45;}
-.memory-action-btn.danger:hover{background:#fff2f2;color:#b51e1e;opacity:1;}
-.memory-text{display:block;width:100%;box-sizing:border-box;min-height:28px;padding:0;border:0;border-radius:0;background:transparent;color:#171717;font:inherit;font-size:14px;line-height:1.65;resize:vertical;outline:none;overflow:hidden;}
-.memory-text[readonly]{cursor:default;}
-.memory-text:not([readonly]){padding:9px 10px;border:1px solid #d8d8d8;border-radius:8px;background:#fff;}
-.memory-text:not([readonly]):focus{border-color:#999;box-shadow:0 0 0 3px rgba(0,0,0,.045);}
-.memory-save-row{display:flex;justify-content:flex-end;gap:7px;margin-top:9px;}
-.memory-save-btn{border:0;border-radius:8px;padding:7px 11px;background:#0a0a0a;color:#fff;font-size:12px;font-weight:700;cursor:pointer;}
-.memory-cancel-btn{border:1px solid #ddd;border-radius:8px;padding:7px 11px;background:#f5f5f5;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
-.memory-loading,.memory-empty{padding:34px 12px;text-align:center;color:#888;font-size:13px;}
-.memory-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;padding-top:11px;border-top:1px solid #eee;}
-.memory-status{font-size:12px;color:#777;min-height:18px;}
-.memory-status.success{color:#176b3a;font-weight:700;}
-.memory-status.error{color:#c92323;font-weight:700;}
-.memory-secondary-btn{border:1px solid #ddd;border-radius:9px;padding:8px 12px;background:#f5f5f5;color:#222;font-size:12px;font-weight:700;cursor:pointer;}
-.memory-secondary-btn:hover,.memory-cancel-btn:hover{background:#eaeaea;}
-body.dark-mode .memory-subtitle{color:#999;}
-body.dark-mode .memory-entry{border-bottom-color:#303030;}
-body.dark-mode .memory-category{color:#aaa;}
-body.dark-mode .memory-text{color:#f5f5f5;}
-body.dark-mode .memory-action-btn{color:#aaa;}
-body.dark-mode .memory-action-btn:hover{background:#252525;color:#fff;}
-body.dark-mode .memory-action-btn.danger:hover{background:#321b1b;color:#ff8c8c;}
-body.dark-mode .memory-text:not([readonly]){background:#1c1c1c;color:#fff;border-color:#3a3a3a;}
-body.dark-mode .memory-save-btn{background:#f5f5f5;color:#111;}
-body.dark-mode .memory-cancel-btn,body.dark-mode .memory-secondary-btn{background:#222;color:#fff;border-color:#3a3a3a;}
-body.dark-mode .memory-secondary-btn:hover,body.dark-mode .memory-cancel-btn:hover{background:#2b2b2b;}
-body.dark-mode .memory-footer{border-top-color:#333;}
-@media (max-width:600px){
-    .memory-box{width:calc(100vw - 20px);padding:16px;}
-    .memory-list{max-height:61vh;padding-right:6px;}
-    .memory-entry{padding:14px 5px 16px;}
-    .memory-category{font-size:11px;}
-    .memory-text{font-size:14px;line-height:1.6;}
-    .memory-action-btn{padding:5px;}
+/* =========================================================
+   ODDI MEMORY — live workspace UI
+   Full viewport, category rail, searchable memory cards,
+   responsive phone layout. No dependency on the main sidebar.
+   ========================================================= */
+
+#memoryModal.show{
+  position:fixed !important;
+  inset:0 !important;
+  width:100vw !important;
+  height:100vh !important;
+  margin:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:stretch !important;
+  justify-content:stretch !important;
+  background:#080808 !important;
+  z-index:2147483647 !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+
+#memoryModal.show .memory-box{
+  position:relative !important;
+  width:100% !important;
+  max-width:none !important;
+  height:100vh !important;
+  min-height:100vh !important;
+  max-height:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  background:#0b0b0b !important;
+  color:#f5f5f5 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+  box-sizing:border-box !important;
+}
+
+.memory-shell{
+  display:grid;
+  grid-template-columns:205px minmax(0,1fr);
+  width:100%;
+  height:100%;
+  min-height:0;
+}
+
+.memory-categories{
+  min-width:0;
+  padding:18px 10px 16px;
+  border-right:1px solid #252525;
+  background:#0d0d0d;
+  overflow-y:auto;
+  scrollbar-width:thin;
+}
+
+.memory-brand{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:0 9px 17px;
+  border-bottom:1px solid #252525;
+  margin-bottom:14px;
+}
+
+.memory-brand-icon{
+  width:27px;height:27px;display:grid;place-items:center;
+  border:1px solid #3a3a3a;border-radius:8px;
+  background:#171717;font-size:14px;
+}
+
+.memory-brand strong{font-size:14px;letter-spacing:-.02em;}
+.memory-brand small{display:block;color:#777;font-size:10px;margin-top:2px;}
+
+.memory-category-title{
+  padding:0 9px 7px;
+  color:#eee;font-size:12px;font-weight:800;
+}
+.memory-category-subtitle{
+  padding:0 9px 10px;color:#707070;font-size:10px;
+}
+
+.memory-category-list{
+  display:flex;flex-direction:column;gap:2px;
+}
+
+.memory-category-btn{
+  width:100%;min-height:38px;
+  display:flex;align-items:center;gap:8px;
+  padding:0 9px;
+  border:0;border-radius:9px;
+  background:transparent;color:#a8a8a8;
+  text-align:left;cursor:pointer;
+  font-size:12px;
+  transition:background .15s ease,color .15s ease;
+}
+.memory-category-btn:hover{background:#181818;color:#fff;}
+.memory-category-btn.active{background:#242424;color:#fff;}
+.memory-category-icon{width:18px;flex:0 0 18px;text-align:center;}
+.memory-category-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.memory-category-count{
+  min-width:22px;height:20px;padding:0 6px;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid #343434;border-radius:999px;
+  color:#8e8e8e;font-size:10px;
+}
+.memory-category-btn.active .memory-category-count{color:#fff;border-color:#4a4a4a;background:#303030;}
+
+.memory-category-add{
+  width:100%;margin-top:9px;min-height:36px;
+  border:1px dashed #333;border-radius:9px;
+  background:transparent;color:#999;cursor:pointer;font-size:11px;
+}
+.memory-category-add:hover{background:#171717;color:#fff;border-color:#555;}
+
+.memory-main{
+  min-width:0;min-height:0;
+  display:flex;flex-direction:column;
+  background:#0b0b0b;
+}
+
+.memory-main-header{
+  flex:0 0 auto;
+  padding:18px 22px 12px;
+  border-bottom:1px solid #242424;
+}
+
+.memory-title-row{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+}
+.memory-title-wrap{min-width:0;}
+.memory-title{
+  display:flex;align-items:center;gap:9px;
+  margin:0;color:#f5f5f5;
+  font-size:18px;font-weight:800;letter-spacing:-.03em;
+}
+.memory-title-icon{
+  width:31px;height:31px;display:grid;place-items:center;
+  border:1px solid #363636;border-radius:50%;
+  background:#151515;font-size:15px;
+}
+.memory-count{
+  margin:3px 0 0 40px;color:#777;font-size:11px;
+}
+
+.memory-header-actions{
+  display:flex;align-items:center;gap:8px;flex:0 0 auto;
+}
+.memory-switch-wrap{
+  display:flex;align-items:center;gap:8px;
+  color:#858585;font-size:10px;
+}
+.memory-switch{
+  position:relative;width:36px;height:20px;
+  flex:0 0 36px;border:0;border-radius:999px;
+  background:#333;cursor:pointer;padding:0;
+}
+.memory-switch::after{
+  content:"";position:absolute;top:3px;left:3px;
+  width:14px;height:14px;border-radius:50%;
+  background:#888;transition:left .18s ease,background .18s ease;
+}
+.memory-switch.on{background:#f2f2f2;}
+.memory-switch.on::after{left:19px;background:#111;}
+
+.memory-close-btn,.memory-floating-close{
+  width:42px;height:42px;display:grid;place-items:center;
+  border:1px solid #2f2f2f;border-radius:50%;
+  background:#151515;color:#eee;cursor:pointer;
+  font-size:22px;line-height:1;
+}
+.memory-close-btn:hover,.memory-floating-close:hover{background:#222;border-color:#4a4a4a;}
+.memory-floating-close{
+  position:fixed;right:18px;bottom:18px;
+  width:38px;height:38px;font-size:20px;
+  z-index:20;
+}
+
+.memory-toolbar{
+  display:flex;align-items:center;gap:9px;margin-top:12px;
+}
+.memory-search-wrap{position:relative;flex:1;min-width:0;}
+.memory-search-icon{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  color:#666;font-size:13px;pointer-events:none;
+}
+#memorySearch{
+  width:100%;height:38px;box-sizing:border-box;
+  padding:0 12px 0 33px;
+  border:1px solid #303030;border-radius:10px;
+  background:#121212;color:#eee;outline:none;
+  font-size:12px;
+}
+#memorySearch:focus{border-color:#505050;background:#101010;}
+#memorySearch::placeholder{color:#666;}
+
+.memory-toolbar-btn{
+  height:38px;padding:0 12px;
+  border:1px solid #303030;border-radius:10px;
+  background:#151515;color:#ddd;
+  cursor:pointer;font-size:11px;font-weight:700;
+}
+.memory-toolbar-btn:hover{background:#202020;border-color:#454545;}
+.memory-toolbar-btn.primary{background:#f4f4f4;color:#0b0b0b;border-color:#f4f4f4;}
+.memory-toolbar-btn.primary:hover{background:#fff;}
+.memory-category-toggle{display:none;}
+
+.memory-select-row{
+  display:flex;align-items:center;gap:8px;
+  min-height:34px;margin:0 22px;
+  border-bottom:1px solid #242424;
+  color:#777;font-size:10px;
+}
+.memory-select-row input{accent-color:#eee;}
+.memory-select-actions{margin-left:auto;display:none;gap:7px;}
+.memory-select-actions.show{display:flex;}
+
+#memoryList{
+  flex:1 1 auto !important;
+  width:auto !important;
+  min-height:0 !important;
+  max-height:none !important;
+  overflow:auto !important;
+  padding:10px 22px 70px !important;
+  box-sizing:border-box !important;
+  scrollbar-width:thin;
+}
+
+.memory-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:10px;
+}
+
+.memory-entry{
+  position:relative;
+  min-width:0;
+  min-height:148px;
+  padding:13px 13px 11px !important;
+  border:1px solid #2b2b2b !important;
+  border-radius:14px !important;
+  background:#101010 !important;
+  box-sizing:border-box;
+  display:flex;flex-direction:column;
+  transition:border-color .15s ease,background .15s ease,transform .15s ease;
+}
+.memory-entry:hover{border-color:#424242 !important;background:#131313 !important;transform:translateY(-1px);}
+.memory-entry.selected{border-color:#666 !important;background:#161616 !important;}
+.memory-entry-head{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-bottom:13px;
+}
+.memory-card-category{
+  display:flex;align-items:center;gap:6px;
+  min-width:0;color:#8f8f8f;font-size:10px;font-weight:700;
+}
+.memory-card-category span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.memory-check{accent-color:#eee;flex:0 0 auto;}
+.memory-card-text{
+  flex:1;color:#f1f1f1;font-size:12px;line-height:1.55;
+  overflow-wrap:anywhere;
+}
+.memory-card-footer{
+  display:flex;align-items:flex-end;justify-content:space-between;
+  gap:8px;margin-top:13px;
+}
+.memory-confidence{
+  display:inline-flex;align-items:center;
+  padding:4px 7px;border-radius:7px;
+  background:#12321f;color:#35d979;font-size:9px;font-weight:800;
+}
+.memory-meta{color:#666;font-size:9px;text-align:right;line-height:1.35;}
+.memory-card-actions{
+  display:flex;gap:4px;margin-top:8px;
+}
+.memory-card-actions button{
+  flex:1;height:28px;border:1px solid #2d2d2d;border-radius:7px;
+  background:#151515;color:#aaa;font-size:10px;cursor:pointer;
+}
+.memory-card-actions button:hover{background:#202020;color:#fff;}
+.memory-card-actions .danger{color:#aaa;}
+.memory-card-actions .danger:hover{background:#2b1717;color:#ff8b8b;}
+
+.memory-text{
+  display:block;width:100%;min-height:0 !important;
+  padding:0 !important;border:0 !important;
+  background:transparent !important;color:inherit !important;
+  resize:vertical;outline:none;
+  font:inherit;font-size:12px;line-height:1.55;
+}
+.memory-text:not([readonly]){
+  min-height:82px !important;padding:9px !important;
+  border:1px solid #444 !important;border-radius:8px !important;
+  background:#181818 !important;
+}
+.memory-save-row{display:flex;justify-content:flex-end;gap:6px;margin-top:8px;}
+.memory-save-btn,.memory-cancel-btn{
+  height:28px;padding:0 10px;border-radius:7px;
+  font-size:10px;font-weight:700;cursor:pointer;
+}
+.memory-save-btn{border:1px solid #eee;background:#eee;color:#111;}
+.memory-cancel-btn{border:1px solid #333;background:#181818;color:#ccc;}
+
+.memory-loading,.memory-empty{
+  grid-column:1/-1;
+  min-height:180px;display:grid;place-items:center;
+  color:#777;font-size:12px;
+}
+.memory-footer{
+  flex:0 0 auto !important;
+  min-height:40px;
+  display:flex;align-items:center;gap:10px;
+  margin:0 !important;padding:0 22px 12px !important;
+  border-top:0 !important;
+}
+.memory-status{flex:1;color:#777;font-size:10px;min-height:18px;}
+.memory-status.success{color:#4be18a;font-weight:700;}
+.memory-status.error{color:#ff7676;font-weight:700;}
+
+.memory-off-banner{
+  display:none;margin:10px 22px 0;padding:9px 11px;
+  border:1px solid #303030;border-radius:9px;
+  background:#121212;color:#888;font-size:10px;
+}
+.memory-off-banner.show{display:block;}
+
+.memory-add-modal{
+  position:fixed;inset:0;z-index:2147483647;
+  display:none;align-items:center;justify-content:center;
+  padding:18px;box-sizing:border-box;background:rgba(0,0,0,.62);
+  backdrop-filter:blur(4px);
+}
+.memory-add-modal.show{display:flex;}
+.memory-add-card{
+  width:min(460px,100%);padding:20px;
+  border:1px solid #333;border-radius:16px;
+  background:#111;color:#eee;box-shadow:0 28px 80px rgba(0,0,0,.5);
+}
+.memory-add-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px;}
+.memory-add-head h4{margin:0;font-size:16px;}
+.memory-add-close{
+  width:32px;height:32px;border:1px solid #333;border-radius:50%;
+  background:#1a1a1a;color:#eee;cursor:pointer;font-size:18px;
+}
+.memory-add-label{display:block;margin:11px 0 6px;color:#999;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+.memory-add-card input,.memory-add-card textarea{
+  width:100%;box-sizing:border-box;padding:10px 11px;
+  border:1px solid #333;border-radius:9px;background:#181818;color:#fff;outline:none;
+  font:inherit;font-size:12px;
+}
+.memory-add-card textarea{min-height:100px;resize:vertical;line-height:1.5;}
+.memory-add-card input:focus,.memory-add-card textarea:focus{border-color:#666;}
+.memory-add-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px;}
+.memory-add-actions button{
+  min-height:36px;padding:0 13px;border-radius:9px;
+  border:1px solid #333;background:#181818;color:#ddd;cursor:pointer;font-weight:700;font-size:11px;
+}
+.memory-add-actions .save{background:#f4f4f4;color:#111;border-color:#f4f4f4;}
+
+body:not(.dark-mode) #memoryModal.show{background:#f5f5f5 !important;}
+body:not(.dark-mode) #memoryModal.show .memory-box,
+body:not(.dark-mode) .memory-main{background:#f7f7f7 !important;color:#111 !important;}
+body:not(.dark-mode) .memory-categories{background:#fff;border-color:#e5e5e5;}
+body:not(.dark-mode) .memory-brand{border-color:#e8e8e8;}
+body:not(.dark-mode) .memory-brand-icon{background:#f4f4f4;border-color:#ddd;}
+body:not(.dark-mode) .memory-category-title{color:#222;}
+body:not(.dark-mode) .memory-category-btn{color:#666;}
+body:not(.dark-mode) .memory-category-btn:hover{background:#f1f1f1;color:#111;}
+body:not(.dark-mode) .memory-category-btn.active{background:#e9e9e9;color:#111;}
+body:not(.dark-mode) .memory-category-count{border-color:#ddd;color:#777;}
+body:not(.dark-mode) .memory-category-btn.active .memory-category-count{background:#ddd;border-color:#ccc;color:#222;}
+body:not(.dark-mode) .memory-main-header,
+body:not(.dark-mode) .memory-select-row{border-color:#e5e5e5;}
+body:not(.dark-mode) .memory-title{color:#111;}
+body:not(.dark-mode) .memory-title-icon{background:#eee;border-color:#ddd;}
+body:not(.dark-mode) .memory-close-btn,
+body:not(.dark-mode) .memory-floating-close{background:#eee;color:#111;border-color:#ddd;}
+body:not(.dark-mode) .memory-search-wrap input,
+body:not(.dark-mode) #memorySearch{background:#fff;color:#111;border-color:#ddd;}
+body:not(.dark-mode) .memory-toolbar-btn{background:#fff;color:#222;border-color:#ddd;}
+body:not(.dark-mode) .memory-toolbar-btn:hover{background:#f2f2f2;}
+body:not(.dark-mode) .memory-toolbar-btn.primary{background:#111;color:#fff;border-color:#111;}
+body:not(.dark-mode) .memory-entry{background:#fff !important;color:#111;border-color:#ddd !important;}
+body:not(.dark-mode) .memory-entry:hover{background:#fafafa !important;border-color:#bbb !important;}
+body:not(.dark-mode) .memory-card-text{color:#111;}
+body:not(.dark-mode) .memory-card-category{color:#666;}
+body:not(.dark-mode) .memory-card-actions button{background:#f5f5f5;color:#555;border-color:#ddd;}
+body:not(.dark-mode) .memory-card-actions button:hover{background:#eee;color:#111;}
+body:not(.dark-mode) .memory-meta{color:#888;}
+body:not(.dark-mode) .memory-off-banner{background:#fff;border-color:#ddd;color:#777;}
+body:not(.dark-mode) .memory-add-modal{background:rgba(0,0,0,.35);}
+body:not(.dark-mode) .memory-add-card{background:#fff;color:#111;border-color:#ddd;}
+body:not(.dark-mode) .memory-add-card input,.body:not(.dark-mode) .memory-add-card textarea{background:#fafafa;color:#111;border-color:#ddd;}
+body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions button{background:#f5f5f5;color:#222;border-color:#ddd;}
+
+@media (min-width:1200px){
+  .memory-grid{grid-template-columns:repeat(4,minmax(0,1fr));}
+}
+@media (min-width:769px) and (max-width:1199px){
+  .memory-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:768px){
+  #memoryModal.show .memory-box{height:100dvh;min-height:100dvh;}
+  .memory-shell{grid-template-columns:1fr;}
+  .memory-categories{
+    position:absolute;left:8px;top:74px;z-index:30;
+    width:min(250px,calc(100vw - 32px));max-height:65dvh;
+    border:1px solid #333;border-radius:13px;
+    box-shadow:0 20px 50px rgba(0,0,0,.5);
+    display:none;
+  }
+  .memory-categories.mobile-open{display:block;}
+  .memory-main-header{padding:12px 12px 10px;}
+  .memory-title{font-size:16px;}
+  .memory-title-icon{width:28px;height:28px;}
+  .memory-count{margin-left:37px;}
+  .memory-header-actions{gap:5px;}
+  .memory-switch-wrap span{display:none;}
+  .memory-close-btn{width:36px;height:36px;font-size:19px;}
+  .memory-floating-close{display:none;}
+  .memory-toolbar{margin-top:9px;gap:6px;}
+  #memorySearch{height:36px;}
+  .memory-toolbar-btn{height:36px;padding:0 9px;font-size:10px;}
+  .memory-category-toggle{display:block;flex:0 0 auto;width:36px;padding:0;font-size:0;}
+  .memory-category-toggle::before{content:"☰";font-size:15px;}
+  .memory-toolbar-btn#memoryClearAllBtn{font-size:0;width:36px;padding:0;}
+  .memory-toolbar-btn#memoryClearAllBtn::before{content:"↻";font-size:15px;}
+  .memory-toolbar-btn.add-label{font-size:0;width:36px;padding:0;}
+  .memory-toolbar-btn.add-label::before{content:"+";font-size:19px;}
+  .memory-select-row{margin:0 12px;}
+  #memoryList{padding:9px 12px 55px !important;}
+  .memory-grid{grid-template-columns:1fr;gap:8px;}
+  .memory-entry{min-height:125px;}
+  .memory-category-add{margin-bottom:5px;}
+  .memory-footer{padding:0 12px 9px !important;}
+  .memory-status{font-size:9px;}
+}
+@media (prefers-reduced-motion:reduce){
+  .memory-entry,.memory-category-btn,.memory-switch::after{transition:none !important;}
 }
 </style>
 <style id="oddi-home-single-position-fix">
@@ -2222,6 +2615,153 @@ body.dark-mode .memory-footer{border-top-color:#333;}
 }
 </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='oddi-sidebar/oddi-sidebar.css') }}">
+<style id="oddi-final-ui-touchups">
+/* Final homepage UI touches: goal helper placement + compact circular send button. */
+.home-next-move p{
+  position:relative !important;
+  top:6px !important;
+  margin-bottom:16px !important;
+}
+.input-area .send-btn{
+  width:40px !important;
+  height:40px !important;
+  min-width:40px !important;
+  min-height:40px !important;
+  flex:0 0 40px !important;
+  border-radius:50% !important;
+  padding:0 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  background:var(--oddi-accent) !important;
+  color:#08130d !important;
+  border:0 !important;
+  box-shadow:0 4px 12px rgba(32,199,107,.22) !important;
+}
+.input-area .send-btn:hover:not(:disabled){
+  background:var(--oddi-accent) !important;
+  transform:scale(1.06) !important;
+}
+@media (max-width:768px){
+  .home-next-move p{top:4px !important;margin-bottom:14px !important;}
+  .input-area .send-btn{
+    width:38px !important;
+    height:38px !important;
+    min-width:38px !important;
+    min-height:38px !important;
+    flex-basis:38px !important;
+  }
+}
+</style>
+
+<style id="oddi-final-home-ui-polish">
+/* Final UI polish: goal helper text + circular send button.
+   Keep functionality/DOM unchanged. */
+
+/* Move the goal helper sentence slightly lower within the next-move block. */
+.home-next-move > p {
+  position: relative !important;
+  top: 6px !important;
+  margin-bottom: 15px !important;
+}
+
+/* Make the existing send button a compact green circle. */
+#send-btn.send-btn,
+.input-area #send-btn.send-btn,
+.input-area .send-btn:not(:disabled) {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  min-height: 42px !important;
+  max-width: 42px !important;
+  max-height: 42px !important;
+  padding: 0 !important;
+  margin: 0 4px !important;
+  border-radius: 50% !important;
+  aspect-ratio: 1 / 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 42px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  background: #16c76b !important;
+  color: #08130d !important;
+  border: 0 !important;
+  box-shadow: 0 5px 14px rgba(22,199,107,.18) !important;
+}
+
+#send-btn.send-btn:hover:not(:disabled),
+.input-area .send-btn:hover:not(:disabled) {
+  background: #16c76b !important;
+  transform: translateY(-1px) !important;
+}
+
+#send-btn.send-btn:active:not(:disabled) {
+  transform: scale(.96) !important;
+}
+
+#send-btn.send-btn .send-icon {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  line-height: 1 !important;
+  font-size: 17px !important;
+}
+
+/* Phone: keep the circle compact and avoid changing the rest of the composer. */
+@media (max-width: 768px) {
+  #send-btn.send-btn,
+  .input-area #send-btn.send-btn,
+  .input-area .send-btn:not(:disabled) {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    max-width: 38px !important;
+    max-height: 38px !important;
+    flex-basis: 38px !important;
+    margin: 0 3px !important;
+  }
+}
+</style>
+
+<style id="oddi-final-goal-text-center">
+/* Final UI touch: center the goal helper text on all screen sizes. */
+.home-next-move p {
+  text-align: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+</style>
+
+<style id="oddi-final-goal-center-strong-fix">
+/* Final mobile/desktop alignment fix: center the goal helper sentence. */
+#welcomeContainer .home-next-move {
+  width: min(620px, 100%) !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+#welcomeContainer .home-next-move > p {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+@media (max-width: 768px) {
+  #welcomeContainer .home-next-move > p {
+    text-align: center !important;
+    width: 100% !important;
+  }
+}
+</style>
+
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
@@ -2780,24 +3320,96 @@ body.dark-mode .memory-footer{border-top-color:#333;}
     </div>
 </div>
 <div id="memoryModal" class="utility-modal" aria-hidden="true">
-    <div class="utility-box memory-box" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle">
-        <div class="utility-header">
-            <div>
-                <h3 id="memoryModalTitle">🧠 Your Memory Summarization</h3>
-                <p class="memory-subtitle">These are the things ODDI remembers about you.</p>
-            </div>
-            <button id="closeMemory" class="utility-close" type="button" aria-label="Close memory">✕</button>
+  <div class="utility-box memory-box" role="dialog" aria-modal="true" aria-labelledby="memoryModalTitle">
+    <div class="memory-shell">
+      <aside class="memory-categories" id="memoryCategories">
+        <div class="memory-brand">
+          <div class="memory-brand-icon">🧠</div>
+          <div><strong>ODDI AI</strong><small>Personal memory</small></div>
         </div>
+        <div class="memory-category-title">Categories</div>
+        <div class="memory-category-subtitle">Filter memories by type</div>
+        <div id="memoryCategoryList" class="memory-category-list"></div>
+        <button id="memoryAddCategoryBtn" class="memory-category-add" type="button">＋ Add category</button>
+      </aside>
+
+      <main class="memory-main">
+        <header class="memory-main-header">
+          <div class="memory-title-row">
+            <div class="memory-title-wrap">
+              <h3 id="memoryModalTitle" class="memory-title">
+                <span class="memory-title-icon">⚙️</span>
+                <span>Your Memory</span>
+              </h3>
+              <div id="memoryCount" class="memory-count">0 memories total</div>
+            </div>
+
+            <div class="memory-header-actions">
+              <div class="memory-switch-wrap">
+                <span>Memory on</span>
+                <button id="memoryEnabledToggle" class="memory-switch on" type="button" role="switch" aria-checked="true" aria-label="Turn memory on or off"></button>
+              </div>
+              <button id="closeMemory" class="memory-close-btn" type="button" aria-label="Close memory" title="Close">✕</button>
+            </div>
+          </div>
+
+          <div class="memory-toolbar">
+            <div class="memory-search-wrap">
+              <span class="memory-search-icon">⌕</span>
+              <input id="memorySearch" type="search" placeholder="Search memories..." autocomplete="off" aria-label="Search memories">
+            </div>
+            <button id="memoryCategoryToggle" class="memory-toolbar-btn memory-category-toggle" type="button" aria-expanded="false">☰ Categories</button>
+            <button id="memoryAddBtn" class="memory-toolbar-btn primary add-label" type="button">＋ Add memory</button>
+            <button id="memoryClearAllBtn" class="memory-toolbar-btn" type="button">↻ Clear all</button>
+          </div>
+        </header>
+
+        <div id="memoryOffBanner" class="memory-off-banner">Memory is off. ODDI will keep this saved data here, but memory controls are paused.</div>
+
+        <div class="memory-select-row">
+          <label><input id="memorySelectAll" type="checkbox"> Select all</label>
+          <span id="memorySelectedCount">0 selected</span>
+          <div id="memorySelectActions" class="memory-select-actions">
+            <button id="memoryDeleteSelected" class="memory-toolbar-btn" type="button">Delete selected</button>
+          </div>
+        </div>
+
         <div id="memoryList" class="memory-list">
-            <div class="memory-document">
-                <div class="memory-loading">Loading your memory…</div>
-            </div>
+          <div class="memory-loading">Loading your memory…</div>
         </div>
+
         <div class="memory-footer">
-            <span id="memoryStatus" class="memory-status" aria-live="polite"></span>
-            <button id="refreshMemoryBtn" class="memory-secondary-btn" type="button">↻ Refresh</button>
+          <span id="memoryStatus" class="memory-status" aria-live="polite"></span>
+          <button id="refreshMemoryBtn" class="memory-toolbar-btn" type="button">↻ Refresh</button>
         </div>
+      </main>
     </div>
+
+    <button id="memoryFloatingClose" class="memory-floating-close" type="button" aria-label="Close memory" title="Close memory">✕</button>
+  </div>
+</div>
+
+<div id="memoryAddModal" class="memory-add-modal" aria-hidden="true">
+  <div class="memory-add-card" role="dialog" aria-modal="true" aria-labelledby="memoryAddTitle">
+    <div class="memory-add-head">
+      <h4 id="memoryAddTitle">Create memory</h4>
+      <button id="memoryAddClose" class="memory-add-close" type="button" aria-label="Close">✕</button>
+    </div>
+    <label class="memory-add-label" for="memoryAddCategory">Category</label>
+    <input id="memoryAddCategory" type="text" list="memoryCategoryOptions" placeholder="e.g. Goals, Preferences, Education">
+    <datalist id="memoryCategoryOptions">
+      <option value="Name"></option><option value="Preferences"></option><option value="Goals"></option>
+      <option value="Education"></option><option value="Work"></option><option value="Projects"></option>
+      <option value="Interests"></option><option value="People"></option><option value="Communication"></option>
+      <option value="Other"></option>
+    </datalist>
+    <label class="memory-add-label" for="memoryAddText">Memory</label>
+    <textarea id="memoryAddText" placeholder="What should ODDI remember?"></textarea>
+    <div class="memory-add-actions">
+      <button id="memoryAddCancel" type="button">Cancel</button>
+      <button id="memoryAddSave" class="save" type="button">Save memory</button>
+    </div>
+  </div>
 </div>
 <div id="renameModal" class="rename-modal">
     <div class="rename-box">
@@ -11361,218 +11973,487 @@ loadConversations();
 
 <script id="oddi-memory-ui-script">
 (function () {
-    const memoryBtn = document.getElementById("memoryBtn");
-    const memoryModal = document.getElementById("memoryModal");
-    const closeMemory = document.getElementById("closeMemory");
-    const memoryList = document.getElementById("memoryList");
-    const memoryStatus = document.getElementById("memoryStatus");
-    const refreshMemoryBtn = document.getElementById("refreshMemoryBtn");
+  "use strict";
 
-    function openMemory() {
-        const mobileToolMenu = document.getElementById("mobileToolMenu");
-        mobileToolMenu?.classList.remove("open", "mobile-tools-hiding");
-        mobileToolMenu?.setAttribute("aria-hidden", "true");
-        memoryModal?.classList.add("show");
-        memoryModal?.setAttribute("aria-hidden", "false");
-        loadMemory();
+  const memoryBtn = document.getElementById("memoryBtn");
+  const memoryModal = document.getElementById("memoryModal");
+  const closeMemory = document.getElementById("closeMemory");
+  const floatingClose = document.getElementById("memoryFloatingClose");
+  const memoryList = document.getElementById("memoryList");
+  const memoryStatus = document.getElementById("memoryStatus");
+  const refreshMemoryBtn = document.getElementById("refreshMemoryBtn");
+  const memorySearch = document.getElementById("memorySearch");
+  const memoryCount = document.getElementById("memoryCount");
+  const categoryList = document.getElementById("memoryCategoryList");
+  const selectAll = document.getElementById("memorySelectAll");
+  const selectedCount = document.getElementById("memorySelectedCount");
+  const selectActions = document.getElementById("memorySelectActions");
+  const deleteSelectedBtn = document.getElementById("memoryDeleteSelected");
+  const enabledToggle = document.getElementById("memoryEnabledToggle");
+  const offBanner = document.getElementById("memoryOffBanner");
+  const addBtn = document.getElementById("memoryAddBtn");
+  const addCategoryBtn = document.getElementById("memoryAddCategoryBtn");
+  const addModal = document.getElementById("memoryAddModal");
+  const addClose = document.getElementById("memoryAddClose");
+  const addCancel = document.getElementById("memoryAddCancel");
+  const addSave = document.getElementById("memoryAddSave");
+  const addCategory = document.getElementById("memoryAddCategory");
+  const addText = document.getElementById("memoryAddText");
+  const clearAllBtn = document.getElementById("memoryClearAllBtn");
+  const mobileCategories = document.getElementById("memoryCategories");
+  const categoryToggle = document.getElementById("memoryCategoryToggle");
+
+  const defaultCategories = [
+    ["All Memories","✨"],["Name","👤"],["Preferences","⚙️"],["Goals","🎯"],
+    ["Education","🎓"],["Work","💼"],["Projects","🚀"],["Interests","✨"],
+    ["People","👥"],["Communication","💬"],["Other","📌"]
+  ];
+
+  let allMemories = [];
+  let activeCategory = "All Memories";
+  let searchTerm = "";
+  let memoryEnabled = localStorage.getItem("oddi_memory_enabled") !== "false";
+
+  function openMemory() {
+    document.getElementById("mobileToolMenu")?.classList.remove("open", "mobile-tools-hiding");
+    document.getElementById("mobileToolMenu")?.setAttribute("aria-hidden", "true");
+    if (window.matchMedia("(min-width:769px)").matches) {
+      document.body.classList.add("oddi-memory-workspace-open");
     }
+    memoryModal?.classList.add("show");
+    memoryModal?.setAttribute("aria-hidden", "false");
+    setMemoryToggle(memoryEnabled);
+    loadMemory();
+  }
 
-    function closeMemoryModal() {
-        memoryModal?.classList.remove("show");
-        memoryModal?.setAttribute("aria-hidden", "true");
+  function closeMemoryModal() {
+    memoryModal?.classList.remove("show");
+    memoryModal?.setAttribute("aria-hidden", "true");
+    addModal?.classList.remove("show");
+    addModal?.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("oddi-memory-workspace-open");
+    memorySearch?.blur();
+  }
+
+  function setMemoryStatus(text, type = "") {
+    if (!memoryStatus) return;
+    memoryStatus.textContent = text || "";
+    memoryStatus.className = "memory-status" + (type ? " " + type : "");
+  }
+
+  function escapeMemoryText(value) {
+    const div = document.createElement("div");
+    div.textContent = String(value ?? "");
+    return div.innerHTML;
+  }
+
+  function normalizeMemories(payload) {
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.memories)) return payload.memories;
+    if (payload && typeof payload.memories === "object") {
+      return Object.entries(payload.memories).map(([category, memory]) => ({ category, memory }));
     }
-
-    function setMemoryStatus(text, type = "") {
-        if (!memoryStatus) return;
-        memoryStatus.textContent = text || "";
-        memoryStatus.className = "memory-status" + (type ? " " + type : "");
+    if (payload && typeof payload === "object") {
+      return Object.entries(payload).map(([category, memory]) => ({ category, memory }));
     }
+    return [];
+  }
 
-    function escapeMemoryText(value) {
-        const div = document.createElement("div");
-        div.textContent = String(value ?? "");
-        return div.innerHTML;
-    }
+  function normalizeMemory(item, index) {
+    const category = String(item?.category ?? item?.memory_key ?? `Other`).trim() || "Other";
+    const memory = String(item?.memory ?? item?.memory_value ?? item?.value ?? "").trim();
+    const key = String(item?.id ?? item?.memory_key ?? category);
+    return {
+      ...item,
+      category,
+      memory,
+      key,
+      confidence: String(item?.confidence ?? "high").toLowerCase(),
+      source: String(item?.source ?? "ODDI"),
+      index
+    };
+  }
 
-    function normalizeMemories(payload) {
-        if (Array.isArray(payload)) return payload;
-        if (Array.isArray(payload?.memories)) return payload.memories;
-        if (payload && typeof payload.memories === "object") {
-            return Object.entries(payload.memories).map(([category, memory]) => ({
-                category,
-                memory
-            }));
-        }
-        if (payload && typeof payload === "object") {
-            return Object.entries(payload).map(([category, memory]) => ({
-                category,
-                memory
-            }));
-        }
-        return [];
-    }
+  function categoryIcon(category) {
+    const hit = defaultCategories.find(x => x[0].toLowerCase() === category.toLowerCase());
+    return hit ? hit[1] : "📌";
+  }
 
-    async function loadMemory() {
-        if (!memoryList) return;
-        setMemoryStatus("");
-        memoryList.innerHTML = '<div class="memory-loading">Loading your memory…</div>';
+  function filteredMemories() {
+    return allMemories.filter(item => {
+      const categoryMatch = activeCategory === "All Memories" ||
+        item.category.toLowerCase() === activeCategory.toLowerCase();
+      if (!categoryMatch) return false;
+      if (!searchTerm) return true;
+      return `${item.category} ${item.memory} ${item.source}`.toLowerCase().includes(searchTerm);
+    });
+  }
 
-        try {
-            const response = await fetch("/api/memory", {
-                method: "GET",
-                headers: { "Accept": "application/json" },
-                credentials: "same-origin"
-            });
-
-            if (!response.ok) {
-                throw new Error(await response.text() || `HTTP ${response.status}`);
-            }
-
-            const payload = await response.json();
-            const memories = normalizeMemories(payload);
-
-            if (!memories.length) {
-                memoryList.innerHTML = '<div class="memory-empty">ODDI does not have any saved memories about you yet. 🗂️</div>';
-                return;
-            }
-
-            memoryList.innerHTML = memories.map((item, index) => {
-                const category = String(item.category ?? item.memory_key ?? `Memory ${index + 1}`);
-                const memory = String(item.memory ?? item.memory_value ?? item.value ?? "");
-                const key = String(item.id ?? item.memory_key ?? category);
-                return `
-                    <section class="memory-entry" data-memory-key="${encodeURIComponent(key)}">
-                        <div class="memory-entry-header">
-                            <span class="memory-category">${escapeMemoryText(category)}</span>
-                            <div class="memory-actions">
-                                <button type="button" class="memory-action-btn memory-edit-btn" title="Edit memory" aria-label="Edit ${escapeMemoryText(category)}">✏️</button>
-                                <button type="button" class="memory-action-btn danger memory-delete-btn" title="Delete memory" aria-label="Delete ${escapeMemoryText(category)}">Delete</button>
-                            </div>
-                        </div>
-                        <textarea class="memory-text" readonly>${escapeMemoryText(memory)}</textarea>
-                        <div class="memory-save-row" hidden>
-                            <button type="button" class="memory-cancel-btn memory-cancel-btn-inner">Cancel</button>
-                            <button type="button" class="memory-save-btn memory-save-btn-inner">Save</button>
-                        </div>
-                    </section>
-                `;
-            }).join("");
-
-            memoryList.querySelectorAll(".memory-entry").forEach(card => {
-                const editBtn = card.querySelector(".memory-edit-btn");
-                const deleteBtn = card.querySelector(".memory-delete-btn");
-                const cancelBtn = card.querySelector(".memory-cancel-btn-inner");
-                const saveBtn = card.querySelector(".memory-save-btn-inner");
-                const textarea = card.querySelector(".memory-text");
-                const saveRow = card.querySelector(".memory-save-row");
-                const key = decodeURIComponent(card.dataset.memoryKey || "");
-                let original = textarea?.value || "";
-
-                editBtn?.addEventListener("click", () => {
-                    original = textarea.value;
-                    textarea.readOnly = false;
-                    card.classList.add("editing");
-                    saveRow.hidden = false;
-                    textarea.focus();
-                });
-
-                cancelBtn?.addEventListener("click", () => {
-                    textarea.value = original;
-                    textarea.readOnly = true;
-                    card.classList.remove("editing");
-                    saveRow.hidden = true;
-                });
-
-                saveBtn?.addEventListener("click", async () => {
-                    const memory = textarea.value.trim();
-                    if (!memory) {
-                        setMemoryStatus("Memory cannot be empty.", "error");
-                        return;
-                    }
-
-                    saveBtn.disabled = true;
-                    try {
-                        const response = await fetch("/api/memory", {
-                            method: "PUT",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "Accept": "application/json"
-                            },
-                            credentials: "same-origin",
-                            body: JSON.stringify({
-                                key,
-                                category: key,
-                                memory
-                            })
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(await response.text() || `HTTP ${response.status}`);
-                        }
-
-                        original = memory;
-                        textarea.readOnly = true;
-                        card.classList.remove("editing");
-                        saveRow.hidden = true;
-                        setMemoryStatus("Memory updated. 🗂️", "success");
-                    } catch (error) {
-                        console.error("Memory update error:", error);
-                        setMemoryStatus("Could not update memory yet.", "error");
-                    } finally {
-                        saveBtn.disabled = false;
-                    }
-                });
-
-                deleteBtn?.addEventListener("click", async () => {
-                    if (!confirm("Delete this memory from ODDI?")) return;
-                    deleteBtn.disabled = true;
-                    try {
-                        const response = await fetch("/api/memory", {
-                            method: "DELETE",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "Accept": "application/json"
-                            },
-                            credentials: "same-origin",
-                            body: JSON.stringify({ key, category: key })
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(await response.text() || `HTTP ${response.status}`);
-                        }
-
-                        card.remove();
-                        setMemoryStatus("Memory deleted. 🗑️", "success");
-                        if (!memoryList.querySelector(".memory-entry")) {
-                            memoryList.innerHTML = '<div class="memory-empty">No saved memories yet. 🗂️</div>';
-                        }
-                    } catch (error) {
-                        console.error("Memory delete error:", error);
-                        setMemoryStatus("Could not delete memory yet.", "error");
-                    } finally {
-                        deleteBtn.disabled = false;
-                    }
-                });
-            });
-        } catch (error) {
-            console.error("Memory load error:", error);
-            memoryList.innerHTML = '<div class="memory-empty">Memory controls are not connected yet.</div>';
-            setMemoryStatus("Memory API is unavailable.", "error");
-        }
-    }
-
-    memoryBtn?.addEventListener("click", openMemory);
-    closeMemory?.addEventListener("click", closeMemoryModal);
-    refreshMemoryBtn?.addEventListener("click", loadMemory);
-    memoryModal?.addEventListener("click", event => {
-        if (event.target === memoryModal) closeMemoryModal();
+  function renderCategories() {
+    if (!categoryList) return;
+    const counts = new Map();
+    allMemories.forEach(item => {
+      const key = item.category.toLowerCase();
+      counts.set(key, (counts.get(key) || 0) + 1);
     });
 
-    window.addEventListener("keydown", event => {
-        if (event.key === "Escape" && memoryModal?.classList.contains("show")) {
-            closeMemoryModal();
-        }
+    const categories = [...defaultCategories];
+    allMemories.forEach(item => {
+      if (!categories.some(x => x[0].toLowerCase() === item.category.toLowerCase())) {
+        categories.push([item.category, "📌"]);
+      }
     });
+
+    categoryList.innerHTML = categories.map(([name, icon]) => {
+      const count = name === "All Memories" ? allMemories.length : (counts.get(name.toLowerCase()) || 0);
+      const active = name.toLowerCase() === activeCategory.toLowerCase();
+      return `
+        <button type="button" class="memory-category-btn ${active ? "active" : ""}" data-memory-category="${encodeURIComponent(name)}">
+          <span class="memory-category-icon">${icon}</span>
+          <span class="memory-category-name">${escapeMemoryText(name)}</span>
+          <span class="memory-category-count">${count}</span>
+        </button>`;
+    }).join("");
+
+    categoryList.querySelectorAll(".memory-category-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        activeCategory = decodeURIComponent(btn.dataset.memoryCategory || "All Memories");
+        renderCategories();
+        renderMemoryCards();
+        mobileCategories?.classList.remove("mobile-open");
+      });
+    });
+  }
+
+  function confidenceLabel(value) {
+    const v = String(value || "high").toLowerCase();
+    return v === "medium" ? "Medium confidence" : v === "low" ? "Low confidence" : "High confidence";
+  }
+
+  function renderMemoryCards() {
+    if (!memoryList) return;
+    const memories = filteredMemories();
+    if (memoryCount) {
+      memoryCount.textContent = `${allMemories.length} ${allMemories.length === 1 ? "memory" : "memories"} total`;
+    }
+
+    if (!memories.length) {
+      memoryList.innerHTML = `<div class="memory-grid"><div class="memory-empty">No memories match this view. 🗂️</div></div>`;
+      updateSelectionUI();
+      return;
+    }
+
+    memoryList.innerHTML = `<div class="memory-grid">${memories.map((item, index) => `
+      <section class="memory-entry" data-memory-key="${encodeURIComponent(item.key)}">
+        <div class="memory-entry-head">
+          <label class="memory-card-category">
+            <input class="memory-check" type="checkbox" aria-label="Select memory">
+            <span>${categoryIcon(item.category)}</span>
+            <span>${escapeMemoryText(item.category)}</span>
+          </label>
+          <button type="button" class="memory-action-btn memory-edit-btn" title="Edit memory" aria-label="Edit memory">✏️</button>
+        </div>
+        <div class="memory-card-text">
+          <textarea class="memory-text" readonly aria-label="Memory text">${escapeMemoryText(item.memory)}</textarea>
+        </div>
+        <div class="memory-card-footer">
+          <span class="memory-confidence">${confidenceLabel(item.confidence)}</span>
+          <span class="memory-meta">${escapeMemoryText(item.source)}</span>
+        </div>
+        <div class="memory-card-actions">
+          <button type="button" class="memory-save-card-btn" hidden>Save</button>
+          <button type="button" class="memory-cancel-card-btn" hidden>Cancel</button>
+          <button type="button" class="memory-delete-btn danger">Delete</button>
+        </div>
+      </section>
+    `).join("")}</div>`;
+
+    memoryList.querySelectorAll(".memory-entry").forEach(card => bindMemoryCard(card));
+    updateSelectionUI();
+  }
+
+  function bindMemoryCard(card) {
+    const item = allMemories.find(x => x.key === decodeURIComponent(card.dataset.memoryKey || ""));
+    if (!item) return;
+
+    const editBtn = card.querySelector(".memory-edit-btn");
+    const deleteBtn = card.querySelector(".memory-delete-btn");
+    const saveBtn = card.querySelector(".memory-save-card-btn");
+    const cancelBtn = card.querySelector(".memory-cancel-card-btn");
+    const textarea = card.querySelector(".memory-text");
+    const checkbox = card.querySelector(".memory-check");
+    let original = textarea?.value || "";
+
+    checkbox?.addEventListener("change", () => {
+      card.classList.toggle("selected", checkbox.checked);
+      updateSelectionUI();
+    });
+
+    editBtn?.addEventListener("click", () => {
+      if (!memoryEnabled) {
+        setMemoryStatus("Turn Memory on to edit saved memories.", "error");
+        return;
+      }
+      original = textarea.value;
+      textarea.readOnly = false;
+      card.classList.add("editing");
+      editBtn.hidden = true;
+      saveBtn.hidden = false;
+      cancelBtn.hidden = false;
+      textarea.focus();
+    });
+
+    cancelBtn?.addEventListener("click", () => {
+      textarea.value = original;
+      textarea.readOnly = true;
+      card.classList.remove("editing");
+      editBtn.hidden = false;
+      saveBtn.hidden = true;
+      cancelBtn.hidden = true;
+    });
+
+    saveBtn?.addEventListener("click", async () => {
+      const memory = textarea.value.trim();
+      if (!memory) {
+        setMemoryStatus("Memory cannot be empty.", "error");
+        return;
+      }
+      saveBtn.disabled = true;
+      try {
+        const response = await fetch("/api/memory", {
+          method: "PUT",
+          headers: {"Content-Type":"application/json","Accept":"application/json"},
+          credentials: "same-origin",
+          body: JSON.stringify({key: item.key, category: item.category, memory})
+        });
+        if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+        item.memory = memory;
+        textarea.readOnly = true;
+        card.classList.remove("editing");
+        editBtn.hidden = false;
+        saveBtn.hidden = true;
+        cancelBtn.hidden = true;
+        setMemoryStatus("Memory updated. ✓", "success");
+        renderCategories();
+      } catch (error) {
+        console.error("Memory update error:", error);
+        setMemoryStatus("Could not update memory yet.", "error");
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+
+    deleteBtn?.addEventListener("click", () => deleteMemory(item, card));
+  }
+
+  async function deleteMemory(item, card = null, skipConfirm = false) {
+    if (!memoryEnabled) {
+      setMemoryStatus("Turn Memory on to change saved memories.", "error");
+      return false;
+    }
+    if (!skipConfirm && !confirm("Delete this memory from ODDI?")) return false;
+    try {
+      const response = await fetch("/api/memory", {
+        method: "DELETE",
+        headers: {"Content-Type":"application/json","Accept":"application/json"},
+        credentials: "same-origin",
+        body: JSON.stringify({key: item.key, category: item.category})
+      });
+      if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+      allMemories = allMemories.filter(x => x.key !== item.key);
+      setMemoryStatus("Memory deleted. 🗑️", "success");
+      renderCategories();
+      renderMemoryCards();
+      return true;
+    } catch (error) {
+      console.error("Memory delete error:", error);
+      setMemoryStatus("Could not delete memory yet.", "error");
+      return false;
+    }
+  }
+
+  async function loadMemory() {
+    if (!memoryList) return;
+    setMemoryStatus("");
+    memoryList.innerHTML = `<div class="memory-grid"><div class="memory-loading">Loading your memory…</div></div>`;
+    try {
+      const response = await fetch("/api/memory", {
+        method:"GET",
+        headers:{"Accept":"application/json"},
+        credentials:"same-origin",
+        cache:"no-store"
+      });
+      if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+      const payload = await response.json();
+      allMemories = normalizeMemories(payload).map(normalizeMemory).filter(x => x.memory);
+      renderCategories();
+      renderMemoryCards();
+    } catch (error) {
+      console.error("Memory load error:", error);
+      allMemories = [];
+      memoryList.innerHTML = `<div class="memory-grid"><div class="memory-empty">Memory API is unavailable.</div></div>`;
+      setMemoryStatus("Could not load memory.", "error");
+    }
+  }
+
+  async function createMemory() {
+    if (!memoryEnabled) {
+      setMemoryStatus("Turn Memory on before creating a memory.", "error");
+      return;
+    }
+    const category = (addCategory?.value || "").trim();
+    const memory = (addText?.value || "").trim();
+    if (!category || !memory) {
+      setMemoryStatus("Add both a category and memory.", "error");
+      return;
+    }
+    addSave.disabled = true;
+    try {
+      const response = await fetch("/api/memory", {
+        method:"PUT",
+        headers:{"Content-Type":"application/json","Accept":"application/json"},
+        credentials:"same-origin",
+        body:JSON.stringify({key:category, category, memory})
+      });
+      if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+      closeAddModal();
+      addCategory.value = "";
+      addText.value = "";
+      activeCategory = "All Memories";
+      await loadMemory();
+      setMemoryStatus("Memory created. 🧠", "success");
+    } catch (error) {
+      console.error("Memory create error:", error);
+      setMemoryStatus("Could not create memory yet.", "error");
+    } finally {
+      addSave.disabled = false;
+    }
+  }
+
+  async function clearAllMemories() {
+    if (!memoryEnabled || !allMemories.length) return;
+    if (!confirm(`Delete all ${allMemories.length} saved memories?`)) return;
+    setMemoryStatus("Clearing memories…");
+    let failed = 0;
+    for (const item of [...allMemories]) {
+      try {
+        const response = await fetch("/api/memory", {
+          method:"DELETE",
+          headers:{"Content-Type":"application/json","Accept":"application/json"},
+          credentials:"same-origin",
+          body:JSON.stringify({key:item.key, category:item.category})
+        });
+        if (!response.ok) failed++;
+      } catch (_) { failed++; }
+    }
+    await loadMemory();
+    setMemoryStatus(failed ? `${failed} memories could not be deleted.` : "All memories cleared. 🗑️", failed ? "error" : "success");
+  }
+
+  async function deleteSelected() {
+    const selected = [...memoryList.querySelectorAll(".memory-entry")].filter(card => card.querySelector(".memory-check")?.checked);
+    const items = selected.map(card => allMemories.find(x => x.key === decodeURIComponent(card.dataset.memoryKey || ""))).filter(Boolean);
+    if (!items.length) return;
+    if (!confirm(`Delete ${items.length} selected ${items.length === 1 ? "memory" : "memories"}?`)) return;
+    for (const item of items) await deleteMemory(item, null, true);
+  }
+
+  function updateSelectionUI() {
+    const checks = [...memoryList.querySelectorAll(".memory-check")];
+    const selected = checks.filter(x => x.checked).length;
+    if (selectedCount) selectedCount.textContent = `${selected} selected`;
+    if (selectActions) selectActions.classList.toggle("show", selected > 0);
+    if (selectAll) {
+      selectAll.checked = checks.length > 0 && selected === checks.length;
+      selectAll.indeterminate = selected > 0 && selected < checks.length;
+    }
+  }
+
+  function setMemoryToggle(enabled) {
+    memoryEnabled = !!enabled;
+    localStorage.setItem("oddi_memory_enabled", String(memoryEnabled));
+    if (enabledToggle) {
+      enabledToggle.classList.toggle("on", memoryEnabled);
+      enabledToggle.setAttribute("aria-checked", String(memoryEnabled));
+    }
+    offBanner?.classList.toggle("show", !memoryEnabled);
+    if (addBtn) addBtn.disabled = !memoryEnabled;
+    if (clearAllBtn) clearAllBtn.disabled = !memoryEnabled;
+    document.body.dataset.oddiMemoryEnabled = String(memoryEnabled);
+  }
+
+  function openAddModal() {
+    if (!memoryEnabled) {
+      setMemoryStatus("Turn Memory on before creating a memory.", "error");
+      return;
+    }
+    addModal?.classList.add("show");
+    addModal?.setAttribute("aria-hidden","false");
+    setTimeout(() => addCategory?.focus(), 30);
+  }
+
+  function closeAddModal() {
+    addModal?.classList.remove("show");
+    addModal?.setAttribute("aria-hidden","true");
+  }
+
+  enabledToggle?.addEventListener("click", () => {
+    setMemoryToggle(!memoryEnabled);
+    setMemoryStatus(memoryEnabled ? "Memory is on. 🧠" : "Memory is off.", memoryEnabled ? "success" : "");
+  });
+  memoryBtn?.addEventListener("click", openMemory);
+  closeMemory?.addEventListener("click", closeMemoryModal);
+  floatingClose?.addEventListener("click", closeMemoryModal);
+  refreshMemoryBtn?.addEventListener("click", loadMemory);
+  addBtn?.addEventListener("click", openAddModal);
+  addCategoryBtn?.addEventListener("click", openAddModal);
+  categoryToggle?.addEventListener("click", () => {
+    const open = !mobileCategories?.classList.contains("mobile-open");
+    mobileCategories?.classList.toggle("mobile-open", open);
+    categoryToggle?.setAttribute("aria-expanded", String(open));
+  });
+  addClose?.addEventListener("click", closeAddModal);
+  addCancel?.addEventListener("click", closeAddModal);
+  addSave?.addEventListener("click", createMemory);
+  clearAllBtn?.addEventListener("click", clearAllMemories);
+  deleteSelectedBtn?.addEventListener("click", deleteSelected);
+
+  selectAll?.addEventListener("change", () => {
+    memoryList.querySelectorAll(".memory-check").forEach(check => {
+      check.checked = selectAll.checked;
+      check.closest(".memory-entry")?.classList.toggle("selected", selectAll.checked);
+    });
+    updateSelectionUI();
+  });
+
+  memorySearch?.addEventListener("input", () => {
+    searchTerm = memorySearch.value.trim().toLowerCase();
+    renderMemoryCards();
+  });
+
+  addText?.addEventListener("keydown", event => {
+    if ((event.ctrlKey || event.metaKey) && event.key === "Enter") createMemory();
+  });
+
+  addModal?.addEventListener("click", event => {
+    if (event.target === addModal) closeAddModal();
+  });
+
+  memoryModal?.addEventListener("click", event => {
+    if (event.target === memoryModal) closeMemoryModal();
+  });
+
+  window.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      if (addModal?.classList.contains("show")) {
+        closeAddModal();
+      } else if (memoryModal?.classList.contains("show")) {
+        closeMemoryModal();
+      }
+    }
+  });
+
+  setMemoryToggle(memoryEnabled);
 })();
 </script>
 
@@ -14775,7 +15656,31 @@ body.dark-mode .home-goal-chip:hover{background:#152219;border-color:rgba(32,199
   z-index:2147483645 !important;
 }
 </style>
+
+
+<style id="oddi-memory-fullscreen-final-fix">
+/* Memory owns the viewport while open. The real React sidebar is hidden
+   underneath; no dummy rail or reserved black region is created. */
+@media (min-width:769px){
+  body.oddi-memory-workspace-open #oddi-react-sidebar-root{
+    visibility:hidden !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+  }
+  #memoryModal.show ~ #oddi-react-sidebar-root{
+    visibility:hidden !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+  }
+}
+</style>
+
+<script id="oddi-memory-sidebar-final-js">
+/* Memory controls the workspace itself; the React sidebar remains untouched
+   and is restored automatically when Memory closes. */
+</script>
+
 <div id="oddi-react-sidebar-root"></div>
 <script src="{{ url_for('static', filename='oddi-sidebar/oddi-sidebar.js') }}"></script>
 </body>
-</html>
+</html> 

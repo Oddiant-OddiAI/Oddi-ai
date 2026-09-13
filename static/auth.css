@@ -1083,3 +1083,256 @@ input:focus-visible {
 .strength-label.strength-strong {
     color: #22c55e;
 }
+
+/* =========================================================
+   ODDI AI — FINAL MOBILE AUTH CORRECTION
+   Phone-first override. Keeps desktop auth untouched.
+   ========================================================= */
+
+/* Real phones can report a wider layout viewport when viewport
+   metadata is missing or altered. Use pointer:coarse as an
+   additional mobile signal so the desktop brand panel never
+   intrudes into the phone form. */
+@media (max-width: 900px), (pointer: coarse) {
+
+    html,
+    body {
+        width: 100%;
+        min-width: 0;
+        overflow-x: hidden;
+    }
+
+    .rocket-auth {
+        width: 100%;
+        min-width: 0;
+        min-height: 100dvh;
+        display: block;
+        background: var(--background);
+    }
+
+    .auth-brand-panel {
+        display: none !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: 0 !important;
+        overflow: hidden !important;
+    }
+
+    .auth-form-panel {
+        width: 100%;
+        max-width: none;
+        min-width: 0;
+        min-height: 100dvh;
+        padding: 22px 16px 30px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        overflow-x: hidden;
+        overflow-y: auto;
+    }
+
+    .auth-form-wrapper {
+        width: min(100%, 420px);
+        max-width: 420px;
+        margin: 0 auto;
+    }
+
+    .mobile-auth-logo {
+        width: 100%;
+        max-width: 100%;
+        margin: 0 auto 24px;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .mobile-auth-logo img {
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+    }
+
+    .mobile-auth-logo span {
+        white-space: nowrap;
+    }
+
+    .auth-mode-switch {
+        width: 100%;
+        margin-bottom: 22px;
+    }
+
+    .auth-heading {
+        width: 100%;
+        text-align: left;
+        margin-bottom: 20px;
+    }
+
+    .social-auth-button {
+        width: 100%;
+    }
+
+    .rocket-login-form {
+        width: 100%;
+        gap: 15px;
+    }
+
+    .field-group,
+    .password-field {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .field-group input {
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+    }
+
+    .rocket-submit {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .switch-auth-text {
+        width: 100%;
+        margin-top: 18px;
+        text-align: center;
+    }
+}
+
+/* Extra-small phones: keep the complete auth UI inside the viewport. */
+@media (max-width: 420px), (pointer: coarse) and (max-width: 420px) {
+
+    .auth-form-panel {
+        padding: 16px 14px 24px;
+    }
+
+    .auth-form-wrapper {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .auth-mode-switch {
+        padding: 3px;
+        border-radius: 11px;
+    }
+
+    .auth-mode {
+        min-height: 36px;
+        font-size: 11px;
+    }
+
+    .auth-heading h2 {
+        font-size: 20px;
+    }
+
+    .auth-heading p {
+        font-size: 12px;
+    }
+
+    .social-auth-button {
+        height: 42px;
+    }
+
+    .field-group input,
+    .rocket-submit {
+        height: 44px;
+    }
+
+    .field-group label {
+        font-size: 12px;
+    }
+
+    .remember-row,
+    .switch-auth-text {
+        font-size: 11px;
+    }
+}
+
+
+/* =========================================================
+   FINAL MOBILE AUTH CENTERING
+   Keep ODDI AI above the Sign In / Create Account switch
+   and center the complete authentication content.
+   ========================================================= */
+@media (max-width: 900px), (pointer: coarse) {
+    .auth-form-panel {
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        text-align: center !important;
+    }
+
+    .mobile-auth-logo {
+        width: 100% !important;
+        margin: 0 auto 24px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .auth-form-wrapper {
+        width: min(100%, 420px) !important;
+        max-width: 420px !important;
+        margin: 0 auto !important;
+        text-align: center !important;
+    }
+
+    .auth-mode-switch {
+        width: 100% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .auth-heading {
+        width: 100% !important;
+        text-align: center !important;
+    }
+
+    .auth-heading h2,
+    .auth-heading p {
+        text-align: center !important;
+    }
+
+    .social-auth-button {
+        margin-left: auto !important;
+        margin-right: auto !important;
+        text-align: center !important;
+    }
+
+    .field-group {
+        text-align: center !important;
+    }
+
+    .field-group label {
+        text-align: center !important;
+    }
+
+    .password-label-row {
+        justify-content: center !important;
+        gap: 12px !important;
+        text-align: center !important;
+    }
+
+    .forgot-password {
+        margin-left: 0 !important;
+    }
+
+    .remember-row,
+    .terms-row {
+        justify-content: center !important;
+        text-align: center !important;
+    }
+
+    .rocket-submit {
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+
+    .switch-auth-text {
+        text-align: center !important;
+    }
+}
