@@ -11,3 +11,4 @@ groq==1.6.0
 psycopg[binary]>=3.2,<4
 Authlib
 requests
+from google import genai
