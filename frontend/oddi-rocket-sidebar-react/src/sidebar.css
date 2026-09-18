@@ -519,3 +519,12 @@ body.dark-mode #oddi-react-sidebar-root {
 body:has(#memoryModal.show) #oddi-react-sidebar-root .oddi-rs-rail {
   display: none !important;
 }
+
+/* Memory close: restore the normal phone launcher explicitly.
+   React owns whether the rail is mounted; this rule only prevents the
+   legacy Memory surface from leaving the launcher visually suppressed. */
+@media (max-width: 768px) {
+  body:not(:has(#memoryModal.show)) #oddi-react-sidebar-root .oddi-rs-rail {
+    display: flex !important;
+  }
+}

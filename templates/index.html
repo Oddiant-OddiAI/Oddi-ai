@@ -3203,8 +3203,8 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
 }
 .oddi-svg-spark path {
     fill: none !important; stroke-linecap: round !important;
-    stroke-width: 5px !important;
-    stroke-dasharray: 115 885 !important;
+    stroke-width: 8px !important;
+    stroke-dasharray: 1 999 !important;
     stroke-dashoffset: 0;
     animation: oddiFlexibleTrail 6s linear infinite !important;
 }
@@ -3250,7 +3250,7 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
-<div id="oddi-video-splash" class="oddi-video-splash" aria-hidden="true" style="display:none !important;">
+<div id="oddi-video-splash" class="oddi-video-splash" aria-hidden="false">
     <video
         id="oddi-splash-video"
         class="oddi-splash-video"
@@ -3703,6 +3703,13 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
                 <g class="oddi-svg-spark amber"><path d="M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616"/></g>
                 <g class="oddi-svg-spark teal"><path d="M 43 926 L 154 812 L 533 817 L 613 898 L 614 936"/></g>
             </svg>
+        </div>
+        <div id="oddiPhoneDots" class="oddi-phone-dots" aria-hidden="true">
+            <span class="oddi-phone-dot phone-dot-1"></span>
+            <span class="oddi-phone-dot phone-dot-2"></span>
+            <span class="oddi-phone-dot phone-dot-3"></span>
+            <span class="oddi-phone-dot phone-dot-4"></span>
+            <span class="oddi-phone-dot phone-dot-5"></span>
         </div>
         <div class="welcome-message" id="welcomeContainer">
             <h2>
@@ -6819,7 +6826,47 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
 </style>
 
 
-</body></html>`;
+</body>
+<style id="oddi-mobile-scroll-final-fix">
+/* FINAL MOBILE SCROLL FIX: the chat surface must remain the touch-scrolling container.
+   The home-screen glass polish must never turn the conversation viewport into a
+   clipped, non-scrollable surface. */
+@media (max-width: 768px) and (pointer: coarse) {
+  html, body {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .app {
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  .chatbox {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    touch-action: pan-y !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* The decorative layers never participate in scrolling/touch hit testing. */
+  .chatbox > #oddiSparkLayer,
+  .chatbox > #oddiLightLayer,
+  .chatbox > #oddiPhoneDots {
+    pointer-events: none !important;
+  }
+}
+</style>
+</html>`;
 }
 
 function buildPlainTextExport(conversation) {
@@ -12378,6 +12425,62 @@ loadConversations();
         morePanel.appendChild(memoryAction);
     }
 
+    /* =========================================================
+       KEYBOARD SHORTCUTS + RECENTLY DELETED IN THE ⋮ MENU
+       Keep these actions available from the header menu even when
+       the sidebar is collapsed/temporarily hidden. The real existing
+       controls are clicked at action time, so React can mount them later.
+       ========================================================= */
+
+    function closeHeaderMoreMenu() {
+        morePanel?.classList.remove("show");
+        const overlay = document.getElementById("headerMoreOverlay");
+        overlay?.classList.remove("show");
+        overlay?.setAttribute("aria-hidden", "true");
+        document.getElementById("headerMoreBtn")?.setAttribute("aria-expanded", "false");
+    }
+
+    function addHeaderMoreProxy(id, label, icon, targetId) {
+        if (!morePanel || document.getElementById(id)) return;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.id = id;
+        button.className = "header-more-action";
+        button.innerHTML = `${icon} <span>${label}</span>`;
+
+        button.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeHeaderMoreMenu();
+
+            /* The actual controls belong to the existing application/sidebar.
+               Query when clicked because React may mount them after startup. */
+            const target = document.getElementById(targetId);
+            if (target) {
+                target.click();
+            } else {
+                console.warn("ODDI: header menu target not mounted yet:", targetId);
+            }
+        });
+
+        morePanel.appendChild(button);
+    }
+
+    addHeaderMoreProxy(
+        "headerMoreShortcuts",
+        "Keyboard Shortcuts",
+        "⌨️",
+        "shortcutsBtn"
+    );
+
+    addHeaderMoreProxy(
+        "headerMoreBin",
+        "Recently Deleted",
+        "🗑️",
+        "binBtn"
+    );
+
     /* Close + menu when another major UI element opens. */
 
     moreClose?.addEventListener(
@@ -12681,19 +12784,10 @@ loadConversations();
     memorySearch?.blur();
 
     /*
-       Desktop safety reset:
-       Memory can be opened after the React sidebar has changed its own
-       layout/state. Rather than trying to reconstruct that private React
-       state from outside the sidebar component, return to the exact initial
-       application state. The current conversations are server-backed, so a
-       reload does not delete them. This is intentionally desktop-only; the
-       mobile memory flow keeps its existing behavior.
+       React sidebar state is now restored by sidebar.tsx when the Memory
+       modal loses its .show state. Keep this legacy cleanup limited to the
+       visual properties that Memory may have applied. Never reload the page.
     */
-    if (window.matchMedia("(min-width:769px)").matches) {
-      window.location.reload();
-      return;
-    }
-
     restoreDesktopSidebarAfterMemory();
   }
 
@@ -17019,13 +17113,13 @@ body:not(.dark-mode) .chatbox > .oddi-spark-layer { display: none !important; }
 </style>
 <style id="oddi-spark-viewport-lock-final-fix">
 /*
-   FINAL viewport lock:
-   sparks must follow the visible chatbox/background, not the scroll position
-   of the conversation content. This fixes signals disappearing on old chats.
+   HOME-ONLY SPARK LAYER:
+   sparks stay inside the chatbox so their geometry matches the cover background
+   in both normal and fullscreen layouts.
 */
 .chatbox > #oddiSparkLayer,
 .chatbox > #oddiLightLayer {
-    position: fixed !important;
+    position: absolute !important;
     top: 0 !important;
     left: 0 !important;
     width: 0 !important;
@@ -17040,6 +17134,39 @@ body:not(.dark-mode) .chatbox > .oddi-spark-layer { display: none !important; }
 }
 /* There is intentionally no separate moving dot/head. */
 .oddi-svg-spark circle { display: none !important; }
+</style>
+<style id="oddi-temporary-dot-final-fix">
+/* TEMPORARY: compact travelling dots instead of flexible trails. */
+.oddi-svg-spark path {
+    fill: none !important;
+    stroke-linecap: round !important;
+    stroke-width: 8px !important;
+    stroke-dasharray: 1 999 !important;
+    animation: oddiFlexibleTrail 6s linear infinite !important;
+}
+.oddi-svg-spark circle { display: none !important; }
+</style>
+
+<style id="oddi-home-only-dots-final-fix">
+/* TEMPORARY DOT MODE: signals appear only on the chat-start/home screen. */
+.chatbox > #oddiSparkLayer,
+.chatbox > #oddiLightLayer {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    transform-origin: 0 0 !important;
+    pointer-events: none !important;
+}
+.chatbox:not(:has(#welcomeContainer)) > #oddiSparkLayer,
+.chatbox:not(:has(#welcomeContainer)) > #oddiLightLayer {
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+.chatbox:has(#welcomeContainer) > #oddiSparkLayer,
+.chatbox:has(#welcomeContainer) > #oddiLightLayer {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
 </style>
 <script id="oddi-spark-align">
 (function () {
@@ -17071,12 +17198,20 @@ body:not(.dark-mode) .chatbox > .oddi-spark-layer { display: none !important; }
         const offsetY = (areaH - renderedH) / 2;
 
         /* Fixed to the viewport, but translated to the exact chatbox origin. */
+        /* The spark layer is a child of #chatbox. Use local coordinates so
+           the exact same cover math is used whether the sidebar is open,
+           collapsed, or the app is fullscreen. */
         const transform =
-            'translate(' + (rect.left + offsetX) + 'px, ' +
-            (rect.top + offsetY) + 'px) scale(' + scale + ')';
+            'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')';
 
         layer.style.transform = transform;
         if (lightLayer) lightLayer.style.transform = transform;
+
+        /* Signals are a home/chat-start visual only. Existing conversation
+           content should never carry the dots through its scroll position. */
+        const chatStarted = !document.getElementById('welcomeContainer');
+        layer.style.visibility = chatStarted ? 'hidden' : 'visible';
+        if (lightLayer) lightLayer.style.visibility = chatStarted ? 'hidden' : 'visible';
     }
 
     let resizeTimer = null;
@@ -17097,7 +17232,7 @@ body:not(.dark-mode) .chatbox > .oddi-spark-layer { display: none !important; }
     /* Keep the overlay correct if layout classes/styles are changed by the app. */
     if (typeof MutationObserver !== 'undefined') {
         const mo = new MutationObserver(scheduleAlign);
-        mo.observe(chatbox, { attributes: true, attributeFilter: ['class', 'style'] });
+        mo.observe(chatbox, { childList: true, attributes: true, attributeFilter: ['class', 'style'] });
     }
 
     align();
@@ -17375,6 +17510,176 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
     }
 })();
 </script>
+
+<style id="oddi-phone-background-and-dots-final-fix">
+/* PHONE BACKGROUND: use the dedicated portrait artwork on touch devices. */
+@media (max-width: 768px) and (pointer: coarse) {
+    .chatbox {
+        background:
+            linear-gradient(rgba(255,255,255,.10), rgba(255,255,255,.10)),
+            url("/static/phone.png") center center / cover no-repeat !important;
+        background-attachment: scroll !important;
+    }
+    body.dark-mode .chatbox {
+        background:
+            linear-gradient(rgba(8,8,8,.10), rgba(8,8,8,.10)),
+            url("/static/phone-dark.png") center center / cover no-repeat !important;
+        background-attachment: scroll !important;
+    }
+
+    /* The desktop SVG paths belong to the landscape artwork. On phone use
+       dedicated centered glow dots so they never drift off the portrait art. */
+    #oddiPhoneDots {
+        display: block !important;
+        position: absolute !important;
+        inset: 0 !important;
+        z-index: 1 !important;
+        pointer-events: none !important;
+        overflow: hidden !important;
+    }
+    .chatbox:not(:has(#welcomeContainer)) #oddiPhoneDots {
+        visibility: hidden !important;
+        opacity: 0 !important;
+    }
+    .chatbox:has(#welcomeContainer) #oddiPhoneDots {
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+
+    .oddi-phone-dot {
+        position: absolute !important;
+        width: 7px !important;
+        height: 7px !important;
+        border-radius: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        pointer-events: none !important;
+        opacity: .95 !important;
+        animation: oddiPhoneDotPulse 3.8s ease-in-out infinite !important;
+    }
+    body:not(.dark-mode) .oddi-phone-dot {
+        background: #007BFF !important;
+        box-shadow: 0 0 9px 2px rgba(0,123,255,.82), 0 0 20px 5px rgba(0,123,255,.30) !important;
+    }
+    body.dark-mode .oddi-phone-dot {
+        background: #35e8ff !important;
+        box-shadow: 0 0 9px 2px rgba(53,232,255,.92), 0 0 20px 5px rgba(53,232,255,.34) !important;
+    }
+    .phone-dot-1 { left: 13%; top: 30%; animation-delay: -0.4s !important; }
+    .phone-dot-2 { left: 87%; top: 38%; animation-delay: -1.3s !important; }
+    .phone-dot-3 { left: 82%; top: 63%; animation-delay: -2.1s !important; }
+    .phone-dot-4 { left: 18%; top: 71%; animation-delay: -2.8s !important; }
+    .phone-dot-5 { left: 50%; top: 16%; animation-delay: -1.8s !important; }
+
+    /* Only the dedicated portrait dots are used on phones. */
+    #oddiSparkLayer, #oddiLightLayer {
+        display: none !important;
+    }
+
+    @keyframes oddiPhoneDotPulse {
+        0%, 100% { opacity: .55; transform: translate(-50%, -50%) scale(.82); }
+        50% { opacity: 1; transform: translate(-50%, -50%) scale(1.18); }
+    }
+}
+
+@media (max-width: 768px) and (pointer: coarse) and (prefers-reduced-motion: reduce) {
+    .oddi-phone-dot { animation: none !important; opacity: .72 !important; }
+}
+</style>
+
+<style id="oddi-phone-learning-glass-final">
+/* FINAL PHONE LEARNING CARD: compact, one-line glass treatment. */
+@media (max-width:768px) and (pointer:coarse){
+  #homeLearningMount{
+    width:100% !important;
+    margin:10px auto 0 !important;
+  }
+  #homeLearningMount .home-learning-card{
+    width:100% !important;
+    height:42px !important;
+    min-height:42px !important;
+    max-height:42px !important;
+    box-sizing:border-box !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:space-between !important;
+    gap:10px !important;
+    padding:5px 8px 5px 12px !important;
+    border:1px solid rgba(255,255,255,.34) !important;
+    border-radius:13px !important;
+    background:rgba(255,255,255,.12) !important;
+    box-shadow:0 8px 24px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.22) !important;
+    backdrop-filter:blur(14px) saturate(125%) !important;
+    -webkit-backdrop-filter:blur(14px) saturate(125%) !important;
+    overflow:hidden !important;
+  }
+  #homeLearningMount .home-learning-main{
+    min-width:0 !important;
+    flex:1 1 auto !important;
+    width:auto !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    gap:7px !important;
+    overflow:hidden !important;
+  }
+  #homeLearningMount .home-learning-kicker,
+  #homeLearningMount .home-learning-goal{
+    display:none !important;
+  }
+  #homeLearningMount .home-learning-title{
+    min-width:0 !important;
+    margin:0 !important;
+    font-size:12px !important;
+    line-height:1 !important;
+    font-weight:800 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    color:#fff !important;
+    text-shadow:0 1px 8px rgba(0,0,0,.28) !important;
+  }
+  #homeLearningMount .home-learning-btn{
+    flex:0 0 auto !important;
+    align-self:center !important;
+    height:30px !important;
+    min-height:30px !important;
+    max-height:30px !important;
+    padding:0 9px !important;
+    border:1px solid rgba(255,255,255,.38) !important;
+    border-radius:9px !important;
+    background:rgba(255,255,255,.16) !important;
+    color:#fff !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18) !important;
+    backdrop-filter:blur(10px) !important;
+    -webkit-backdrop-filter:blur(10px) !important;
+    font-size:9px !important;
+    font-weight:800 !important;
+    line-height:1 !important;
+    white-space:nowrap !important;
+  }
+  #homeLearningMount .home-learning-btn:hover,
+  #homeLearningMount .home-learning-btn:active{
+    transform:none !important;
+    background:rgba(255,255,255,.22) !important;
+  }
+
+  /* Bright mode: pale glass so the circuit image remains visible through it. */
+  body:not(.dark-mode) #homeLearningMount .home-learning-card{
+    border-color:rgba(20,20,20,.14) !important;
+    background:rgba(255,255,255,.52) !important;
+    box-shadow:0 8px 24px rgba(0,0,0,.09), inset 0 1px 0 rgba(255,255,255,.78) !important;
+  }
+  body:not(.dark-mode) #homeLearningMount .home-learning-title{
+    color:#171717 !important;
+    text-shadow:none !important;
+  }
+  body:not(.dark-mode) #homeLearningMount .home-learning-btn{
+    border-color:rgba(30,30,30,.16) !important;
+    background:rgba(255,255,255,.58) !important;
+    color:#171717 !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.85) !important;
+  }
+}
+</style>
 </body>
 </html> 
 <style id="oddi-memory-user-boxes-final">
@@ -17611,5 +17916,224 @@ body.dark-mode .memory-list .memory-grid-fixed .memory-add-box:hover{
 }
 @media (max-width:480px){
   .memory-list .memory-grid-fixed{grid-template-columns:1fr !important;}
+}
+</style>
+
+<style id="oddi-mobile-home-ui-premium-final">
+/* FINAL MOBILE HOME UI POLISH — visual only, functionality untouched. */
+@media (max-width:768px) and (pointer:coarse){
+  .welcome-message{
+    padding:58px 10px 76px !important;
+    gap:0 !important;
+  }
+  .welcome-message::before{
+    margin-bottom:7px !important;
+    font-size:8px !important;
+    letter-spacing:.16em !important;
+    text-shadow:0 0 10px rgba(32,199,107,.35) !important;
+  }
+  .welcome-message h2{
+    max-width:290px !important;
+    margin:0 auto 8px !important;
+    font-size:26px !important;
+    line-height:1.04 !important;
+    letter-spacing:-.8px !important;
+    text-shadow:0 2px 14px rgba(0,0,0,.18) !important;
+  }
+  .welcome-message > p{
+    max-width:275px !important;
+    margin:0 auto !important;
+    font-size:11px !important;
+    line-height:1.35 !important;
+    opacity:.88 !important;
+    text-shadow:0 1px 8px rgba(0,0,0,.10) !important;
+  }
+
+  /* Learning: compact translucent glass strip, not a dashboard card. */
+  #homeLearningMount{
+    width:min(100%,286px) !important;
+    margin:12px auto 0 !important;
+  }
+  #homeLearningMount .home-learning-card{
+    width:100% !important;
+    height:40px !important;
+    min-height:40px !important;
+    max-height:40px !important;
+    padding:4px 7px 4px 10px !important;
+    gap:7px !important;
+    border:1px solid rgba(255,255,255,.34) !important;
+    border-radius:12px !important;
+    background:rgba(255,255,255,.20) !important;
+    box-shadow:0 7px 20px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.34) !important;
+    backdrop-filter:blur(15px) saturate(135%) !important;
+    -webkit-backdrop-filter:blur(15px) saturate(135%) !important;
+  }
+  #homeLearningMount .home-learning-main{
+    gap:0 !important;
+    min-width:0 !important;
+  }
+  #homeLearningMount .home-learning-kicker,
+  #homeLearningMount .home-learning-goal,
+  #homeLearningMount .home-learning-progress,
+  #homeLearningMount .home-learning-insight{
+    display:none !important;
+  }
+  #homeLearningMount .home-learning-title{
+    display:block !important;
+    min-width:0 !important;
+    margin:0 !important;
+    font-size:10px !important;
+    line-height:1 !important;
+    font-weight:800 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    color:#fff !important;
+    text-shadow:0 1px 7px rgba(0,0,0,.38) !important;
+  }
+  #homeLearningMount .home-learning-btn{
+    height:28px !important;
+    min-height:28px !important;
+    max-height:28px !important;
+    padding:0 8px !important;
+    border:1px solid rgba(255,255,255,.38) !important;
+    border-radius:8px !important;
+    background:rgba(255,255,255,.16) !important;
+    color:#fff !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.24) !important;
+    font-size:8px !important;
+    font-weight:800 !important;
+    line-height:1 !important;
+    backdrop-filter:blur(8px) !important;
+    -webkit-backdrop-filter:blur(8px) !important;
+  }
+
+  /* Bright glass variant: readable but still lets phone.png show through. */
+  body:not(.dark-mode) #homeLearningMount .home-learning-card{
+    background:rgba(255,255,255,.50) !important;
+    border-color:rgba(255,255,255,.68) !important;
+    box-shadow:0 7px 20px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.86) !important;
+  }
+  body:not(.dark-mode) #homeLearningMount .home-learning-title{
+    color:#171717 !important;
+    text-shadow:0 1px 5px rgba(255,255,255,.45) !important;
+  }
+  body:not(.dark-mode) #homeLearningMount .home-learning-btn{
+    background:rgba(255,255,255,.60) !important;
+    border-color:rgba(30,30,30,.14) !important;
+    color:#171717 !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.9) !important;
+  }
+
+  /* ODDI recommends section becomes a small glass panel rather than loose text. */
+  .home-next-move{
+    width:min(100%,286px) !important;
+    margin:13px auto 0 !important;
+    padding:9px 10px 8px !important;
+    border:1px solid rgba(255,255,255,.28) !important;
+    border-radius:13px !important;
+    background:rgba(255,255,255,.14) !important;
+    box-shadow:0 7px 20px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.22) !important;
+    backdrop-filter:blur(13px) saturate(125%) !important;
+    -webkit-backdrop-filter:blur(13px) saturate(125%) !important;
+  }
+  .home-next-move::before{
+    margin-bottom:3px !important;
+    font-size:7px !important;
+    letter-spacing:.14em !important;
+  }
+  .home-next-move-kicker{display:none !important;}
+  .home-next-move h3{
+    margin:0 0 4px !important;
+    font-size:11px !important;
+    line-height:1.15 !important;
+    font-weight:800 !important;
+    color:#fff !important;
+    text-shadow:0 1px 7px rgba(0,0,0,.35) !important;
+  }
+  .home-next-move p{
+    margin:0 0 7px !important;
+    font-size:8px !important;
+    line-height:1.25 !important;
+    color:rgba(255,255,255,.82) !important;
+  }
+  .home-next-move-btn{
+    min-height:28px !important;
+    height:28px !important;
+    padding:0 10px !important;
+    border-radius:8px !important;
+    font-size:8px !important;
+    background:rgba(255,255,255,.16) !important;
+    border-color:rgba(255,255,255,.34) !important;
+    color:#fff !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.20) !important;
+    backdrop-filter:blur(8px) !important;
+    -webkit-backdrop-filter:blur(8px) !important;
+  }
+  body:not(.dark-mode) .home-next-move{
+    background:rgba(255,255,255,.46) !important;
+    border-color:rgba(255,255,255,.70) !important;
+    box-shadow:0 7px 20px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.82) !important;
+  }
+  body:not(.dark-mode) .home-next-move h3{color:#171717 !important;text-shadow:0 1px 5px rgba(255,255,255,.45) !important;}
+  body:not(.dark-mode) .home-next-move p{color:#666 !important;}
+  body:not(.dark-mode) .home-next-move-btn{background:rgba(255,255,255,.62) !important;border-color:rgba(30,30,30,.13) !important;color:#171717 !important;}
+
+  /* Goal chips, when present, stay compact and glassy. */
+  .home-goal-chips{
+    max-width:286px !important;
+    gap:5px !important;
+    margin:6px auto 7px !important;
+  }
+  .home-goal-chip{
+    padding:5px 8px !important;
+    font-size:8px !important;
+    min-height:24px !important;
+    background:rgba(255,255,255,.15) !important;
+    border-color:rgba(255,255,255,.30) !important;
+    color:#fff !important;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.16) !important;
+    backdrop-filter:blur(8px) !important;
+    -webkit-backdrop-filter:blur(8px) !important;
+  }
+  body:not(.dark-mode) .home-goal-chip{background:rgba(255,255,255,.50) !important;border-color:rgba(30,30,30,.12) !important;color:#333 !important;}
+  .home-goal-chip.is-selected{background:rgba(32,199,107,.78) !important;border-color:rgba(255,255,255,.30) !important;color:#fff !important;}
+
+  /* Composer: slimmer premium glass, leaving more artwork visible. */
+  .input-area{
+    left:7px !important;
+    right:7px !important;
+    bottom:max(7px,env(safe-area-inset-bottom)) !important;
+    height:52px !important;
+    min-height:52px !important;
+    padding:5px 6px !important;
+    border-radius:17px !important;
+    background:rgba(255,255,255,.42) !important;
+    border:1px solid rgba(255,255,255,.62) !important;
+    box-shadow:0 10px 30px rgba(0,0,0,.15), inset 0 1px 0 rgba(255,255,255,.68) !important;
+    backdrop-filter:blur(17px) saturate(135%) !important;
+    -webkit-backdrop-filter:blur(17px) saturate(135%) !important;
+  }
+  .input-area textarea{font-size:12px !important;padding:8px 4px !important;}
+  .attach-btn,.dictation-btn,.voice-btn,.send-btn{width:36px !important;height:36px !important;min-width:36px !important;min-height:36px !important;}
+  .attach-btn{font-size:18px !important;}
+  .dictation-btn svg,.voice-btn svg{width:17px !important;height:17px !important;}
+  .send-btn{font-size:18px !important;}
+  body.dark-mode .input-area{
+    background:rgba(17,17,17,.60) !important;
+    border-color:rgba(255,255,255,.16) !important;
+    box-shadow:0 12px 34px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  }
+
+  /* Keep top controls visually quiet over the artwork. */
+  .header-more-btn,#themeBtn{
+    width:36px !important;height:36px !important;min-width:36px !important;min-height:36px !important;
+    background:rgba(255,255,255,.16) !important;
+    border:1px solid rgba(255,255,255,.28) !important;
+    box-shadow:0 5px 16px rgba(0,0,0,.10) !important;
+    backdrop-filter:blur(10px) !important;
+    -webkit-backdrop-filter:blur(10px) !important;
+  }
+  body.dark-mode .header-more-btn,body.dark-mode #themeBtn{background:rgba(12,12,12,.40) !important;border-color:rgba(255,255,255,.16) !important;color:#fff !important;}
 }
 </style>

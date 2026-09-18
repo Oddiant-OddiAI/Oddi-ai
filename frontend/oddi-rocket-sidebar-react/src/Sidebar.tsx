@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
   LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search,
@@ -112,6 +112,10 @@ function openExistingModal(id: string) {
 
 export default function Sidebar() {
   const [open, setOpen] = useState(() => typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches);
+  // Remember the sidebar state before entering the legacy Memory view. Desktop
+  // normally starts open; phone normally starts closed so its hamburger rail
+  // must remain available after Memory is closed.
+  const openBeforeMemoryRef = useRef<boolean | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Conversation[]>([]);
@@ -169,6 +173,42 @@ export default function Sidebar() {
   // The closed rail itself stays mounted; CSS hides it only while the Memory
   // surface is visible. This keeps the phone opener reliable and avoids
   // React mounting/unmounting the rail in response to legacy DOM mutations.
+
+  // Memory is a legacy main-window view. When its close button removes
+  // the .show class, restore the React sidebar state that openMemory()
+  // intentionally closed. This keeps the sidebar state in React instead of
+  // relying on a page reload or DOM-only workaround.
+  useEffect(() => {
+    const memoryModal = document.getElementById('memoryModal');
+    if (!memoryModal) return;
+
+    const observer = new MutationObserver(() => {
+      const memoryOpen = memoryModal.classList.contains('show');
+      if (!memoryOpen && openBeforeMemoryRef.current !== null) {
+        /*
+         * Memory is a legacy full-screen workspace. Its close action must
+         * return each form factor to its normal sidebar presentation:
+         *   desktop/laptop -> full sidebar visible
+         *   phone/tablet  -> sidebar closed, hamburger rail visible
+         *
+         * Do not restore the raw `open` value captured before Memory opened:
+         * on phones Memory is often opened while the drawer is temporarily
+         * open, and restoring `true` removes the hamburger launcher.
+         */
+        const mobile = window.matchMedia('(max-width: 768px)').matches;
+        openBeforeMemoryRef.current = null;
+        setCollapsed(false);
+        setOpen(!mobile);
+      }
+    });
+
+    observer.observe(memoryModal, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   async function load() {
     try {
@@ -308,8 +348,10 @@ export default function Sidebar() {
   }
 
   function openMemory() {
-    // Memory is a main-window view: close the React sidebar first.
-    // The closed launcher remains mounted and CSS hides it while Memory is open.
+    // Memory is a main-window view. Preserve the state that existed immediately
+    // before opening it so closing Memory restores desktop or phone behavior
+    // instead of always forcing the sidebar open.
+    openBeforeMemoryRef.current = open;
     setOpen(false);
 
     if (document.getElementById('memoryBtn')) {
