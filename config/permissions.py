@@ -11,6 +11,12 @@ ROLE_PERMISSIONS = {
         "providers.manage": True,
         "platform.read": True,
         "platform.manage": True,
+
+        # Action permissions
+        "memory.read": True,
+        "memory.write": True,
+        "conversation.write": True,
+        "file.write": True,
     },
 
     "admin": {
@@ -24,6 +30,12 @@ ROLE_PERMISSIONS = {
         "providers.manage": False,
         "platform.read": True,
         "platform.manage": False,
+
+        # Action permissions
+        "memory.read": True,
+        "memory.write": True,
+        "conversation.write": True,
+        "file.write": True,
     },
 
     "user": {
@@ -37,5 +49,11 @@ ROLE_PERMISSIONS = {
         "providers.manage": False,
         "platform.read": True,
         "platform.manage": False,
+
+        # Action permissions
+        "memory.read": True,
+        "memory.write": True,
+        "conversation.write": True,
+        "file.write": True,
     },
 }

@@ -1317,7 +1317,7 @@ body.dark-mode .user-message .user-expand-btn:hover{
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
-    transition: opacity .45s ease, visibility .45s ease;
+    transition: opacity .5s cubic-bezier(.4,0,.2,1), visibility .5s cubic-bezier(.4,0,.2,1);
 }
 
 #oddi-video-splash.oddi-splash-hidden {
@@ -1326,33 +1326,218 @@ body.dark-mode .user-message .user-expand-btn:hover{
     pointer-events: none;
 }
 
+/* Ambient glow — brand-tinted, sits at the very back */
+#oddi-video-splash::before {
+    content: "";
+    position: absolute;
+    inset: -10%;
+    z-index: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle at 50% 45%, rgba(32,199,107,.09), transparent 55%),
+        radial-gradient(circle at 50% 50%, rgba(120,160,255,.08), transparent 65%);
+    animation: oddi-glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes oddi-glow-pulse {
+    0%, 100% { opacity: .55; transform: scale(1); }
+    50%       { opacity: 1;   transform: scale(1.04); }
+}
+
+/* Edge vignette — feathers any hard seam between the video's rendered
+   black and the page's true black into a smooth falloff instead */
+#oddi-video-splash-vignette {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    background:
+        radial-gradient(ellipse at center, transparent 62%, rgba(0,0,0,.55) 100%);
+}
+
+/* Twinkling starfield — brighter, glowing, mostly white with a few
+   faint brand-green accents. Visible in the letterbox gaps around
+   the video since the video's own background is transparent below. */
+#oddi-video-splash::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background-image:
+        /* soft glow halos behind a subset of stars */
+        radial-gradient(4px 4px at 6% 12%,  rgba(255,255,255,.35), transparent 70%),
+        radial-gradient(4px 4px at 22% 34%, rgba(255,255,255,.35), transparent 70%),
+        radial-gradient(4px 4px at 46% 62%, rgba(32,199,107,.4),   transparent 70%),
+        radial-gradient(4px 4px at 62% 91%, rgba(255,255,255,.35), transparent 70%),
+        radial-gradient(4px 4px at 78% 70%, rgba(255,255,255,.35), transparent 70%),
+        radial-gradient(4px 4px at 94% 82%, rgba(32,199,107,.4),   transparent 70%),
+        radial-gradient(4px 4px at 34% 48%, rgba(255,255,255,.35), transparent 70%),
+        radial-gradient(4px 4px at 82% 18%, rgba(255,255,255,.35), transparent 70%),
+        /* sharp bright star cores */
+        radial-gradient(1.8px 1.8px at 6% 12%,  #fff, transparent 100%),
+        radial-gradient(1.3px 1.3px at 14% 78%, #fff, transparent 100%),
+        radial-gradient(2px   2px   at 22% 34%, #fff, transparent 100%),
+        radial-gradient(1.2px 1.2px at 30% 88%, #fff, transparent 100%),
+        radial-gradient(1.5px 1.5px at 38% 9%,  #fff, transparent 100%),
+        radial-gradient(1.9px 1.9px at 46% 62%, #b9f5d3, transparent 100%),
+        radial-gradient(1.3px 1.3px at 54% 24%, #fff, transparent 100%),
+        radial-gradient(1.7px 1.7px at 62% 91%, #fff, transparent 100%),
+        radial-gradient(1.4px 1.4px at 70% 15%, #fff, transparent 100%),
+        radial-gradient(2px   2px   at 78% 70%, #fff, transparent 100%),
+        radial-gradient(1.2px 1.2px at 86% 40%, #fff, transparent 100%),
+        radial-gradient(1.8px 1.8px at 94% 82%, #b9f5d3, transparent 100%),
+        radial-gradient(1.4px 1.4px at 4% 55%,  #fff, transparent 100%),
+        radial-gradient(1.3px 1.3px at 18% 4%,  #fff, transparent 100%),
+        radial-gradient(1.6px 1.6px at 26% 96%, #fff, transparent 100%),
+        radial-gradient(1.9px 1.9px at 34% 48%, #fff, transparent 100%),
+        radial-gradient(1.2px 1.2px at 42% 83%, #fff, transparent 100%),
+        radial-gradient(1.5px 1.5px at 50% 6%,  #fff, transparent 100%),
+        radial-gradient(1.8px 1.8px at 58% 55%, #fff, transparent 100%),
+        radial-gradient(1.3px 1.3px at 66% 30%, #fff, transparent 100%),
+        radial-gradient(1.4px 1.4px at 74% 95%, #fff, transparent 100%),
+        radial-gradient(2px   2px   at 82% 18%, #fff, transparent 100%),
+        radial-gradient(1.2px 1.2px at 90% 65%, #fff, transparent 100%),
+        radial-gradient(1.6px 1.6px at 98% 44%, #fff, transparent 100%),
+        radial-gradient(1.3px 1.3px at 10% 40%, #fff, transparent 100%),
+        radial-gradient(1.5px 1.5px at 24% 68%, #fff, transparent 100%),
+        radial-gradient(1.7px 1.7px at 44% 38%, #fff, transparent 100%),
+        radial-gradient(1.2px 1.2px at 64% 8%,  #fff, transparent 100%),
+        radial-gradient(1.4px 1.4px at 84% 52%, #fff, transparent 100%),
+        radial-gradient(1.6px 1.6px at 96% 12%, #fff, transparent 100%);
+    background-repeat: no-repeat;
+    animation: oddi-twinkle-a 2.6s ease-in-out infinite alternate;
+}
+
+@keyframes oddi-twinkle-a {
+    0%   { opacity: .45; }
+    50%  { opacity: 1; }
+    100% { opacity: .6; }
+}
+
+/* Rotating halo "orbit" ring around the whole video frame —
+   echoes the mark's dot/line motif without needing to match its
+   exact internal geometry */
+#oddi-splash-ring {
+    position: absolute;
+    z-index: 1;
+    width: min(72vmin, 640px);
+    height: min(72vmin, 640px);
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    border-radius: 50%;
+    pointer-events: none;
+    border: 1px solid transparent;
+    background:
+        conic-gradient(from 0deg,
+            transparent 0deg,
+            rgba(32,199,107,.5) 25deg,
+            transparent 70deg,
+            transparent 360deg) border-box;
+    -webkit-mask:
+        radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+    mask:
+        radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px));
+    opacity: .5;
+    animation: oddi-ring-spin 14s linear infinite, oddi-ring-in .7s cubic-bezier(.4,0,.2,1) .15s backwards;
+}
+
+@keyframes oddi-ring-spin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes oddi-ring-in {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(.9); }
+    to   { opacity: .5; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Loading indicator — minimal pulsing dot row, bottom of screen */
+#oddi-splash-loader {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(78px, 12vh, 108px);
+    transform: translateX(-50%);
+    z-index: 3;
+    display: flex;
+    gap: 7px;
+    pointer-events: none;
+    animation: oddi-loader-in .5s cubic-bezier(.4,0,.2,1) .4s backwards;
+}
+
+#oddi-splash-loader span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #20c76b;
+    opacity: .3;
+    animation: oddi-loader-pulse 1.2s ease-in-out infinite;
+}
+
+#oddi-splash-loader span:nth-child(1) { animation-delay: 0s; }
+#oddi-splash-loader span:nth-child(2) { animation-delay: .15s; }
+#oddi-splash-loader span:nth-child(3) { animation-delay: .3s; }
+#oddi-splash-loader span:nth-child(4) { animation-delay: .45s; }
+
+@keyframes oddi-loader-pulse {
+    0%, 100% { opacity: .25; transform: scale(.85); }
+    50%      { opacity: 1;   transform: scale(1.1); box-shadow: 0 0 8px rgba(32,199,107,.7); }
+}
+
+@keyframes oddi-loader-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(6px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
 #oddi-splash-sound {
     position: absolute;
     left: 50%;
     bottom: clamp(24px, 5vh, 48px);
     transform: translateX(-50%);
-    z-index: 2;
-    border: 1px solid rgba(255,255,255,.24);
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(32,199,107,.28);
     border-radius: 999px;
-    padding: 11px 18px;
-    background: rgba(0,0,0,.62);
+    padding: 11px 20px;
+    background: rgba(20,20,22,.55);
     color: #fff;
     font: 600 14px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    letter-spacing: .01em;
     cursor: pointer;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    box-shadow: 0 8px 28px rgba(0,0,0,.28);
-    transition: opacity .2s ease, transform .2s ease, background .2s ease;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    box-shadow: 0 8px 28px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06), 0 0 0 1px rgba(32,199,107,.06);
+    transition: opacity .2s ease, transform .2s ease, background .2s ease, border-color .2s ease;
+    animation: oddi-sound-in .5s cubic-bezier(.4,0,.2,1) .3s backwards;
 }
 
 #oddi-splash-sound:hover {
-    background: rgba(0,0,0,.78);
-    transform: translateX(-50%) translateY(-1px);
+    background: rgba(30,30,34,.75);
+    border-color: rgba(32,199,107,.55);
+    transform: translateX(-50%) translateY(-2px);
+}
+
+#oddi-splash-sound:active {
+    transform: translateX(-50%) translateY(0);
+}
+
+#oddi-splash-sound:focus-visible {
+    outline: 2px solid rgba(32,199,107,.9);
+    outline-offset: 2px;
 }
 
 #oddi-splash-sound.is-hidden {
     opacity: 0;
     pointer-events: none;
+    transform: translateX(-50%) translateY(8px);
+}
+
+@keyframes oddi-sound-in {
+    from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
 #oddi-splash-video {
@@ -1363,10 +1548,23 @@ body.dark-mode .user-message .user-expand-btn:hover{
     max-height: 100%;
     object-fit: contain;
     object-position: center center;
-    background: #000;
+    background: transparent;
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
+    position: relative;
+    z-index: 2;
+    opacity: 0;
+    /* Crushes the video's near-black pixels toward true #000 so its
+       rendered frame stops reading as a lighter rectangle against the
+       page background. Pure display filter — source file/timing untouched. */
+    filter: contrast(1.14) brightness(.93);
+    animation: oddi-video-in .6s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+@keyframes oddi-video-in {
+    from { opacity: 0; transform: scale(.98); }
+    to   { opacity: 1; transform: scale(1); }
 }
 
 @media (max-width: 768px) {
@@ -1374,12 +1572,16 @@ body.dark-mode .user-message .user-expand-btn:hover{
         width: 100%;
         height: 100%;
         object-fit: contain;
-        /* Match the splash logo to the Android app-symbol scale.
-           Screenshot measurement: 63x75px splash -> 82x99px app symbol.
-           Scale factor = about 1.302. */
         transform: scale(1.302);
         transform-origin: center center;
     }
+
+    @keyframes oddi-video-in {
+        from { opacity: 0; transform: scale(1.302) scale(.98); }
+        to   { opacity: 1; transform: scale(1.302) scale(1); }
+    }
+
+    #oddi-splash-ring { width: min(85vmin, 520px); height: min(85vmin, 520px); }
 }
 
 @media (min-width: 769px) {
@@ -1389,8 +1591,19 @@ body.dark-mode .user-message .user-expand-btn:hover{
         object-fit: contain;
     }
 }
-</style>
 
+@media (prefers-reduced-motion: reduce) {
+    #oddi-video-splash::before,
+    #oddi-video-splash::after,
+    #oddi-splash-sound,
+    #oddi-splash-ring,
+    #oddi-splash-loader span {
+        animation: none !important;
+    }
+    #oddi-video-splash::after { opacity: .75; }
+    #oddi-splash-loader span { opacity: .8; }
+}
+</style>
 <style id="oddi-desktop-select-match-new-chat">
 /* Desktop: Select should be a normal sidebar navigation button,
    visually matching New chat instead of looking like a separate card. */
@@ -1822,6 +2035,9 @@ body.dark-mode .user-message .user-expand-btn:hover{
 }
 .memory-add-actions .save{background:#f4f4f4;color:#111;border-color:#f4f4f4;}
 
+/* FINAL MEMORY LOADING FIX: the memory workspace is never allowed to show a loading placeholder. */
+#memoryList .memory-loading{display:none !important;}
+#memoryList .memory-instant-board{display:grid !important;}
 body:not(.dark-mode) #memoryModal.show{background:#f5f5f5 !important;}
 body:not(.dark-mode) #memoryModal.show .memory-box,
 body:not(.dark-mode) .memory-main{background:#f7f7f7 !important;color:#111 !important;}
@@ -2761,11 +2977,280 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
+<style id="oddi-circuit-glow">
+    .chatbox {
+        position: relative !important;
+        isolation: isolate !important;
+        overflow: hidden !important;
+    }
 
+    /* Diagonal light sweep — cyan + gold, matching your image's accents */
+    .chatbox::before {
+        content: "";
+        position: absolute;
+        inset: -15%;
+        z-index: 0;
+        pointer-events: none;
+        background: linear-gradient(115deg,
+            transparent 42%,
+            rgba(0, 229, 255, .55) 48%,
+            rgba(255, 187, 64, .5) 52%,
+            transparent 58%);
+        background-size: 260% 260%;
+        mix-blend-mode: screen;
+        opacity: .5;
+        animation: oddiCircuitSweep 10s linear infinite;
+    }
+
+    body:not(.dark-mode) .chatbox::before {
+        background: linear-gradient(115deg,
+            transparent 44%,
+            rgba(120, 190, 205, .4) 49%,
+            rgba(255, 255, 255, .55) 51%,
+            transparent 56%);
+        mix-blend-mode: multiply;
+        opacity: .45;
+    }
+
+    @keyframes oddiCircuitSweep {
+        0%   { background-position: 0% 0%; }
+        100% { background-position: 200% 200%; }
+    }
+
+    /* Traveling spark dots along diagonal "circuit" paths */
+    .oddi-spark {
+        position: absolute;
+        z-index: 1;
+        width: 600px;
+        height: 8px;
+        border-radius: 999px;
+        pointer-events: none;
+        offset-rotate: auto;
+        offset-anchor: 0% 50%;
+        offset-position: 0 0;
+        animation: oddiSparkTravel linear infinite;
+    }
+    .oddi-spark-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        transform-origin: 0 0;
+        pointer-events: none;
+        z-index: 1;
+    }
+    
+    .oddi-spark.cyan { background: #35e8ff; box-shadow: 0 0 10px 2px rgba(53,232,255,.95), 0 0 20px 4px rgba(53,232,255,.35); }
+    .oddi-spark.gold { background: #ffc04d; box-shadow: 0 0 10px 2px rgba(255,192,77,.95), 0 0 20px 4px rgba(255,192,77,.32); }
+
+    .spark-1 {
+        offset-path: path("M 47 74 L 211 244 L 541 246 L 600 192 L 898 194 L 1073 381");
+        animation-duration: 6s;
+        animation-delay: 0s;
+    }
+    .spark-2 {
+        offset-path: path("M 48 73 L 219 255 L 218 423 L 66 576");
+        animation-duration: 6s;
+        animation-delay: -4.5s;
+    }
+    .spark-3 {
+        offset-path: path("M 1143 65 L 1148 430 L 1330 622 L 1327 835 L 1178 835 L 1046 692 L 778 693 L 764 692 L 768 873 L 768 873");
+        animation-duration: 6s;
+        animation-delay: -2.2s;
+    }
+    .spark-4 {
+        offset-path: path("M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616");
+        animation-duration: 6s;
+        animation-delay: -6.7s;
+    }
+    .spark-5 {
+        offset-path: path("M 43 926 L 154 812 L 533 817 L 613 898 L 614 936");
+        animation-duration: 6s;
+        animation-delay: -7.8s;
+    }
+    body:not(.dark-mode) .oddi-spark {
+        display: none !important;
+    }   
+    /* Light mode uses the EXACT same circuit paths as dark mode.
+       The wrapper is aligned to the 1614x975 background by JS below, so
+       changing theme never changes the animation geometry. */
+    .oddi-light-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        transform-origin: 0 0;
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .oddi-light-dot {
+        display: none;
+        position: absolute;
+        width: 24px;
+        height: 4px;
+        border-radius: 999px;
+        pointer-events: none;
+        z-index: 1;
+        offset-rotate: auto;
+        offset-anchor: 0% 50%;
+        offset-position: 0 0;
+        animation: oddiSparkTravel linear infinite;
+    }
+
+    body:not(.dark-mode) .oddi-light-dot {
+        display: block !important;
+    }
+
+    body.dark-mode .oddi-light-dot {
+        display: none !important;
+    }
+
+    /* Deliberately darker/brighter than the pale background so the dots
+       remain clearly visible without becoming neon-heavy. */
+    .oddi-light-dot.teal {
+        background: #007BFF;
+        box-shadow: 0 0 10px 2px rgba(0, 123, 255, .72),
+                    0 0 22px 6px rgba(0, 123, 255, .30);
+    }
+
+    .oddi-light-dot.amber {
+        background: #F59E0B;
+        box-shadow: 0 0 10px 2px rgba(245, 158, 11, .72),
+                    0 0 22px 6px rgba(245, 158, 11, .28);
+    }
+
+    /* Same geometry as .spark-1 ... .spark-5. */
+    .light-spark-1 {
+        offset-path: path("M 47 74 L 211 244 L 541 246 L 600 192 L 898 194 L 1073 381");
+        animation-duration: 6s;
+        animation-delay: 0s;
+    }
+    .light-spark-2 {
+        offset-path: path("M 48 73 L 219 255 L 218 423 L 66 576");
+        animation-duration: 6s;
+        animation-delay: -4.5s;
+    }
+    .light-spark-3 {
+        offset-path: path("M 1143 65 L 1148 430 L 1330 622 L 1327 835 L 1178 835 L 1046 692 L 778 693 L 764 692 L 768 873 L 768 873");
+        animation-duration: 6s;
+        animation-delay: -2.2s;
+    }
+    .light-spark-4 {
+        offset-path: path("M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616");
+        animation-duration: 6s;
+        animation-delay: -6.7s;
+    }
+    .light-spark-5 {
+        offset-path: path("M 43 926 L 154 812 L 533 817 L 613 898 L 614 936");
+        animation-duration: 6s;
+        animation-delay: -7.8s;
+    }
+
+    @media (max-width: 768px), (prefers-reduced-motion: reduce) {
+        .oddi-light-dot { animation: none !important; opacity: .72 !important; }
+    }
+        @keyframes oddiSparkTravel {
+            0%   { offset-distance: 0%; opacity: 0; }
+            8%   { opacity: 1; }
+            92%  { opacity: 1; }
+            100% { offset-distance: 100%; opacity: 0; }
+        }
+
+        /* Turn it off on phones (perf) and for anyone who asked for less motion */
+        @media (max-width: 768px), (prefers-reduced-motion: reduce) {
+            .chatbox::before,
+            .oddi-spark { animation: none !important; opacity: 0 !important; }
+        }
+</style>
+<style id="oddi-line-spark-size-spacing-final">
+/* FINAL line-spark tuning: long, visible signals with deliberate spacing. */
+.chatbox > #oddiSparkLayer .oddi-spark,
+.chatbox > #oddiLightLayer .oddi-light-dot {
+    width: 600px !important;
+    height: 8px !important;
+    border-radius: 999px !important;
+}
+.chatbox > #oddiSparkLayer .oddi-spark,
+.chatbox > #oddiLightLayer .oddi-light-dot {
+    animation-duration: 6s !important;
+}
+.chatbox > #oddiSparkLayer .spark-1,
+.chatbox > #oddiLightLayer .light-spark-1 { animation-delay: 0s !important; }
+.chatbox > #oddiSparkLayer .spark-2,
+.chatbox > #oddiLightLayer .light-spark-2 { animation-delay: -1.5s !important; }
+.chatbox > #oddiSparkLayer .spark-3,
+.chatbox > #oddiLightLayer .light-spark-3 { animation-delay: -3s !important; }
+.chatbox > #oddiSparkLayer .spark-4,
+.chatbox > #oddiLightLayer .light-spark-4 { animation-delay: -4.5s !important; }
+.chatbox > #oddiSparkLayer .spark-5,
+.chatbox > #oddiLightLayer .light-spark-5 { animation-delay: -5.2s !important; }
+</style>
+
+<style id="oddi-flexible-spark-final-fix">
+/* Flexible circuit signals: a moving head plus a path-shaped trail. */
+.chatbox > #oddiSparkLayer, .chatbox > #oddiLightLayer {
+    width: 0 !important; height: 0 !important;
+    transform-origin: 0 0 !important;
+    overflow: visible !important; pointer-events: none !important; z-index: 1 !important;
+}
+.oddi-circuit-svg {
+    position: absolute !important; left: 0 !important; top: 0 !important;
+    width: 1614px !important; height: 975px !important;
+    overflow: visible !important; pointer-events: none !important;
+}
+.oddi-svg-spark path {
+    fill: none !important; stroke-linecap: round !important;
+    stroke-width: 5px !important;
+    stroke-dasharray: 115 885 !important;
+    stroke-dashoffset: 0;
+    animation: oddiFlexibleTrail 6s linear infinite !important;
+}
+.oddi-svg-spark circle {
+    fill: currentColor !important;
+    stroke: currentColor !important;
+    stroke-width: 1px !important;
+    filter: url(#oddiGlowCyan);
+}
+.oddi-svg-spark.cyan { color: #35e8ff !important; }
+.oddi-svg-spark.gold { color: #ffc04d !important; }
+.oddi-svg-spark.teal { color: #007BFF !important; }
+.oddi-svg-spark.amber { color: #F59E0B !important; }
+.oddi-svg-spark path { stroke: currentColor !important; filter: url(#oddiGlowCyan); }
+.oddi-svg-spark.gold path, .oddi-svg-spark.amber path { filter: url(#oddiGlowGold); }
+.oddi-svg-spark:nth-of-type(1) path { animation-delay: 0s !important; }
+.oddi-svg-spark:nth-of-type(2) path { animation-delay: -3s !important; }
+.oddi-svg-spark:nth-of-type(3) path { animation-delay: -1.8s !important; }
+.oddi-svg-spark:nth-of-type(4) path { animation-delay: -4.2s !important; }
+.oddi-svg-spark:nth-of-type(5) path { animation-delay: -5.1s !important; }
+@keyframes oddiFlexibleTrail {
+    from { stroke-dashoffset: 0; opacity: 0; }
+    8% { opacity: 1; }
+    92% { opacity: 1; }
+    to { stroke-dashoffset: -1000; opacity: 0; }
+}
+body:not(.dark-mode) .chatbox > #oddiLightLayer { display: block !important; }
+body.dark-mode .chatbox > #oddiLightLayer { display: none !important; }
+body:not(.dark-mode) .chatbox > #oddiSparkLayer { display: none !important; }
+body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
+@media (max-width: 768px) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {
+    /* Mobile keeps the same traveling circuit signals; only the canvas is scaled by the existing alignment script. */
+    .oddi-svg-spark path {
+        animation: oddiFlexibleTrail 6s linear infinite !important;
+        opacity: 1 !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .oddi-svg-spark path { animation: none !important; opacity: 0 !important; }
+}
+</style>
 </head>
 <body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
-<div id="oddi-video-splash" class="oddi-video-splash" aria-hidden="false">
+<div id="oddi-video-splash" class="oddi-video-splash" aria-hidden="true" style="display:none !important;">
     <video
         id="oddi-splash-video"
         class="oddi-splash-video"
@@ -3169,6 +3654,56 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
         </div>
     </header>
 <main id="chatbox" class="chatbox">
+        <div id="oddiSparkLayer" class="oddi-spark-layer" aria-hidden="true">
+            <svg class="oddi-circuit-svg" viewBox="0 0 1614 975" preserveAspectRatio="none">
+                <defs>
+                    <filter id="oddiGlowCyan" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    <filter id="oddiGlowGold" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    <path id="oddiPath1" d="M 47 74 L 211 244 L 541 246 L 600 192 L 898 194 L 1073 381"/>
+                    <path id="oddiPath2" d="M 48 73 L 219 255 L 218 423 L 66 576"/>
+                    <path id="oddiPath3" d="M 1143 65 L 1148 430 L 1330 622 L 1327 835 L 1178 835 L 1046 692 L 778 693 L 764 692 L 768 873 L 768 873"/>
+                    <path id="oddiPath4" d="M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616"/>
+                    <path id="oddiPath5" d="M 43 926 L 154 812 L 533 817 L 613 898 L 614 936"/>
+                </defs>
+                <g class="oddi-svg-spark cyan">
+                    <path d="M 47 74 L 211 244 L 541 246 L 600 192 L 898 194 L 1073 381"/>
+                    
+                </g>
+                <g class="oddi-svg-spark gold">
+                    <path d="M 48 73 L 219 255 L 218 423 L 66 576"/>
+                    
+                </g>
+                <g class="oddi-svg-spark cyan">
+                    <path d="M 1143 65 L 1148 430 L 1330 622 L 1327 835 L 1178 835 L 1046 692 L 778 693 L 764 692 L 768 873 L 768 873"/>
+                    
+                </g>
+                <g class="oddi-svg-spark gold">
+                    <path d="M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616"/>
+                    
+                </g>
+                <g class="oddi-svg-spark cyan">
+                    <path d="M 43 926 L 154 812 L 533 817 L 613 898 L 614 936"/>
+                    
+                </g>
+            </svg>
+        </div>
+
+        <div id="oddiLightLayer" class="oddi-light-layer" aria-hidden="true">
+            <svg class="oddi-circuit-svg" viewBox="0 0 1614 975" preserveAspectRatio="none">
+                <defs>
+                    <path id="oddiLightPath1" d="M 47 74 L 211 244 L 541 246 L 600 192 L 898 194 L 1073 381"/>
+                    <path id="oddiLightPath2" d="M 48 73 L 219 255 L 218 423 L 66 576"/>
+                    <path id="oddiLightPath3" d="M 1143 65 L 1148 430 L 1330 622 L 1327 835 L 1178 835 L 1046 692 L 778 693 L 764 692 L 768 873 L 768 873"/>
+                    <path id="oddiLightPath4" d="M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616"/>
+                    <path id="oddiLightPath5" d="M 43 926 L 154 812 L 533 817 L 613 898 L 614 936"/>
+                </defs>
+                <g class="oddi-svg-spark teal"><path d="M 47 74 L 211 244 L 541 246 L 600 192 L 898 194 L 1073 381"/></g>
+                <g class="oddi-svg-spark amber"><path d="M 48 73 L 219 255 L 218 423 L 66 576"/></g>
+                <g class="oddi-svg-spark teal"><path d="M 1143 65 L 1148 430 L 1330 622 L 1327 835 L 1178 835 L 1046 692 L 778 693 L 764 692 L 768 873 L 768 873"/></g>
+                <g class="oddi-svg-spark amber"><path d="M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616"/></g>
+                <g class="oddi-svg-spark teal"><path d="M 43 926 L 154 812 L 533 817 L 613 898 L 614 936"/></g>
+            </svg>
+        </div>
         <div class="welcome-message" id="welcomeContainer">
             <h2>
                 {% if logged_in %}
@@ -3375,7 +3910,22 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
         </div>
 
         <div id="memoryList" class="memory-list">
-          <div class="memory-loading">Loading your memory…</div>
+          <!-- Instant fallback board: never show a loading screen. The memory script
+               replaces these slots with live saved values when the API responds. -->
+          <div class="memory-grid memory-grid-fixed memory-instant-board">
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">👤</span><input class="memory-category-edit" value="Name" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">⚙️</span><input class="memory-category-edit" value="Preferences" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">🎯</span><input class="memory-category-edit" value="Goals" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">🎓</span><input class="memory-category-edit" value="Education" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">💼</span><input class="memory-category-edit" value="Work" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">🚀</span><input class="memory-category-edit" value="Projects" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">✨</span><input class="memory-category-edit" value="Interests" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">👥</span><input class="memory-category-edit" value="People" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">💬</span><input class="memory-category-edit" value="Communication" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">📌</span><input class="memory-category-edit" value="Other" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <section class="memory-entry memory-slot"><div class="memory-slot-head"><span class="memory-slot-icon">📚</span><input class="memory-category-edit" value="Learning" aria-label="Memory category"><input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory"></div><textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…"></textarea><div class="memory-slot-footer"><span class="memory-slot-hint">Empty memory box</span><button type="button" class="memory-slot-save">Save</button></div></section>
+            <button type="button" class="memory-add-box" id="memoryAddBoxFallback" aria-label="Add a custom memory box"><span class="memory-add-box-plus">+</span><span class="memory-add-box-label">Add</span></button>
+          </div>
         </div>
 
         <div class="memory-footer">
@@ -3385,7 +3935,6 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
       </main>
     </div>
 
-    <button id="memoryFloatingClose" class="memory-floating-close" type="button" aria-label="Close memory" title="Close memory">✕</button>
   </div>
 </div>
 
@@ -5849,6 +6398,29 @@ function buildExportDocument(conversation, clone) {
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
 <style>body{margin:0;padding:32px;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif;line-height:1.6}.export-page{max-width:900px;margin:0 auto}.export-title{margin:0 0 4px;font-size:26px}.export-meta{margin:0 0 26px;color:#666;font-size:12px}.user-message,.bot-message{margin:0 0 20px;padding:14px;border:1px solid #ddd;border-radius:10px;page-break-inside:avoid;break-inside:avoid}.bot-header,.user-message-header{font-weight:700;margin-bottom:8px}.user-actions,.bot-actions,.message-sound-btn,.message-action-btn,.ai-code-copy{display:none!important}.katex-display{overflow-x:auto;overflow-y:hidden;margin:1em 0}pre{padding:12px;background:#f5f5f5;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere}code{font-family:Consolas,monospace}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f1f1f1}img{max-width:100%}
 </style>
+<style id="oddi-line-spark-size-spacing-final">
+/* FINAL line-spark tuning: long, visible signals with deliberate spacing. */
+.chatbox > #oddiSparkLayer .oddi-spark,
+.chatbox > #oddiLightLayer .oddi-light-dot {
+    width: 600px !important;
+    height: 8px !important;
+    border-radius: 999px !important;
+}
+.chatbox > #oddiSparkLayer .oddi-spark,
+.chatbox > #oddiLightLayer .oddi-light-dot {
+    animation-duration: 6s !important;
+}
+.chatbox > #oddiSparkLayer .spark-1,
+.chatbox > #oddiLightLayer .light-spark-1 { animation-delay: 0s !important; }
+.chatbox > #oddiSparkLayer .spark-2,
+.chatbox > #oddiLightLayer .light-spark-2 { animation-delay: -1.5s !important; }
+.chatbox > #oddiSparkLayer .spark-3,
+.chatbox > #oddiLightLayer .light-spark-3 { animation-delay: -3s !important; }
+.chatbox > #oddiSparkLayer .spark-4,
+.chatbox > #oddiLightLayer .light-spark-4 { animation-delay: -4.5s !important; }
+.chatbox > #oddiSparkLayer .spark-5,
+.chatbox > #oddiLightLayer .light-spark-5 { animation-delay: -5.2s !important; }
+</style>
 </head>
 <body><main class="export-page">
 <h1 class="export-title">${title}</h1>
@@ -6245,6 +6817,7 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
     display:none !important;
   }
 </style>
+
 
 </body></html>`;
 }
@@ -6709,6 +7282,29 @@ function buildDocxHtml(conversation, clone) {
 }
 </style>
 
+<style id="oddi-line-spark-size-spacing-final">
+/* FINAL line-spark tuning: long, visible signals with deliberate spacing. */
+.chatbox > #oddiSparkLayer .oddi-spark,
+.chatbox > #oddiLightLayer .oddi-light-dot {
+    width: 600px !important;
+    height: 8px !important;
+    border-radius: 999px !important;
+}
+.chatbox > #oddiSparkLayer .oddi-spark,
+.chatbox > #oddiLightLayer .oddi-light-dot {
+    animation-duration: 6s !important;
+}
+.chatbox > #oddiSparkLayer .spark-1,
+.chatbox > #oddiLightLayer .light-spark-1 { animation-delay: 0s !important; }
+.chatbox > #oddiSparkLayer .spark-2,
+.chatbox > #oddiLightLayer .light-spark-2 { animation-delay: -1.5s !important; }
+.chatbox > #oddiSparkLayer .spark-3,
+.chatbox > #oddiLightLayer .light-spark-3 { animation-delay: -3s !important; }
+.chatbox > #oddiSparkLayer .spark-4,
+.chatbox > #oddiLightLayer .light-spark-4 { animation-delay: -4.5s !important; }
+.chatbox > #oddiSparkLayer .spark-5,
+.chatbox > #oddiLightLayer .light-spark-5 { animation-delay: -5.2s !important; }
+</style>
 </head><body><h1>${title}</h1><p>Exported from Oddi AI · ${escapeHtml(new Date().toLocaleString())}</p>${clone?.innerHTML || ""}
 
 
@@ -8893,7 +9489,13 @@ async function openConversation(
     touchConversation(conversation);
     renderHistory();
 
+    // Preserve the circuit-spark layers: clearing chat.innerHTML would otherwise
+    // destroy them because they live inside #chatbox.
+    const preservedSparkLayer = document.getElementById("oddiSparkLayer");
+    const preservedLightLayer = document.getElementById("oddiLightLayer");
     chat.innerHTML = "";
+    if (preservedSparkLayer) chat.appendChild(preservedSparkLayer);
+    if (preservedLightLayer) chat.appendChild(preservedLightLayer);
 
     conversation.messages.forEach(
         (msg, messageIndex) => {
@@ -9070,7 +9672,12 @@ async function newChat() {
         }
     }
 
+    // Keep both circuit-spark layers alive when switching to a fresh chat.
+    const preservedSparkLayer = document.getElementById("oddiSparkLayer");
+    const preservedLightLayer = document.getElementById("oddiLightLayer");
     chat.innerHTML = "";
+    if (preservedSparkLayer) chat.appendChild(preservedSparkLayer);
+    if (preservedLightLayer) chat.appendChild(preservedLightLayer);
     chat.classList.remove("ui-scrolled");
     document.querySelector(".app")?.classList.remove("chat-started");
 
@@ -12006,7 +12613,7 @@ loadConversations();
   const defaultCategories = [
     ["All Memories","✨"],["Name","👤"],["Preferences","⚙️"],["Goals","🎯"],
     ["Education","🎓"],["Work","💼"],["Projects","🚀"],["Interests","✨"],
-    ["People","👥"],["Communication","💬"],["Other","📌"]
+    ["People","👥"],["Communication","💬"],["Other","📌"],["Learning","📚"]
   ];
 
   let allMemories = [];
@@ -12026,6 +12633,45 @@ loadConversations();
     loadMemory();
   }
 
+  function restoreDesktopSidebarAfterMemory() {
+    if (!window.matchMedia("(min-width:769px)").matches) return;
+
+    const root = document.getElementById("oddi-react-sidebar-root");
+    const sidebar = document.getElementById("sidebar");
+
+    /*
+       Memory temporarily covers the React sidebar on desktop.  Some sidebar
+       states can leave the mount point or the sidebar itself with a hidden
+       inline/computed state after Memory closes.  Restore only the visual
+       properties that Memory owns; do not reset the sidebar's open/collapsed
+       state, history, or React state.
+    */
+    if (root) {
+      root.style.removeProperty("visibility");
+      root.style.removeProperty("opacity");
+      root.style.removeProperty("pointer-events");
+    }
+    if (sidebar) {
+      sidebar.style.removeProperty("visibility");
+      sidebar.style.removeProperty("opacity");
+      sidebar.style.removeProperty("pointer-events");
+    }
+
+    requestAnimationFrame(() => {
+      if (root) {
+        root.style.removeProperty("visibility");
+        root.style.removeProperty("opacity");
+        root.style.removeProperty("pointer-events");
+      }
+      const currentSidebar = document.getElementById("sidebar");
+      if (currentSidebar) {
+        currentSidebar.style.removeProperty("visibility");
+        currentSidebar.style.removeProperty("opacity");
+        currentSidebar.style.removeProperty("pointer-events");
+      }
+    });
+  }
+
   function closeMemoryModal() {
     memoryModal?.classList.remove("show");
     memoryModal?.setAttribute("aria-hidden", "true");
@@ -12033,6 +12679,22 @@ loadConversations();
     addModal?.setAttribute("aria-hidden", "true");
     document.body.classList.remove("oddi-memory-workspace-open");
     memorySearch?.blur();
+
+    /*
+       Desktop safety reset:
+       Memory can be opened after the React sidebar has changed its own
+       layout/state. Rather than trying to reconstruct that private React
+       state from outside the sidebar component, return to the exact initial
+       application state. The current conversations are server-backed, so a
+       reload does not delete them. This is intentionally desktop-only; the
+       mobile memory flow keeps its existing behavior.
+    */
+    if (window.matchMedia("(min-width:769px)").matches) {
+      window.location.reload();
+      return;
+    }
+
+    restoreDesktopSidebarAfterMemory();
   }
 
   function setMemoryStatus(text, type = "") {
@@ -12130,46 +12792,163 @@ loadConversations();
     return v === "medium" ? "Medium confidence" : v === "low" ? "Low confidence" : "High confidence";
   }
 
+  function memoryForCategory(category) {
+    const wanted = String(category || "").trim().toLowerCase();
+    return allMemories.find(item => String(item.category || "").trim().toLowerCase() === wanted) || null;
+  }
+
   function renderMemoryCards() {
     if (!memoryList) return;
-    const memories = filteredMemories();
+
     if (memoryCount) {
       memoryCount.textContent = `${allMemories.length} ${allMemories.length === 1 ? "memory" : "memories"} total`;
     }
 
-    if (!memories.length) {
-      memoryList.innerHTML = `<div class="memory-grid"><div class="memory-empty">No memories match this view. 🗂️</div></div>`;
+    const isAll = activeCategory.toLowerCase() === "all memories";
+    const visibleCategories = isAll
+      ? defaultCategories.filter(([name]) => name !== "All Memories")
+      : [[activeCategory, categoryIcon(activeCategory)]];
+
+    const customItems = isAll
+      ? allMemories.filter(item => !defaultCategories.some(([name]) => name.toLowerCase() === item.category.toLowerCase()))
+      : [];
+
+    const cards = visibleCategories.map(([category, icon]) => {
+      const item = memoryForCategory(category);
+      return renderMemorySlot(category, icon, item, false);
+    });
+
+    customItems.forEach(item => cards.push(renderMemorySlot(item.category, categoryIcon(item.category), item, false)));
+
+    if (isAll) {
+      cards.push(`
+        <button type="button" class="memory-add-box" id="memoryAddBox" aria-label="Add a custom memory box">
+          <span class="memory-add-box-plus">+</span>
+          <span class="memory-add-box-label">Add</span>
+        </button>
+      `);
+    }
+
+    memoryList.innerHTML = `<div class="memory-grid memory-grid-fixed">${cards.join("")}</div>`;
+    memoryList.querySelectorAll(".memory-entry").forEach(card => bindMemorySlot(card));
+    memoryList.querySelector("#memoryAddBox")?.addEventListener("click", addCustomMemoryBox);
+    updateSelectionUI();
+  }
+
+  function renderMemorySlot(category, icon, item, isNew = false) {
+    const safeCategory = escapeMemoryText(category || "");
+    const safeMemory = escapeMemoryText(item?.memory || "");
+    const key = item?.key || `custom_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const itemKey = encodeURIComponent(key);
+    return `
+      <section class="memory-entry memory-slot ${isNew ? "memory-slot-new" : ""}" data-memory-key="${itemKey}" data-memory-category="${encodeURIComponent(category || "")}">
+        <div class="memory-slot-head">
+          <span class="memory-slot-icon">${icon || "📌"}</span>
+          <input class="memory-category-edit" value="${safeCategory}" aria-label="Memory category" placeholder="Category">
+          <input class="memory-check memory-slot-check" type="checkbox" aria-label="Select memory">
+        </div>
+        <textarea class="memory-text memory-slot-text" aria-label="Memory" placeholder="Write something for ODDI to remember…">${safeMemory}</textarea>
+        <div class="memory-slot-footer">
+          <span class="memory-slot-hint">${item ? "Saved memory" : "Empty memory box"}</span>
+          <button type="button" class="memory-slot-save">Save</button>
+          ${item ? '<button type="button" class="memory-slot-delete">Delete</button>' : ''}
+        </div>
+      </section>
+    `;
+  }
+
+  function bindMemorySlot(card) {
+    const textarea = card.querySelector(".memory-slot-text");
+    const categoryInput = card.querySelector(".memory-category-edit");
+    const saveBtn = card.querySelector(".memory-slot-save");
+    const deleteBtn = card.querySelector(".memory-slot-delete");
+    const checkbox = card.querySelector(".memory-slot-check");
+    const originalKey = decodeURIComponent(card.dataset.memoryKey || "");
+    const originalCategory = decodeURIComponent(card.dataset.memoryCategory || "");
+    const item = allMemories.find(x => x.key === originalKey) || memoryForCategory(originalCategory);
+
+    checkbox?.addEventListener("change", () => {
+      card.classList.toggle("selected", checkbox.checked);
       updateSelectionUI();
+    });
+
+    saveBtn?.addEventListener("click", async () => {
+      if (!memoryEnabled) {
+        setMemoryStatus("Turn Memory on before saving a memory.", "error");
+        return;
+      }
+      const category = (categoryInput?.value || "").trim();
+      const memory = (textarea?.value || "").trim();
+      if (!category) {
+        setMemoryStatus("Give this memory box a category first.", "error");
+        categoryInput?.focus();
+        return;
+      }
+      if (!memory) {
+        setMemoryStatus("Write something in the memory box first.", "error");
+        textarea?.focus();
+        return;
+      }
+
+      saveBtn.disabled = true;
+      try {
+        const key = item?.key || category;
+        const response = await fetch("/api/memory", {
+          method: "PUT",
+          headers: {"Content-Type":"application/json","Accept":"application/json"},
+          credentials: "same-origin",
+          body: JSON.stringify({key, category, memory})
+        });
+        if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
+
+        if (item && (item.key !== key || item.category.toLowerCase() !== category.toLowerCase())) {
+          try {
+            await fetch("/api/memory", {
+              method: "DELETE",
+              headers: {"Content-Type":"application/json","Accept":"application/json"},
+              credentials: "same-origin",
+              body: JSON.stringify({key:item.key, category:item.category})
+            });
+          } catch (_) {}
+        }
+
+        const normalized = {key, category, memory, confidence:"high", source:"User"};
+        allMemories = allMemories.filter(x => x.key !== item?.key && x.category.toLowerCase() !== category.toLowerCase());
+        allMemories.push(normalized);
+        activeCategory = "All Memories";
+        renderCategories();
+        renderMemoryCards();
+        setMemoryStatus("Memory saved. 🧠", "success");
+      } catch (error) {
+        console.error("Memory slot save error:", error);
+        setMemoryStatus("Could not save this memory yet.", "error");
+      } finally {
+        saveBtn.disabled = false;
+      }
+    });
+
+    deleteBtn?.addEventListener("click", async () => {
+      if (item) await deleteMemory(item, card);
+    });
+  }
+
+  function addCustomMemoryBox() {
+    if (!memoryEnabled) {
+      setMemoryStatus("Turn Memory on before creating a memory box.", "error");
       return;
     }
 
-    memoryList.innerHTML = `<div class="memory-grid">${memories.map((item, index) => `
-      <section class="memory-entry" data-memory-key="${encodeURIComponent(item.key)}">
-        <div class="memory-entry-head">
-          <label class="memory-card-category">
-            <input class="memory-check" type="checkbox" aria-label="Select memory">
-            <span>${categoryIcon(item.category)}</span>
-            <span>${escapeMemoryText(item.category)}</span>
-          </label>
-          <button type="button" class="memory-action-btn memory-edit-btn" title="Edit memory" aria-label="Edit memory">✏️</button>
-        </div>
-        <div class="memory-card-text">
-          <textarea class="memory-text" readonly aria-label="Memory text">${escapeMemoryText(item.memory)}</textarea>
-        </div>
-        <div class="memory-card-footer">
-          <span class="memory-confidence">${confidenceLabel(item.confidence)}</span>
-          <span class="memory-meta">${escapeMemoryText(item.source)}</span>
-        </div>
-        <div class="memory-card-actions">
-          <button type="button" class="memory-save-card-btn" hidden>Save</button>
-          <button type="button" class="memory-cancel-card-btn" hidden>Cancel</button>
-          <button type="button" class="memory-delete-btn danger">Delete</button>
-        </div>
-      </section>
-    `).join("")}</div>`;
-
-    memoryList.querySelectorAll(".memory-entry").forEach(card => bindMemoryCard(card));
-    updateSelectionUI();
+    const cardsWrap = memoryList?.querySelector(".memory-grid");
+    if (!cardsWrap) return;
+    const addBox = cardsWrap.querySelector("#memoryAddBox");
+    const newKey = `custom_${Date.now()}_${Math.random().toString(36).slice(2,8)}`;
+    const holder = document.createElement("div");
+    holder.innerHTML = renderMemorySlot("", "📌", {key:newKey, memory:""}, true);
+    const card = holder.firstElementChild;
+    addBox ? cardsWrap.insertBefore(card, addBox) : cardsWrap.appendChild(card);
+    bindMemorySlot(card);
+    card.querySelector(".memory-category-edit")?.focus();
+    setMemoryStatus("New memory box added. Give it a category and save it. ✨", "success");
   }
 
   function bindMemoryCard(card) {
@@ -12274,8 +13053,18 @@ loadConversations();
 
   async function loadMemory() {
     if (!memoryList) return;
+
+    /*
+       Render the memory board immediately.  The 11 user-owned boxes are UI
+       structure, so they should never wait for the API.  The API then fills
+       the boxes with saved values in the background.  This removes the
+       "Loading your memory…" flash and makes Memory feel instant even when
+       the backend takes a moment to respond.
+    */
     setMemoryStatus("");
-    memoryList.innerHTML = `<div class="memory-grid"><div class="memory-loading">Loading your memory…</div></div>`;
+    renderCategories();
+    renderMemoryCards();
+
     try {
       const response = await fetch("/api/memory", {
         method:"GET",
@@ -12290,9 +13079,11 @@ loadConversations();
       renderMemoryCards();
     } catch (error) {
       console.error("Memory load error:", error);
-      allMemories = [];
-      memoryList.innerHTML = `<div class="memory-grid"><div class="memory-empty">Memory API is unavailable.</div></div>`;
-      setMemoryStatus("Could not load memory.", "error");
+      /* Keep the 11 editable boxes visible even if the API is temporarily
+         unavailable.  Do not replace them with an error/loading screen. */
+      setMemoryStatus("Could not sync saved memories right now.", "error");
+      renderCategories();
+      renderMemoryCards();
     }
   }
 
@@ -12405,8 +13196,8 @@ loadConversations();
   closeMemory?.addEventListener("click", closeMemoryModal);
   floatingClose?.addEventListener("click", closeMemoryModal);
   refreshMemoryBtn?.addEventListener("click", loadMemory);
-  addBtn?.addEventListener("click", openAddModal);
-  addCategoryBtn?.addEventListener("click", openAddModal);
+  addBtn?.addEventListener("click", addCustomMemoryBox);
+  addCategoryBtn?.addEventListener("click", addCustomMemoryBox);
   categoryToggle?.addEventListener("click", () => {
     const open = !mobileCategories?.classList.contains("mobile-open");
     mobileCategories?.classList.toggle("mobile-open", open);
@@ -15090,173 +15881,576 @@ body.dark-mode .home-next-move-btn:hover{background:#252d29 !important;border-co
   --oddi-premium-shadow:0 18px 48px rgba(0,0,0,.08);
 }
 
-/* 1. Signature ambient background using the supplied ODDI subtle mark. */
-.chatbox{position:relative !important;isolation:isolate !important;}
-.chatbox::before{
-  content:"";
-  position:absolute;
-  z-index:-2;
-  pointer-events:none;
-  width:min(720px,70vw);
-  aspect-ratio:1;
-  left:50%;
-  top:40px;
-  transform:translateX(-50%);
-  background:
-    radial-gradient(circle at 50% 38%,rgba(32,199,107,.045),transparent 42%),
-    url("/static/subtle.png") center/72% auto no-repeat;
-  opacity:.42;
-  filter:saturate(.9);
-}
-.chatbox::after{
-  content:"";
-  position:absolute;
-  z-index:-3;
-  inset:0;
-  pointer-events:none;
-  background:
-    radial-gradient(circle at 10% 22%,rgba(73,172,255,.035),transparent 28%),
-    radial-gradient(circle at 92% 70%,rgba(32,199,107,.028),transparent 30%);
-}
-body.dark-mode .chatbox::before{
-  background:
-    radial-gradient(circle at 50% 38%,rgba(32,199,107,.05),transparent 42%),
-    url("/static/subtle-dark.png") center/72% auto no-repeat;
-  filter:invert(1);
-  opacity:.20;
-  mix-blend-mode:screen;
-}
-body.dark-mode .chatbox::after{
-  background:
-    radial-gradient(circle at 18% 22%,rgba(32,199,107,.035),transparent 26%),
-    radial-gradient(circle at 88% 72%,rgba(95,150,255,.025),transparent 28%);
+/* =========================================================
+   ODDI AI — HOME / WELCOME — PEAK POLISH
+   Design-token driven, layered depth, premium micro-interactions.
+   Every animated/transformed rule has a reduced-motion and a
+   forced-colors fallback further down the file.
+   ========================================================= */
+
+:root {
+  /* ---- Brand & surface tokens ---- */
+  --oddi-accent: #20c76b;
+  --oddi-accent-2: #17b567;
+  --oddi-accent-soft: rgba(32, 199, 107, .14);
+  --oddi-accent-glow: rgba(32, 199, 107, .35);
+
+  /* ---- Motion tokens: one "premium spring" curve everywhere ---- */
+  --ease-premium: cubic-bezier(.16, 1, .3, 1);
+  --ease-soft: cubic-bezier(.22, 1, .36, 1);
+
+  /* ---- Layered elevation, ambient + contact shadow per level ---- */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .04), 0 2px 6px rgba(0, 0, 0, .04);
+  --shadow-md: 0 2px 4px rgba(0, 0, 0, .05), 0 12px 28px rgba(0, 0, 0, .08);
+  --shadow-lg: 0 4px 10px rgba(0, 0, 0, .06), 0 22px 48px rgba(0, 0, 0, .12);
+  --shadow-accent: 0 8px 20px var(--oddi-accent-glow);
+
+  /* Pointer position for the optional spotlight effect (see JS note
+     at the bottom of this file). Defaults keep everything centered
+     and inert if the JS is never wired up. */
+  --spot-x: 50%;
+  --spot-y: 30%;
 }
 
-/* 2. Premium action-card interaction: icon, lift, focus ring and press state. */
-.quick-actions .action-card{position:relative;overflow:hidden;}
-.quick-actions .action-card::after{
-  content:"";
-  position:absolute;inset:0;
-  background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,.5) 48%,transparent 78%);
-  transform:translateX(-120%);
-  transition:transform .5s ease;
-  pointer-events:none;
+/* ---------------------------------------------------------
+   1. Signature ambient background (ODDI subtle mark)
+   --------------------------------------------------------- */
+.chatbox {
+  position: relative !important;
+  isolation: isolate !important;
 }
-.quick-actions .action-card:hover::after{transform:translateX(120%);}
-.quick-actions .action-card-icon{transition:transform .2s cubic-bezier(.22,1,.36,1),background .2s ease,color .2s ease;}
-.quick-actions .action-card:hover .action-card-icon{transform:translateY(-1px) scale(1.06);background:#ededed !important;color:#303030 !important;}
+
+.chatbox::before,
+.chatbox::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  contain: paint;
+}
+
+.chatbox::before {
+  z-index: -2;
+  width: min(720px, 70vw);
+  aspect-ratio: 1;
+  left: 50%;
+  top: 40px;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(32, 199, 107, .045), transparent 42%),
+    url("/static/subtle.png") center / 72% auto no-repeat;
+  opacity: .42;
+  filter: saturate(.9);
+  transition: opacity .3s ease;
+  animation: oddiMarkDrift 22s var(--ease-soft) infinite;
+}
+
+@supports not (aspect-ratio: 1) {
+  .chatbox::before { height: min(720px, 70vw); }
+}
+
+/* Faint grain layer adds a "printed" premium texture instead of flat
+   gradients — practically invisible but reads as intentional design. */
+.chatbox::after {
+  z-index: -3;
+  inset: 0;
+  background:
+    radial-gradient(circle at 10% 22%, rgba(73, 172, 255, .035), transparent 28%),
+    radial-gradient(circle at 92% 70%, rgba(32, 199, 107, .028), transparent 30%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-blend-mode: normal, normal, overlay;
+  opacity: 1;
+}
+
+.chatbox::after {
+  /* Keep the grain itself extremely subtle */
+  --grain-opacity: .015;
+}
+
+body.dark-mode .chatbox::before {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(32, 199, 107, .05), transparent 42%),
+    url("/static/subtle-dark.png") center / 72% auto no-repeat;
+  filter: invert(1);
+  opacity: .20;
+  mix-blend-mode: screen;
+}
+
+body.dark-mode .chatbox::after {
+  background:
+    radial-gradient(circle at 18% 22%, rgba(32, 199, 107, .035), transparent 26%),
+    radial-gradient(circle at 88% 72%, rgba(95, 150, 255, .025), transparent 28%);
+}
+
+@keyframes oddiMarkDrift {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+  50%      { transform: translateX(-50%) translateY(-6px) scale(1.015); }
+}
+
+/* ---------------------------------------------------------
+   2. Quick-action cards — pointer-reactive spotlight + shimmer
+   --------------------------------------------------------- */
+.quick-actions .action-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(140px circle at var(--spot-x, 50%) var(--spot-y, 30%),
+      rgba(32, 199, 107, .07), transparent 70%),
+    var(--card-bg, #fff);
+  transition: transform .32s var(--ease-premium), box-shadow .32s var(--ease-premium),
+              border-color .24s ease, background-color .24s ease;
+}
+
+.quick-actions .action-card:hover,
+.quick-actions .action-card:focus-visible {
+  transform: translateY(-3px) scale(1.008);
+  box-shadow: var(--shadow-md);
+  border-color: rgba(32, 199, 107, .32) !important;
+}
+
+.quick-actions .action-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 20%, rgba(255, 255, 255, .5) 48%, transparent 78%);
+  transform: translateX(-120%);
+  transition: transform .55s ease;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.quick-actions .action-card:hover::after,
+.quick-actions .action-card:focus-visible::after {
+  transform: translateX(120%);
+}
+
+.quick-actions .action-card-icon {
+  transition: transform .22s var(--ease-premium), background .22s ease, color .22s ease;
+}
+
+.quick-actions .action-card:hover .action-card-icon,
+.quick-actions .action-card:focus-visible .action-card-icon {
+  transform: translateY(-1px) scale(1.08) rotate(-3deg);
+  background: #ededed !important;
+  color: #303030 !important;
+}
+
+.quick-actions .action-card:active {
+  transform: translateY(-1px) scale(.985);
+  transition-duration: .12s;
+}
+
 .quick-actions .action-card:focus-visible,
 .home-goal-chip:focus-visible,
 .home-learning-btn:focus-visible,
-.home-next-move-btn:focus-visible{
-  outline:none !important;
-  box-shadow:0 0 0 3px rgba(32,199,107,.14),0 8px 20px rgba(0,0,0,.07) !important;
+.home-next-move-btn:focus-visible {
+  outline: none !important;
+  box-shadow: var(--shadow-md), 0 0 0 3px var(--oddi-accent-soft) !important;
 }
 
-/* 3. Learning card becomes a small, genuinely useful progress module when progress exists. */
-.home-learning-card{transition:transform .2s cubic-bezier(.22,1,.36,1),box-shadow .2s ease,border-color .2s ease !important;}
-.home-learning-card:hover{transform:translateY(-2px) !important;box-shadow:0 14px 34px rgba(0,0,0,.085) !important;border-color:#d8d8d8 !important;}
-.home-learning-btn span{display:inline-block;transition:transform .2s ease;}
-.home-learning-btn:hover span{transform:translateX(3px);}
-.home-learning-progress{display:flex;align-items:center;gap:9px;margin-top:6px;min-height:10px;}
-.home-learning-progress-track{display:block;width:min(180px,38vw);height:5px;border-radius:999px;background:#e8e8e8;overflow:hidden;}
-.home-learning-progress-fill{display:block;height:100%;width:0;border-radius:999px;background:var(--oddi-accent);transition:width .7s cubic-bezier(.22,1,.36,1);}
-.home-learning-progress-label{font-size:9.5px;color:#858585;font-weight:750;white-space:nowrap;}
-.home-learning-insight{margin-top:7px;font-size:10.5px;line-height:1.4;color:#6d6d6d;}
-body.dark-mode .home-learning-card{background:#121212 !important;border-color:#2a2a2a !important;}
-body.dark-mode .home-learning-card:hover{border-color:#3a3a3a !important;box-shadow:0 18px 42px rgba(0,0,0,.33) !important;}
-body.dark-mode .home-learning-progress-track{background:#292929;}
-body.dark-mode .home-learning-progress-label,.home-learning-insight{color:#959595 !important;}
-
-/* 4. ODDI's personality language is visible but understated. */
-.home-learning-insight::first-letter{color:var(--oddi-accent);}
-.home-next-move::before{
-  content:"✦ ODDI recommends";
-  display:block;
-  margin-bottom:5px;
-  font-size:8.5px;
-  letter-spacing:.1em;
-  text-transform:uppercase;
-  color:var(--oddi-accent);
-  font-weight:800;
-  opacity:.86;
-}
-
-/* 5. Goal chips make the lower area useful without adding another heavy card. */
-.home-goal-chips{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:7px;margin:11px auto 13px;}
-.home-goal-chip{
-  border:1px solid #e3e3e3;border-radius:999px;background:#fbfbfb;color:#606060;
-  padding:7px 11px;font-size:10px;font-weight:750;line-height:1;cursor:pointer;
-  transition:transform .18s ease,border-color .18s ease,background .18s ease,color .18s ease,box-shadow .18s ease;
-}
-.home-goal-chip:hover{transform:translateY(-1px);border-color:rgba(32,199,107,.38);background:#f7fffa;color:#1d5e3b;box-shadow:0 6px 16px rgba(0,0,0,.055);}
-.home-goal-chip:active{transform:scale(.97);}
-body.dark-mode .home-goal-chip{background:#141414;border-color:#2d2d2d;color:#a8a8a8;}
-body.dark-mode .home-goal-chip:hover{background:#152219;border-color:rgba(32,199,107,.28);color:#d9f7e6;}
-
-/* 6. Entrance choreography — gentle, fast, and accessibility-aware. */
-.welcome-message > *{animation:oddiHomeIn .48s cubic-bezier(.22,1,.36,1) both;}
-.welcome-message > *:nth-child(1){animation-delay:.02s;}
-.welcome-message > *:nth-child(2){animation-delay:.07s;}
-.welcome-message > *:nth-child(3){animation-delay:.12s;}
-.welcome-message > *:nth-child(4){animation-delay:.17s;}
-.welcome-message > *:nth-child(5){animation-delay:.22s;}
-.welcome-message > *:nth-child(6){animation-delay:.27s;}
-@keyframes oddiHomeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-
-/* 7. Sidebar tooltip layer on desktop. */
-@media (min-width:769px){
-  #menuBtn[title],.sidebar-utility-btn[title]{position:relative;}
-  #menuBtn::after,.sidebar-utility-btn::after{
-    content:attr(title);position:absolute;left:56px;top:50%;transform:translateY(-50%) translateX(-4px);
-    padding:7px 9px;border:1px solid #e3e3e3;border-radius:9px;background:rgba(255,255,255,.97);color:#292929;
-    font-size:11px;font-weight:700;white-space:nowrap;opacity:0;pointer-events:none;
-    box-shadow:0 10px 24px rgba(0,0,0,.09);transition:opacity .16s ease,transform .16s ease;z-index:5000;
+@media (forced-colors: active) {
+  .quick-actions .action-card:focus-visible,
+  .home-goal-chip:focus-visible,
+  .home-learning-btn:focus-visible,
+  .home-next-move-btn:focus-visible {
+    outline: 2px solid CanvasText !important;
+    outline-offset: 2px !important;
   }
-  #menuBtn:hover::after,.sidebar-utility-btn:hover::after{opacity:1;transform:translateY(-50%) translateX(0);}
-  body.dark-mode #menuBtn::after,body.dark-mode .sidebar-utility-btn::after{background:#171717;border-color:#303030;color:#f2f2f2;box-shadow:0 12px 30px rgba(0,0,0,.32);}
 }
 
-/* 8. Composer feels more like the primary interaction surface. */
-.input-area{transform:translateX(-50%) translateY(0) !important;transition:box-shadow .2s ease,border-color .2s ease,transform .2s cubic-bezier(.22,1,.36,1) !important;}
-.input-area:hover{box-shadow:0 16px 44px rgba(0,0,0,.14) !important;}
-.input-area:focus-within{transform:translateX(-50%) translateY(-1px) !important;}
-.input-area .send-btn:not(:disabled){box-shadow:0 7px 18px rgba(32,199,107,.20) !important;}
-.input-area .send-btn:not(:disabled):hover{transform:translateY(-1px) scale(1.035) !important;box-shadow:0 10px 22px rgba(32,199,107,.26) !important;}
-
-/* 9. Cleaner scroll treatment on desktop. */
-@media (min-width:769px){
-  .chatbox{scrollbar-width:thin;scrollbar-color:rgba(130,130,130,.38) transparent;}
-  .chatbox::-webkit-scrollbar{width:8px;}
-  .chatbox::-webkit-scrollbar-track{background:transparent;}
-  .chatbox::-webkit-scrollbar-thumb{background:rgba(130,130,130,.35);border-radius:999px;border:2px solid transparent;background-clip:padding-box;}
-  .chatbox::-webkit-scrollbar-thumb:hover{background:rgba(100,100,100,.55);border:2px solid transparent;background-clip:padding-box;}
+/* ---------------------------------------------------------
+   3. Learning card — glass surface + real progress feedback
+   --------------------------------------------------------- */
+.home-learning-card {
+  position: relative;
+  background: rgba(255, 255, 255, .72) !important;
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  box-shadow: var(--shadow-sm) !important;
+  transition: transform .28s var(--ease-premium), box-shadow .28s var(--ease-premium),
+              border-color .22s ease, background-color .22s ease !important;
 }
 
-/* 10. Compact/safe spacing on shorter laptop screens. */
-@media (min-width:769px) and (max-height:700px){
-  .chatbox::before{width:520px;top:5px;opacity:.28;}
-  .home-goal-chips{margin-top:7px;margin-bottom:9px;}
-  .home-goal-chip{padding:6px 9px;font-size:9px;}
-  .home-learning-insight{font-size:9.5px;}
-}
-@media (min-width:769px) and (min-height:851px){
-  .chatbox::before{width:820px;top:60px;opacity:.34;}
-  .home-goal-chips{margin-top:14px;margin-bottom:15px;}
+/* Soft top highlight — the classic "premium card" hairline */
+.home-learning-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .9), transparent);
+  pointer-events: none;
 }
 
-/* Mobile remains compact; the same polish survives without overloading the viewport. */
-@media (max-width:768px) and (pointer:coarse){
-  .chatbox::before{width:560px;top:30px;opacity:.22;background-size:82% auto;}
-  body.dark-mode .chatbox::before{opacity:.12;}
-  .home-goal-chips{gap:6px;margin-top:9px;margin-bottom:11px;}
-  .home-goal-chip{padding:6px 9px;font-size:9px;}
-  .home-learning-insight{font-size:9px;}
-  .home-learning-progress-track{width:130px;}
+.home-learning-card:hover,
+.home-learning-card:focus-within {
+  transform: translateY(-3px) !important;
+  box-shadow: var(--shadow-lg) !important;
+  border-color: #d8d8d8 !important;
 }
 
-@media (prefers-reduced-motion:reduce){
-  .welcome-message > *, .home-learning-progress-fill{animation:none !important;transition:none !important;}
+.home-learning-btn span {
+  display: inline-block;
+  transition: transform .22s var(--ease-premium);
+}
+
+.home-learning-btn:hover span,
+.home-learning-btn:focus-visible span {
+  transform: translateX(4px);
+}
+
+.home-learning-progress {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 6px;
+  min-height: 10px;
+}
+
+.home-learning-progress-track {
+  position: relative;
+  display: block;
+  width: min(180px, 38vw);
+  height: 5px;
+  border-radius: 999px;
+  background: #e8e8e8;
+  overflow: hidden;
+}
+
+.home-learning-progress-fill {
+  position: relative;
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--oddi-accent-2), var(--oddi-accent));
+  transition: width .8s var(--ease-premium);
+  overflow: hidden;
+}
+
+/* Gentle traveling sheen on the fill — reads as "live data", not a toy */
+.home-learning-progress-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .45), transparent);
+  width: 40%;
+  animation: oddiProgressSheen 2.6s ease-in-out infinite;
+}
+
+@keyframes oddiProgressSheen {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+
+.home-learning-progress-label {
+  font-size: 9.5px;
+  color: #858585;
+  font-weight: 750;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-learning-insight {
+  margin-top: 7px;
+  font-size: clamp(9px, .85vw + 6px, 10.5px);
+  line-height: 1.45;
+  color: #6d6d6d;
+}
+
+.home-learning-insight::first-letter {
+  color: var(--oddi-accent);
+  font-weight: 800;
+}
+
+body.dark-mode .home-learning-card {
+  background: rgba(18, 18, 18, .72) !important;
+  border-color: #2a2a2a !important;
+}
+
+body.dark-mode .home-learning-card::before {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .08), transparent);
+}
+
+body.dark-mode .home-learning-card:hover,
+body.dark-mode .home-learning-card:focus-within {
+  border-color: #3a3a3a !important;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, .38) !important;
+}
+
+body.dark-mode .home-learning-progress-track { background: #292929; }
+body.dark-mode .home-learning-progress-label,
+body.dark-mode .home-learning-insight { color: #959595 !important; }
+
+/* ---------------------------------------------------------
+   4. "ODDI recommends" label
+   --------------------------------------------------------- */
+.home-next-move {
+  position: relative;
+}
+
+.home-next-move::before {
+  content: "✦ ODDI recommends";
+  display: block;
+  margin-bottom: 5px;
+  font-size: 8.5px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--oddi-accent);
+  font-weight: 800;
+  opacity: .9;
+}
+
+/* ---------------------------------------------------------
+   5. Goal chips — filled pill hover + selected state
+   --------------------------------------------------------- */
+.home-goal-chips {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 11px auto 13px;
+}
+
+.home-goal-chip {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid #e3e3e3;
+  border-radius: 999px;
+  background: #fbfbfb;
+  color: #606060;
+  padding: 7px clamp(9px, 1vw + 6px, 11px);
+  font-size: clamp(9px, .8vw + 6.5px, 10px);
+  font-weight: 750;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform .2s var(--ease-premium), border-color .2s ease,
+              color .2s ease, box-shadow .2s ease;
+}
+
+/* Fill grows from the center on hover instead of an instant color swap */
+.home-goal-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--oddi-accent-soft), rgba(32, 199, 107, .06));
+  transform: scale(0);
+  transition: transform .28s var(--ease-premium);
+}
+
+.home-goal-chip:hover,
+.home-goal-chip:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(32, 199, 107, .38);
+  color: #1d5e3b;
+  box-shadow: var(--shadow-sm);
+}
+
+.home-goal-chip:hover::before,
+.home-goal-chip:focus-visible::before {
+  transform: scale(1);
+}
+
+.home-goal-chip:active {
+  transform: scale(.96);
+  transition-duration: .1s;
+}
+
+.home-goal-chip.is-selected {
+  background: linear-gradient(135deg, var(--oddi-accent), var(--oddi-accent-2));
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--shadow-accent);
+}
+
+body.dark-mode .home-goal-chip {
+  background: #141414;
+  border-color: #2d2d2d;
+  color: #a8a8a8;
+}
+
+body.dark-mode .home-goal-chip:hover,
+body.dark-mode .home-goal-chip:focus-visible {
+  border-color: rgba(32, 199, 107, .3);
+  color: #d9f7e6;
+}
+
+/* ---------------------------------------------------------
+   6. Entrance choreography
+   --------------------------------------------------------- */
+.welcome-message > * {
+  animation: oddiHomeIn .5s var(--ease-premium) both;
+}
+
+.welcome-message > *:nth-child(1) { animation-delay: .02s; }
+.welcome-message > *:nth-child(2) { animation-delay: .08s; }
+.welcome-message > *:nth-child(3) { animation-delay: .14s; }
+.welcome-message > *:nth-child(4) { animation-delay: .20s; }
+.welcome-message > *:nth-child(5) { animation-delay: .26s; }
+.welcome-message > *:nth-child(6) { animation-delay: .32s; }
+
+@keyframes oddiHomeIn {
+  from { opacity: 0; transform: translateY(10px) scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------------------------------------------------------
+   7. Desktop sidebar tooltips (hover + keyboard focus)
+   --------------------------------------------------------- */
+@media (min-width: 769px) {
+  #menuBtn[title],
+  .sidebar-utility-btn[title] {
+    position: relative;
+  }
+
+  #menuBtn::after,
+  .sidebar-utility-btn::after {
+    content: attr(title);
+    position: absolute;
+    left: 56px;
+    top: 50%;
+    transform: translateY(-50%) translateX(-4px);
+    padding: 7px 9px;
+    border: 1px solid #e3e3e3;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, .97);
+    color: #292929;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    box-shadow: var(--shadow-md);
+    transition: opacity .16s ease, transform .16s var(--ease-premium);
+    z-index: 5000;
+  }
+
+  #menuBtn:hover::after,
+  #menuBtn:focus-visible::after,
+  .sidebar-utility-btn:hover::after,
+  .sidebar-utility-btn:focus-visible::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
+
+  body.dark-mode #menuBtn::after,
+  body.dark-mode .sidebar-utility-btn::after {
+    background: #171717;
+    border-color: #303030;
+    color: #f2f2f2;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .32);
+  }
+}
+
+/* ---------------------------------------------------------
+   8. Composer as the primary interaction surface
+   --------------------------------------------------------- */
+.input-area {
+  transform: translateX(-50%) translateY(0) !important;
+  transition: box-shadow .24s var(--ease-premium), border-color .24s ease,
+              transform .24s var(--ease-premium) !important;
+}
+
+.input-area:hover {
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.input-area:focus-within {
+  transform: translateX(-50%) translateY(-2px) !important;
+  box-shadow: var(--shadow-lg), 0 0 0 3px var(--oddi-accent-soft) !important;
+}
+
+.input-area .send-btn:not(:disabled) {
+  box-shadow: var(--shadow-accent) !important;
+  transition: transform .18s var(--ease-premium), box-shadow .18s var(--ease-premium) !important;
+}
+
+.input-area .send-btn:not(:disabled):hover,
+.input-area .send-btn:not(:disabled):focus-visible {
+  transform: translateY(-1px) scale(1.05) !important;
+  box-shadow: 0 10px 24px var(--oddi-accent-glow) !important;
+}
+
+.input-area .send-btn:not(:disabled):active {
+  transform: scale(.95) !important;
+  transition-duration: .08s !important;
+}
+
+/* ---------------------------------------------------------
+   9. Scrollbar treatment (desktop only)
+   --------------------------------------------------------- */
+@media (min-width: 769px) {
+  .chatbox {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(130, 130, 130, .38) transparent;
+  }
+
+  .chatbox::-webkit-scrollbar { width: 8px; }
+  .chatbox::-webkit-scrollbar-track { background: transparent; }
+  .chatbox::-webkit-scrollbar-thumb {
+    background: rgba(130, 130, 130, .35);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  .chatbox::-webkit-scrollbar-thumb:hover {
+    background: rgba(100, 100, 100, .55);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+}
+
+/* ---------------------------------------------------------
+   10. Responsive tuning by viewport size
+   --------------------------------------------------------- */
+@media (min-width: 769px) and (max-height: 700px) {
+  .chatbox::before { width: 520px; top: 5px; opacity: .28; }
+  .home-goal-chips { margin-top: 7px; margin-bottom: 9px; }
+  .home-goal-chip { padding: 6px 9px; font-size: 9px; }
+  .home-learning-insight { font-size: 9.5px; }
+}
+
+@media (min-width: 769px) and (min-height: 851px) {
+  .chatbox::before { width: 820px; top: 60px; opacity: .34; }
+  .home-goal-chips { margin-top: 14px; margin-bottom: 15px; }
+}
+
+@media (max-width: 768px) and (pointer: coarse) {
+  .chatbox::before {
+    width: 560px;
+    top: 30px;
+    opacity: .22;
+    background-size: 82% auto;
+    animation: none;
+  }
+  body.dark-mode .chatbox::before { opacity: .12; }
+  .home-goal-chips { gap: 6px; margin-top: 9px; margin-bottom: 11px; }
+  .home-goal-chip { padding: 6px 9px; font-size: 9px; }
+  .home-learning-insight { font-size: 9px; }
+  .home-learning-progress-track { width: 130px; }
+  .home-learning-card { backdrop-filter: none; background: #fff !important; }
+  body.dark-mode .home-learning-card { background: #121212 !important; }
+}
+
+/* ---------------------------------------------------------
+   11. Accessibility: respect reduced motion everywhere
+   --------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .welcome-message > *,
+  .home-learning-progress-fill,
+  .home-learning-progress-fill::after,
+  .chatbox::before,
+  .quick-actions .action-card::after,
+  .quick-actions .action-card,
+  .home-goal-chip,
+  .home-goal-chip::before,
+  .input-area,
+  .input-area .send-btn {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 </style>
 <script id="oddi-premium-9x-js">
@@ -15658,6 +16852,10 @@ body.dark-mode .home-goal-chip:hover{background:#152219;border-color:rgba(32,199
 </style>
 
 
+<style id="oddi-memory-floating-close-final-fix">
+/* The Memory header X is the only close control. */
+.memory-floating-close { display:none !important; }
+</style>
 <style id="oddi-memory-fullscreen-final-fix">
 /* Memory owns the viewport while open. The real React sidebar is hidden
    underneath; no dummy rail or reserved black region is created. */
@@ -15674,7 +16872,90 @@ body.dark-mode .home-goal-chip:hover{background:#152219;border-color:rgba(32,199
   }
 }
 </style>
+<style id="oddi-memory-sidebar-restore-final-fix">
+/* Desktop: once Memory closes, the real sidebar must be visible again. */
+@media (min-width:769px){
+  body:not(.oddi-memory-workspace-open) #oddi-react-sidebar-root{
+    visibility:visible !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
+  }
+  body:not(.oddi-memory-workspace-open) #oddi-react-sidebar-root #sidebar{
+    visibility:visible !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
+  }
+}
+</style>
+<style id="oddi-real-background">
+    /* The real image remains the lowest visual layer of the chat surface. */
+    .chatbox {
+        background:
+            linear-gradient(rgba(255, 255, 255, .82), rgba(255, 255, 255, .82)),
+            url("/static/Background.png") center / cover no-repeat !important;
+    }
+    body.dark-mode .chatbox {
+        background:
+            linear-gradient(rgba(10, 10, 10, .80), rgba(10, 10, 10, .80)),
+            url("/static/Background-dark.png") center / cover no-repeat !important;
+    }
 
+    /* background-attachment: fixed misbehaves on iOS Safari — fall back to
+       a normal scrolling background on phones. */
+    @media (max-width: 768px) {
+        .chatbox,
+        body.dark-mode .chatbox {
+            background-attachment: scroll !important;
+        }
+    }
+</style>
+
+<style id="oddi-ambient-layer-final-fix">
+    /*
+       FINAL STACKING ORDER
+       0 = circuit sweep
+       1 = ambient dots / traveling sparks
+       2 = actual chat content
+       600+ = fixed composer (existing rule)
+    */
+    .chatbox {
+        position: relative !important;
+        isolation: isolate !important;
+        overflow: hidden !important;
+    }
+
+    .chatbox > .oddi-light-dot,
+    .chatbox > .oddi-spark-layer {
+        z-index: 1 !important;
+    }
+
+    .chatbox > .welcome-message,
+    .chatbox > .bot-message,
+    .chatbox > .user-message {
+        position: relative;
+        z-index: 2 !important;
+    }
+
+    /* Bright mode owns the floating dots. Dark mode owns the path sparks. */
+    body:not(.dark-mode) .chatbox > .oddi-light-dot {
+        display: block !important;
+    }
+    body.dark-mode .chatbox > .oddi-light-dot {
+        display: none !important;
+    }
+    body:not(.dark-mode) .chatbox > .oddi-spark-layer {
+        display: none !important;
+    }
+    body.dark-mode .chatbox > .oddi-spark-layer {
+        display: block !important;
+    }
+
+    /* Keep the ambient effects away from interaction. */
+    .chatbox > .oddi-light-dot,
+    .chatbox > .oddi-spark-layer {
+        pointer-events: none !important;
+    }
+</style>
 <script id="oddi-memory-sidebar-final-js">
 /* Memory controls the workspace itself; the React sidebar remains untouched
    and is restored automatically when Memory closes. */
@@ -15682,5 +16963,653 @@ body.dark-mode .home-goal-chip:hover{background:#152219;border-color:rgba(32,199
 
 <div id="oddi-react-sidebar-root"></div>
 <script src="{{ url_for('static', filename='oddi-sidebar/oddi-sidebar.js') }}"></script>
+<style id="oddi-spark-mobile-final-fix">
+/* FINAL: circuit signals remain visible on mobile; reduced-motion still wins. */
+@media (max-width: 768px) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {
+    body:not(.dark-mode) .chatbox > #oddiLightLayer {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    body:not(.dark-mode) .chatbox > #oddiSparkLayer { display: none !important; }
+    body.dark-mode .chatbox > #oddiSparkLayer {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+    }
+    body.dark-mode .chatbox > #oddiLightLayer { display: none !important; }
+    .oddi-svg-spark path {
+        animation: oddiFlexibleTrail 6s linear infinite !important;
+        opacity: 1 !important;
+    }
+}
+
+/* The spark head dots are intentionally removed; the moving signal is the trail itself. */
+.oddi-svg-spark circle { display: none !important; }
+</style>
+<style id="oddi-spark-head-color-final-fix">
+/* No separate spark-head dots: the colored flexible trail is the complete signal. */
+.oddi-svg-spark circle { display: none !important; }
+</style>
+<style id="oddi-light-spark-final-fix">
+/* FINAL: bright mode travels on the exact dark-mode circuit geometry. */
+.chatbox > #oddiLightLayer {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    transform-origin: 0 0 !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+}
+body:not(.dark-mode) .chatbox > #oddiLightLayer .oddi-light-dot {
+    display: block !important;
+    position: absolute !important;
+    width: 24px !important;
+    height: 4px !important;
+    z-index: 1 !important;
+    opacity: 1 !important;
+    offset-rotate: auto !important;
+    offset-anchor: 0% 50% !important;
+    offset-position: 0 0 !important;
+}
+body.dark-mode .chatbox > #oddiLightLayer { display: none !important; }
+body:not(.dark-mode) .chatbox > .oddi-spark-layer { display: none !important; }
+</style>
+<style id="oddi-spark-viewport-lock-final-fix">
+/*
+   FINAL viewport lock:
+   sparks must follow the visible chatbox/background, not the scroll position
+   of the conversation content. This fixes signals disappearing on old chats.
+*/
+.chatbox > #oddiSparkLayer,
+.chatbox > #oddiLightLayer {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    transform-origin: 0 0 !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+    z-index: 1 !important;
+}
+.oddi-circuit-svg {
+    pointer-events: none !important;
+}
+/* There is intentionally no separate moving dot/head. */
+.oddi-svg-spark circle { display: none !important; }
+</style>
+<script id="oddi-spark-align">
+(function () {
+    const chatbox = document.getElementById('chatbox');
+    const layer = document.getElementById('oddiSparkLayer');
+    const lightLayer = document.getElementById('oddiLightLayer');
+    if (!chatbox || !layer) return;
+
+    const IMG_W = 1614;
+    const IMG_H = 975;
+
+    /*
+       The chatbox is also the scrolling surface. The circuit background stays
+       visually tied to the chatbox viewport, while the spark layers used to
+       scroll away with old conversations. Keep the layers pinned to the
+       visible chatbox and recalculate whenever its geometry changes (sidebar,
+       chat switching, mobile viewport, etc.).
+    */
+    function align() {
+        const rect = chatbox.getBoundingClientRect();
+        const areaW = rect.width;
+        const areaH = rect.height;
+        if (!areaW || !areaH) return;
+
+        const scale = Math.max(areaW / IMG_W, areaH / IMG_H);
+        const renderedW = IMG_W * scale;
+        const renderedH = IMG_H * scale;
+        const offsetX = (areaW - renderedW) / 2;
+        const offsetY = (areaH - renderedH) / 2;
+
+        /* Fixed to the viewport, but translated to the exact chatbox origin. */
+        const transform =
+            'translate(' + (rect.left + offsetX) + 'px, ' +
+            (rect.top + offsetY) + 'px) scale(' + scale + ')';
+
+        layer.style.transform = transform;
+        if (lightLayer) lightLayer.style.transform = transform;
+    }
+
+    let resizeTimer = null;
+    function scheduleAlign() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(align, 30);
+    }
+
+    window.addEventListener('resize', scheduleAlign, { passive: true });
+    window.addEventListener('orientationchange', scheduleAlign, { passive: true });
+
+    /* Sidebar opening/closing changes chatbox width without a window resize. */
+    if (typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(scheduleAlign);
+        ro.observe(chatbox);
+    }
+
+    /* Keep the overlay correct if layout classes/styles are changed by the app. */
+    if (typeof MutationObserver !== 'undefined') {
+        const mo = new MutationObserver(scheduleAlign);
+        mo.observe(chatbox, { attributes: true, attributeFilter: ['class', 'style'] });
+    }
+
+    align();
+})();
+</script>
+
+<style id="oddi-memory-board-polish-final">
+/* FINAL MEMORY BOARD POLISH
+   The board is intentionally clean and spacious in bright mode.  The same
+   geometry is retained in dark mode, with contrast adjusted independently. */
+.memory-list {
+  background: transparent !important;
+}
+.memory-grid-fixed {
+  grid-template-columns: repeat(4, minmax(190px, 1fr)) !important;
+  gap: 14px !important;
+  align-items: stretch !important;
+}
+.memory-grid-fixed .memory-slot,
+.memory-grid-fixed .memory-add-box {
+  min-height: 184px !important;
+  border-radius: 14px !important;
+  box-sizing: border-box !important;
+}
+
+/* Bright mode: white cards with a quiet border and a soft surface. */
+body:not(.dark-mode) .memory-grid-fixed .memory-slot {
+  background: #ffffff !important;
+  border: 1px solid #dedede !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,.035) !important;
+  color: #171717 !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot:hover {
+  background: #ffffff !important;
+  border-color: #c9c9c9 !important;
+  box-shadow: 0 5px 18px rgba(0,0,0,.06) !important;
+  transform: translateY(-1px);
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot.selected {
+  border-color: #b7b7b7 !important;
+  box-shadow: 0 4px 16px rgba(0,0,0,.07) !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-category-edit {
+  color: #1b1b1b !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-category-edit:hover,
+body:not(.dark-mode) .memory-grid-fixed .memory-category-edit:focus {
+  background: #f7f7f7 !important;
+  border-color: #d5d5d5 !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot-text {
+  background: #f8f8f8 !important;
+  border: 1px solid #e2e2e2 !important;
+  color: #242424 !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot-text:focus {
+  background: #ffffff !important;
+  border-color: #bdbdbd !important;
+  box-shadow: 0 0 0 2px rgba(0,0,0,.035) !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot-text::placeholder {
+  color: #a3a3a3 !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot-hint {
+  color: #999 !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot-save {
+  background: #111 !important;
+  border-color: #111 !important;
+  color: #fff !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot-save:hover {
+  background: #2a2a2a !important;
+  border-color: #2a2a2a !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot-delete {
+  background: #fff !important;
+  border-color: #ddd !important;
+  color: #777 !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-slot-delete:hover {
+  background: #fff6f6 !important;
+  border-color: #e4b0b0 !important;
+  color: #b33 !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-add-box {
+  background: #fafafa !important;
+  border: 1.5px dashed #c9c9c9 !important;
+  color: #777 !important;
+  box-shadow: none !important;
+}
+body:not(.dark-mode) .memory-grid-fixed .memory-add-box:hover {
+  background: #f5f5f5 !important;
+  border-color: #999 !important;
+  color: #222 !important;
+}
+
+/* Dark mode keeps the same card proportions. */
+body.dark-mode .memory-grid-fixed .memory-slot {
+  background: #111 !important;
+  border: 1px solid #2d2d2d !important;
+  box-shadow: 0 3px 14px rgba(0,0,0,.18) !important;
+}
+body.dark-mode .memory-grid-fixed .memory-slot:hover {
+  background: #151515 !important;
+  border-color: #464646 !important;
+  box-shadow: 0 6px 20px rgba(0,0,0,.25) !important;
+}
+body.dark-mode .memory-grid-fixed .memory-slot-text {
+  background: #191919 !important;
+  border-color: #343434 !important;
+}
+body.dark-mode .memory-grid-fixed .memory-slot-text:focus {
+  background: #161616 !important;
+  border-color: #555 !important;
+}
+body.dark-mode .memory-grid-fixed .memory-slot-save {
+  background: #eee !important;
+  color: #111 !important;
+  border-color: #eee !important;
+}
+body.dark-mode .memory-grid-fixed .memory-slot-delete {
+  background: #191919 !important;
+  color: #aaa !important;
+  border-color: #333 !important;
+}
+body.dark-mode .memory-grid-fixed .memory-add-box {
+  background: #0e0e0e !important;
+  border-color: #444 !important;
+  color: #999 !important;
+}
+body.dark-mode .memory-grid-fixed .memory-add-box:hover {
+  background: #151515 !important;
+  border-color: #666 !important;
+  color: #fff !important;
+}
+
+@media (min-width:769px) and (max-width:1250px) {
+  .memory-grid-fixed {
+    grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
+  }
+}
+@media (max-width:768px) {
+  .memory-grid-fixed {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+  .memory-grid-fixed .memory-slot,
+  .memory-grid-fixed .memory-add-box {
+    min-height: 165px !important;
+  }
+}
+@media (max-width:480px) {
+  .memory-grid-fixed {
+    grid-template-columns: 1fr !important;
+  }
+}
+</style>
+<script id="oddi-memory-no-loading-guard-v2">
+(function () {
+    const DEFINITIONS = [
+        ["Name", "👤"],
+        ["Preferences", "⚙️"],
+        ["Goals", "🎯"],
+        ["Education", "🎓"],
+        ["Work", "💼"],
+        ["Projects", "🚀"],
+        ["Interests", "✨"],
+        ["People", "👥"],
+        ["Communication", "💬"],
+        ["Other", "📌"],
+        ["Learning", "📚"]
+    ];
+
+    function makeSlot(name, icon) {
+        const section = document.createElement("section");
+        section.className = "memory-entry memory-slot";
+
+        const head = document.createElement("div");
+        head.className = "memory-slot-head";
+
+        const iconEl = document.createElement("span");
+        iconEl.className = "memory-slot-icon";
+        iconEl.textContent = icon;
+
+        const category = document.createElement("input");
+        category.className = "memory-category-edit";
+        category.value = name;
+        category.setAttribute("aria-label", "Memory category");
+
+        const check = document.createElement("input");
+        check.className = "memory-check memory-slot-check";
+        check.type = "checkbox";
+        check.setAttribute("aria-label", "Select memory");
+
+        head.append(iconEl, category, check);
+
+        const text = document.createElement("textarea");
+        text.className = "memory-text memory-slot-text";
+        text.setAttribute("aria-label", "Memory");
+        text.placeholder = "Write something for ODDI to remember…";
+
+        const footer = document.createElement("div");
+        footer.className = "memory-slot-footer";
+
+        const hint = document.createElement("span");
+        hint.className = "memory-slot-hint";
+        hint.textContent = "Empty memory box";
+
+        const save = document.createElement("button");
+        save.type = "button";
+        save.className = "memory-slot-save";
+        save.textContent = "Save";
+
+        footer.append(hint, save);
+        section.append(head, text, footer);
+        return section;
+    }
+
+    function ensureMemoryBoard() {
+        const list = document.getElementById("memoryList");
+        if (!list) return;
+
+        list.querySelectorAll(".memory-loading").forEach(function (el) {
+            el.remove();
+        });
+
+        if (list.querySelector(".memory-grid-fixed")) return;
+
+        const existingEntries = list.querySelectorAll(".memory-entry");
+        if (existingEntries.length) return;
+
+        const board = document.createElement("div");
+        board.className = "memory-grid memory-grid-fixed memory-instant-board";
+        DEFINITIONS.forEach(function (item) {
+            board.appendChild(makeSlot(item[0], item[1]));
+        });
+
+        const add = document.createElement("button");
+        add.type = "button";
+        add.className = "memory-add-box";
+        add.id = "memoryAddBoxFallback";
+
+        const plus = document.createElement("span");
+        plus.className = "memory-add-box-plus";
+        plus.textContent = "+";
+        const label = document.createElement("span");
+        label.className = "memory-add-box-label";
+        label.textContent = "Add";
+        add.append(plus, label);
+        board.appendChild(add);
+        list.replaceChildren(board);
+    }
+
+    function start() {
+        ensureMemoryBoard();
+        const observer = new MutationObserver(function () {
+            ensureMemoryBoard();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        document.addEventListener("click", function (event) {
+            const add = event.target.closest("#memoryAddBoxFallback");
+            if (!add) return;
+            event.preventDefault();
+            const realAdd = document.getElementById("memoryAddCategoryBtn");
+            if (realAdd) realAdd.click();
+        });
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", start, { once: true });
+    } else {
+        start();
+    }
+})();
+</script>
 </body>
 </html> 
+<style id="oddi-memory-user-boxes-final">
+/* User-controlled memory board: 11 permanent editable boxes + custom boxes. */
+.memory-grid-fixed{
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  align-items:stretch !important;
+}
+.memory-slot{
+  min-height:178px !important;
+  padding:12px !important;
+  background:#fff !important;
+  border-color:#d9d9d9 !important;
+}
+.memory-slot:hover{background:#fcfcfc !important;border-color:#bdbdbd !important;}
+.memory-slot-head{
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+  min-width:0 !important;
+  margin-bottom:9px !important;
+}
+.memory-slot-icon{flex:0 0 auto;font-size:14px;line-height:1;}
+.memory-category-edit{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  height:27px !important;
+  padding:3px 5px !important;
+  border:1px solid transparent !important;
+  border-radius:6px !important;
+  background:transparent !important;
+  color:#222 !important;
+  font-size:10px !important;
+  font-weight:800 !important;
+  outline:none !important;
+  box-sizing:border-box !important;
+}
+.memory-category-edit:hover,
+.memory-category-edit:focus{
+  border-color:#d4d4d4 !important;
+  background:#fafafa !important;
+}
+.memory-slot-check{margin-left:auto !important;}
+.memory-slot-text{
+  flex:1 1 auto !important;
+  width:100% !important;
+  min-height:78px !important;
+  box-sizing:border-box !important;
+  padding:9px !important;
+  border:1px solid #e0e0e0 !important;
+  border-radius:9px !important;
+  background:#fafafa !important;
+  color:#222 !important;
+  resize:vertical !important;
+  outline:none !important;
+  font-size:12px !important;
+  line-height:1.45 !important;
+}
+.memory-slot-text:focus{border-color:#bdbdbd !important;background:#fff !important;}
+.memory-slot-text::placeholder{color:#aaa !important;}
+.memory-slot-footer{
+  display:flex !important;
+  align-items:center !important;
+  gap:6px !important;
+  margin-top:8px !important;
+}
+.memory-slot-hint{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  color:#999 !important;
+  font-size:8px !important;
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+}
+.memory-slot-save,
+.memory-slot-delete{
+  flex:0 0 auto !important;
+  min-width:48px !important;
+  height:25px !important;
+  padding:0 8px !important;
+  border:1px solid #ddd !important;
+  border-radius:7px !important;
+  background:#f4f4f4 !important;
+  color:#333 !important;
+  font-size:9px !important;
+  font-weight:800 !important;
+  cursor:pointer !important;
+}
+.memory-slot-save:hover{background:#111 !important;color:#fff !important;border-color:#111 !important;}
+.memory-slot-delete:hover{background:#fff0f0 !important;color:#b33 !important;border-color:#e4b0b0 !important;}
+.memory-add-box{
+  min-height:178px !important;
+  border:1.5px dashed #bdbdbd !important;
+  border-radius:14px !important;
+  background:transparent !important;
+  color:#888 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:7px !important;
+  cursor:pointer !important;
+  transition:background .15s ease,border-color .15s ease,color .15s ease !important;
+}
+.memory-add-box:hover{background:#fafafa !important;border-color:#777 !important;color:#222 !important;}
+.memory-add-box-plus{font-size:25px !important;font-weight:400 !important;line-height:1 !important;}
+.memory-add-box-label{font-size:9px !important;font-weight:700 !important;}
+body.dark-mode .memory-slot{
+  background:#101010 !important;
+  border-color:#2b2b2b !important;
+  color:#eee !important;
+}
+body.dark-mode .memory-slot:hover{background:#141414 !important;border-color:#444 !important;}
+body.dark-mode .memory-category-edit{color:#eee !important;}
+body.dark-mode .memory-category-edit:hover,
+body.dark-mode .memory-category-edit:focus{border-color:#444 !important;background:#181818 !important;}
+body.dark-mode .memory-slot-text{background:#181818 !important;border-color:#333 !important;color:#eee !important;}
+body.dark-mode .memory-slot-text:focus{background:#151515 !important;border-color:#555 !important;}
+body.dark-mode .memory-slot-hint{color:#666 !important;}
+body.dark-mode .memory-slot-save,
+body.dark-mode .memory-slot-delete{background:#181818 !important;color:#ccc !important;border-color:#333 !important;}
+body.dark-mode .memory-slot-save:hover{background:#f4f4f4 !important;color:#111 !important;border-color:#f4f4f4 !important;}
+body.dark-mode .memory-add-box{border-color:#555 !important;color:#888 !important;}
+body.dark-mode .memory-add-box:hover{background:#151515 !important;border-color:#777 !important;color:#fff !important;}
+@media (min-width:769px) and (max-width:1199px){
+  .memory-grid-fixed{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+}
+@media (max-width:768px){
+  .memory-grid-fixed{grid-template-columns:1fr !important;}
+  .memory-slot,.memory-add-box{min-height:160px !important;}
+}
+</style>
+
+<style id="oddi-memory-board-polish-absolute-final">
+/* Absolute final override: polished memory cards. */
+.memory-list .memory-grid-fixed{
+  grid-template-columns:repeat(4,minmax(190px,1fr)) !important;
+  gap:14px !important;
+  align-items:stretch !important;
+}
+.memory-list .memory-grid-fixed .memory-slot,
+.memory-list .memory-grid-fixed .memory-add-box{
+  min-height:184px !important;
+  border-radius:14px !important;
+  box-sizing:border-box !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot{
+  background:#fff !important;
+  border:1px solid #dedede !important;
+  color:#171717 !important;
+  box-shadow:0 2px 10px rgba(0,0,0,.035) !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot:hover{
+  background:#fff !important;
+  border-color:#c8c8c8 !important;
+  box-shadow:0 5px 18px rgba(0,0,0,.06) !important;
+  transform:translateY(-1px) !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-category-edit{
+  color:#1b1b1b !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-category-edit:hover,
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-category-edit:focus{
+  background:#f7f7f7 !important;
+  border-color:#d5d5d5 !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot-text{
+  background:#f8f8f8 !important;
+  border:1px solid #e2e2e2 !important;
+  color:#242424 !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot-text:focus{
+  background:#fff !important;
+  border-color:#bcbcbc !important;
+  box-shadow:0 0 0 2px rgba(0,0,0,.035) !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot-text::placeholder{color:#a0a0a0 !important;}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot-hint{color:#999 !important;}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot-save{
+  background:#111 !important;border-color:#111 !important;color:#fff !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot-save:hover{
+  background:#292929 !important;border-color:#292929 !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot-delete{
+  background:#fff !important;border-color:#ddd !important;color:#777 !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-slot-delete:hover{
+  background:#fff6f6 !important;border-color:#e4b0b0 !important;color:#b33 !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-add-box{
+  background:#fafafa !important;
+  border:1.5px dashed #c7c7c7 !important;
+  color:#777 !important;
+  box-shadow:none !important;
+}
+body:not(.dark-mode) .memory-list .memory-grid-fixed .memory-add-box:hover{
+  background:#f5f5f5 !important;border-color:#999 !important;color:#222 !important;
+}
+body.dark-mode .memory-list .memory-grid-fixed .memory-slot{
+  background:#111 !important;border:1px solid #2d2d2d !important;color:#eee !important;
+  box-shadow:0 3px 14px rgba(0,0,0,.18) !important;
+}
+body.dark-mode .memory-list .memory-grid-fixed .memory-slot:hover{
+  background:#151515 !important;border-color:#464646 !important;
+  box-shadow:0 6px 20px rgba(0,0,0,.25) !important;
+}
+body.dark-mode .memory-list .memory-grid-fixed .memory-slot-text{
+  background:#191919 !important;border-color:#343434 !important;color:#eee !important;
+}
+body.dark-mode .memory-list .memory-grid-fixed .memory-slot-text:focus{
+  background:#161616 !important;border-color:#555 !important;
+}
+body.dark-mode .memory-list .memory-grid-fixed .memory-slot-save{
+  background:#eee !important;color:#111 !important;border-color:#eee !important;
+}
+body.dark-mode .memory-list .memory-grid-fixed .memory-slot-delete{
+  background:#191919 !important;color:#aaa !important;border-color:#333 !important;
+}
+body.dark-mode .memory-list .memory-grid-fixed .memory-add-box{
+  background:#0e0e0e !important;border-color:#444 !important;color:#999 !important;
+}
+body.dark-mode .memory-list .memory-grid-fixed .memory-add-box:hover{
+  background:#151515 !important;border-color:#666 !important;color:#fff !important;
+}
+@media (min-width:769px) and (max-width:1250px){
+  .memory-list .memory-grid-fixed{grid-template-columns:repeat(3,minmax(180px,1fr)) !important;}
+}
+@media (max-width:768px){
+  .memory-list .memory-grid-fixed{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px !important;}
+  .memory-list .memory-grid-fixed .memory-slot,
+  .memory-list .memory-grid-fixed .memory-add-box{min-height:165px !important;}
+}
+@media (max-width:480px){
+  .memory-list .memory-grid-fixed{grid-template-columns:1fr !important;}
+}
+</style>

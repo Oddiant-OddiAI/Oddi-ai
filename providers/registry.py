@@ -27,15 +27,17 @@ class ProviderRegistry:
         return self.limits.get(provider_id)
 
     def validate(self):
-
         required = {
-            "gemini",
+            "gpt_oss",
+            "qwen",
             "cloudflare",
             "mistral",
+            "llama",
+            "gemini",
+            "openrouter",
         }
 
         registered = set(self.providers.keys())
-
         missing = required - registered
 
         if missing:

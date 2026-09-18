@@ -1,12 +1,56 @@
 MODEL_REGISTRY = {
+    "gpt_oss": {
+        "gpt-oss-120b": {
+            "name": "GPT-OSS 120B",
+            "enabled": True,
+        },
+    },
 
-    # Gemini models will be added here after
-    # the current API/model limits are finalized.
-    "gemini": {},
+    "qwen": {
+        "qwen3-235b": {
+            "name": "Qwen 3 235B",
+            "enabled": True,
+        },
+    },
 
-    # Cloudflare models will be added here.
-    "cloudflare": {},
+    "cloudflare": {
+        "llama-3.1-8b": {
+            "name": "Llama 3.1 8B",
+            "enabled": True,
+        },
+    },
 
-    # Mistral models will be added here.
-    "mistral": {},
+    "mistral": {
+        "mistral-small-latest": {
+            "name": "Mistral Small",
+            "enabled": True,
+        },
+    },
+
+    "gemini": {
+        "gemini-3.6-flash": {
+            "name": "Gemini 3.6 Flash",
+            "enabled": True,
+            "capacity_pools": [
+                "gemini_key_1",
+                "gemini_key_2",
+            ],
+        },
+    },
+
+    "groq": {
+        "gpt-oss-120b": {
+            "name": "GPT-OSS 120B via Groq",
+            "enabled": True,
+            "capacity_pools": [
+                "groq_key_1",
+            ],
+        },
+    },
+    "openrouter": {
+        "openrouter/free": {
+            "name": "OpenRouter Free Router",
+            "enabled": True,
+        },
+    },
 }

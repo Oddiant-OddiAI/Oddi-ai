@@ -10,6 +10,10 @@ from app.memory_handler import (
     recall_memory
 )
 from app.chatbot import get_response
+from request_analyzer.analyzer import analyze_request
+from providers.adapters import execute_route, ProviderAdapterError
+from routing.engine import route_request
+from quota.manager import quota_manager
 from app.commands import handle_command
 from app.prompts import SYSTEM_PROMPT
 from pypdf import PdfReader
@@ -18,7 +22,7 @@ from pptx import Presentation
 from docx import Document
 
 import cv2
-
+from providers.registry import ProviderRegistry
 from app.config import client
 from app.database import (
     get_vector_store_id,
@@ -235,7 +239,7 @@ def add_file_to_knowledge_base(
         )
 
         print(
-            f"OpenAI file created: "
+                f"OpenAI file created: "
             f"{openai_file.id}"
         )
 
@@ -281,54 +285,309 @@ def add_file_to_knowledge_base(
         raise
 
 
-    uploaded_file.stream.seek(0)
+PROVIDER_UNAVAILABLE_RESPONSE = (
+    "⚠️ ODDI-AI providers are unavailable right now."
+)
 
-    print(
-        f"Uploading to knowledge base: "
-        f"{uploaded_file.filename}"
-    )
 
-    # Upload the original file to OpenAI
-    openai_file = client.files.create(
-        file=(
-            uploaded_file.filename,
-            uploaded_file.stream,
-            uploaded_file.mimetype
+def _build_routing_prompt(chat_history, documents=""):
+    """Build a provider-neutral text prompt for the routing adapters."""
+    lines = ["Conversation:"]
+
+    if isinstance(chat_history, list):
+        for item in chat_history:
+            if not isinstance(item, dict):
+                continue
+
+            role = item.get("role")
+            content = item.get("content", "")
+
+            if role not in ("user", "assistant"):
+                continue
+
+            if isinstance(content, list):
+                text_parts = []
+                for part in content:
+                    if isinstance(part, dict):
+                        text = part.get("text")
+                        if text:
+                            text_parts.append(str(text))
+                    elif isinstance(part, str):
+                        text_parts.append(part)
+                content = " ".join(text_parts)
+
+            if content:
+                lines.append(
+                    f"{role.capitalize()}: {content}"
+                )
+    else:
+        lines.append(str(chat_history or ""))
+
+    if documents:
+        lines.extend([
+            "",
+            "ATTACHED DOCUMENT CONTENT:",
+            documents,
+        ])
+
+    return "\n".join(lines)
+
+
+
+def _resolve_phase6_user_context(
+    user_id,
+    user_role=None,
+    user_priority=None,
+    is_host=False,
+    quota_exempt=False,
+):
+    """
+    Resolve already-authenticated user context for Phase 6.
+
+    Authentication and identity resolution remain outside app.engine.
+    The trusted caller may supply role, priority and host/exemption
+    information. Ordinary users default to the normal user policy.
+    """
+
+    return {
+        "user_id": (
+            str(user_id).strip()
+            if user_id is not None
+            else None
         ),
-        purpose="assistants"
+        "user_role": (
+            str(user_role).strip().lower()
+            if user_role
+            else "user"
+        ),
+        "user_priority": user_priority,
+        "is_host": bool(is_host),
+        "quota_exempt": bool(quota_exempt),
+    }
+
+
+def _extract_execution_tokens(
+    execution,
+    provider_prompt,
+    response,
+):
+    """
+    Extract provider-reported token usage when available.
+
+    If the adapter does not expose token metadata, use a conservative
+    local estimate so user token accounting never silently records zero.
+    """
+
+    execution = (
+        execution
+        if isinstance(execution, dict)
+        else {}
     )
 
-    print(
-        f"OpenAI file created: {openai_file.id}"
-    )
+    usage = execution.get("usage")
 
-    # Attach it to the user's vector store
-    vector_file = client.vector_stores.files.create_and_poll(
-        vector_store_id=vector_store_id,
-        file_id=openai_file.id
-    )
+    if isinstance(usage, dict):
+        for key in (
+            "total_tokens",
+            "total",
+        ):
+            value = usage.get(key)
+            try:
+                if value is not None and int(value) >= 0:
+                    return int(value)
+            except (TypeError, ValueError):
+                pass
 
-    if vector_file.status != "completed":
-
-        print(
-            f"Knowledge indexing failed: "
-            f"{vector_file.status}"
+        input_tokens = usage.get(
+            "prompt_tokens",
+            usage.get("input_tokens"),
+        )
+        output_tokens = usage.get(
+            "completion_tokens",
+            usage.get("output_tokens"),
         )
 
-        return None
+        if (
+            input_tokens is not None
+            or output_tokens is not None
+        ):
+            try:
+                total = (
+                    int(input_tokens or 0)
+                    + int(output_tokens or 0)
+                )
+                if total >= 0:
+                    return total
+            except (TypeError, ValueError):
+                pass
 
-    print(
-        f"Indexed successfully: "
-        f"{uploaded_file.filename}"
+    for key in (
+        "total_tokens",
+        "tokens",
+    ):
+        value = execution.get(key)
+        try:
+            if value is not None and int(value) >= 0:
+                return int(value)
+        except (TypeError, ValueError):
+            pass
+
+    # Fallback estimate: approximately 4 characters/token.
+    source_text = (
+        str(provider_prompt or "")
+        + "\n"
+        + str(response or "")
     )
 
-    return openai_file.id
+    return max(
+        1,
+        (len(source_text) + 3) // 4,
+    )
+
+
+def _phase6_user_quota_gate(
+    user_context,
+    estimated_tokens=0,
+):
+    """Check user quota before provider routing."""
+
+    user_id = user_context.get("user_id")
+
+    # Preserve compatibility for internal/legacy calls that do not
+    # carry an authenticated user identity.
+    if not user_id:
+        return {
+            "checked": False,
+            "allowed": True,
+            "reason": (
+                "No user_id supplied; user quota gate skipped "
+                "for an internal/legacy call."
+            ),
+        }
+
+    try:
+        estimated_tokens = int(
+            estimated_tokens or 0
+        )
+    except (TypeError, ValueError):
+        estimated_tokens = 0
+
+    if estimated_tokens < 0:
+        estimated_tokens = 0
+
+    allowed = quota_manager.has_user_quota(
+        user_id=user_id,
+        role=user_context["user_role"],
+        priority=user_context["user_priority"],
+        is_host=user_context["is_host"],
+        quota_exempt=user_context["quota_exempt"],
+        requests=1,
+        tokens=estimated_tokens,
+    )
+
+    status = quota_manager.user_quota_status(
+        user_id=user_id,
+        role=user_context["user_role"],
+        priority=user_context["user_priority"],
+        is_host=user_context["is_host"],
+        quota_exempt=user_context["quota_exempt"],
+    )
+
+    return {
+        "checked": True,
+        "allowed": bool(allowed),
+        "status": status,
+        "reason": (
+            "User quota available."
+            if allowed
+            else "User quota exhausted or fair-use limit reached."
+        ),
+    }
+
+
+def _phase6_quota_rejection(quota_result):
+    """Build the user-facing Phase 6 quota rejection."""
+
+    status = quota_result.get(
+        "status",
+        {},
+    )
+
+    exhausted = status.get(
+        "exhausted_dimensions",
+        [],
+    )
+
+    if exhausted:
+        dimensions = ", ".join(
+            str(item)
+            for item in exhausted
+        )
+        return (
+            "⚠️ **ODDI-AI usage limit reached.**\n\n"
+            f"Limit reached: `{dimensions}`.\n\n"
+            "Please try again after the applicable limit resets."
+        )
+
+    return (
+        "⚠️ **ODDI-AI usage limit reached.**\n\n"
+        "Your current AI request allowance is exhausted. "
+        "Please try again after the applicable limit resets."
+    )
+
+
+def _phase6_record_success(
+    user_context,
+    execution,
+    provider_prompt,
+    response,
+):
+    """Record one successfully completed provider request."""
+
+    user_id = user_context.get("user_id")
+
+    if not user_id:
+        return None
+
+    tokens = _extract_execution_tokens(
+        execution,
+        provider_prompt,
+        response,
+    )
+
+    return quota_manager.record_user_request(
+        user_id=user_id,
+        tokens=tokens,
+        role=user_context["user_role"],
+        priority=user_context["user_priority"],
+        is_host=user_context["is_host"],
+        quota_exempt=user_context["quota_exempt"],
+    )
+
+
 def process_message(
     user_message,
     uploaded_files=None,
     conversation_history=None,
-    user_id=None
-    ):
+    user_id=None,
+    user_role=None,
+    user_priority=None,
+    is_host=False,
+    quota_exempt=False
+):
+    if user_id is not None:
+        user_id = str(user_id)
+
+    # ==========================================
+    # PHASE 6 — USER LIMIT / FAIR-USE CONTEXT
+    # ==========================================
+    user_context = _resolve_phase6_user_context(
+        user_id=user_id,
+        user_role=user_role,
+        user_priority=user_priority,
+        is_host=is_host,
+        quota_exempt=quota_exempt,
+    )
         # ==========================================
     # PERSISTENT USER KNOWLEDGE
     # ==========================================
@@ -340,7 +599,9 @@ def process_message(
     # attachments here. Attachments must go through the local
     # extraction/vision pipeline below first.
     if user_id is not None:
-        vector_store_id = get_or_create_vector_store(user_id)
+        # Read an existing vector-store ID only. Do not create an OpenAI
+        # vector store during every chat request.
+        vector_store_id = get_vector_store_id(user_id)
 
     if uploaded_files:
         uploaded_file = uploaded_files[0]
@@ -997,14 +1258,273 @@ def process_message(
     print("Images:", len(images))
     print("Documents:", len(documents))
 
-    print("Sending request to OpenAI...")
-
-    response = get_response(
-        chat_history,
-        vector_store_id
+    # ==========================================================
+    # PHASE 6 — USER QUOTA GATE
+    # ==========================================================
+    #
+    # Local command/fast-response paths above do not consume the
+    # provider AI allowance. This gate protects the actual provider
+    # routing pipeline.
+    estimated_input_tokens = max(
+        0,
+        (len(str(user_message or "")) + 3) // 4,
     )
 
-    if memory_notice:
-        return response + "\n\n" + memory_notice
+    phase6_quota = _phase6_user_quota_gate(
+        user_context=user_context,
+        estimated_tokens=estimated_input_tokens,
+    )
 
-    return response
+    if not phase6_quota["allowed"]:
+        print(
+            "⚠️ Phase 6 user quota rejected request:",
+            user_context.get("user_id"),
+        )
+        return _phase6_quota_rejection(
+            phase6_quota
+        )
+
+    # ==========================================================
+    # MAIN PROVIDER ROUTING
+    # ==========================================================
+    #
+    # Normal text and locally-extracted document/resume requests go
+    # through the Phase 2 -> Phase 3 -> Phase 4 pipeline.
+    #
+    # Gemini Key 1 is explicitly preferred, then Gemini Key 2,
+    # followed by the remaining provider fallback chain.
+    #
+    # Image/video/audio/web requests that need provider-native
+    # capabilities remain on the existing specialized path for now.
+    #
+    request_for_routing = analyze_request(
+        user_message,
+        uploaded_files=(
+            uploaded_files
+            if documents
+            else []
+        ),
+        images=images,
+        video_frames=video_frames,
+    )
+
+    request_for_routing["user_id"] = user_context.get(
+        "user_id"
+    )
+    request_for_routing["user_role"] = user_context.get(
+        "user_role",
+        "user",
+    )
+    request_for_routing["user_priority"] = user_context.get(
+        "user_priority"
+    )
+    request_for_routing["is_host"] = user_context.get(
+        "is_host",
+        False,
+    )
+    request_for_routing["quota_exempt"] = user_context.get(
+        "quota_exempt",
+        False,
+    )
+    request_for_routing["estimated_tokens"] = estimated_input_tokens
+
+    requires_special_provider_capability = any(
+        (
+            request_for_routing.get("requires_web", False),
+            request_for_routing.get("requires_image", False),
+            request_for_routing.get("requires_video", False),
+        )
+    )
+
+    if requires_special_provider_capability:
+        print(
+            "⚠️ Specialized capability request: "
+            "using existing capability handler."
+        )
+
+        response = get_response(
+            chat_history,
+            vector_store_id,
+            user_id=user_id
+        )
+
+        if memory_notice:
+            return response + "\n\n" + memory_notice
+
+        return response
+
+    try:
+        route = route_request(request_for_routing)
+
+        if route.get("status") != "routed":
+            raise ProviderAdapterError(
+                route.get("reason", "No provider route available.")
+            )
+
+        candidates = list(route.get("candidates", []))
+
+        # Explicit provider policy:
+        #   1. GEMINI_API_KEY
+        #   2. GEMINI_API_KEY_2
+        #   3. Mistral
+        #   4. Cloudflare
+        #   5. Groq
+        #
+        # Keep the routing engine responsible for eligibility, quota,
+        # health and capability checks; only apply the requested
+        # deterministic priority among eligible candidates.
+        provider_order = {
+            "gemini": 0,
+            "mistral": 1,
+            "cloudflare": 2,
+            "groq": 3,
+        }
+        gemini_key_order = {
+            "gemini_key_1": 0,
+            "gemini_key_2": 1,
+        }
+
+        candidates.sort(
+            key=lambda candidate: (
+                provider_order.get(candidate.get("provider"), 99),
+                gemini_key_order.get(
+                    candidate.get("capacity_id"),
+                    99,
+                ),
+            )
+        )
+
+        route["candidates"] = candidates
+
+        if candidates:
+            print(
+                "🎯 Route candidates: "
+                + " -> ".join(
+                    (
+                        f"{candidate.get('provider')}/"
+                        f"{candidate.get('model')}/"
+                        f"{candidate.get('capacity_id')}"
+                    )
+                    for candidate in candidates
+                )
+            )
+
+        provider_prompt = (
+            SYSTEM_PROMPT
+            + "\n\n"
+            + _build_routing_prompt(
+                chat_history,
+                documents=documents,
+            )
+        )
+
+        execution = execute_route(
+            route,
+            provider_prompt,
+        )
+
+        response = execution.get("response")
+
+        if not response or not str(response).strip():
+            raise ProviderAdapterError(
+                "Selected provider returned an empty response."
+            )
+
+        # ======================================================
+        # PHASE 6 — RECORD SUCCESSFUL USER USAGE
+        # ======================================================
+        # Only successful provider execution consumes the user's
+        # daily request allowance.
+        phase6_usage = _phase6_record_success(
+            user_context=user_context,
+            execution=execution,
+            provider_prompt=provider_prompt,
+            response=response,
+        )
+
+        if phase6_usage is not None:
+            print(
+                "📊 Phase 6 user usage recorded:",
+                f"user={user_context.get('user_id')}",
+                f"requests={phase6_usage.get('requests')}",
+                f"tokens={phase6_usage.get('tokens')}",
+            )
+
+        print(
+            f"✅ ODDI-AI routed to "
+            f"{execution['provider']}/"
+            f"{execution['model']}"
+        )
+
+        if execution.get("capacity_id"):
+            print(
+                f"📦 Capacity: "
+                f"{execution['capacity_id']}"
+            )
+
+        if memory_notice:
+            response = response + "\n\n" + memory_notice
+
+        return response
+
+    except Exception as routing_error:
+        # Do not silently jump back to OpenAI. OpenAI is not part of
+        # the primary ODDI provider chain.
+        print("⚠️ Routed providers failed:", routing_error)
+
+        # Final non-OpenAI fallback: Groq.
+        try:
+            from providers.adapters import call_groq
+
+            fallback_prompt = (
+                SYSTEM_PROMPT
+                + "\n\n"
+                + _build_routing_prompt(
+                    chat_history,
+                    documents=documents,
+                )
+            )
+
+            response = call_groq(
+                fallback_prompt,
+                model="openai/gpt-oss-120b",
+            )
+
+            # Successful final fallback is still a successful AI
+            # request and must be counted once for Phase 6.
+            phase6_usage = _phase6_record_success(
+                user_context=user_context,
+                execution={
+                    "provider": "groq",
+                    "model": "openai/gpt-oss-120b",
+                },
+                provider_prompt=fallback_prompt,
+                response=response,
+            )
+
+            if phase6_usage is not None:
+                print(
+                    "📊 Phase 6 user usage recorded:",
+                    f"user={user_context.get('user_id')}",
+                    f"requests={phase6_usage.get('requests')}",
+                    f"tokens={phase6_usage.get('tokens')}",
+                )
+
+            print("✅ Using Groq final fallback.")
+
+            if memory_notice:
+                response = response + "\n\n" + memory_notice
+
+            return response
+
+        except Exception as groq_error:
+            print("❌ Groq final fallback failed:", groq_error)
+
+            if memory_notice:
+                return (
+                    PROVIDER_UNAVAILABLE_RESPONSE
+                    + "\n\n"
+                    + memory_notice
+                )
+
+            return PROVIDER_UNAVAILABLE_RESPONSE
