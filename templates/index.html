@@ -10407,8 +10407,19 @@ loadConversations();
     const closeShortcuts = document.getElementById("closeShortcuts");
     const archivedBtn = document.getElementById("archivedBtn");
     let archivedModal = document.getElementById("archivedModal");
-    function openModal(modal) { modal?.classList.add("show"); modal?.setAttribute("aria-hidden", "false"); }
-    function closeModal(modal) { modal?.classList.remove("show"); modal?.setAttribute("aria-hidden", "true"); }
+    function openModal(modal) {
+        modal?.classList.add("show");
+        modal?.setAttribute("aria-hidden", "false");
+    }
+    function closeModal(modal) {
+        if (!modal) return;
+        const active = document.activeElement;
+        if (active && modal.contains(active)) {
+            active.blur();
+        }
+        modal.classList.remove("show");
+        modal.setAttribute("aria-hidden", "true");
+    }
     binBtn?.addEventListener("click", () => {
         /* Bin is a replacement modal: never leave Account Settings underneath it. */
         const accountModal = document.getElementById("accountSettingsModal");
@@ -10635,6 +10646,17 @@ loadConversations();
     const accountBtn = document.getElementById("headerMoreAccount");
     if (!moreBtn || !overlayEl || !panel || !closeBtn) return;
     function closeHeaderMore() {
+        /* Move focus out of the overlay BEFORE aria-hidden is applied.
+           Otherwise Chrome correctly warns that a focused descendant is
+           being hidden from assistive technology. */
+        const active = document.activeElement;
+        if (active && overlayEl.contains(active)) {
+            if (document.body.contains(moreBtn)) {
+                moreBtn.focus({ preventScroll: true });
+            } else {
+                active.blur();
+            }
+        }
         overlayEl.classList.remove("show");
         overlayEl.setAttribute("aria-hidden", "true");
         moreBtn.setAttribute("aria-expanded", "false");
@@ -10696,6 +10718,82 @@ loadConversations();
     });
     window.addEventListener("pageshow", closeHeaderMore);
     window.addEventListener("pagehide", closeHeaderMore);
+})();
+</script>
+
+<script id="oddi-header-more-extra-actions">
+(function () {
+    "use strict";
+
+    const panel = document.getElementById("headerMorePanel");
+    const overlay = document.getElementById("headerMoreOverlay");
+    const moreBtn = document.getElementById("headerMoreBtn");
+    if (!panel || !overlay || !moreBtn) return;
+
+    const isPhone = window.matchMedia("(max-width: 768px) and (pointer: coarse)").matches;
+
+    function closeMenu() {
+        const active = document.activeElement;
+        if (active && overlay.contains(active)) {
+            moreBtn.focus({ preventScroll: true });
+        }
+        panel.classList.remove("show");
+        overlay.classList.remove("show");
+        overlay.setAttribute("aria-hidden", "true");
+        moreBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function openModal(id) {
+        const modal = document.getElementById(id);
+        if (!modal) return;
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+        if (id === "binModal" && typeof renderBin === "function") {
+            renderBin();
+        }
+    }
+
+    function addAction(id, label, icon, modalId) {
+        if (document.getElementById(id)) return;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.id = id;
+        button.className = "header-more-action";
+        button.innerHTML = `${icon} <span>${label}</span>`;
+
+        button.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            closeMenu();
+
+            /* These are the real existing utility modals. We intentionally
+               do not depend on React sidebar button IDs, which may not be
+               mounted while the sidebar is collapsed. */
+            openModal(modalId);
+        });
+
+        panel.appendChild(button);
+    }
+
+    /* Phone: Recently Deleted only. The existing mobile block normally
+       creates this; this fallback guarantees it remains available even if
+       that mobile enhancement initializes late. */
+    if (isPhone) {
+        addAction("mobileRecentlyDeletedBtn", "Recently Deleted", "🗑️", "binModal");
+        return;
+    }
+
+    /* Laptop/desktop: both utilities are available from ⋮. */
+    if (!document.getElementById("headerMoreUtilitiesDivider")) {
+        const divider = document.createElement("div");
+        divider.id = "headerMoreUtilitiesDivider";
+        divider.className = "header-more-divider";
+        panel.appendChild(divider);
+    }
+
+    addAction("headerMoreShortcuts", "Keyboard Shortcuts", "⌨️", "shortcutsModal");
+    addAction("headerMoreBin", "Recently Deleted", "🗑️", "binModal");
 })();
 </script>
 
@@ -12424,62 +12522,6 @@ loadConversations();
 
         morePanel.appendChild(memoryAction);
     }
-
-    /* =========================================================
-       KEYBOARD SHORTCUTS + RECENTLY DELETED IN THE ⋮ MENU
-       Keep these actions available from the header menu even when
-       the sidebar is collapsed/temporarily hidden. The real existing
-       controls are clicked at action time, so React can mount them later.
-       ========================================================= */
-
-    function closeHeaderMoreMenu() {
-        morePanel?.classList.remove("show");
-        const overlay = document.getElementById("headerMoreOverlay");
-        overlay?.classList.remove("show");
-        overlay?.setAttribute("aria-hidden", "true");
-        document.getElementById("headerMoreBtn")?.setAttribute("aria-expanded", "false");
-    }
-
-    function addHeaderMoreProxy(id, label, icon, targetId) {
-        if (!morePanel || document.getElementById(id)) return;
-
-        const button = document.createElement("button");
-        button.type = "button";
-        button.id = id;
-        button.className = "header-more-action";
-        button.innerHTML = `${icon} <span>${label}</span>`;
-
-        button.addEventListener("click", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-            closeHeaderMoreMenu();
-
-            /* The actual controls belong to the existing application/sidebar.
-               Query when clicked because React may mount them after startup. */
-            const target = document.getElementById(targetId);
-            if (target) {
-                target.click();
-            } else {
-                console.warn("ODDI: header menu target not mounted yet:", targetId);
-            }
-        });
-
-        morePanel.appendChild(button);
-    }
-
-    addHeaderMoreProxy(
-        "headerMoreShortcuts",
-        "Keyboard Shortcuts",
-        "⌨️",
-        "shortcutsBtn"
-    );
-
-    addHeaderMoreProxy(
-        "headerMoreBin",
-        "Recently Deleted",
-        "🗑️",
-        "binBtn"
-    );
 
     /* Close + menu when another major UI element opens. */
 
