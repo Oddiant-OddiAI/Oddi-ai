@@ -5378,6 +5378,7 @@ function speakVoiceReply(text) {
     if (!cleanText) return;
 
     voiceResponseSpeaking = true;
+    window.__oddiCurrentSpeechText = cleanText;
 
     updateVoiceStatus(
         "Oddi is speaking..."
@@ -5417,6 +5418,7 @@ function speakVoiceReply(text) {
     utterance.onend = () => {
 
         voiceResponseSpeaking = false;
+        window.__oddiCurrentSpeechText = "";
 
         if (voiceModeActive) {
 
@@ -5435,6 +5437,7 @@ function speakVoiceReply(text) {
     utterance.onerror = () => {
 
         voiceResponseSpeaking = false;
+        window.__oddiCurrentSpeechText = "";
 
         if (voiceModeActive) {
 
@@ -5453,6 +5456,7 @@ function speakVoiceReply(text) {
     window.speechSynthesis.speak(
         utterance
     );
+    setTimeout(startInterruptListener, 120);
 }
 
 if (SpeechRecognition) {
@@ -8957,9 +8961,13 @@ fileInput.onchange = () => {
 };
 
 function updateAttachmentPreview() {
+    const composer = document.querySelector(".input-area");
+    if (composer) composer.classList.toggle("has-attachments", Array.isArray(selectedFiles) && selectedFiles.length > 0);
+    window.dispatchEvent(new CustomEvent("oddi:attachments-changed", { detail: { files: (typeof selectedFiles !== "undefined" ? selectedFiles : []).map(f => ({ name: f.name, type: f.type, size: f.size })) } }));
 
     if (!selectedFiles.length) {
 
+        window.dispatchEvent(new CustomEvent("oddi:attachments-cleared"));
         attachmentPreview.style.display =
             "none";
 
@@ -12608,37 +12616,6 @@ loadConversations();
 
         morePanel.appendChild(divider);
         morePanel.appendChild(recentDeleted);
-    }
-
-    /* =========================================================
-       MY MEMORY INSIDE PHONE ⋮ MENU
-       The desktop memory button remains in the sidebar. On phones,
-       expose the same memory control from the three-dots menu only.
-       ========================================================= */
-
-    if (morePanel && !document.getElementById("mobileMyMemoryBtn")) {
-        const memoryAction = document.createElement("button");
-        memoryAction.type = "button";
-        memoryAction.id = "mobileMyMemoryBtn";
-        memoryAction.className = "header-more-action";
-        memoryAction.innerHTML = "🗂️ <span>My Memory</span>";
-
-        memoryAction.addEventListener("click", function (event) {
-            event.preventDefault();
-            event.stopPropagation();
-
-            /* Close the phone ⋮ menu before opening the memory dialog. */
-            const overlay = document.getElementById("headerMoreOverlay");
-            overlay?.classList.remove("show");
-            overlay?.setAttribute("aria-hidden", "true");
-            document.getElementById("headerMoreBtn")?.setAttribute("aria-expanded", "false");
-
-            /* Reuse the existing My Memory button/handler so there is
-               only one memory-opening implementation. */
-            document.getElementById("memoryBtn")?.click();
-        });
-
-        morePanel.appendChild(memoryAction);
     }
 
     /* Close + menu when another major UI element opens. */
@@ -18633,3 +18610,622 @@ body.dark-mode .memory-list .memory-grid-fixed .memory-add-box:hover{
   body.dark-mode .header-more-btn,body.dark-mode #themeBtn{background:rgba(12,12,12,.40) !important;border-color:rgba(255,255,255,.16) !important;color:#fff !important;}
 }
 </style>
+
+
+<style id="oddi-11-final-polish">
+/* =========================================================
+   ODDI 11-CHANGE PASS
+   ========================================================= */
+
+/* #5 Bright-mode React profile: explicit readable contrast. */
+@media (min-width:769px){
+  body:not(.dark-mode) #oddi-react-sidebar-root .oddi-rs-profile-main,
+  body:not(.dark-mode) #oddi-react-sidebar-root .oddi-rs-profile-main strong{
+    color:#111 !important;
+  }
+  body:not(.dark-mode) #oddi-react-sidebar-root .oddi-rs-profile-main small{
+    color:#777 !important;
+  }
+}
+
+/* #6 Phone composer placeholder: visually centered in the one-line state. */
+@media (max-width:768px) and (pointer:coarse){
+  .input-area textarea{
+    min-height:38px !important;
+    height:38px !important;
+    padding:0 5px !important;
+    line-height:38px !important;
+  }
+  body.mobile-composer-typing .input-area textarea,
+  .input-area textarea:focus{
+    height:auto !important;
+    min-height:38px !important;
+    line-height:1.4 !important;
+    padding:8px 5px !important;
+  }
+}
+
+/* #7 Recommendation cards: vertical hover only; never drift left/right. */
+.quick-actions .action-card:hover,
+.quick-actions .action-card:focus-visible{
+  transform:translateY(-2px) !important;
+}
+
+/* #9 Keep the home view fixed while allowing the conversation history itself
+   to scroll independently. */
+body.oddi-home-fixed .chatbox{overflow:hidden !important;touch-action:none !important;}
+body.oddi-chat-active .chatbox{overflow-y:auto !important;touch-action:pan-y !important;}
+#sidebar .chat-history,
+#sidebar .sidebar-main > .chat-history,
+#sidebar .sidebar-history,
+#oddi-react-sidebar-root .oddi-rs-history{
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  min-height:0 !important;
+  scrollbar-width:thin;
+}
+
+/* #11 Uploaded attachments belong above the outgoing text bubble. */
+.user-message{display:flex !important;flex-direction:column !important;align-items:flex-end !important;}
+.user-message .message-file{order:0 !important;align-self:flex-end !important;margin-bottom:6px !important;}
+.user-message .user-bubble-main{order:1 !important;}
+.user-message .user-actions-row{order:2 !important;}
+
+/* Library modal. */
+#oddiLibraryModal{position:fixed;inset:0;z-index:2147482995;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.45);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);}
+#oddiLibraryModal.show{display:flex;}
+.oddi-library-box{width:min(720px,calc(100vw - 28px));max-height:min(760px,calc(100vh - 36px));display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(0,0,0,.10);border-radius:18px;background:#fff;color:#111;box-shadow:0 28px 90px rgba(0,0,0,.25);}
+.oddi-library-head{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid #eee;}
+.oddi-library-head h3{margin:0;font-size:18px;}
+.oddi-library-sub{margin:4px 0 0;color:#777;font-size:11px;}
+.oddi-library-close{margin-left:auto;width:34px;height:34px;border:0;border-radius:50%;background:#f1f1f1;color:#111;cursor:pointer;font-size:17px;}
+.oddi-library-toolbar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #eee;}
+.oddi-library-search{flex:1;min-width:0;height:38px;border:1px solid #ddd;border-radius:10px;padding:0 11px;outline:none;background:#fafafa;color:#111;}
+.oddi-library-refresh{height:38px;padding:0 12px;border:1px solid #ddd;border-radius:10px;background:#fff;color:#111;cursor:pointer;}
+.oddi-library-list{overflow:auto;padding:12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+.oddi-library-item{min-width:0;display:flex;align-items:center;gap:10px;padding:11px;border:1px solid #e2e2e2;border-radius:11px;background:#fafafa;}
+.oddi-library-icon{font-size:20px;flex:0 0 auto;}
+.oddi-library-meta{min-width:0;flex:1;}
+.oddi-library-name{font-size:12px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.oddi-library-detail{margin-top:3px;font-size:10px;color:#777;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.oddi-library-open{flex:0 0 auto;border:1px solid #ddd;border-radius:8px;background:#fff;color:#111;padding:6px 8px;cursor:pointer;font-size:10px;}
+.oddi-library-empty{grid-column:1/-1;padding:42px 18px;text-align:center;color:#888;font-size:13px;}
+body.dark-mode #oddiLibraryModal{background:rgba(0,0,0,.62);}
+body.dark-mode .oddi-library-box{background:#111;color:#eee;border-color:#2a2a2a;box-shadow:0 28px 90px rgba(0,0,0,.55);}
+body.dark-mode .oddi-library-head,.dark-mode .oddi-library-toolbar{border-color:#292929;}
+body.dark-mode .oddi-library-sub,.dark-mode .oddi-library-detail{color:#888;}
+body.dark-mode .oddi-library-close,.dark-mode .oddi-library-search,.dark-mode .oddi-library-refresh,.dark-mode .oddi-library-item,.dark-mode .oddi-library-open{background:#191919;color:#eee;border-color:#333;}
+@media(max-width:600px){.oddi-library-list{grid-template-columns:1fr;}.oddi-library-box{max-height:calc(100dvh - 24px);}.oddi-library-head{padding:15px;}.oddi-library-toolbar{padding:10px;}}
+
+/* Editable shortcut UI. */
+.shortcut-edit-footer{display:flex;justify-content:center;padding-top:14px;margin-top:14px;border-top:1px solid rgba(127,127,127,.22);}
+.shortcut-edit-btn{min-height:38px;padding:0 18px;border:1px solid #d8d8d8;border-radius:10px;background:#f7f7f7;color:#111;font-weight:700;cursor:pointer;}
+.shortcut-edit-btn:hover{background:#ededed;}
+.shortcut-grid.editing .shortcut-row{cursor:pointer;}
+.shortcut-grid.editing .shortcut-row:hover{border-color:#999;}
+.shortcut-capture{display:inline-flex;align-items:center;justify-content:center;min-width:110px;min-height:30px;padding:4px 8px;border:1px dashed #aaa;border-radius:8px;background:#fff;color:#555;font:700 11px ui-monospace,SFMono-Regular,Menlo,monospace;}
+.shortcut-row[data-capturing="true"] .shortcut-capture{border-color:#20c76b;color:#138a48;background:#f3fff8;}
+body.dark-mode .shortcut-edit-footer{border-color:#303030;}
+body.dark-mode .shortcut-edit-btn,.dark-mode .shortcut-capture{background:#222;color:#eee;border-color:#444;}
+body.dark-mode .shortcut-row[data-capturing="true"] .shortcut-capture{background:#10241a;color:#8be0af;border-color:#20c76b;}
+</style>
+
+
+
+<style id="oddi-three-request-fixes">
+/* =========================================================
+   REQUEST 1 — Library files are individually deletable
+   ========================================================= */
+.oddi-library-item{position:relative;}
+.oddi-library-item .oddi-library-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto;}
+.oddi-library-delete{height:30px;min-width:30px;padding:0 8px;border:1px solid #efcaca;border-radius:8px;background:#fff5f5;color:#c62828;cursor:pointer;font-size:12px;font-weight:700;}
+.oddi-library-delete:hover{background:#ffe8e8;border-color:#e8a8a8;}
+.oddi-library-delete:disabled{opacity:.55;cursor:wait;}
+body.dark-mode .oddi-library-delete{background:#251414;color:#ff8b8b;border-color:#4d2929;}
+body.dark-mode .oddi-library-delete:hover{background:#321818;border-color:#704040;}
+
+/* =========================================================
+   REQUEST 2 — Pinned chats are a permanently separate top block
+   ========================================================= */
+#sidebar .chat-history .pinned-history-section,
+#sidebar .sidebar-history .pinned-history-section,
+#oddi-react-sidebar-root .oddi-rs-history .pinned-history-section{
+  position:sticky !important;
+  top:0 !important;
+  z-index:50 !important;
+  background:inherit !important;
+  padding:0 0 7px !important;
+  margin:0 !important;
+  border-bottom:1px solid rgba(127,127,127,.16) !important;
+}
+#sidebar .chat-history .normal-history-section,
+#sidebar .sidebar-history .normal-history-section,
+#oddi-react-sidebar-root .oddi-rs-history .normal-history-section{
+  position:relative !important;
+  z-index:1 !important;
+  padding-top:7px !important;
+}
+
+/* =========================================================
+   REQUEST 3 — Attachment chip lives INSIDE the composer.
+   The composer grows only when files are attached.
+   ========================================================= */
+.input-area{
+  flex-wrap:wrap !important;
+  align-content:center !important;
+  transition:height .16s ease,min-height .16s ease,border-radius .16s ease,padding .16s ease !important;
+}
+.input-area #attachmentPreview{
+  order:0 !important;
+  flex:1 0 100% !important;
+  width:100% !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+  margin:0 !important;
+  padding:5px 8px 0 !important;
+  border:0 !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  gap:0 !important;
+}
+.input-area #attachmentPreview .attachment-header{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:32px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:5px !important;
+}
+.input-area #attachmentPreview .attachment-toggle{
+  flex:0 0 auto !important;
+  width:30px !important;
+  min-width:30px !important;
+  height:30px !important;
+  padding:0 !important;
+  border-radius:8px !important;
+  background:rgba(127,127,127,.10) !important;
+}
+.input-area #attachmentPreview #attachmentArrow{display:none !important;}
+.input-area #attachmentPreview #attachmentName{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  width:auto !important;
+  max-width:100% !important;
+  height:30px !important;
+  display:flex !important;
+  align-items:center !important;
+  padding:0 10px !important;
+  border:1px solid rgba(127,127,127,.20) !important;
+  border-radius:9px !important;
+  background:rgba(127,127,127,.08) !important;
+  color:inherit !important;
+  font-size:12px !important;
+  font-weight:600 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+.input-area #attachmentPreview #removeAttachment{
+  flex:0 0 30px !important;
+  width:30px !important;
+  height:30px !important;
+  padding:0 !important;
+  border:0 !important;
+  border-radius:8px !important;
+  background:rgba(127,127,127,.10) !important;
+  color:inherit !important;
+  cursor:pointer !important;
+}
+.input-area #attachmentPreview .attachment-list{
+  width:100% !important;
+  max-height:130px !important;
+  margin:4px 0 0 !important;
+  padding:3px 0 0 !important;
+}
+.input-area #attachmentPreview .attachment-item{
+  min-height:30px !important;
+  padding:5px 8px !important;
+  border-radius:8px !important;
+}
+.input-area > #attach-btn,
+.input-area > #userInput,
+.input-area > #dictation-btn,
+.input-area > .action-button-slot{order:1 !important;}
+.input-area.has-attachments{
+  height:auto !important;
+  min-height:94px !important;
+  max-height:none !important;
+  align-content:center !important;
+}
+.input-area.has-attachments > #userInput{
+  min-height:42px !important;
+  max-height:140px !important;
+}
+body.dark-mode .input-area #attachmentPreview #attachmentName{background:rgba(255,255,255,.06) !important;border-color:#2d2d2d !important;}
+body.dark-mode .input-area #attachmentPreview .attachment-toggle,
+body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(255,255,255,.07) !important;}
+
+@media (max-width:768px) and (pointer:coarse){
+  .input-area #attachmentPreview{padding:4px 6px 0 !important;}
+  .input-area.has-attachments{min-height:102px !important;border-radius:25px !important;}
+  .input-area.has-attachments #attachmentName{height:30px !important;font-size:12px !important;}
+  .input-area.has-attachments > #userInput{min-height:42px !important;max-height:110px !important;}
+}
+</style>
+
+
+<script id="oddi-attachment-inside-composer">
+(function(){
+  "use strict";
+  const preview=document.getElementById("attachmentPreview");
+  const composer=document.querySelector(".input-area");
+  if(!preview || !composer) return;
+  if(preview.parentElement !== composer){
+    composer.insertBefore(preview, composer.firstElementChild);
+  }
+  function sync(){
+    const has=typeof selectedFiles!=="undefined" && Array.isArray(selectedFiles) && selectedFiles.length>0;
+    composer.classList.toggle("has-attachments",has);
+  }
+  document.addEventListener("change",e=>{
+    if(e.target?.id==="fileInput") setTimeout(sync,0);
+  },true);
+  document.addEventListener("click",e=>{
+    if(e.target?.closest?.(".attachment-file-remove,#removeAttachment")) setTimeout(sync,0);
+  },true);
+  window.addEventListener("oddi:attachments-changed",sync);
+  window.addEventListener("oddi:attachments-cleared",sync);
+  sync();
+})();
+</script>
+
+<script id="oddi-11-final-js">
+(function(){
+  "use strict";
+
+  /* ---------------------------------------------------------
+     #1 Library — user-scoped files with permanent delete action
+     --------------------------------------------------------- */
+  const libraryModal = document.createElement("div");
+  libraryModal.id = "oddiLibraryModal";
+  libraryModal.setAttribute("aria-hidden","true");
+  libraryModal.innerHTML = `
+    <section class="oddi-library-box" role="dialog" aria-modal="true" aria-labelledby="oddiLibraryTitle">
+      <header class="oddi-library-head">
+        <div><h3 id="oddiLibraryTitle">📚 Library</h3><p class="oddi-library-sub">Your uploaded files</p></div>
+        <button type="button" class="oddi-library-close" id="oddiLibraryClose" aria-label="Close Library">✕</button>
+      </header>
+      <div class="oddi-library-toolbar">
+        <input id="oddiLibrarySearch" class="oddi-library-search" type="search" placeholder="Search files..." autocomplete="off">
+        <button type="button" class="oddi-library-refresh" id="oddiLibraryRefresh">Refresh</button>
+      </div>
+      <div id="oddiLibraryList" class="oddi-library-list"><div class="oddi-library-empty">Loading Library…</div></div>
+    </section>`;
+  document.body.appendChild(libraryModal);
+
+  const libraryList=document.getElementById("oddiLibraryList");
+  const librarySearch=document.getElementById("oddiLibrarySearch");
+
+  function fileIcon(name,type){
+    if(String(type||"").startsWith("image/")) return "🖼️";
+    const ext=String(name||"").split(".").pop().toLowerCase();
+    if(ext==="pdf") return "📕";
+    if(["doc","docx"].includes(ext)) return "📘";
+    if(["xls","xlsx","csv"].includes(ext)) return "📊";
+    if(["ppt","pptx"].includes(ext)) return "📙";
+    if(["zip","rar","7z"].includes(ext)) return "🗜️";
+    return "📎";
+  }
+  function formatBytes(n){
+    n=Number(n||0); if(!n) return "";
+    const u=["B","KB","MB","GB"]; let i=0;
+    while(n>=1024&&i<u.length-1){n/=1024;i++;}
+    return `${n>=10||i===0?n.toFixed(0):n.toFixed(1)} ${u[i]}`;
+  }
+  async function collectLibraryFiles(){
+    try{
+      const r=await fetch("/api/files",{credentials:"same-origin",headers:{Accept:"application/json"},cache:"no-store"});
+      if(!r.ok) throw new Error(`Library request failed (${r.status})`);
+      const data=await r.json();
+      const rows=Array.isArray(data)?data:(Array.isArray(data?.files)?data.files:[]);
+      return rows.map(f=>({...f,source:"server"}));
+    }catch(e){
+      console.warn("ODDI Library metadata fetch failed:",e);
+      /* Only use legacy local refs when the server itself is unavailable. */
+      try{
+        const conv=Array.isArray(window.oddiConversations)?window.oddiConversations:[];
+        const fallback=[];
+        conv.forEach(c=>(Array.isArray(c?.messages)?c.messages:[]).forEach(m=>
+          (Array.isArray(m?.fileRefs)?m.fileRefs:[]).forEach(ref=>{
+            const id=String(ref?.id||"");
+            if(id) fallback.push({id,name:ref?.name||"Uploaded file",filename:ref?.name||"Uploaded file",source:"local"});
+          })
+        ));
+        return fallback;
+      }catch(_){ return []; }
+    }
+  }
+  async function deleteLibraryFile(file){
+    if(!file?.id || file.source!=="server") return false;
+    const name=String(file.filename||file.name||"this file");
+    if(!window.confirm(`Delete “${name}” from your Library?\n\nThis removes its Library record from your account.`)) return false;
+    try{
+      const r=await fetch(`/api/files/${encodeURIComponent(file.id)}`,{
+        method:"DELETE",credentials:"same-origin",headers:{Accept:"application/json"}
+      });
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok) throw new Error(data?.error||`Delete failed (${r.status})`);
+      libraryCache=libraryCache.filter(f=>String(f.id)!==String(file.id));
+      renderLibrary(libraryCache);
+      window.dispatchEvent(new CustomEvent("oddi:library-file-deleted",{detail:{id:file.id}}));
+      return true;
+    }catch(e){
+      console.error("ODDI Library delete failed:",e);
+      alert(`Could not delete the file. ${e.message||"Please try again."}`);
+      return false;
+    }
+  }
+  function renderLibrary(files){
+    const q=(librarySearch?.value||"").trim().toLowerCase();
+    const rows=files.filter(f=>String(f.filename||f.name||"").toLowerCase().includes(q));
+    if(!rows.length){libraryList.innerHTML='<div class="oddi-library-empty">No files found.</div>';return;}
+    libraryList.innerHTML=rows.map((f,i)=>{
+      const name=String(f.filename||f.name||"Unnamed file").replace(/[<>]/g,"");
+      const detail=[formatBytes(f.size_bytes||f.size),f.mime_type||f.type||"",f.status||""].filter(Boolean).join(" · ") || "Uploaded file";
+      return `<div class="oddi-library-item" data-lib-index="${i}">
+        <span class="oddi-library-icon">${fileIcon(name,f.mime_type||f.type)}</span>
+        <div class="oddi-library-meta"><div class="oddi-library-name" title="${name}">${name}</div><div class="oddi-library-detail">${detail}</div></div>
+        <div class="oddi-library-actions">
+          <button type="button" class="oddi-library-open">Open</button>
+          ${f.source==="server" ? '<button type="button" class="oddi-library-delete" title="Delete file">Delete</button>' : ''}
+        </div>
+      </div>`;
+    }).join("");
+    libraryList.querySelectorAll(".oddi-library-open").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
+      const f=rows[idx];
+      if(f?.source==="local" && typeof window.openOddiUploadedFile==="function"){
+        try{ await window.openOddiUploadedFile(f.id); return; }catch(e){}
+      }
+      if(f?.external_file_id) window.open(`/api/files/${encodeURIComponent(f.external_file_id)}`,"_blank","noopener");
+      else alert("This file has no downloadable storage object yet.");
+    }));
+    libraryList.querySelectorAll(".oddi-library-delete").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
+      btn.disabled=true;
+      await deleteLibraryFile(rows[idx]);
+      btn.disabled=false;
+    }));
+  }
+  let libraryCache=[];
+  async function openLibrary(){
+    libraryModal.classList.add("show"); libraryModal.setAttribute("aria-hidden","false");
+    libraryCache=await collectLibraryFiles(); renderLibrary(libraryCache); librarySearch?.focus();
+  }
+  function closeLibrary(){
+    const a=document.activeElement; if(a&&libraryModal.contains(a)) a.blur();
+    libraryModal.classList.remove("show"); libraryModal.setAttribute("aria-hidden","true");
+  }
+  document.getElementById("oddiLibraryClose")?.addEventListener("click",closeLibrary);
+  libraryModal.addEventListener("click",e=>{if(e.target===libraryModal)closeLibrary();});
+  librarySearch?.addEventListener("input",()=>renderLibrary(libraryCache));
+  document.getElementById("oddiLibraryRefresh")?.addEventListener("click",async()=>{libraryCache=await collectLibraryFiles();renderLibrary(libraryCache);});
+  window.addEventListener("oddi:open-library",openLibrary);
+
+  /* ---------------------------------------------------------
+     #2 Attachment -> React sidebar bridge
+     --------------------------------------------------------- */
+  function publishAttachments(){
+    const files=typeof selectedFiles!=="undefined"?selectedFiles:[];
+    window.dispatchEvent(new CustomEvent("oddi:attachments-changed",{detail:{files:files.map(f=>({name:f.name,type:f.type,size:f.size}))}}));
+  }
+  window.addEventListener("oddi:publish-attachments",publishAttachments);
+  const originalUpdateAttachmentPreview=window.updateAttachmentPreview;
+  if(typeof originalUpdateAttachmentPreview==="function"){
+    window.updateAttachmentPreview=function(){const r=originalUpdateAttachmentPreview.apply(this,arguments);publishAttachments();return r;};
+  }
+  document.addEventListener("change",e=>{if(e.target?.id==="fileInput")setTimeout(publishAttachments,0);},true);
+  document.addEventListener("click",e=>{if(e.target?.closest?.(".attachment-file-remove"))setTimeout(publishAttachments,0);},true);
+
+  /* ---------------------------------------------------------
+     #3 Voice interruption
+     --------------------------------------------------------- */
+  window.__oddiInterruptSpeech=function(){
+    if("speechSynthesis" in window && window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+    if(typeof voiceResponseSpeaking!=="undefined") voiceResponseSpeaking=false;
+    if(typeof updateVoiceStatus==="function" && typeof voiceModeActive!=="undefined" && voiceModeActive) updateVoiceStatus("Listening...","I'm listening...");
+  };
+  if(typeof recognition!=="undefined" && recognition){
+    recognition.onstart=(function(old){return function(){
+      if(typeof voiceResponseSpeaking!=="undefined" && voiceResponseSpeaking) window.__oddiInterruptSpeech();
+      if(typeof old==="function") old.apply(this,arguments);
+    };})(recognition.onstart);
+  }
+})();
+</script>
+
+
+<style id="oddi-composer-final-fix">
+/* FINAL COMPOSER: attachment + message content live inside one expanding surface. */
+.input-area{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:flex-end !important;
+  align-content:flex-end !important;
+  height:auto !important;
+  min-height:62px !important;
+  max-height:none !important;
+  overflow:visible !important;
+  padding:6px !important;
+  box-sizing:border-box !important;
+}
+.input-area > #attachmentPreview{
+  position:static !important;
+  inset:auto !important;
+  float:none !important;
+  transform:none !important;
+  order:0 !important;
+  flex:0 0 100% !important;
+  width:100% !important;
+  max-width:none !important;
+  min-height:0 !important;
+  height:auto !important;
+  margin:0 !important;
+  padding:3px 5px 5px !important;
+  display:none;
+  box-sizing:border-box !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+.input-area.has-attachments > #attachmentPreview{display:block !important;}
+.input-area > #attachmentPreview .attachment-header{
+  min-height:32px !important;
+  height:32px !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:6px !important;
+}
+.input-area > #attachmentPreview .attachment-toggle{
+  flex:0 0 30px !important;
+  width:30px !important;
+  min-width:30px !important;
+  height:30px !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:9px !important;
+  overflow:hidden !important;
+}
+.input-area > #attachmentPreview .attachment-toggle::after{
+  content:'📎' !important;
+  font-size:13px !important;
+}
+.input-area > #attachmentPreview .attachment-toggle > *{display:none !important;}
+.input-area > #attachmentPreview #attachmentName{
+  flex:1 1 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:30px !important;
+  min-height:30px !important;
+  padding:0 10px !important;
+  display:flex !important;
+  align-items:center !important;
+  box-sizing:border-box !important;
+  border-radius:9px !important;
+  overflow:hidden !important;
+  white-space:nowrap !important;
+  text-overflow:ellipsis !important;
+}
+.input-area > #attachmentPreview #removeAttachment{
+  flex:0 0 30px !important;
+  width:30px !important;
+  min-width:30px !important;
+  height:30px !important;
+  padding:0 !important;
+  border-radius:9px !important;
+}
+.input-area > #attachmentPreview .attachment-list{
+  width:100% !important;
+  max-height:120px !important;
+  overflow-y:auto !important;
+  margin:4px 0 0 !important;
+  padding:0 !important;
+}
+.input-area > #attach-btn,
+.input-area > #userInput,
+.input-area > #dictation-btn,
+.input-area > .action-button-slot{
+  order:1 !important;
+  align-self:flex-end !important;
+}
+.input-area > #userInput{
+  flex:1 1 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  min-height:48px !important;
+  height:48px !important;
+  max-height:180px !important;
+  margin:0 !important;
+  padding:13px 10px !important;
+  box-sizing:border-box !important;
+  white-space:pre-wrap !important;
+  overflow-x:hidden !important;
+  overflow-y:hidden !important;
+  resize:none !important;
+  text-overflow:clip !important;
+  line-height:1.45 !important;
+}
+.input-area > #userInput.is-overflowing{overflow-y:auto !important;}
+.input-area.has-attachments{min-height:102px !important;}
+.input-area.has-attachments > #userInput{min-height:48px !important;}
+body.dark-mode .input-area > #attachmentPreview #attachmentName{background:rgba(255,255,255,.055) !important;border-color:#2d2d2d !important;color:#eee !important;}
+body.dark-mode .input-area > #attachmentPreview #removeAttachment,
+body.dark-mode .input-area > #attachmentPreview .attachment-toggle{background:rgba(255,255,255,.07) !important;color:#eee !important;}
+@media (max-width:768px){
+  .input-area{
+    padding:5px !important;
+    min-height:58px !important;
+    border-radius:20px !important;
+  }
+  .input-area > #userInput{
+    min-height:44px !important;
+    height:44px !important;
+    max-height:120px !important;
+    padding:11px 8px !important;
+    font-size:14px !important;
+    line-height:1.45 !important;
+  }
+  .input-area.has-attachments{min-height:96px !important;border-radius:22px !important;}
+  .input-area > #attachmentPreview{padding:3px 4px 4px !important;}
+  .input-area > #attachmentPreview #attachmentName{font-size:11px !important;}
+}
+</style>
+
+
+<script id="oddi-composer-final-js">
+(function(){
+  "use strict";
+  function initComposer(){
+    const composer=document.querySelector('.input-area');
+    const input=document.getElementById('userInput');
+    const preview=document.getElementById('attachmentPreview');
+    if(!composer||!input) return false;
+
+    if(preview && preview.parentElement!==composer){
+      composer.insertBefore(preview, composer.firstElementChild);
+    }
+
+    function hasFiles(){
+      try{return Array.isArray(window.selectedFiles) && window.selectedFiles.length>0;}catch(_){return false;}
+    }
+    function syncFiles(){
+      const files=typeof selectedFiles!=='undefined' && Array.isArray(selectedFiles) ? selectedFiles : [];
+      composer.classList.toggle('has-attachments', files.length>0);
+      if(preview) preview.style.display=files.length?'block':'none';
+    }
+    function resize(){
+      input.style.height='auto';
+      const max=window.matchMedia('(max-width: 768px)').matches?120:180;
+      const next=Math.max(44,Math.min(input.scrollHeight,max));
+      input.style.height=next+'px';
+      input.classList.toggle('is-overflowing', input.scrollHeight>max+1);
+      composer.classList.toggle('has-message-overflow', input.scrollHeight>max+1);
+    }
+    input.addEventListener('input',resize,{passive:true});
+    input.addEventListener('focus',resize,{passive:true});
+    window.addEventListener('resize',resize,{passive:true});
+    window.addEventListener('oddi:attachments-changed',syncFiles);
+    window.addEventListener('oddi:attachments-cleared',syncFiles);
+    document.addEventListener('change',e=>{if(e.target&&e.target.id==='fileInput')setTimeout(syncFiles,0);},true);
+    resize(); syncFiles();
+    return true;
+  }
+  if(!initComposer()){
+    document.addEventListener('DOMContentLoaded',initComposer,{once:true});
+    setTimeout(initComposer,250);
+  }
+})();
+</script>

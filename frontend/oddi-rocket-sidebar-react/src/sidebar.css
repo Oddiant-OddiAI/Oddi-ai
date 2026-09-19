@@ -528,3 +528,127 @@ body:has(#memoryModal.show) #oddi-react-sidebar-root .oddi-rs-rail {
     display: flex !important;
   }
 }
+
+/* ODDI 11-change pass: attachment tray + light-mode profile contrast. */
+.oddi-rs-upload-strip{
+  flex:0 0 auto;
+  margin:4px 0 7px;
+  padding:8px;
+  border:1px solid var(--rs-border);
+  border-radius:10px;
+  background:var(--rs-surface);
+  box-shadow:0 5px 16px rgba(0,0,0,.08);
+}
+.oddi-rs-upload-title{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  color:var(--rs-muted);
+  font-size:9px;
+  font-weight:750;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  margin-bottom:6px;
+}
+.oddi-rs-upload-title b{
+  margin-left:auto;
+  min-width:17px;
+  height:17px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  background:var(--rs-active);
+  color:var(--rs-text);
+  font-size:9px;
+}
+.oddi-rs-upload-list{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  max-height:112px;
+  overflow:auto;
+}
+.oddi-rs-upload-item{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  min-height:28px;
+  padding:4px 5px;
+  border-radius:7px;
+  background:rgba(255,255,255,.35);
+}
+body.dark-mode .oddi-rs-upload-item{background:rgba(255,255,255,.035);}
+.oddi-rs-upload-icon{flex:0 0 auto;font-size:12px;}
+.oddi-rs-upload-name{
+  min-width:0;
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:var(--rs-text);
+  font-size:10px;
+}
+.oddi-rs-sidebar:not(.open) .oddi-rs-upload-strip{display:none;}
+
+
+/* Separate pinned chat section. */
+.oddi-rs-pinned-group{padding:4px 8px 8px;margin-bottom:4px;border-bottom:1px solid rgba(127,127,127,.18);}
+.oddi-rs-pinned-group .oddi-rs-label{display:flex;align-items:center;gap:5px;}
+.oddi-rs-chat.pinned{background:rgba(127,127,127,.09);}
+body.dark-mode .oddi-rs-pinned-group{border-bottom-color:rgba(255,255,255,.12);}
+body.dark-mode .oddi-rs-chat.pinned{background:rgba(255,255,255,.06);}
+
+/* ODDI sidebar hardening: keep the React mount alive and visible after legacy
+   Memory/workspace transitions. The actual sidebar/rail still own visibility. */
+#oddi-react-sidebar-root {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  visibility: visible;
+  opacity: 1;
+  pointer-events: none;
+  z-index: 2147482998;
+}
+
+#oddi-react-sidebar-root .oddi-rs-sidebar {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+#oddi-react-sidebar-root .oddi-rs-sidebar.closed {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+#oddi-react-sidebar-root .oddi-rs-rail {
+  pointer-events: auto !important;
+}
+
+@media (max-width: 768px) {
+  #oddi-react-sidebar-root .oddi-rs-sidebar.open {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-sidebar.closed {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-rail {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+  body:has(#memoryModal.show) #oddi-react-sidebar-root .oddi-rs-rail {
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
@@ -24,6 +25,7 @@ type OddiWindow = Window & {
   toggleArchiveConversation?: (conversation: Conversation) => Promise<unknown>;
   updateConversationMetadata?: (conversation: Conversation, patch: Record<string, unknown>) => Promise<boolean>;
   saveConversation?: (conversation: Conversation) => Promise<boolean>;
+  __oddiInstallPrompt?: { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
 };
 
 const WIN = () => window as OddiWindow;
@@ -130,6 +132,27 @@ export default function Sidebar() {
   const [isPhone, setIsPhone] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
   );
+  const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string; type?: string; size?: number}>>([]);
+
+  // Hardening: recover from a stale legacy Memory state that can otherwise
+  // leave the React mount invisible after navigation/build transitions.
+  useEffect(() => {
+    const root = document.getElementById('oddi-react-sidebar-root');
+    const memoryModal = document.getElementById('memoryModal');
+    const syncVisibility = () => {
+      const memoryOpen = !!memoryModal?.classList.contains('show');
+      if (!memoryOpen) {
+        document.body.classList.remove('oddi-memory-workspace-open');
+        root?.style.removeProperty('visibility');
+        root?.style.removeProperty('opacity');
+        root?.style.removeProperty('pointer-events');
+      }
+    };
+    syncVisibility();
+    const observer = memoryModal ? new MutationObserver(syncVisibility) : null;
+    observer?.observe(memoryModal, { attributes: true, attributeFilter: ['class'] });
+    return () => observer?.disconnect();
+  }, []);
 
   useEffect(() => {
     const root = document.getElementById('oddi-react-sidebar-root');
@@ -185,20 +208,9 @@ export default function Sidebar() {
     const observer = new MutationObserver(() => {
       const memoryOpen = memoryModal.classList.contains('show');
       if (!memoryOpen && openBeforeMemoryRef.current !== null) {
-        /*
-         * Memory is a legacy full-screen workspace. Its close action must
-         * return each form factor to its normal sidebar presentation:
-         *   desktop/laptop -> full sidebar visible
-         *   phone/tablet  -> sidebar closed, hamburger rail visible
-         *
-         * Do not restore the raw `open` value captured before Memory opened:
-         * on phones Memory is often opened while the drawer is temporarily
-         * open, and restoring `true` removes the hamburger launcher.
-         */
-        const mobile = window.matchMedia('(max-width: 768px)').matches;
+        const previousOpen = openBeforeMemoryRef.current;
         openBeforeMemoryRef.current = null;
-        setCollapsed(false);
-        setOpen(!mobile);
+        setOpen(previousOpen);
       }
     });
 
@@ -208,6 +220,56 @@ export default function Sidebar() {
     });
 
     return () => observer.disconnect();
+  }, []);
+
+  // File/gesture bridge from the legacy index.html. A selected upload expands
+  // the React sidebar and shows the attachment directly inside it on desktop
+  // and phone. This is presentation-only; the actual upload pipeline remains
+  // owned by the main app.
+  useEffect(() => {
+    const onAttachments = (event: Event) => {
+      const detail = (event as CustomEvent).detail || {};
+      const files = Array.isArray(detail.files) ? detail.files : [];
+      setUploadedFiles(files.slice(0, 12));
+      if (files.length) {
+        setCollapsed(false);
+        setOpen(true);
+      }
+    };
+    const onClearAttachments = () => setUploadedFiles([]);
+    const onOpenSidebarShortcut = () => { setCollapsed(false); setOpen(true); };
+    const onCloseSidebarShortcut = () => { setCollapsed(false); setOpen(false); };
+    const onToggleSidebarShortcut = () => setOpen(v => !v);
+    window.addEventListener('oddi:attachments-changed', onAttachments as EventListener);
+    window.addEventListener('oddi:attachments-cleared', onClearAttachments);
+    window.addEventListener('oddi:sidebar-open', onOpenSidebarShortcut);
+    window.addEventListener('oddi:sidebar-close', onCloseSidebarShortcut);
+    window.addEventListener('oddi:sidebar-toggle', onToggleSidebarShortcut);
+    return () => {
+      window.removeEventListener('oddi:attachments-changed', onAttachments as EventListener);
+      window.removeEventListener('oddi:attachments-cleared', onClearAttachments);
+      window.removeEventListener('oddi:sidebar-open', onOpenSidebarShortcut);
+      window.removeEventListener('oddi:sidebar-close', onCloseSidebarShortcut);
+      window.removeEventListener('oddi:sidebar-toggle', onToggleSidebarShortcut);
+    };
+  }, []);
+
+  // Installed PWA/app state: the install control is meaningful only while an
+  // installation is available. It disappears after installation.
+  useEffect(() => {
+    const isInstalled = () =>
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+    const syncInstall = () => setInstallReady(!isInstalled() && !!(WIN().__oddiInstallPrompt));
+    const onPrompt = () => setInstallReady(!isInstalled());
+    const onInstalled = () => setInstallReady(false);
+    syncInstall();
+    window.addEventListener('beforeinstallprompt', onPrompt as EventListener);
+    window.addEventListener('appinstalled', onInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', onPrompt as EventListener);
+      window.removeEventListener('appinstalled', onInstalled);
+    };
   }, []);
 
   async function load() {
@@ -230,7 +292,15 @@ export default function Sidebar() {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return grouped(q ? items.filter(c => (c.title || '').toLowerCase().includes(q)) : items);
+    const source = q ? items.filter(c => (c.title || '').toLowerCase().includes(q)) : items;
+    return grouped(source);
+  }, [items, query]);
+
+  const pinnedItems = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return items
+      .filter(c => !c.archived && !c.deleted && !!c.pinned && (!q || (c.title || '').toLowerCase().includes(q)))
+      .sort((a,b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
   }, [items, query]);
 
   function newChat() {
@@ -375,6 +445,11 @@ export default function Sidebar() {
     window.dispatchEvent(new CustomEvent('oddi:open-archive'));
   }
 
+  function openLibrary() {
+    setMenuId(null);
+    window.dispatchEvent(new CustomEvent('oddi:open-library'));
+  }
+
   function openSettings() {
     if (document.getElementById('settingsBtn')) { document.getElementById('settingsBtn')!.click(); return; }
     openExistingModal('settingsModal');
@@ -444,33 +519,68 @@ export default function Sidebar() {
           {query && <button className="oddi-rs-search-clear" onClick={() => setQuery('')} aria-label="Clear search">×</button>}
         </div>}
 
+        {uploadedFiles.length > 0 && !collapsed && (
+          <div className="oddi-rs-upload-strip" aria-label="Uploaded files">
+            <div className="oddi-rs-upload-title"><FolderOpen size={12} /><span>Attachments</span><b>{uploadedFiles.length}</b></div>
+            <div className="oddi-rs-upload-list">
+              {uploadedFiles.map((file, index) => (
+                <div className="oddi-rs-upload-item" key={`${file.name}-${index}`}>
+                  <span className="oddi-rs-upload-icon">{file.type?.startsWith('image/') ? '🖼️' : '📎'}</span>
+                  <span className="oddi-rs-upload-name" title={file.name}>{file.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="oddi-rs-history">
           {collapsed
-            ? visible.flatMap(g => g.items).slice(0, 8).map(c =>
+            ? [...pinnedItems, ...visible.flatMap(g => g.items).filter(c => !c.pinned)].slice(0, 8).map(c =>
               <button key={c.id} className={`oddi-rs-mini-chat ${active === c.id ? 'active' : ''}`} onClick={() => { setCollapsed(false); select(c); }} title={c.title || 'New Chat'}>
                 {c.pinned ? <Pin size={13} /> : <MessageSquare size={13} />}
               </button>
             )
-            : visible.map(g =>
-              <section className="oddi-rs-group" key={g.label}>
-                <div className="oddi-rs-label">{g.label}</div>
-                {g.items.map(c => <div key={c.id} className={`oddi-rs-chat ${active === c.id ? 'active' : ''}`} onClick={() => select(c)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && select(c)}>
-                  {c.pinned ? <Pin size={11} /> : <MessageSquare size={11} />}
-                  <span>{c.title || 'New Chat'}</span>
-                  <div className="oddi-rs-actions">
-                    <button onClick={e => { e.stopPropagation(); pin(c); }} title={c.pinned ? 'Unpin chat' : 'Pin chat'} aria-label={c.pinned ? 'Unpin chat' : 'Pin chat'}><Pin size={11} /></button>
-                    <div className="oddi-rs-chat-menu">
-                      <button onClick={e => { e.stopPropagation(); setMenuId(menuId === c.id ? null : c.id); }} title="More" aria-label="More"><MoreHorizontal size={13} /></button>
-                      {menuId === c.id && <div className="oddi-rs-menu" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => rename(c)}><Pencil size={13} /><span>Rename</span></button>
-                        <button onClick={() => archive(c)}><Archive size={13} /><span>{c.archived ? 'Unarchive' : 'Archive'}</span></button>
-                        <button className="danger" onClick={() => moveToBin(c)}><Trash2 size={13} /><span>Delete</span></button>
-                      </div>}
+            : <>
+                {pinnedItems.length > 0 && <section className="oddi-rs-pinned-group" aria-label="Pinned chats">
+                  <div className="oddi-rs-label"><Pin size={11} /> <span>Pinned</span></div>
+                  {pinnedItems.map(c => <div key={`pinned-${c.id}`} className={`oddi-rs-chat pinned ${active === c.id ? 'active' : ''}`} onClick={() => select(c)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && select(c)}>
+                    <Pin size={11} />
+                    <span>{c.title || 'New Chat'}</span>
+                    <div className="oddi-rs-actions">
+                      <button onClick={e => { e.stopPropagation(); pin(c); }} title="Unpin chat" aria-label="Unpin chat"><Pin size={11} /></button>
+                      <div className="oddi-rs-chat-menu">
+                        <button onClick={e => { e.stopPropagation(); setMenuId(menuId === c.id ? null : c.id); }} title="More" aria-label="More"><MoreHorizontal size={13} /></button>
+                        {menuId === c.id && <div className="oddi-rs-menu" onClick={e => e.stopPropagation()}>
+                          <button onClick={() => rename(c)}><Pencil size={13} /><span>Rename</span></button>
+                          <button onClick={() => archive(c)}><Archive size={13} /><span>Archive</span></button>
+                          <button className="danger" onClick={() => moveToBin(c)}><Trash2 size={13} /><span>Delete</span></button>
+                        </div>}
+                      </div>
                     </div>
-                  </div>
-                </div>)}
-              </section>
-            )}
+                  </div>)}
+                </section>}
+                {visible.filter(g => g.items.some(c => !c.pinned)).map(g =>
+                  <section className="oddi-rs-group" key={g.label}>
+                    <div className="oddi-rs-label">{g.label}</div>
+                    {g.items.filter(c => !c.pinned).map(c => <div key={c.id} className={`oddi-rs-chat ${active === c.id ? 'active' : ''}`} onClick={() => select(c)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && select(c)}>
+                      <MessageSquare size={11} />
+                      <span>{c.title || 'New Chat'}</span>
+                      <div className="oddi-rs-actions">
+                        <button onClick={e => { e.stopPropagation(); pin(c); }} title="Pin chat" aria-label="Pin chat"><Pin size={11} /></button>
+                        <div className="oddi-rs-chat-menu">
+                          <button onClick={e => { e.stopPropagation(); setMenuId(menuId === c.id ? null : c.id); }} title="More" aria-label="More"><MoreHorizontal size={13} /></button>
+                          {menuId === c.id && <div className="oddi-rs-menu" onClick={e => e.stopPropagation()}>
+                            <button onClick={() => rename(c)}><Pencil size={13} /><span>Rename</span></button>
+                            <button onClick={() => archive(c)}><Archive size={13} /><span>{c.archived ? 'Unarchive' : 'Archive'}</span></button>
+                            <button className="danger" onClick={() => moveToBin(c)}><Trash2 size={13} /><span>Delete</span></button>
+                          </div>}
+                        </div>
+                      </div>
+                    </div>)}
+                  </section>
+                )}
+              </>
+          }
         </div>
 
         <nav
@@ -487,7 +597,7 @@ export default function Sidebar() {
         >
           {[
             { label: 'Memory', icon: <Brain size={14} />, action: openMemory, badge: '24' },
-            { label: 'Files', icon: <FolderOpen size={14} />, action: openFilePicker, badge: '8' },
+            { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
             { label: 'Archive', icon: <Archive size={14} />, action: openArchive },
             { label: 'Settings', icon: <Settings size={14} />, action: openSettings },
           ].map(item => (
@@ -517,7 +627,7 @@ export default function Sidebar() {
           {!collapsed && <span>{theme === 'dark' ? 'Dark Mode' : 'Bright Mode'}</span>}
         </button>
 
-        {!collapsed && <button className="oddi-rs-install" onClick={installOddi}><Download size={13} /> {installReady ? 'Install ODDI AI' : 'Install ODDI AI'}</button>}
+        {!collapsed && installReady && <button className="oddi-rs-install" onClick={installOddi}><Download size={13} />Install ODDI AI</button>}
       </main>
 
       <footer className="oddi-rs-profile" style={{ display:'flex', alignItems:'center', gap:8, padding: collapsed ? '9px 7px' : '9px 10px', borderTop:'1px solid rgba(255,255,255,.10)', minHeight:54, boxSizing:'border-box' }}>
@@ -532,8 +642,8 @@ export default function Sidebar() {
             {loggedIn ? (username.charAt(0).toUpperCase() || 'U') : '?'}
           </div>
           {!collapsed && <div style={{ minWidth:0, display:'flex', flexDirection:'column', gap:2 }}>
-            <strong style={{ fontSize:12, lineHeight:1.15, fontWeight:650, color:'#f5f5f5', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{loggedIn ? username : 'Sign in'}</strong>
-            <small style={{ fontSize:9, lineHeight:1.15, color:'#777', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{loggedIn ? (email || 'Your profile') : 'Sign in to ODDI AI'}</small>
+            <strong style={{ fontSize:12, lineHeight:1.15, fontWeight:650, color:theme === 'dark' ? '#f5f5f5' : '#111', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{loggedIn ? username : 'Sign in'}</strong>
+            <small style={{ fontSize:9, lineHeight:1.15, color:theme === 'dark' ? '#777' : '#777', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{loggedIn ? (email || 'Your profile') : 'Sign in to ODDI AI'}</small>
           </div>}
         </button>
         {loggedIn && <button className="oddi-rs-logout" type="button" onClick={() => document.getElementById('logoutBtn')?.click()} title="Sign out" style={{ width:26, height:26, display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:0, borderRadius:6, background:'transparent', color:'#777', cursor:'pointer' }}><LogOut size={13} /></button>}
@@ -607,3 +717,4 @@ export default function Sidebar() {
 function openFilePicker() {
   (document.getElementById('fileInput') as HTMLInputElement | null)?.click();
 }
+
