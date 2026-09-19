@@ -3855,8 +3855,15 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
             
             <div class="shortcut-row"><span>Focus chat search</span><span class="shortcut-key">Ctrl / ⌘ + K</span></div>
             <div class="shortcut-row"><span>Focus chat search</span><span class="shortcut-key">/</span></div>
-            <div class="shortcut-row"><span>Move through chats</span><span class="shortcut-key">↑ / ↓</span></div>
-            <div class="shortcut-row"><span>Open selected chat</span><span class="shortcut-key">Enter</span></div>
+            <div class="shortcut-row"><span>New chat</span><span class="shortcut-key">Ctrl / ⌘ + N</span></div>
+            <div class="shortcut-row"><span>Move through chats</span><span class="shortcut-key">Alt + ↑ / ↓</span></div>
+            <div class="shortcut-row"><span>Open selected chat</span><span class="shortcut-key">Alt + Enter</span></div>
+            <div class="shortcut-row"><span>My Memory</span><span class="shortcut-key">Ctrl / ⌘ + Shift + M</span></div>
+            <div class="shortcut-row"><span>Recently Deleted</span><span class="shortcut-key">Ctrl / ⌘ + Shift + D</span></div>
+            <div class="shortcut-row"><span>Keyboard Shortcuts</span><span class="shortcut-key">Ctrl / ⌘ + /</span></div>
+            <div class="shortcut-row"><span>Toggle theme</span><span class="shortcut-key">Ctrl / ⌘ + Shift + L</span></div>
+            <div class="shortcut-row"><span>Export &amp; Share current chat</span><span class="shortcut-key">Ctrl / ⌘ + Shift + E</span></div>
+            <div class="shortcut-row"><span>Open More menu</span><span class="shortcut-key">Ctrl / ⌘ + Shift + O</span></div>
             <div class="shortcut-row"><span>Close search / dialogs</span><span class="shortcut-key">Esc</span></div>
         </div>
     </div>
@@ -6824,6 +6831,7 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
     display:none !important;
   }
 </style>
+
 
 
 </body>
@@ -10295,31 +10303,141 @@ notificationBtn.onclick = () => {
             ? "ON"
             : "OFF";
 };
-/* KEYBOARD SHORTCUTS*/
+/* KEYBOARD SHORTCUTS — desktop friendly + input safe */
 document.addEventListener("keydown", event => {
+    const target = event.target;
+    const editable = target && (
+        target.matches?.("input, textarea, select, [contenteditable=\"true\"]") ||
+        target.isContentEditable
+    );
+    const mod = event.ctrlKey || event.metaKey;
+
     if (event.key === "Escape") {
         renameModal.classList.remove("show");
         deleteModal.classList.remove("show");
         settingsModal.classList.remove("show");
         closeActionConfirmation(false);
+        const headerOverlay = document.getElementById("headerMoreOverlay");
+        if (headerOverlay?.classList.contains("show")) {
+            document.getElementById("headerMoreClose")?.click();
+        }
         return;
     }
-    if (
-        (event.ctrlKey || event.metaKey) &&
-        event.key.toLowerCase() === "k"
-    ) {
+
+    if (mod && event.key.toLowerCase() === "k") {
         event.preventDefault();
         chatSearchInput.focus();
         chatSearchInput.select();
         return;
     }
-    if (
-        (event.ctrlKey || event.metaKey) &&
-        event.shiftKey &&
-        event.key.toLowerCase() === "n"
-    ) {
+
+    if (mod && !event.shiftKey && event.key.toLowerCase() === "n") {
+        if (editable) return;
         event.preventDefault();
         newChat();
+        return;
+    }
+
+    if (mod && event.shiftKey && event.key.toLowerCase() === "m") {
+        if (editable) return;
+        event.preventDefault();
+        document.getElementById("memoryBtn")?.click();
+        return;
+    }
+
+    if (mod && event.shiftKey && event.key.toLowerCase() === "d") {
+        if (editable) return;
+        event.preventDefault();
+        document.getElementById("headerMoreBin")?.click();
+        if (!document.getElementById("headerMoreBin")) {
+            const modal = document.getElementById("binModal");
+            if (modal) { if (typeof renderBin === "function") renderBin(); modal.classList.add("show"); modal.setAttribute("aria-hidden", "false"); }
+        }
+        return;
+    }
+
+    if (mod && event.key === "/") {
+        if (editable) return;
+        event.preventDefault();
+        const modal = document.getElementById("shortcutsModal");
+        if (modal) { modal.classList.add("show"); modal.setAttribute("aria-hidden", "false"); }
+        return;
+    }
+
+    if (mod && event.shiftKey && event.key.toLowerCase() === "l") {
+        if (editable) return;
+        event.preventDefault();
+        document.getElementById("themeBtn")?.click();
+        return;
+    }
+
+    if (event.key === "/" && !editable && !event.altKey && !event.ctrlKey && !event.metaKey) {
+        event.preventDefault();
+        chatSearchInput.focus();
+        chatSearchInput.select();
+        return;
+    }
+
+    if (!editable && event.altKey && (event.key === "ArrowDown" || event.key === "ArrowUp")) {
+        event.preventDefault();
+        const list = Array.isArray(conversations)
+            ? conversations.filter(c => c && !isConversationArchived(c)).sort((a,b) => {
+                const ap = isConversationPinned(a) ? 1 : 0;
+                const bp = isConversationPinned(b) ? 1 : 0;
+                if (ap !== bp) return bp - ap;
+                return getConversationDate(b) - getConversationDate(a);
+            })
+            : [];
+        if (!list.length) return;
+        let selected = Number.isInteger(window.__oddiKeyboardSelectedIndex) ? window.__oddiKeyboardSelectedIndex : 0;
+        if (event.key === "ArrowDown") selected = Math.min(list.length - 1, selected + 1);
+        else selected = Math.max(0, selected - 1);
+        window.__oddiKeyboardSelectedIndex = selected;
+        const chosen = list[selected];
+        document.querySelectorAll(".history-item.keyboard-selected").forEach(el => el.classList.remove("keyboard-selected"));
+        const key = chosen?.id;
+        const item = key ? document.querySelector(`.history-item[data-conversation-id=\"${CSS.escape(String(key))}\"]`) : null;
+        item?.classList.add("keyboard-selected");
+        item?.scrollIntoView({ block: "nearest" });
+        return;
+    }
+
+    if (!editable && event.altKey && event.key === "Enter") {
+        event.preventDefault();
+        const list = Array.isArray(conversations)
+            ? conversations.filter(c => c && !isConversationArchived(c)).sort((a,b) => {
+                const ap = isConversationPinned(a) ? 1 : 0;
+                const bp = isConversationPinned(b) ? 1 : 0;
+                if (ap !== bp) return bp - ap;
+                return getConversationDate(b) - getConversationDate(a);
+            })
+            : [];
+        const selected = Number.isInteger(window.__oddiKeyboardSelectedIndex) ? window.__oddiKeyboardSelectedIndex : 0;
+        if (list[selected] && typeof window.__oddiOpenConversation === "function") {
+            const actualIndex = conversations.indexOf(list[selected]);
+            if (actualIndex >= 0) window.__oddiOpenConversation(actualIndex);
+        }
+    }
+});
+
+/* EXTRA DESKTOP SHORTCUTS — safe actions only, never steal keystrokes from inputs. */
+document.addEventListener("keydown", function (event) {
+    if (window.matchMedia && window.matchMedia("(max-width: 768px) and (pointer: coarse)").matches) return;
+    const target = event.target;
+    const editable = target && (
+        target.matches?.("input, textarea, select, [contenteditable=\"true\"]") ||
+        target.isContentEditable
+    );
+    if (editable) return;
+    const mod = event.ctrlKey || event.metaKey;
+    if (!mod || !event.shiftKey) return;
+    const key = event.key.toLowerCase();
+    if (key === "e") {
+        event.preventDefault();
+        document.getElementById("exportChatBtn")?.click();
+    } else if (key === "o") {
+        event.preventDefault();
+        document.getElementById("headerMoreBtn")?.click();
     }
 });
 /* LOGOUT*/
@@ -17722,6 +17840,118 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
   }
 }
 </style>
+<style id="oddi-phone-gesture-navigator">
+@media (max-width: 768px) and (pointer: coarse) {
+  .oddi-gesture-edge-hint{position:fixed;left:0;top:34%;width:7px;height:32%;border-radius:0 8px 8px 0;opacity:0;pointer-events:none;z-index:2147483004;background:linear-gradient(180deg,transparent,rgba(32,199,107,.7),transparent);box-shadow:0 0 14px rgba(32,199,107,.35);transition:opacity .18s ease}
+  .oddi-gesture-edge-hint.active{opacity:.85}
+  .oddi-chat-arc-nav{position:fixed;left:0;top:50%;width:100%;height:0;z-index:2147483005;pointer-events:none;opacity:0;transform:translateX(-2px);transition:opacity .16s ease,transform .16s ease}
+  .oddi-chat-arc-nav.show{opacity:1;transform:translateX(0)}
+  /* ONE persistent curve. The curve never duplicates or becomes a chat list. */
+  .oddi-chat-arc-line{position:absolute;left:12px;top:-76px;width:48px;height:152px;border:2px solid rgba(32,199,107,.95);border-left:0;border-radius:0 76px 76px 0;filter:drop-shadow(0 0 7px rgba(32,199,107,.55)) drop-shadow(0 0 15px rgba(32,199,107,.18))}
+  .oddi-chat-arc-line::after{content:"";position:absolute;right:-4px;top:50%;width:8px;height:8px;border-radius:50%;background:#20c76b;box-shadow:0 0 10px rgba(32,199,107,.95),0 0 18px rgba(32,199,107,.45);transform:translateY(-50%)}
+  .oddi-chat-arc-label{position:absolute;left:72px;top:-28px;max-width:calc(100vw - 88px);padding:9px 14px;border:1px solid rgba(32,199,107,.34);border-radius:13px;background:rgba(10,10,10,.86);backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);color:#fff;font-size:15px;font-weight:750;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 8px 28px rgba(0,0,0,.34),0 0 18px rgba(32,199,107,.11);transform:translateY(5px);transition:transform .14s ease,opacity .14s ease}
+  .oddi-chat-arc-label.bump{transform:translateY(0)}
+  body:not(.dark-mode) .oddi-chat-arc-label{background:rgba(255,255,255,.92);color:#111;border-color:rgba(32,199,107,.3)}
+  .history-item.keyboard-selected{outline:2px solid rgba(32,199,107,.55)!important;outline-offset:-2px!important}
+}
+</style>
+<script id="oddi-phone-gesture-navigator-script">
+(function(){
+  "use strict";
+  const isPhone=()=>window.matchMedia("(max-width: 768px) and (pointer: coarse)").matches;
+  let edgeStart=null,pressTimer=null,gesture=null;
+  let nav=null,label=null,hint=null;
+  function haptic(ms=8){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(_){} }
+  function ensureUI(){
+    if(nav)return;
+    hint=document.createElement("div");hint.className="oddi-gesture-edge-hint";hint.setAttribute("aria-hidden","true");document.body.appendChild(hint);
+    nav=document.createElement("div");nav.className="oddi-chat-arc-nav";nav.setAttribute("aria-hidden","true");
+    const curve=document.createElement("div");curve.className="oddi-chat-arc-line";
+    label=document.createElement("div");label.className="oddi-chat-arc-label";
+    nav.append(curve,label);document.body.appendChild(nav);
+  }
+  function safeTarget(t){
+    if(!t||!t.closest)return false;
+    if(t.closest('.oddi-rs-sidebar,.oddi-rs-rail,.header,.header-more-overlay,.utility-modal,.input-area,textarea,input,button,a,select,[contenteditable="true"],.user-message,.bot-message,.action-card,.mobile-tool-menu'))return false;
+    return !!t.closest("#chatbox,.app");
+  }
+  function chatList(){
+    if(typeof conversations==="undefined"||!Array.isArray(conversations))return [];
+    return conversations.filter(c=>c&&!isConversationArchived(c)).sort((a,b)=>{
+      const ap=isConversationPinned(a)?1:0,bp=isConversationPinned(b)?1:0;
+      if(ap!==bp)return bp-ap;
+      return getConversationDate(b)-getConversationDate(a);
+    });
+  }
+  function showChat(index,feedback=true){
+    const list=chatList();if(!list.length)return;
+    index=Math.max(0,Math.min(list.length-1,index));gesture.index=index;
+    label.textContent=list[index].title||"New Chat";
+    label.classList.remove("bump");void label.offsetWidth;label.classList.add("bump");
+    if(feedback)haptic(7);
+  }
+  function openSelected(){
+    if(!gesture)return;
+    const list=chatList(),c=list[gesture.index];
+    if(c&&typeof window.__oddiOpenConversation==="function"){
+      const actual=conversations.indexOf(c);if(actual>=0)window.__oddiOpenConversation(actual);
+    }
+  }
+  function activateNavigator(e){
+    if(!isPhone()||!gesture?.ready||gesture.active||!safeTarget(e.target))return;
+    const list=chatList();if(!list.length){gesture=null;return;}
+    let startIndex=list.findIndex(c=>conversations.indexOf(c)===currentConversation);if(startIndex<0)startIndex=0;
+    gesture.active=true;gesture.lastSlot=0;gesture.index=startIndex;
+    ensureUI();showChat(gesture.index,false);nav.classList.add("show");haptic(10);
+    e.preventDefault();
+  }
+  function cancelPress(){if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}}
+  document.addEventListener("pointerdown",function(e){
+    if(!isPhone()||e.pointerType==="mouse")return;
+    if(e.clientX<=24){edgeStart={x:e.clientX,y:e.clientY,id:e.pointerId};ensureUI();return;}
+    if(!safeTarget(e.target))return;
+    cancelPress();
+    gesture={pending:true,ready:false,active:false,startX:e.clientX,startY:e.clientY,pointerId:e.pointerId};
+    pressTimer=setTimeout(()=>{if(gesture&&gesture.pending){gesture.ready=true;haptic(5);}},360);
+  },true);
+  document.addEventListener("pointermove",function(e){
+    if(!isPhone()||e.pointerType==="mouse")return;
+    if(edgeStart&&e.pointerId===edgeStart.id&&e.clientX-edgeStart.x>55&&Math.abs(e.clientY-edgeStart.y)<100){
+      e.preventDefault();
+      const sidebar=document.querySelector(".oddi-rs-sidebar"),launcher=document.querySelector(".oddi-rs-phone-launcher,.oddi-rs-launcher");
+      if(sidebar&&!sidebar.classList.contains("open")&&launcher)launcher.click();
+      hint.classList.add("active");haptic(10);edgeStart=null;setTimeout(()=>hint.classList.remove("active"),180);return;
+    }
+    if(!gesture)return;
+    const dy=e.clientY-gesture.startY,dx=e.clientX-gesture.startX;
+    if(gesture.pending&&!gesture.active){
+      if(Math.hypot(dx,dy)>18){
+        if(Math.abs(dx)>Math.abs(dy)*1.15){cancelPress();gesture=null;return;}
+        if(gesture.ready&&dy>35){activateNavigator({target:e.target,clientX:e.clientX,clientY:e.clientY,preventDefault:()=>{}});}
+      }
+      return;
+    }
+    if(gesture.active){
+      const slot=Math.floor(Math.max(0,dy)/54);
+      if(slot!==gesture.lastSlot){
+        const step=slot-gesture.lastSlot;
+        const list=chatList();
+        const next=gesture.index+step;
+        gesture.lastSlot=slot;
+        if(next>=0&&next<list.length)showChat(next,true);
+      }
+      e.preventDefault();
+    }
+  },{capture:true,passive:false});
+  document.addEventListener("pointerup",function(e){
+    if(edgeStart&&e.pointerId===edgeStart.id)edgeStart=null;
+    cancelPress();
+    if(gesture?.active){e.preventDefault();openSelected();nav?.classList.remove("show");gesture=null;}
+    else if(gesture){gesture=null;nav?.classList.remove("show");}
+  },true);
+  document.addEventListener("pointercancel",function(){edgeStart=null;cancelPress();gesture=null;nav?.classList.remove("show");hint?.classList.remove("active")},true);
+})();
+</script>
 </body>
 </html> 
 <style id="oddi-memory-user-boxes-final">
