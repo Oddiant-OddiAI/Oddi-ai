@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
@@ -133,26 +132,6 @@ export default function Sidebar() {
     typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
   );
   const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string; type?: string; size?: number}>>([]);
-
-  // Hardening: recover from a stale legacy Memory state that can otherwise
-  // leave the React mount invisible after navigation/build transitions.
-  useEffect(() => {
-    const root = document.getElementById('oddi-react-sidebar-root');
-    const memoryModal = document.getElementById('memoryModal');
-    const syncVisibility = () => {
-      const memoryOpen = !!memoryModal?.classList.contains('show');
-      if (!memoryOpen) {
-        document.body.classList.remove('oddi-memory-workspace-open');
-        root?.style.removeProperty('visibility');
-        root?.style.removeProperty('opacity');
-        root?.style.removeProperty('pointer-events');
-      }
-    };
-    syncVisibility();
-    const observer = memoryModal ? new MutationObserver(syncVisibility) : null;
-    observer?.observe(memoryModal, { attributes: true, attributeFilter: ['class'] });
-    return () => observer?.disconnect();
-  }, []);
 
   useEffect(() => {
     const root = document.getElementById('oddi-react-sidebar-root');
@@ -447,6 +426,8 @@ export default function Sidebar() {
 
   function openLibrary() {
     setMenuId(null);
+    setCollapsed(false);
+    setOpen(false);
     window.dispatchEvent(new CustomEvent('oddi:open-library'));
   }
 

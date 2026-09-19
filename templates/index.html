@@ -2,14 +2,14 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#20c76b">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Oddi AI</title>
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='style.css') }}?v=20260822-shooting-fix-1">
+          href="/static/style.css?v=20260822-shooting-fix-1">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -29,7 +29,7 @@
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <link rel="icon"
       type="image/png"
-      href="{{ url_for('static', filename='favicon2.png') }}">
+      href="/static/favicon2.png">
 
 <style id="install-button-fix">.install-btn{display:none;width:calc(100% - 20px);min-height:48px;margin:auto 10px 8px;padding:0 16px;border:none;border-radius:12px;background:#20c76b;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(32,199,107,.22);transition:transform .18s ease,background .18s ease,box-shadow .18s ease;}.install-btn:hover{background:#19b85f;transform:translateY(-1px);box-shadow:0 10px 24px rgba(32,199,107,.28);}.install-btn:active{transform:scale(.98);}body.dark-mode .install-btn{background:#20c76b;color:#fff;}
 </style>
@@ -45,7 +45,7 @@
 
 
 <link rel="stylesheet"
-      href="{{ url_for('static', filename='mobile.css') }}?v=20260822-shooting-fix-1" media="screen and (max-width: 768px) and (pointer: coarse)">
+      href="/static/mobile.css?v=20260822-shooting-fix-1" media="screen and (max-width: 768px) and (pointer: coarse)">
 <style id="final-phone-layout-fix">@media (max-width: 768px) and (pointer: coarse) { .logo{width:52px !important;max-width:52px !important;height:auto !important;}.input-area{left:6px !important;right:6px !important;bottom:max(6px,env(safe-area-inset-bottom)) !important;width:auto !important;max-width:none !important;}
     }
 </style>
@@ -2830,7 +2830,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="{{ url_for('static', filename='oddi-sidebar/oddi-sidebar.css') }}">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -3261,7 +3261,7 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
         disablepictureinpicture
         controlslist="nodownload noplaybackrate nofullscreen"
     >
-        <source src="{{ url_for('static', filename='Splashscreen.mp4') }}" type="video/mp4">
+        <source src="/static/Splashscreen.mp4" type="video/mp4">
     </video>
     <button id="oddi-splash-sound" class="oddi-splash-sound" type="button" aria-label="Enable splash sound">
         🔊 Tap for sound
@@ -3621,7 +3621,7 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
 <header class="header">
         <div class="logo-box">
             <img id="logo"
-                src="{{ url_for('static', filename='logo.png') }}"
+                src="/static/logo.png"
                 class="logo"
                 alt="Oddi Logo">
         </div>
@@ -3768,31 +3768,17 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
             </section>
         </div>
     </main>
-    <div id="attachmentPreview" class="attachment-preview" style="display:none;">
-        <div class="attachment-header">
-            <button
-                id="attachmentToggle"
-                class="attachment-toggle"
-                type="button"
-                aria-expanded="false"
-                title="Show attached files">
-                <span id="attachmentArrow">▴</span>
-            </button>
-            <span id="attachmentName"></span>
-            <button
-                id="removeAttachment"
-                type="button"
-                title="Remove all files">
-                ✖
-            </button>
-        </div>
-        <div
-            id="attachmentList"
-            class="attachment-list"
-            style="display:none;">
-        </div>
-    </div>
     <div class="input-area">
+        <div id="attachmentPreview" class="attachment-preview" style="display:none;">
+            <div class="attachment-header">
+                <button id="attachmentToggle" class="attachment-toggle" type="button" aria-expanded="false" title="Show attached files">
+                    <span id="attachmentArrow">▴</span>
+                </button>
+                <span id="attachmentName"></span>
+                <button id="removeAttachment" type="button" title="Remove all files">✖</button>
+            </div>
+            <div id="attachmentList" class="attachment-list" style="display:none;"></div>
+        </div>
         <button id="attach-btn" class="attach-btn">+</button>
         <input
             type="file"
@@ -4018,7 +4004,7 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
         <div class="account-current-card">
             <div class="account-current-avatar">👤</div>
             <div>
-                <div class="account-current-name">{{ username if logged_in else 'Guest' }}</div>
+                <div class="account-current-name">{{ username if logged_in else "Guest" }}</div>
                 <div class="account-current-status">{{ 'Currently signed in' if logged_in else 'Not signed in' }}</div>
             </div>
         </div>
@@ -4359,6 +4345,7 @@ let activeGenerationConversation = null;
 
 function setGenerationUI(active) {
     generationActive = active;
+    document.body.classList.toggle("oddi-generation-active", !!active);
 
     if (active) {
         button.disabled = false;
@@ -6445,15 +6432,11 @@ function buildExportDocument(conversation, clone) {
 <p class="export-meta">Exported from Oddi AI · ${escapeHtml(exportedAt)}</p>
 ${bodyHtml}
 </main>
+    
 
-
-
-
-
-
-
-\n\n
-
+</body></html>`;
+}
+</script>
 <style id="oddi-home-final-visual-correction">
 /* =========================================================
    ODDI HOME — FINAL VISUAL CORRECTION
@@ -6838,7 +6821,295 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
 
 
 
-</body>
+
+<style id="oddi-phone-composer-final-fix">
+/* Final composer layout: attachments are part of the same vertical composer. */
+.input-area.oddI-composer-ready,
+.input-area.oddi-composer-ready{
+  display:flex !important;
+  align-items:stretch !important;
+  flex-wrap:wrap !important;
+  box-sizing:border-box !important;
+  overflow:hidden !important;
+}
+.input-area .oddi-composer-attachment{
+  order:0 !important;
+  flex:0 0 100% !important;
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+  box-sizing:border-box !important;
+  border:0 !important;
+  border-bottom:1px solid rgba(0,0,0,.08) !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  background:transparent !important;
+  padding:8px 10px 4px !important;
+  min-height:0 !important;
+}
+.input-area .oddi-composer-attachment .attachment-header{
+  width:100% !important;
+  min-width:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:8px !important;
+}
+.input-area .oddi-composer-attachment #attachmentName{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  white-space:nowrap !important;
+}
+.input-area .oddi-composer-attachment .attachment-list{
+  width:100% !important;
+  max-height:120px !important;
+  overflow-y:auto !important;
+}
+.input-area.oddi-composer-ready #userInput{
+  order:1 !important;
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  box-sizing:border-box !important;
+}
+.input-area.oddi-composer-ready #attach-btn{order:2 !important;}
+.input-area.oddi-composer-ready #dictation-btn{order:3 !important;}
+.input-area.oddi-composer-ready .action-button-slot{order:4 !important;}
+.input-area.oddi-composer-ready.has-attachments{
+  min-height:64px !important;
+}
+.input-area.oddi-composer-ready.has-attachments .oddi-composer-attachment{
+  display:flex !important;
+  flex-direction:column !important;
+}
+@media (max-width:768px){
+  .input-area.oddi-composer-ready{
+    align-items:flex-end !important;
+    padding:8px 10px !important;
+    min-height:68px !important;
+    max-height:min(46dvh,360px) !important;
+    height:auto !important;
+  }
+  .input-area.oddi-composer-ready #userInput{
+    min-height:42px !important;
+    max-height:min(26dvh,190px) !important;
+    height:auto !important;
+    align-self:center !important;
+    overflow-y:auto !important;
+    line-height:1.45 !important;
+    padding-top:8px !important;
+    padding-bottom:8px !important;
+  }
+  .input-area.oddi-composer-ready.has-attachments .oddi-composer-attachment{
+    max-height:150px !important;
+    overflow:hidden !important;
+  }
+  .input-area.oddi-composer-ready.has-attachments #userInput{
+    max-height:min(20dvh,150px) !important;
+  }
+}
+body.dark-mode .input-area .oddi-composer-attachment{
+  border-bottom-color:rgba(255,255,255,.10) !important;
+}
+</style>
+
+<style id="oddi-composer-final-layout-v2">
+/* FINAL: one real composer. Attachment row + message row live inside it. */
+.input-area{
+  display:grid !important;
+  grid-template-columns:44px minmax(0,1fr) 44px auto !important;
+  grid-template-rows:auto minmax(44px,auto) !important;
+  align-items:center !important;
+  align-content:end !important;
+  column-gap:4px !important;
+  row-gap:2px !important;
+  box-sizing:border-box !important;
+  height:auto !important;
+  min-height:60px !important;
+  max-height:min(46vh,300px) !important;
+  overflow:hidden !important;
+  padding:6px 8px !important;
+}
+.input-area > #attachmentPreview{
+  grid-column:1 / -1 !important;
+  grid-row:1 !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  min-height:0 !important;
+  height:auto !important;
+  margin:0 !important;
+  padding:4px 5px 5px !important;
+  position:static !important;
+  display:none !important;
+  flex:none !important;
+  box-sizing:border-box !important;
+  border:0 !important;
+  border-bottom:1px solid rgba(0,0,0,.08) !important;
+  border-radius:0 !important;
+  background:transparent !important;
+  box-shadow:none !important;
+  overflow:hidden !important;
+}
+.input-area.has-attachments > #attachmentPreview{
+  display:block !important;
+}
+.input-area > #attachmentPreview .attachment-header{
+  width:100% !important;
+  min-width:0 !important;
+  min-height:32px !important;
+  height:32px !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:7px !important;
+}
+.input-area > #attachmentPreview #attachmentName{
+  flex:1 1 auto !important;
+  min-width:0 !important;
+  overflow:hidden !important;
+  white-space:nowrap !important;
+  text-overflow:ellipsis !important;
+  font-size:12px !important;
+}
+.input-area > #attachmentPreview .attachment-toggle,
+.input-area > #attachmentPreview #removeAttachment{
+  flex:0 0 30px !important;
+  width:30px !important;
+  min-width:30px !important;
+  height:30px !important;
+}
+.input-area > #attachmentPreview .attachment-list{
+  width:100% !important;
+  max-height:110px !important;
+  overflow-y:auto !important;
+  box-sizing:border-box !important;
+}
+.input-area > #attach-btn{
+  grid-column:1 !important;
+  grid-row:2 !important;
+  align-self:end !important;
+}
+.input-area > #userInput{
+  grid-column:2 !important;
+  grid-row:2 !important;
+  align-self:stretch !important;
+  width:100% !important;
+  min-width:0 !important;
+  min-height:44px !important;
+  max-height:180px !important;
+  height:44px !important;
+  resize:none !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  box-sizing:border-box !important;
+  line-height:1.45 !important;
+  padding:10px 6px !important;
+}
+.input-area > #dictation-btn{
+  grid-column:3 !important;
+  grid-row:2 !important;
+  align-self:end !important;
+}
+.input-area > .action-button-slot{
+  grid-column:4 !important;
+  grid-row:2 !important;
+  align-self:end !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:4px !important;
+  min-width:0 !important;
+}
+.input-area > .action-button-slot .voice-btn,
+.input-area > .action-button-slot .send-btn{
+  flex:0 0 auto !important;
+}
+.input-area.has-attachments{
+  min-height:98px !important;
+}
+.input-area.has-message-overflow{
+  max-height:min(46vh,300px) !important;
+}
+.input-area.has-message-overflow > #userInput{
+  overflow-y:auto !important;
+}
+@media (max-width:768px){
+  .input-area{
+    left:7px !important;
+    right:7px !important;
+    bottom:max(7px,env(safe-area-inset-bottom)) !important;
+    width:auto !important;
+    grid-template-columns:38px minmax(0,1fr) 38px auto !important;
+    min-height:60px !important;
+    max-height:min(58dvh,430px) !important;
+    padding:7px 7px !important;
+    border-radius:20px !important;
+  }
+  .input-area > #userInput{
+    min-height:42px !important;
+    height:42px !important;
+    max-height:min(32dvh,230px) !important;
+    font-size:15px !important;
+    line-height:1.45 !important;
+    padding:9px 4px !important;
+    overflow-y:auto !important;
+  }
+  .input-area.has-attachments{
+    min-height:105px !important;
+    max-height:min(60dvh,450px) !important;
+  }
+  .input-area > #attachmentPreview{
+    padding:3px 2px 5px !important;
+  }
+  .input-area > #attachmentPreview #attachmentName{
+    font-size:11px !important;
+  }
+  .input-area > #attachmentPreview .attachment-list{
+    max-height:100px !important;
+  }
+  .input-area > #attach-btn,
+  .input-area > #dictation-btn{
+    width:36px !important;
+    min-width:36px !important;
+    height:36px !important;
+    min-height:36px !important;
+  }
+}
+body.dark-mode .input-area > #attachmentPreview{
+  border-bottom-color:rgba(255,255,255,.10) !important;
+}
+</style>
+
+<script id="oddi-composer-final-layout-js-v2">
+(function(){
+  "use strict";
+  function boot(){
+    const composer=document.querySelector(".input-area");
+    const input=document.getElementById("userInput");
+    const preview=document.getElementById("attachmentPreview");
+    if(!composer||!input) return;
+    if(preview && preview.parentElement!==composer) composer.insertBefore(preview, composer.firstElementChild);
+    function sync(){
+      const files=(typeof selectedFiles!=="undefined" && Array.isArray(selectedFiles)) ? selectedFiles : [];
+      composer.classList.toggle("has-attachments",files.length>0);
+      if(preview) preview.style.display=files.length ? "block" : "none";
+      input.style.height="auto";
+      const max=window.matchMedia("(max-width:768px)").matches ? Math.min(Math.floor(window.innerHeight*.32),230) : 180;
+      const h=Math.max(42,Math.min(input.scrollHeight,max));
+      input.style.height=h+"px";
+      composer.classList.toggle("has-message-overflow",input.scrollHeight>max+1);
+    }
+    input.addEventListener("input",sync);
+    input.addEventListener("focus",sync);
+    window.addEventListener("resize",sync);
+    window.addEventListener("oddi:attachments-changed",sync);
+    window.addEventListener("oddi:attachments-cleared",sync);
+    setTimeout(sync,0);
+    setTimeout(sync,250);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot,{once:true});
+  else boot();
+})();
+</script>
 <style id="oddi-mobile-scroll-final-fix">
 /* FINAL MOBILE SCROLL FIX: the chat surface must remain the touch-scrolling container.
    The home-screen glass polish must never turn the conversation viewport into a
@@ -6878,9 +7149,7 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
   }
 }
 </style>
-</html>`;
-}
-
+<script>
 function buildPlainTextExport(conversation) {
     const lines = [];
     lines.push(conversation.title || "Oddi Chat");
@@ -8245,6 +8514,28 @@ async function sendMessage(
        USER MESSAGE
     ----------------------------------------- */
 
+    // A conversation can disappear or be re-indexed while the sidebar/history
+    // is syncing. Revalidate the active index before touching .messages.
+    if (
+        !Number.isInteger(currentConversation) ||
+        currentConversation < 0 ||
+        currentConversation >= conversations.length ||
+        !conversations[currentConversation]
+    ) {
+        if (conversations.length) {
+            currentConversation = 0;
+        } else {
+            console.debug("sendMessage aborted: no active conversation");
+            input.disabled = false;
+            setGenerationUI(false);
+            return;
+        }
+    }
+
+    if (!Array.isArray(conversations[currentConversation].messages)) {
+        conversations[currentConversation].messages = [];
+    }
+
     if (!skipUserMessage) {
         let fileHTML = "";
         const fileRefs = [];
@@ -9541,13 +9832,28 @@ async function openConversation(
 ) {
 
     if (generationActive) {
-        return;
+        return false;
     }
 
-    currentConversation = index;
+    // Sidebar/history clicks can race with conversation sync and briefly
+    // produce an invalid index. Never dereference an undefined conversation.
+    const parsedIndex = Number(index);
+    if (!Number.isInteger(parsedIndex) || parsedIndex < 0 || parsedIndex >= conversations.length) {
+        console.debug("openConversation ignored invalid index:", index);
+        return false;
+    }
 
-    const conversation =
-        conversations[index];
+    const conversation = conversations[parsedIndex];
+    if (!conversation) {
+        console.debug("openConversation ignored missing conversation:", parsedIndex);
+        return false;
+    }
+
+    currentConversation = parsedIndex;
+
+    if (!Array.isArray(conversation.messages)) {
+        conversation.messages = [];
+    }
 
     touchConversation(conversation);
     renderHistory();
@@ -9906,12 +10212,12 @@ function applyOddiTheme(theme) {
         themeBtn.innerHTML = "☀️";
         themeBtn.title = "Switch to Light Mode";
         logo.src =
-            "{{ url_for('static', filename='logo-dark.png') }}";
+            "/static/logo-dark.png";
     } else {
         themeBtn.innerHTML = "🌙";
         themeBtn.title = "Switch to Dark Mode";
         logo.src =
-            "{{ url_for('static', filename='logo.png') }}";
+            "/static/logo.png";
     }
 }
 
@@ -16698,7 +17004,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="{{ url_for('static', filename='oddi-sidebar/oddi-sidebar.js') }}"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -17193,7 +17499,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 </script>
 
 <div id="oddi-react-sidebar-root"></div>
-<script src="{{ url_for('static', filename='oddi-sidebar/oddi-sidebar.js') }}"></script>
+<script src="/static/oddi-sidebar/oddi-sidebar.js"></script>
 <style id="oddi-spark-mobile-final-fix">
 /* FINAL: circuit signals remain visible on mobile; reduced-motion still wins. */
 @media (max-width: 768px) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {
@@ -18153,8 +18459,106 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
   }, {capture:true,passive:false});
 })();
 </script>
-</body>
-</html> 
+
+
+<!-- ODDI input-state correction: empty = headset, typing = send. Keep the existing ODDI controls/styles. -->
+<style id="oddi-input-empty-state-final-fix">
+@media (max-width:768px) and (pointer:coarse){
+  /* Keep every composer control in ONE horizontal input surface. */
+  .input-area{
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    align-content:center !important;
+    overflow:hidden !important;
+    gap:3px !important;
+  }
+  .input-area > #attach-btn,
+  .input-area > #userInput,
+  .input-area > #dictation-btn,
+  .input-area > .action-button-slot{
+    order:0 !important;
+    align-self:center !important;
+  }
+  .input-area > #userInput{
+    flex:1 1 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    overflow-x:hidden !important;
+    white-space:pre-wrap !important;
+  }
+  .input-area > .action-button-slot{
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:48px !important;
+    min-width:48px !important;
+    height:48px !important;
+    min-height:48px !important;
+    flex:0 0 48px !important;
+    gap:0 !important;
+    padding:0 !important;
+    margin:0 !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+  }
+
+  /* Empty input: headset occupies exactly the send-button position. */
+  body:not(.mobile-composer-typing) .input-area > .action-button-slot .voice-btn{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:48px !important;
+    min-width:48px !important;
+    height:48px !important;
+    min-height:48px !important;
+    flex:0 0 48px !important;
+  }
+  body:not(.mobile-composer-typing) .input-area > .action-button-slot .send-btn{
+    display:none !important;
+  }
+
+  /* Typed input: replace the headset with the existing send button. */
+  body.mobile-composer-typing .input-area > .action-button-slot .voice-btn{
+    display:none !important;
+  }
+  body.mobile-composer-typing .input-area > .action-button-slot .send-btn,
+  .input-area > .action-button-slot .send-btn.stop-active{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:48px !important;
+    min-width:48px !important;
+    height:48px !important;
+    min-height:48px !important;
+    flex:0 0 48px !important;
+  }
+}
+</style>
+<script id="oddi-input-empty-state-final-fix-js">
+(function(){
+  "use strict";
+  function boot(){
+    const input=document.getElementById("userInput");
+    if(!input) return;
+    function sync(){
+      const hasText=input.value.trim().length>0;
+      document.body.classList.toggle("mobile-composer-typing",hasText);
+      const slot=document.querySelector(".input-area > .action-button-slot");
+      if(slot) slot.classList.toggle("has-text",hasText);
+    }
+    input.addEventListener("input",sync,true);
+    input.addEventListener("change",sync,true);
+    input.addEventListener("keyup",sync,true);
+    sync();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",boot,{once:true});
+  else boot();
+})();
+</script>
+ 
 <style id="oddi-memory-user-boxes-final">
 /* User-controlled memory board: 11 permanent editable boxes + custom boxes. */
 .memory-grid-fixed{
@@ -18988,8 +19392,8 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       if(f?.source==="local" && typeof window.openOddiUploadedFile==="function"){
         try{ await window.openOddiUploadedFile(f.id); return; }catch(e){}
       }
-      if(f?.external_file_id) window.open(`/api/files/${encodeURIComponent(f.external_file_id)}`,"_blank","noopener");
-      else alert("This file has no downloadable storage object yet.");
+      if(f?.id) window.open(`/api/files/${encodeURIComponent(f.id)}`,"_blank","noopener");
+      else alert("This file has no downloadable storage record.");
     }));
     libraryList.querySelectorAll(".oddi-library-delete").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
       btn.disabled=true;
@@ -18999,6 +19403,10 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
   }
   let libraryCache=[];
   async function openLibrary(){
+    document.body.classList.remove("oddi-react-sidebar-open","oddi-react-sidebar-collapsed");
+    document.getElementById("oddi-react-sidebar-root")?.classList.remove("is-open","is-collapsed");
+    document.getElementById("oddi-react-sidebar-root")?.classList.add("is-closed");
+    window.dispatchEvent(new CustomEvent("oddi:sidebar-close"));
     libraryModal.classList.add("show"); libraryModal.setAttribute("aria-hidden","false");
     libraryCache=await collectLibraryFiles(); renderLibrary(libraryCache); librarySearch?.focus();
   }
@@ -19229,3 +19637,667 @@ body.dark-mode .input-area > #attachmentPreview .attachment-toggle{background:rg
   }
 })();
 </script>
+<style id="oddi-composer-action-position-final-v2">
+/* FINAL COMPOSER ACTION RULE
+   Conversation/headset and send occupy exactly the same physical slot at
+   the right end of the composer. */
+@media (max-width:768px) {
+  .input-area { display:flex !important; align-items:center !important; box-sizing:border-box !important; }
+  .input-area > .action-button-slot {
+    position:relative !important; display:flex !important; align-items:center !important; justify-content:center !important;
+    width:38px !important; height:48px !important; min-width:38px !important; min-height:48px !important;
+    max-width:38px !important; flex:0 0 38px !important; flex-basis:38px !important;
+    margin:0 !important; padding:0 !important; overflow:visible !important;
+    background:transparent !important; border:0 !important; box-shadow:none !important;
+  }
+  .input-area > .action-button-slot .voice-btn {
+    display:inline-flex !important; position:static !important; width:38px !important; height:38px !important;
+    min-width:38px !important; min-height:38px !important; max-width:38px !important; max-height:38px !important;
+    flex:0 0 38px !important; margin:0 !important; padding:0 !important; box-sizing:border-box !important;
+    align-items:center !important; justify-content:center !important; transform:none !important;
+  }
+  .input-area > .action-button-slot .voice-btn svg { width:20px !important; height:20px !important; }
+  .input-area > .action-button-slot .send-btn {
+    display:none !important; position:static !important; width:38px !important; height:38px !important;
+    min-width:38px !important; min-height:38px !important; max-width:38px !important; max-height:38px !important;
+    flex:0 0 38px !important; margin:0 !important; padding:0 !important; box-sizing:border-box !important;
+    border-radius:50% !important; align-items:center !important; justify-content:center !important;
+  }
+  body.mobile-composer-typing .input-area > .action-button-slot .voice-btn { display:none !important; }
+  body.mobile-composer-typing .input-area > .action-button-slot .send-btn,
+  .input-area > .action-button-slot .send-btn.stop-active {
+    display:inline-flex !important; background:#16c76b !important; color:#08130d !important;
+    border:0 !important; box-shadow:0 5px 14px rgba(22,199,107,.18) !important;
+  }
+  .input-area > .action-button-slot .send-btn .send-icon {
+    display:inline-flex !important; align-items:center !important; justify-content:center !important;
+    width:100% !important; height:100% !important; line-height:1 !important; font-size:17px !important;
+  }
+}
+@media (max-width:420px) {
+  .input-area > .action-button-slot,
+  .input-area > .action-button-slot .voice-btn,
+  .input-area > .action-button-slot .send-btn,
+  body.mobile-composer-typing .input-area > .action-button-slot .send-btn {
+    width:38px !important; min-width:38px !important; max-width:38px !important; flex-basis:38px !important;
+  }
+}
+body.dark-mode .input-area > .action-button-slot .send-btn,
+body.dark-mode .input-area > .action-button-slot .send-btn.stop-active {
+  background:#16c76b !important; color:#08130d !important;
+}
+</style>
+<script id="oddi-composer-action-position-final-v2-js">
+(function () {
+  "use strict";
+  function install() {
+    var input = document.getElementById("userInput");
+    var slot = document.querySelector(".input-area > .action-button-slot");
+    if (!input || !slot) return;
+    function sync() {
+      var hasText = String(input.value || "").trim().length > 0;
+      document.body.classList.toggle("mobile-composer-typing", hasText);
+    }
+    input.addEventListener("input", sync, true);
+    input.addEventListener("change", sync, true);
+    input.addEventListener("keyup", sync, true);
+    input.addEventListener("paste", function () { setTimeout(sync, 0); }, true);
+    window.__oddiSyncComposerAction = sync;
+    sync();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install, { once:true });
+  else install();
+})();
+</script>
+
+
+
+<style id="oddi-composer-position-real-final">
+/* REAL FINAL MOBILE COMPOSER POSITION
+   Keep ODDI's existing button artwork. Only control the layout/visibility. */
+@media (max-width:768px) and (pointer:coarse){
+  .input-area{
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    justify-content:flex-start !important;
+    gap:2px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+    padding:5px 6px !important;
+    height:50px !important;
+    min-height:50px !important;
+    max-height:50px !important;
+  }
+
+  .input-area > #attach-btn{
+    order:1 !important;
+    flex:0 0 34px !important;
+    width:34px !important;
+    min-width:34px !important;
+    max-width:34px !important;
+    height:34px !important;
+    min-height:34px !important;
+    max-height:34px !important;
+    margin:0 !important;
+    align-self:center !important;
+  }
+
+  .input-area > #userInput{
+    order:2 !important;
+    flex:1 1 auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    margin:0 !important;
+    padding:9px 3px !important;
+    align-self:center !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+  }
+
+  .input-area > #dictation-btn{
+    order:3 !important;
+    flex:0 0 30px !important;
+    width:30px !important;
+    min-width:30px !important;
+    max-width:30px !important;
+    height:34px !important;
+    min-height:34px !important;
+    max-height:34px !important;
+    margin:0 !important;
+    padding:0 !important;
+    align-self:center !important;
+  }
+
+  .input-area > .action-button-slot{
+    order:4 !important;
+    position:relative !important;
+    display:flex !important;
+    flex:0 0 36px !important;
+    width:36px !important;
+    min-width:36px !important;
+    max-width:36px !important;
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    margin:0 !important;
+    padding:0 !important;
+    align-self:center !important;
+    align-items:center !important;
+    justify-content:center !important;
+    gap:0 !important;
+    overflow:visible !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Empty: conversation/headset occupies the send-button slot. */
+  .input-area > .action-button-slot > #voice-btn{
+    display:inline-flex !important;
+    position:static !important;
+    flex:0 0 34px !important;
+    width:34px !important;
+    min-width:34px !important;
+    max-width:34px !important;
+    height:34px !important;
+    min-height:34px !important;
+    max-height:34px !important;
+    margin:0 !important;
+    padding:0 !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Empty: send is not present visually. */
+  .input-area > .action-button-slot > #send-btn{
+    display:none !important;
+    position:static !important;
+    margin:0 !important;
+  }
+
+  /* Typing: same physical slot becomes the existing ODDI send button. */
+  body.mobile-composer-typing .input-area > .action-button-slot > #voice-btn{
+    display:none !important;
+  }
+  body.mobile-composer-typing .input-area > .action-button-slot > #send-btn{
+    display:inline-flex !important;
+    position:static !important;
+    flex:0 0 38px !important;
+    width:38px !important;
+    min-width:38px !important;
+    max-width:38px !important;
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border-radius:50% !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-sizing:border-box !important;
+  }
+
+  /* Do not allow older stop-state rules to move the button outside the composer. */
+  .input-area > .action-button-slot > #send-btn.stop-active{
+    position:static !important;
+  }
+}
+</style>
+
+<script id="oddi-composer-position-real-final-js">
+(function(){
+  "use strict";
+  function install(){
+    var input=document.getElementById("userInput");
+    if(!input) return;
+    function sync(){
+      var hasText=String(input.value||"").trim().length>0;
+      document.body.classList.toggle("mobile-composer-typing",hasText);
+    }
+    input.addEventListener("input",sync,true);
+    input.addEventListener("change",sync,true);
+    input.addEventListener("keyup",sync,true);
+    input.addEventListener("paste",function(){setTimeout(sync,0);},true);
+    window.__oddiSyncComposerAction=sync;
+    sync();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",install,{once:true});
+  else install();
+})();
+</script>
+
+
+<style id="oddi-attachment-in-composer-final-fix">
+/* FINAL ATTACHMENT PLACEMENT — the file chip belongs INSIDE the composer.
+   On phones the composer grows upward; it must never float as a separate bar. */
+.input-area{
+  position:fixed !important;
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  align-content:center !important;
+  overflow:visible !important;
+  box-sizing:border-box !important;
+}
+.input-area > #attachmentPreview{
+  position:relative !important;
+  inset:auto !important;
+  order:0 !important;
+  flex:0 0 100% !important;
+  width:100% !important;
+  max-width:none !important;
+  min-width:0 !important;
+  height:32px !important;
+  min-height:32px !important;
+  max-height:32px !important;
+  margin:0 !important;
+  padding:0 4px 2px !important;
+  box-sizing:border-box !important;
+  display:none !important;
+  align-items:center !important;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  overflow:hidden !important;
+}
+.input-area.has-attachments > #attachmentPreview{
+  display:flex !important;
+}
+.input-area > #attachmentPreview .attachment-header{
+  width:100% !important;
+  height:30px !important;
+  min-height:30px !important;
+  margin:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:5px !important;
+  overflow:hidden !important;
+}
+.input-area > #attachmentPreview .attachment-toggle{
+  display:none !important;
+}
+.input-area > #attachmentPreview #attachmentName{
+  flex:1 1 auto !important;
+  width:auto !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 10px !important;
+  display:flex !important;
+  align-items:center !important;
+  box-sizing:border-box !important;
+  border:1px solid rgba(127,127,127,.20) !important;
+  border-radius:9px !important;
+  background:rgba(127,127,127,.10) !important;
+  color:inherit !important;
+  font-size:12px !important;
+  font-weight:600 !important;
+  overflow:hidden !important;
+  white-space:nowrap !important;
+  text-overflow:ellipsis !important;
+}
+.input-area > #attachmentPreview #removeAttachment{
+  flex:0 0 28px !important;
+  width:28px !important;
+  min-width:28px !important;
+  height:28px !important;
+  min-height:28px !important;
+  margin:0 !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border:0 !important;
+  border-radius:50% !important;
+  background:rgba(127,127,127,.12) !important;
+  color:inherit !important;
+  box-sizing:border-box !important;
+}
+.input-area > #attachmentPreview .attachment-list{display:none !important;}
+.input-area.has-attachments{
+  height:auto !important;
+  min-height:82px !important;
+  max-height:none !important;
+}
+.input-area.has-attachments > #attach-btn,
+.input-area.has-attachments > #userInput,
+.input-area.has-attachments > #dictation-btn,
+.input-area.has-attachments > .action-button-slot{
+  order:1 !important;
+}
+@media (max-width:768px) and (pointer:coarse){
+  .input-area.has-attachments{
+    min-height:88px !important;
+    border-radius:22px !important;
+  }
+  .input-area.has-attachments > #attachmentPreview{
+    height:30px !important;
+    min-height:30px !important;
+    padding:0 4px 2px !important;
+  }
+  .input-area.has-attachments > #userInput{
+    height:38px !important;
+    min-height:38px !important;
+  }
+}
+body.dark-mode .input-area > #attachmentPreview #attachmentName{
+  background:rgba(255,255,255,.07) !important;
+  border-color:#303030 !important;
+  color:#eee !important;
+}
+body.dark-mode .input-area > #attachmentPreview #removeAttachment{
+  background:rgba(255,255,255,.09) !important;
+  color:#eee !important;
+}
+</style>
+
+<style id="oddi-attachment-vertical-final">
+/* Give the mobile composer enough vertical room for the complete file chip + input row. */
+.input-area.has-attachments{
+  min-height:104px !important;
+  height:auto !important;
+  padding:6px !important;
+  row-gap:4px !important;
+  align-content:center !important;
+  overflow:visible !important;
+}
+.input-area.has-attachments > #attachmentPreview{
+  height:34px !important;
+  min-height:34px !important;
+  max-height:34px !important;
+  padding:2px 4px !important;
+  box-sizing:border-box !important;
+}
+.input-area.has-attachments > #attachmentPreview .attachment-header{
+  height:30px !important;
+  min-height:30px !important;
+}
+.input-area.has-attachments > #attachmentPreview #attachmentName{
+  height:30px !important;
+  min-height:30px !important;
+}
+.input-area.has-attachments > #attachmentPreview #removeAttachment{
+  width:30px !important;
+  min-width:30px !important;
+  height:30px !important;
+  min-height:30px !important;
+}
+@media (max-width:768px) and (pointer:coarse){
+  .input-area.has-attachments{
+    min-height:104px !important;
+    padding:6px !important;
+    row-gap:4px !important;
+  }
+  .input-area.has-attachments > #attachmentPreview{
+    height:34px !important;
+    min-height:34px !important;
+    max-height:34px !important;
+    padding:2px 4px !important;
+  }
+  .input-area.has-attachments > #userInput{
+    height:42px !important;
+    min-height:42px !important;
+  }
+}
+</style>
+<style id="oddi-final-mobile-composer-layout">
+/* One bordered composer owns BOTH the file chip and the input row. */
+@media (max-width:768px) and (pointer:coarse){
+  .input-area{
+    display:grid !important;
+    grid-template-columns:34px minmax(0,1fr) 30px 38px !important;
+    grid-template-rows:44px !important;
+    grid-template-areas:"attach input mic action" !important;
+    align-items:center !important;
+    column-gap:2px !important;
+    row-gap:4px !important;
+    height:50px !important;
+    min-height:50px !important;
+    max-height:50px !important;
+    padding:3px 5px !important;
+    overflow:hidden !important;
+    box-sizing:border-box !important;
+  }
+  .input-area.has-attachments{
+    grid-template-rows:32px 44px !important;
+    grid-template-areas:"files files files files" "attach input mic action" !important;
+    height:92px !important;
+    min-height:92px !important;
+    max-height:92px !important;
+    padding:4px 5px !important;
+    row-gap:2px !important;
+    overflow:hidden !important;
+    align-content:center !important;
+  }
+  .input-area > #attachmentPreview{
+    grid-area:files !important;
+    display:none !important;
+    position:relative !important;
+    inset:auto !important;
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+    height:32px !important;
+    min-height:32px !important;
+    max-height:32px !important;
+    margin:0 !important;
+    padding:0 2px !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+    background:transparent !important;
+    border:0 !important;
+  }
+  .input-area.has-attachments > #attachmentPreview{display:flex !important;}
+  .input-area > #attachmentPreview .attachment-header{
+    width:100% !important;
+    height:30px !important;
+    min-height:30px !important;
+    display:flex !important;
+    align-items:center !important;
+    gap:5px !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow:hidden !important;
+  }
+  .input-area > #attachmentPreview #attachmentName{
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    width:auto !important;
+    height:28px !important;
+    min-height:28px !important;
+    margin:0 !important;
+    padding:0 9px !important;
+    display:flex !important;
+    align-items:center !important;
+    box-sizing:border-box !important;
+    border-radius:9px !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+  }
+  .input-area > #attachmentPreview #removeAttachment{
+    flex:0 0 28px !important;
+    width:28px !important;
+    min-width:28px !important;
+    height:28px !important;
+    min-height:28px !important;
+    margin:0 !important;
+    padding:0 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    border-radius:50% !important;
+  }
+  .input-area > #attach-btn{grid-area:attach !important; margin:0 !important;}
+  .input-area > #userInput{
+    grid-area:input !important;
+    width:auto !important;
+    min-width:0 !important;
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    margin:0 !important;
+    padding:8px 2px !important;
+    overflow:hidden !important;
+    white-space:nowrap !important;
+    text-overflow:ellipsis !important;
+  }
+  .input-area > #dictation-btn{grid-area:mic !important; margin:0 !important;}
+  .input-area > .action-button-slot{
+    grid-area:action !important;
+    width:38px !important;
+    min-width:38px !important;
+    max-width:38px !important;
+    height:38px !important;
+    margin:0 !important;
+    padding:0 !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    overflow:visible !important;
+  }
+  .input-area > .action-button-slot > #voice-btn,
+  .input-area > .action-button-slot > #send-btn{
+    margin:0 !important;
+    position:static !important;
+  }
+}
+</style>
+
+<script id="oddi-mobile-sidebar-swipe-close">
+(function(){
+  "use strict";
+  var start=null;
+  var mq=window.matchMedia("(max-width:768px) and (pointer:coarse)");
+  function sidebarOpen(){
+    var s=document.querySelector(".oddi-rs-sidebar");
+    return !!(s && (s.classList.contains("open") || getComputedStyle(s).transform !== "matrix(1, 0, 0, 1, 0, 0)"));
+  }
+  function closeSidebar(){
+    var root=document.getElementById("oddi-react-sidebar-root");
+    var btn=document.querySelector(".oddi-rs-mobile-close");
+    if(btn){ btn.click(); return; }
+    if(root) root.dispatchEvent(new CustomEvent("oddi:sidebar-close",{bubbles:true}));
+    window.dispatchEvent(new CustomEvent("oddi:sidebar-close"));
+  }
+  document.addEventListener("touchstart",function(e){
+    if(!mq.matches || !e.touches.length || !sidebarOpen()) return;
+    var t=e.touches[0];
+    start={id:t.identifier,x:t.clientX,y:t.clientY,done:false};
+  },{capture:true,passive:true});
+  document.addEventListener("touchmove",function(e){
+    if(!start || !mq.matches || !e.touches.length) return;
+    var t=Array.prototype.find.call(e.touches,function(x){return x.identifier===start.id;});
+    if(!t) return;
+    var dx=t.clientX-start.x, dy=t.clientY-start.y;
+    if(!start.done && dx < -55 && Math.abs(dy) < 90 && Math.abs(dx) > Math.abs(dy)*1.2){
+      start.done=true;
+      closeSidebar();
+      try{navigator.vibrate && navigator.vibrate(8);}catch(_){}
+    }
+  },{capture:true,passive:true});
+  function clear(e){
+    if(!start) return;
+    if(!e || !e.changedTouches || Array.prototype.some.call(e.changedTouches,function(t){return t.identifier===start.id;})) start=null;
+  }
+  document.addEventListener("touchend",clear,{capture:true,passive:true});
+  document.addEventListener("touchcancel",function(){start=null;},{capture:true,passive:true});
+})();
+</script>
+
+
+<!-- ODDI generation control final: STOP during generation, headset after completion. -->
+<style id="oddi-generation-stop-headset-final">
+@media (max-width:768px) and (pointer:coarse){
+  /* Generation state always wins over the empty/typing composer state. */
+  body.oddi-generation-active .input-area > .action-button-slot > #voice-btn{
+    display:none !important;
+  }
+  body.oddi-generation-active .input-area > .action-button-slot > #send-btn,
+  body.oddi-generation-active .input-area > .action-button-slot > #send-btn.stop-active{
+    display:inline-flex !important;
+    position:static !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    width:38px !important;
+    min-width:38px !important;
+    max-width:38px !important;
+    height:38px !important;
+    min-height:38px !important;
+    max-height:38px !important;
+    flex:0 0 38px !important;
+    margin:0 !important;
+    padding:0 !important;
+    border-radius:50% !important;
+    align-items:center !important;
+    justify-content:center !important;
+    box-sizing:border-box !important;
+  }
+  body.oddi-generation-active .input-area > .action-button-slot > #send-btn .stop-icon{
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    width:100% !important;
+    height:100% !important;
+    line-height:1 !important;
+    font-size:15px !important;
+  }
+
+  /* Once generation ends, if the composer is empty, restore the headset. */
+  body:not(.oddi-generation-active):not(.mobile-composer-typing) .input-area > .action-button-slot > #voice-btn{
+    display:inline-flex !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+  body:not(.oddi-generation-active):not(.mobile-composer-typing) .input-area > .action-button-slot > #send-btn{
+    display:none !important;
+  }
+}
+</style>
+
+
+
+<style id="oddi-main-chat-scroll-final">
+/* FINAL MAIN CHAT SCROLL FIX — desktop + phone. */
+html, body, .app{height:100% !important;min-height:0 !important;}
+#chatbox.chatbox{position:relative !important;flex:1 1 auto !important;min-height:0 !important;max-height:none !important;height:auto !important;overflow-x:hidden !important;overflow-y:auto !important;overscroll-behavior-y:contain !important;-webkit-overflow-scrolling:touch !important;touch-action:pan-y !important;scroll-behavior:smooth !important;scrollbar-width:thin !important;scrollbar-color:rgba(110,110,110,.65) transparent !important;}
+@media (min-width:769px){ #chatbox.chatbox{padding-bottom:140px !important;} }
+#chatbox.chatbox::-webkit-scrollbar{width:8px !important;height:8px !important;}
+#chatbox.chatbox::-webkit-scrollbar-track{background:transparent !important;}
+#chatbox.chatbox::-webkit-scrollbar-thumb{background:rgba(110,110,110,.58) !important;border-radius:10px !important;border:2px solid transparent !important;background-clip:padding-box !important;}
+#chatbox.chatbox::-webkit-scrollbar-thumb:hover{background:rgba(90,90,90,.82) !important;border:2px solid transparent !important;background-clip:padding-box !important;}
+@media (max-width:768px) and (pointer:coarse){
+  #chatbox.chatbox{height:100dvh !important;min-height:100dvh !important;max-height:100dvh !important;padding-left:10px !important;padding-right:10px !important;padding-bottom:max(132px,calc(104px + env(safe-area-inset-bottom))) !important;overflow-y:auto !important;overflow-x:hidden !important;touch-action:pan-y !important;scrollbar-width:thin !important;scrollbar-color:rgba(120,120,120,.72) transparent !important;}
+  #chatbox.chatbox::-webkit-scrollbar{width:5px !important;}
+  #chatbox.chatbox::-webkit-scrollbar-thumb{background:rgba(120,120,120,.72) !important;border:1px solid transparent !important;background-clip:padding-box !important;}
+}
+body.oddi-home-fixed #chatbox.chatbox{overflow-y:auto !important;overflow-x:hidden !important;touch-action:pan-y !important;}
+</style>
+<script id="oddi-main-chat-scroll-final-js">
+(function(){
+  "use strict";
+  function install(){
+    var chat=document.getElementById("chatbox");
+    if(!chat) return;
+    function refresh(){chat.style.overflowY="auto";chat.style.overflowX="hidden";chat.style.touchAction="pan-y";}
+    refresh();
+    new MutationObserver(refresh).observe(chat,{childList:true,subtree:true});
+    window.addEventListener("resize",refresh,{passive:true});
+    window.addEventListener("orientationchange",refresh,{passive:true});
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",install,{once:true}); else install();
+})();
+</script>
+
+</body>
+</html>

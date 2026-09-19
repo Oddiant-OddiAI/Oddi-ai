@@ -1,7 +1,9 @@
-Flask
+fastapi
+uvicorn[standard]
+python-multipart
+jinja2
 openai
 python-dotenv
-gunicorn
 pypdf
 openpyxl
 python-pptx

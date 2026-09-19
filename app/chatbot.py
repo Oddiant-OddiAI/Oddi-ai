@@ -273,10 +273,10 @@ def _check_user_quota(
 
 
 # ==========================================
-# LEGACY OPENAI / GROQ PATH
+# SPECIAL-CAPABILITY OPENAI / GROQ PATH
 # ==========================================
 
-def _legacy_openai_groq_response(
+def _special_capability_response(
     chat_history,
     vector_store_id=None,
 ):
@@ -433,11 +433,10 @@ def get_response(
     Phase 6:
         Per-user daily AI usage limit.
 
-    Current transition rule:
-        Requests requiring web, files, images, or video
-        stay on the existing OpenAI/Groq path because
-        the new Phase 4 adapters currently provide
-        text generation only.
+    Provider policy:
+        Normal requests must use the routing engine.
+        Only requests requiring provider tools not yet exposed
+        by the adapters may use the special-capability OpenAI/Groq path.
     """
 
     # ==========================================
@@ -473,7 +472,7 @@ def get_response(
     # Gemini is the primary ODDI-AI path for normal
     # text requests AND platform-action requests.
     #
-    # Keep the legacy OpenAI/Groq path only for
+    # Keep the special-capability OpenAI/Groq path only for
     # capabilities that currently require provider
     # tools which the Gemini adapter does not expose:
     # web search, file search, image input, or video.
@@ -505,7 +504,7 @@ def get_response(
 
     if requires_legacy_capability:
 
-        response = _legacy_openai_groq_response(
+        response = _special_capability_response(
             chat_history,
             vector_store_id,
         )
@@ -548,42 +547,43 @@ def get_response(
                     provider_prompt,
                 )
 
-                response = execution[
-                    "response"
-                ]
+                if execution.get("success") is True:
+                    response = execution.get("response")
 
-                if response and response.strip():
+                    if response and str(response).strip():
 
-                    print(
-                        f"✅ ODDI-AI routed to "
-                        f"{execution['provider']}/"
-                        f"{execution['model']}"
-                    )
-
-                    if execution.get(
-                        "capacity_id"
-                    ):
                         print(
-                            f"📦 Capacity: "
-                            f"{execution['capacity_id']}"
+                            f"✅ ODDI-AI routed to "
+                            f"{execution.get('provider')}/"
+                            f"{execution.get('model')}"
                         )
 
-                    _record_user_usage(
-                        user_id,
-                        chat_history,
-                        response,
-                    )
+                        if execution.get("capacity_id"):
+                            print(
+                                f"📦 Capacity: "
+                                f"{execution['capacity_id']}"
+                            )
 
-                    return response
+                        _record_user_usage(
+                            user_id,
+                            chat_history,
+                            response,
+                        )
+
+                        return response
+
+                print("⚠️ All routed providers failed.")
+                print(
+                    execution.get(
+                        "reason",
+                        "all_candidates_failed",
+                    )
+                )
 
             except ProviderAdapterError as provider_error:
 
-                print(
-                    "⚠️ All routed providers failed."
-                )
-                print(
-                    provider_error
-                )
+                print("⚠️ Provider execution failed.")
+                print(provider_error)
 
     except Exception as routing_error:
 
@@ -595,22 +595,16 @@ def get_response(
         )
 
     # ==========================================
-    # FINAL SAFETY-NET FALLBACK
+    # NO ROUTER BYPASS
     # ==========================================
+    #
+    # Normal requests must never bypass the routing engine
+    # and silently jump to OpenAI/Groq. Provider fallback is
+    # handled inside execute_route() using routed candidates.
 
     print(
-        "⚠️ Using legacy OpenAI/Groq fallback."
+        "⚠️ ODDI-AI routing failed: "
+        "no routed provider could serve this request."
     )
 
-    response = _legacy_openai_groq_response(
-        chat_history,
-        vector_store_id,
-    )
-
-    _record_user_usage(
-        user_id,
-        chat_history,
-        response,
-    )
-
-    return response
+    return PROVIDER_UNAVAILABLE_RESPONSE

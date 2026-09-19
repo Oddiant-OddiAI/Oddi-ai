@@ -368,14 +368,16 @@ def _create_files_tables():
                     mime_type TEXT,
                     extension TEXT,
                     size_bytes BIGINT NOT NULL DEFAULT 0,
-                    storage_backend TEXT NOT NULL DEFAULT 'metadata-only',
+                    storage_backend TEXT NOT NULL DEFAULT 'database',
                     storage_key TEXT,
                     external_file_id TEXT,
+                    file_data BYTEA,
                     status TEXT NOT NULL DEFAULT 'received',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            conn.execute("ALTER TABLE files ADD COLUMN IF NOT EXISTS file_data BYTEA")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_files_user_created ON files(user_id, created_at DESC)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_files_user_conversation ON files(user_id, conversation_id)")
         else:
@@ -396,6 +398,9 @@ def _create_files_tables():
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(files)").fetchall()}
+            if "file_data" not in columns:
+                conn.execute("ALTER TABLE files ADD COLUMN file_data BLOB")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_files_user_created ON files(user_id, created_at DESC)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_files_user_conversation ON files(user_id, conversation_id)")
         conn.commit()
@@ -1086,9 +1091,10 @@ def register_file(
     mime_type=None,
     size_bytes=0,
     conversation_id=None,
-    storage_backend="metadata-only",
+    storage_backend="database",
     storage_key=None,
     external_file_id=None,
+    file_data=None,
     status="received",
 ):
     extension = os.path.splitext(filename or "")[1].lower().lstrip(".") or None
@@ -1100,14 +1106,14 @@ def register_file(
                 """
                 INSERT INTO files
                 (user_id, conversation_id, filename, mime_type, extension, size_bytes,
-                 storage_backend, storage_key, external_file_id, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 storage_backend, storage_key, external_file_id, file_data, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING id
                 """,
                 (
                     user_id, conversation_id, filename or "", mime_type, extension,
                     int(size_bytes or 0), storage_backend, storage_key,
-                    external_file_id, status,
+                    external_file_id, file_data, status,
                 ),
             )
             file_id = row["id"]
@@ -1116,13 +1122,13 @@ def register_file(
                 """
                 INSERT INTO files
                 (user_id, conversation_id, filename, mime_type, extension, size_bytes,
-                 storage_backend, storage_key, external_file_id, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 storage_backend, storage_key, external_file_id, file_data, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user_id, conversation_id, filename or "", mime_type, extension,
                     int(size_bytes or 0), storage_backend, storage_key,
-                    external_file_id, status,
+                    external_file_id, file_data, status,
                 ),
             )
             file_id = cursor.lastrowid
@@ -1135,7 +1141,7 @@ def register_file(
 def update_file_record(file_id, user_id, **patch):
     allowed = {
         "storage_backend", "storage_key", "external_file_id", "status",
-        "conversation_id", "size_bytes", "filename", "mime_type"
+        "conversation_id", "size_bytes", "filename", "mime_type", "file_data"
     }
     patch = {k: v for k, v in patch.items() if k in allowed}
     if not patch:
@@ -1171,6 +1177,34 @@ def get_files(user_id, conversation_id=None):
                 (user_id, conversation_id),
             )
         return [dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_file(file_id, user_id):
+    """Return one Library file owned by the current user, including binary data."""
+    conn = get_db("files")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT * FROM files WHERE id = ? AND user_id = ?",
+            (file_id, user_id),
+        )
+        return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def delete_file_record(file_id, user_id):
+    """Permanently delete a Library file record and its stored binary data."""
+    conn = get_db("files")
+    try:
+        cursor = conn.execute(
+            "DELETE FROM files WHERE id = ? AND user_id = ?",
+            (file_id, user_id),
+        )
+        conn.commit()
+        return int(getattr(cursor, "rowcount", 0) or 0) > 0
     finally:
         conn.close()
 
