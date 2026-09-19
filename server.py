@@ -256,10 +256,16 @@ def response_from_engine(reply):
 
 @app.get("/", response_class=HTMLResponse, name="home")
 def home(request: Request):
+    # ODDI is a private authenticated application.
+    # A visitor with no valid session must sign in before the main app is
+    # rendered. Existing authenticated sessions continue straight to ODDI.
+    if not request.session.get("user_id"):
+        return RedirectResponse(url="/login", status_code=303)
+
     response = render_template(
         request,
         "index.html",
-        logged_in=("user_id" in request.session),
+        logged_in=True,
         username=request.session.get("username"),
         user_id=request.session.get("user_id"),
     )
@@ -1014,6 +1020,10 @@ async def chat(request: Request):
         logger.info("Files received: %s", [f.filename for f in engine_files])
     else:
         logger.info("No files uploaded")
+
+    # Chat is also private: do not allow unauthenticated access to the
+    # underlying AI engine even if someone calls /chat directly.
+    user_id = require_user_id(request)
 
     reply = process_message(
         message,
