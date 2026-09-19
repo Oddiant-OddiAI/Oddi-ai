@@ -6,6 +6,7 @@ import secrets
 from datetime import timedelta
 from urllib.parse import quote
 
+from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import (
@@ -565,7 +566,7 @@ def api_get_conversations(request: Request):
         request.session.get("user_id"),
     )
     user_id = require_user_id(request)
-    return JSONResponse(get_conversations(user_id))
+    return JSONResponse(content=jsonable_encoder(get_conversations(user_id)))
 
 
 @app.post("/api/conversations", name="api_create_conversation")
@@ -583,7 +584,7 @@ async def api_create_conversation(request: Request):
     conversation = get_conversation(conversation_id, user_id)
 
     return JSONResponse(
-        {
+        content=jsonable_encoder({
             "success": True,
             **(
                 conversation
@@ -594,7 +595,7 @@ async def api_create_conversation(request: Request):
                     "revision": 0,
                 }
             ),
-        },
+        }),
         status_code=201,
     )
 
@@ -602,7 +603,7 @@ async def api_create_conversation(request: Request):
 @app.get("/api/conversations/bin", name="api_get_deleted_conversations")
 def api_get_deleted_conversations(request: Request):
     user_id = require_user_id(request)
-    return JSONResponse(get_deleted_conversations(user_id))
+    return JSONResponse(content=jsonable_encoder(get_deleted_conversations(user_id)))
 
 
 @app.put("/api/conversations/{conversation_id}/metadata", name="api_update_conversation_metadata")
@@ -636,7 +637,7 @@ async def api_update_conversation_metadata(request: Request, conversation_id: in
     if not updated:
         return JSONResponse({"error": "Conversation not found."}, status_code=404)
 
-    return JSONResponse({"success": True, "conversation": updated})
+    return JSONResponse(content=jsonable_encoder({"success": True, "conversation": updated}))
 
 
 @app.get("/api/conversations/{conversation_id}", name="api_get_conversation")
@@ -647,7 +648,7 @@ def api_get_conversation(request: Request, conversation_id: int):
     if not conversation:
         return JSONResponse({"error": "Conversation not found."}, status_code=404)
 
-    return JSONResponse(conversation)
+    return JSONResponse(content=jsonable_encoder(conversation))
 
 
 @app.put("/api/conversations/{conversation_id}", name="api_update_conversation")
@@ -687,10 +688,10 @@ async def api_update_conversation(request: Request, conversation_id: int):
         )
 
     return JSONResponse(
-        {
+        content=jsonable_encoder({
             "success": True,
             "conversation": result["conversation"],
-        }
+        })
     )
 
 
@@ -721,7 +722,7 @@ async def api_append_conversation_message(request: Request, conversation_id: int
     if not conversation:
         return JSONResponse({"error": "Conversation not found."}, status_code=404)
 
-    return JSONResponse({"success": True, "conversation": conversation})
+    return JSONResponse(content=jsonable_encoder({"success": True, "conversation": conversation}))
 
 
 @app.put("/api/conversations/{conversation_id}/messages/{message_id}", name="api_update_conversation_message")
@@ -760,7 +761,7 @@ async def api_update_conversation_message(
             status_code=404,
         )
 
-    return JSONResponse({"success": True, "conversation": conversation})
+    return JSONResponse(content=jsonable_encoder({"success": True, "conversation": conversation}))
 
 
 @app.delete("/api/conversations/{conversation_id}/messages/{message_id}", name="api_delete_conversation_message")
@@ -790,7 +791,7 @@ def api_delete_conversation_message(
             status_code=404,
         )
 
-    return JSONResponse({"success": True, "conversation": conversation})
+    return JSONResponse(content=jsonable_encoder({"success": True, "conversation": conversation}))
 
 
 @app.delete("/api/conversations/clear", name="api_clear_conversations")
