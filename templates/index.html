@@ -17842,114 +17842,251 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
 </style>
 <style id="oddi-phone-gesture-navigator">
 @media (max-width: 768px) and (pointer: coarse) {
+  /* Gesture navigator: one persistent techy curve + one changing chat name. */
   .oddi-gesture-edge-hint{position:fixed;left:0;top:34%;width:7px;height:32%;border-radius:0 8px 8px 0;opacity:0;pointer-events:none;z-index:2147483004;background:linear-gradient(180deg,transparent,rgba(32,199,107,.7),transparent);box-shadow:0 0 14px rgba(32,199,107,.35);transition:opacity .18s ease}
   .oddi-gesture-edge-hint.active{opacity:.85}
   .oddi-chat-arc-nav{position:fixed;left:0;top:50%;width:100%;height:0;z-index:2147483005;pointer-events:none;opacity:0;transform:translateX(-2px);transition:opacity .16s ease,transform .16s ease}
   .oddi-chat-arc-nav.show{opacity:1;transform:translateX(0)}
-  /* ONE persistent curve. The curve never duplicates or becomes a chat list. */
-  .oddi-chat-arc-line{position:absolute;left:12px;top:-76px;width:48px;height:152px;border:2px solid rgba(32,199,107,.95);border-left:0;border-radius:0 76px 76px 0;filter:drop-shadow(0 0 7px rgba(32,199,107,.55)) drop-shadow(0 0 15px rgba(32,199,107,.18))}
+  .oddi-chat-arc-line{position:absolute;left:8px;top:-78px;width:48px;height:156px;border:2px solid rgba(32,199,107,.96);border-left:0;border-radius:0 78px 78px 0;filter:drop-shadow(0 0 7px rgba(32,199,107,.58)) drop-shadow(0 0 16px rgba(32,199,107,.20))}
   .oddi-chat-arc-line::after{content:"";position:absolute;right:-4px;top:50%;width:8px;height:8px;border-radius:50%;background:#20c76b;box-shadow:0 0 10px rgba(32,199,107,.95),0 0 18px rgba(32,199,107,.45);transform:translateY(-50%)}
-  .oddi-chat-arc-label{position:absolute;left:72px;top:-28px;max-width:calc(100vw - 88px);padding:9px 14px;border:1px solid rgba(32,199,107,.34);border-radius:13px;background:rgba(10,10,10,.86);backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);color:#fff;font-size:15px;font-weight:750;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 8px 28px rgba(0,0,0,.34),0 0 18px rgba(32,199,107,.11);transform:translateY(5px);transition:transform .14s ease,opacity .14s ease}
+  .oddi-chat-arc-label{position:absolute;left:68px;top:-30px;max-width:calc(100vw - 82px);padding:9px 14px;border:1px solid rgba(32,199,107,.34);border-radius:13px;background:rgba(10,10,10,.88);backdrop-filter:blur(13px);-webkit-backdrop-filter:blur(13px);color:#fff;font-size:15px;font-weight:750;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;box-shadow:0 8px 28px rgba(0,0,0,.34),0 0 18px rgba(32,199,107,.11);transform:translateY(5px);transition:transform .14s ease,opacity .14s ease}
   .oddi-chat-arc-label.bump{transform:translateY(0)}
-  body:not(.dark-mode) .oddi-chat-arc-label{background:rgba(255,255,255,.92);color:#111;border-color:rgba(32,199,107,.3)}
-  .history-item.keyboard-selected{outline:2px solid rgba(32,199,107,.55)!important;outline-offset:-2px!important}
+  body:not(.dark-mode) .oddi-chat-arc-label{background:rgba(255,255,255,.94);color:#111;border-color:rgba(32,199,107,.30)}
 }
 </style>
 <script id="oddi-phone-gesture-navigator-script">
 (function(){
   "use strict";
-  const isPhone=()=>window.matchMedia("(max-width: 768px) and (pointer: coarse)").matches;
-  let edgeStart=null,pressTimer=null,gesture=null;
+
+  const phoneQuery=window.matchMedia("(max-width: 768px) and (pointer: coarse)");
+  const isPhone=()=>phoneQuery.matches;
+  const HOLD_MS=550;
+  const STEP_PX=54;
+  const DOWN_TRIGGER=24;
+
+  let pressTimer=null;
+  let gesture=null;
+  let edgeStart=null;
   let nav=null,label=null,hint=null;
-  function haptic(ms=8){try{if(navigator.vibrate)navigator.vibrate(ms)}catch(_){} }
+
+  function haptic(ms=7){
+    try{ if(navigator.vibrate) navigator.vibrate(ms); }catch(_){ }
+  }
+
   function ensureUI(){
-    if(nav)return;
-    hint=document.createElement("div");hint.className="oddi-gesture-edge-hint";hint.setAttribute("aria-hidden","true");document.body.appendChild(hint);
-    nav=document.createElement("div");nav.className="oddi-chat-arc-nav";nav.setAttribute("aria-hidden","true");
-    const curve=document.createElement("div");curve.className="oddi-chat-arc-line";
-    label=document.createElement("div");label.className="oddi-chat-arc-label";
-    nav.append(curve,label);document.body.appendChild(nav);
+    if(nav) return;
+    hint=document.createElement("div");
+    hint.className="oddi-gesture-edge-hint";
+    hint.setAttribute("aria-hidden","true");
+    document.body.appendChild(hint);
+
+    nav=document.createElement("div");
+    nav.className="oddi-chat-arc-nav";
+    nav.setAttribute("aria-hidden","true");
+
+    const curve=document.createElement("div");
+    curve.className="oddi-chat-arc-line";
+
+    label=document.createElement("div");
+    label.className="oddi-chat-arc-label";
+
+    nav.append(curve,label);
+    document.body.appendChild(nav);
   }
-  function safeTarget(t){
-    if(!t||!t.closest)return false;
-    if(t.closest('.oddi-rs-sidebar,.oddi-rs-rail,.header,.header-more-overlay,.utility-modal,.input-area,textarea,input,button,a,select,[contenteditable="true"],.user-message,.bot-message,.action-card,.mobile-tool-menu'))return false;
-    return !!t.closest("#chatbox,.app");
+
+  function safeTarget(target){
+    if(!target || !target.closest) return false;
+    if(target.closest(
+      '.oddi-rs-sidebar,.oddi-rs-rail,.header,.header-more-overlay,'+
+      '.utility-modal,.input-area,textarea,input,button,a,select,'+
+      '[contenteditable="true"],.user-message,.bot-message,.action-card,'+
+      '.mobile-tool-menu,.quick-actions,.continue-card'
+    )) return false;
+    return !!target.closest("#chatbox,.app");
   }
-  function chatList(){
-    if(typeof conversations==="undefined"||!Array.isArray(conversations))return [];
-    return conversations.filter(c=>c&&!isConversationArchived(c)).sort((a,b)=>{
-      const ap=isConversationPinned(a)?1:0,bp=isConversationPinned(b)?1:0;
-      if(ap!==bp)return bp-ap;
-      return getConversationDate(b)-getConversationDate(a);
-    });
+
+  function getChats(){
+    try{
+      if(!Array.isArray(conversations)) return [];
+      return conversations
+        .filter(c=>c && !isConversationArchived(c))
+        .sort((a,b)=>{
+          const ap=isConversationPinned(a)?1:0;
+          const bp=isConversationPinned(b)?1:0;
+          if(ap!==bp) return bp-ap;
+          return getConversationDate(b)-getConversationDate(a);
+        });
+    }catch(error){
+      console.warn("ODDI gesture navigator: chat list unavailable",error);
+      return [];
+    }
   }
-  function showChat(index,feedback=true){
-    const list=chatList();if(!list.length)return;
-    index=Math.max(0,Math.min(list.length-1,index));gesture.index=index;
-    label.textContent=list[index].title||"New Chat";
-    label.classList.remove("bump");void label.offsetWidth;label.classList.add("bump");
-    if(feedback)haptic(7);
+
+  function currentChatIndex(list){
+    if(typeof currentConversation!=="number") return 0;
+    const current=conversations[currentConversation];
+    const index=list.indexOf(current);
+    return index>=0 ? index : 0;
   }
+
+  function setChat(index,feedback){
+    const list=getChats();
+    if(!list.length || !label) return false;
+    const next=Math.max(0,Math.min(list.length-1,index));
+    if(!gesture) return false;
+    const changed=next!==gesture.index;
+    gesture.index=next;
+    label.textContent=list[next]?.title || "New Chat";
+    label.classList.remove("bump");
+    void label.offsetWidth;
+    label.classList.add("bump");
+    if(changed && feedback) haptic(8);
+    return changed;
+  }
+
   function openSelected(){
-    if(!gesture)return;
-    const list=chatList(),c=list[gesture.index];
-    if(c&&typeof window.__oddiOpenConversation==="function"){
-      const actual=conversations.indexOf(c);if(actual>=0)window.__oddiOpenConversation(actual);
-    }
+    if(!gesture) return;
+    const list=getChats();
+    const chosen=list[gesture.index];
+    if(!chosen || typeof window.__oddiOpenConversation!=="function") return;
+    const actualIndex=conversations.indexOf(chosen);
+    if(actualIndex>=0) window.__oddiOpenConversation(actualIndex);
   }
-  function activateNavigator(e){
-    if(!isPhone()||!gesture?.ready||gesture.active||!safeTarget(e.target))return;
-    const list=chatList();if(!list.length){gesture=null;return;}
-    let startIndex=list.findIndex(c=>conversations.indexOf(c)===currentConversation);if(startIndex<0)startIndex=0;
-    gesture.active=true;gesture.lastSlot=0;gesture.index=startIndex;
-    ensureUI();showChat(gesture.index,false);nav.classList.add("show");haptic(10);
-    e.preventDefault();
+
+  function activateNavigator(){
+    if(!gesture?.ready || gesture.active) return false;
+    const list=getChats();
+    if(!list.length){ gesture=null; return false; }
+
+    gesture.active=true;
+    gesture.lastSlot=0;
+    gesture.index=currentChatIndex(list);
+
+    ensureUI();
+    setChat(gesture.index,false);
+    nav.classList.add("show");
+
+    /* Haptic only when the navigator actually appears — never on a plain tap. */
+    haptic(6);
+    return true;
   }
-  function cancelPress(){if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}}
+
+  function clearGesture(){
+    if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}
+    if(nav) nav.classList.remove("show");
+    if(hint) hint.classList.remove("active");
+    gesture=null;
+  }
+
   document.addEventListener("pointerdown",function(e){
-    if(!isPhone()||e.pointerType==="mouse")return;
-    if(e.clientX<=24){edgeStart={x:e.clientX,y:e.clientY,id:e.pointerId};ensureUI();return;}
-    if(!safeTarget(e.target))return;
-    cancelPress();
-    gesture={pending:true,ready:false,active:false,startX:e.clientX,startY:e.clientY,pointerId:e.pointerId};
-    pressTimer=setTimeout(()=>{if(gesture&&gesture.pending){gesture.ready=true;haptic(5);}},360);
-  },true);
-  document.addEventListener("pointermove",function(e){
-    if(!isPhone()||e.pointerType==="mouse")return;
-    if(edgeStart&&e.pointerId===edgeStart.id&&e.clientX-edgeStart.x>55&&Math.abs(e.clientY-edgeStart.y)<100){
-      e.preventDefault();
-      const sidebar=document.querySelector(".oddi-rs-sidebar"),launcher=document.querySelector(".oddi-rs-phone-launcher,.oddi-rs-launcher");
-      if(sidebar&&!sidebar.classList.contains("open")&&launcher)launcher.click();
-      hint.classList.add("active");haptic(10);edgeStart=null;setTimeout(()=>hint.classList.remove("active"),180);return;
+    if(!isPhone() || e.pointerType==="mouse") return;
+
+    /* Edge swipe → open sidebar. */
+    if(e.clientX<=26){
+      edgeStart={x:e.clientX,y:e.clientY,id:e.pointerId};
+      ensureUI();
+      return;
     }
-    if(!gesture)return;
-    const dy=e.clientY-gesture.startY,dx=e.clientX-gesture.startX;
-    if(gesture.pending&&!gesture.active){
-      if(Math.hypot(dx,dy)>18){
-        if(Math.abs(dx)>Math.abs(dy)*1.15){cancelPress();gesture=null;return;}
-        if(gesture.ready&&dy>35){activateNavigator({target:e.target,clientX:e.clientX,clientY:e.clientY,preventDefault:()=>{}});}
+
+    if(!safeTarget(e.target)) return;
+
+    if(pressTimer) clearTimeout(pressTimer);
+
+    gesture={
+      pending:true,
+      ready:false,
+      active:false,
+      pointerId:e.pointerId,
+      startX:e.clientX,
+      startY:e.clientY,
+      index:0,
+      lastSlot:0
+    };
+
+    /* Capture the pointer so the gesture keeps receiving movement. */
+    try{ e.target.setPointerCapture?.(e.pointerId); }catch(_){ }
+
+    pressTimer=setTimeout(()=>{
+      if(gesture?.pending && gesture.pointerId===e.pointerId){
+        gesture.ready=true;
+        /* No vibration here: a long press by itself is not a gesture. */
+      }
+    },HOLD_MS);
+  },true);
+
+  document.addEventListener("pointermove",function(e){
+    if(!isPhone() || e.pointerType==="mouse") return;
+
+    if(edgeStart && e.pointerId===edgeStart.id){
+      const dx=e.clientX-edgeStart.x;
+      const dy=e.clientY-edgeStart.y;
+      if(dx>55 && Math.abs(dy)<110){
+        e.preventDefault();
+        const sidebar=document.querySelector(".oddi-rs-sidebar");
+        const launcher=document.querySelector(".oddi-rs-phone-launcher,.oddi-rs-launcher");
+        if(sidebar && !sidebar.classList.contains("open") && launcher) launcher.click();
+        ensureUI();
+        hint.classList.add("active");
+        haptic(8);
+        edgeStart=null;
+        setTimeout(()=>hint.classList.remove("active"),180);
       }
       return;
     }
-    if(gesture.active){
-      const slot=Math.floor(Math.max(0,dy)/54);
-      if(slot!==gesture.lastSlot){
-        const step=slot-gesture.lastSlot;
-        const list=chatList();
-        const next=gesture.index+step;
-        gesture.lastSlot=slot;
-        if(next>=0&&next<list.length)showChat(next,true);
+
+    if(!gesture || gesture.pointerId!==e.pointerId) return;
+
+    const dx=e.clientX-gesture.startX;
+    const dy=e.clientY-gesture.startY;
+
+    if(gesture.pending && !gesture.active){
+      if(Math.hypot(dx,dy)>18){
+        /* A horizontal movement cancels the long-press navigator. */
+        if(Math.abs(dx)>Math.abs(dy)*1.20){
+          clearGesture();
+          return;
+        }
+        if(gesture.ready && dy>=DOWN_TRIGGER){
+          activateNavigator();
+        }
       }
+      return;
+    }
+
+    if(gesture.active){
       e.preventDefault();
+      const slot=Math.floor(Math.max(0,dy)/STEP_PX);
+      if(slot!==gesture.lastSlot){
+        const delta=slot-gesture.lastSlot;
+        gesture.lastSlot=slot;
+        const list=getChats();
+        const next=gesture.index+delta;
+        if(next>=0 && next<list.length) setChat(next,true);
+      }
     }
   },{capture:true,passive:false});
+
   document.addEventListener("pointerup",function(e){
-    if(edgeStart&&e.pointerId===edgeStart.id)edgeStart=null;
+    if(edgeStart && e.pointerId===edgeStart.id) edgeStart=null;
+    if(!gesture || gesture.pointerId!==e.pointerId){ cancelPress(); return; }
+
     cancelPress();
-    if(gesture?.active){e.preventDefault();openSelected();nav?.classList.remove("show");gesture=null;}
-    else if(gesture){gesture=null;nav?.classList.remove("show");}
+    if(gesture.active){
+      e.preventDefault();
+      openSelected();
+    }
+    clearGesture();
   },true);
-  document.addEventListener("pointercancel",function(){edgeStart=null;cancelPress();gesture=null;nav?.classList.remove("show");hint?.classList.remove("active")},true);
+
+  document.addEventListener("pointercancel",function(e){
+    if(gesture && e.pointerId!==gesture.pointerId) return;
+    edgeStart=null;
+    clearGesture();
+  },true);
+
+  function cancelPress(){
+    if(pressTimer){clearTimeout(pressTimer);pressTimer=null;}
+  }
 })();
 </script>
 </body>
