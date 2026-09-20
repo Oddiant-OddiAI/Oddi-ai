@@ -165,7 +165,24 @@ export default function Sidebar() {
     const close = (event: MouseEvent) => {
       if (!(event.target as HTMLElement)?.closest('.oddi-rs-chat-menu')) setMenuId(null);
     };
-    const key = (event: KeyboardEvent) => { if (event.key === 'Escape') setMenuId(null); };
+    const key = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuId(null);
+
+      // ODDI sidebar shortcut: Ctrl + Shift + B
+      // Keep it global so it works even when the sidebar is closed.
+      if (
+        event.ctrlKey &&
+        event.shiftKey &&
+        !event.altKey &&
+        !event.metaKey &&
+        event.key.toLowerCase() === 'b'
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+        setCollapsed(false);
+        setOpen(value => !value);
+      }
+    };
     document.addEventListener('click', close);
     document.addEventListener('keydown', key);
     return () => { document.removeEventListener('click', close); document.removeEventListener('keydown', key); };

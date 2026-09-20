@@ -226,6 +226,82 @@ body.dark-mode #oddi-react-sidebar-root {
 
 .oddi-rs-actions button:hover { background: var(--rs-hover); color: var(--rs-text); }
 
+/* Sidebar chat action menu: keep the three-dot menu attached to its chat row. */
+.oddi-rs-chat-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.oddi-rs-chat-menu > button {
+  position: relative;
+  z-index: 2;
+}
+
+.oddi-rs-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 5px);
+  z-index: 2147483005;
+  width: 128px;
+  padding: 4px;
+  border: 1px solid var(--rs-border);
+  border-radius: 9px;
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  box-shadow: 0 10px 28px rgba(0,0,0,.30);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.oddi-rs-menu button {
+  width: 100%;
+  min-height: 29px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--rs-muted);
+  font: inherit;
+  font-size: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.oddi-rs-menu button svg {
+  flex: 0 0 auto;
+}
+
+.oddi-rs-menu button:hover {
+  background: var(--rs-hover);
+  color: var(--rs-text);
+}
+
+.oddi-rs-menu button.danger {
+  color: #d66;
+}
+
+.oddi-rs-menu button.danger:hover {
+  background: rgba(220,70,70,.10);
+  color: #f07777;
+}
+
+/* Keep the menu visually usable when a chat row sits near the history edge. */
+.oddi-rs-history {
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .oddi-rs-menu {
+    width: 124px;
+  }
+}
+
+
 .oddi-rs-nav {
   flex: 0 0 auto;
   padding: 7px 0 5px;
