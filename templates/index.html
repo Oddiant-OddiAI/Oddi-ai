@@ -107,7 +107,7 @@
 <style id="app-lock-keyboard-safety">#appLockOverlay, #appLockOverlay *{-webkit-user-select:none;user-select:none;}#appLockPasswordInput{-webkit-user-select:text;user-select:text;}#appLockOverlay[aria-hidden="true"]{pointer-events:none;}
 </style>
 
-<style id="oddi-final-message-ui-v4">.user-message, .bot-message{position:relative !important;box-sizing:border-box !important;max-width:min(760px,88%) !important;}.user-message{width:fit-content !important;align-self:flex-end !important;display:grid !important;grid-template-columns:auto auto !important;align-items:start !important;justify-content:end !important;gap:0 2px !important;margin:0 0 18px auto !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#111 !important;}.user-message .user-message-header, .user-message .user-actions{display:contents !important;}.user-message .user-message-header b{display:none !important;}.user-message .user-text{order:1 !important;grid-column:1 / -1 !important;grid-row:1 !important;position:relative !important;display:block !important;width:fit-content !important;max-width:100% !important;margin:0 !important;padding:13px 18px !important;box-sizing:border-box !important;background:#f1f1f1 !important;color:#111 !important;border:0 !important;border-radius:26px !important;box-shadow:none !important;text-align:left !important;white-space:pre-wrap !important;overflow-wrap:anywhere !important;word-break:normal !important;line-height:1.5 !important;}.bot-message{width:min(760px,88%) !important;max-width:min(760px,88%) !important;align-self:center !important;margin:0 auto 18px auto !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#111 !important;}.bot-message .bot-header{width:fit-content !important;max-width:100% !important;margin:0 auto 7px !important;padding:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}.bot-message .ai-content{display:block !important;width:fit-content !important;max-width:100% !important;margin:0 auto !important;box-sizing:border-box !important;padding:13px 18px !important;background:#f1f1f1 !important;color:#111 !important;border:0 !important;border-radius:26px !important;box-shadow:none !important;line-height:1.5 !important;overflow-wrap:anywhere !important;word-break:normal !important;text-align:left !important;}.bot-message .ai-content > *:first-child{margin-top:0 !important;}.bot-message .ai-content > *:last-child{margin-bottom:0 !important;}.user-message .user-pin-btn, .user-message .user-copy-btn, .bot-message .bot-actions, .bot-message .bot-actions .message-action-btn{opacity:0 !important;visibility:hidden !important;pointer-events:none !important;transition:opacity .16s ease,visibility .16s ease,transform .16s ease,background .16s ease,color .16s ease !important;}.user-message .user-pin-btn, .user-message .user-copy-btn{order:2 !important;grid-row:2 !important;margin:7px 0 0 !important;padding:4px 7px !important;min-width:0 !important;min-height:28px !important;width:auto !important;height:28px !important;position:static !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;border:0 !important;border-radius:8px !important;background:transparent !important;color:#666 !important;box-shadow:none !important;font-size:13px !important;line-height:1 !important;cursor:pointer !important;}.bot-message .bot-actions{display:flex !important;align-items:center !important;flex-wrap:wrap !important;gap:5px !important;width:fit-content !important;margin:7px auto 0 !important;padding:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}@media (hover: hover) and (pointer: fine) { .user-message:hover .user-pin-btn, .user-message:hover .user-copy-btn, .bot-message:hover .bot-actions, .bot-message:hover .bot-actions .message-action-btn{opacity:1 !important;visibility:visible !important;pointer-events:auto !important;transform:translateY(0) !important;}} .user-message .user-expand-btn{position:absolute !important;right:10px !important;bottom:10px !important;z-index:10 !important;width:32px !important;height:32px !important;min-width:32px !important;min-height:32px !important;padding:0 !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;border:0 !important;border-radius:11px !important;background:rgba(225,225,225,.88) !important;color:#555 !important;box-shadow:0 2px 8px rgba(0,0,0,.08) !important;cursor:pointer !important;opacity:1 !important;visibility:visible !important;pointer-events:auto !important;transition:background .16s ease,color .16s ease,transform .16s ease,box-shadow .16s ease !important;backdrop-filter:blur(7px) !important;-webkit-backdrop-filter:blur(7px) !important;}.user-message .user-expand-btn svg{width:15px !important;height:15px !important;display:block !important;flex:0 0 15px !important;stroke:currentColor !important;fill:none !important;stroke-width:2.25 !important;stroke-linecap:round !important;stroke-linejoin:round !important;pointer-events:none !important;}.user-message .user-expand-btn:hover{background:rgba(210,210,210,.98) !important;color:#111 !important;transform:translateY(-1px) !important;box-shadow:0 4px 11px rgba(0,0,0,.12) !important;}.user-message .user-expand-btn:active{transform:scale(.94) !important;}body.dark-mode .user-message .user-expand-btn{background:rgba(38,38,38,.94) !important;color:#cfcfcf !important;box-shadow:0 2px 9px rgba(0,0,0,.34) !important;}body.dark-mode .user-message .user-expand-btn:hover{background:#303030 !important;color:#fff !important;}.user-message .user-text.user-text-collapsible{max-height:6em !important;overflow:hidden !important;padding-bottom:42px !important;}.user-message .user-text.user-text-collapsible{padding-right:58px !important;}.user-message .user-text.user-text-expanded{max-height:none !important;overflow:visible !important;padding-bottom:42px !important;padding-right:58px !important;}body.dark-mode .user-message, body.dark-mode .bot-message{background:transparent !important;border:0 !important;box-shadow:none !important;}body.dark-mode .user-message .user-text, body.dark-mode .bot-message .ai-content{background:#171717 !important;color:#f2f2f2 !important;border:0 !important;border-radius:26px !important;box-shadow:none !important;}body.dark-mode .user-message .user-pin-btn, body.dark-mode .user-message .user-copy-btn, body.dark-mode .bot-message .bot-actions .message-action-btn{background:transparent !important;color:#bdbdbd !important;}body.dark-mode .user-message .user-pin-btn:hover, body.dark-mode .user-message .user-copy-btn:hover, body.dark-mode .bot-message .bot-actions .message-action-btn:hover{background:#242424 !important;color:#fff !important;}@media (max-width: 768px) and (pointer: coarse) { .user-message{max-width:calc(100vw - 34px) !important;}.bot-message{width:calc(100vw - 34px) !important;max-width:calc(100vw - 34px) !important;align-self:center !important;margin-left:auto !important;margin-right:auto !important;}.user-message .user-text, .bot-message .ai-content{max-width:calc(100vw - 34px) !important;}.user-message.actions-visible .user-pin-btn, .user-message.actions-visible .user-copy-btn, .bot-message.actions-visible .bot-actions, .bot-message.actions-visible .bot-actions .message-action-btn{opacity:1 !important;visibility:visible !important;pointer-events:auto !important;transform:none !important;}.user-message .user-expand-btn{right:10px !important;bottom:10px !important;width:32px !important;height:32px !important;min-width:32px !important;min-height:32px !important;}
+<style id="oddi-final-message-ui-v4">.user-message, .bot-message{position:relative !important;box-sizing:border-box !important;max-width:min(760px,88%) !important;}.user-message{width:fit-content !important;align-self:flex-end !important;display:grid !important;grid-template-columns:auto auto !important;align-items:start !important;justify-content:end !important;gap:0 2px !important;margin:0 0 18px auto !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#111 !important;}.user-message .user-message-header, .user-message .user-actions{display:contents !important;}.user-message .user-message-header b{display:none !important;}.user-message .user-text{order:1 !important;grid-column:1 / -1 !important;grid-row:1 !important;position:relative !important;display:block !important;width:fit-content !important;max-width:100% !important;margin:0 !important;padding:13px 18px !important;box-sizing:border-box !important;background:#f1f1f1 !important;color:#111 !important;border:0 !important;border-radius:26px !important;box-shadow:none !important;text-align:left !important;white-space:pre-wrap !important;overflow-wrap:anywhere !important;word-break:normal !important;line-height:1.5 !important;}.bot-message{width:min(760px,88%) !important;max-width:min(760px,88%) !important;align-self:center !important;margin:0 auto 18px auto !important;padding:0 !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;color:#111 !important;}.bot-message .bot-header{width:fit-content !important;max-width:100% !important;margin:0 auto 7px !important;padding:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}.bot-message .ai-content{display:block !important;width:fit-content !important;max-width:100% !important;margin:0 auto !important;box-sizing:border-box !important;padding:13px 18px !important;background:#f1f1f1 !important;color:#111 !important;border:0 !important;border-radius:26px !important;box-shadow:none !important;line-height:1.5 !important;overflow-wrap:anywhere !important;word-break:normal !important;text-align:left !important;}.bot-message .ai-content > *:first-child{margin-top:0 !important;}.bot-message .ai-content > *:last-child{margin-bottom:0 !important;}.user-message .user-pin-btn, .user-message .user-copy-btn, .bot-message .bot-actions, .bot-message .bot-actions .message-action-btn{opacity:0 !important;visibility:hidden !important;pointer-events:none !important;transition:opacity .16s ease,visibility .16s ease,transform .16s ease,background .16s ease,color .16s ease !important;}.user-message .user-pin-btn, .user-message .user-copy-btn{order:2 !important;grid-row:2 !important;margin:7px 0 0 !important;padding:4px 7px !important;min-width:0 !important;min-height:28px !important;width:auto !important;height:28px !important;position:static !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;border:0 !important;border-radius:8px !important;background:transparent !important;color:#666 !important;box-shadow:none !important;font-size:13px !important;line-height:1 !important;cursor:pointer !important;}.bot-message .bot-actions{display:flex !important;align-items:center !important;flex-wrap:wrap !important;gap:5px !important;width:fit-content !important;margin:7px auto 0 !important;padding:0 !important;background:transparent !important;border:0 !important;box-shadow:none !important;}@media (hover: hover) and (pointer: fine) { .user-message:hover .user-pin-btn, .user-message:hover .user-copy-btn, .bot-message:hover .bot-actions, .bot-message:hover .bot-actions .message-action-btn{opacity:1 !important;visibility:visible !important;pointer-events:auto !important;transform:translateY(0) !important;}} .user-message .user-expand-btn{position:absolute !important;right:10px !important;bottom:10px !important;z-index:10 !important;width:32px !important;height:32px !important;min-width:32px !important;min-height:32px !important;padding:0 !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;border:0 !important;border-radius:11px !important;background:rgba(225,225,225,.88) !important;color:#555 !important;box-shadow:0 2px 8px rgba(0,0,0,.08) !important;cursor:pointer !important;opacity:1 !important;visibility:visible !important;pointer-events:auto !important;transition:background .16s ease,color .16s ease,transform .16s ease,box-shadow .16s ease !important;backdrop-filter:blur(7px) !important;-webkit-backdrop-filter:blur(7px) !important;}.user-message .user-expand-btn svg{width:15px !important;height:15px !important;display:block !important;flex:0 0 15px !important;stroke:currentColor !important;fill:none !important;stroke-width:2.25 !important;stroke-linecap:round !important;stroke-linejoin:round !important;pointer-events:none !important;}.user-message .user-expand-btn:hover{background:rgba(210,210,210,.98) !important;color:#111 !important;transform:translateY(-1px) !important;box-shadow:0 4px 11px rgba(0,0,0,.12) !important;}.user-message .user-expand-btn:active{transform:scale(.94) !important;}body.dark-mode .user-message .user-expand-btn{background:rgba(38,38,38,.94) !important;color:#cfcfcf !important;box-shadow:0 2px 9px rgba(0,0,0,.34) !important;}body.dark-mode .user-message .user-expand-btn:hover{background:#303030 !important;color:#fff !important;}.user-message .user-text.user-text-collapsible{max-height:300em !important;overflow:hidden !important;padding-bottom:42px !important;}.user-message .user-text.user-text-collapsible{padding-right:58px !important;}.user-message .user-text.user-text-expanded{max-height:none !important;overflow:visible !important;padding-bottom:42px !important;padding-right:58px !important;}body.dark-mode .user-message, body.dark-mode .bot-message{background:transparent !important;border:0 !important;box-shadow:none !important;}body.dark-mode .user-message .user-text, body.dark-mode .bot-message .ai-content{background:#171717 !important;color:#f2f2f2 !important;border:0 !important;border-radius:26px !important;box-shadow:none !important;}body.dark-mode .user-message .user-pin-btn, body.dark-mode .user-message .user-copy-btn, body.dark-mode .bot-message .bot-actions .message-action-btn{background:transparent !important;color:#bdbdbd !important;}body.dark-mode .user-message .user-pin-btn:hover, body.dark-mode .user-message .user-copy-btn:hover, body.dark-mode .bot-message .bot-actions .message-action-btn:hover{background:#242424 !important;color:#fff !important;}@media (max-width: 768px) and (pointer: coarse) { .user-message{max-width:calc(100vw - 34px) !important;}.bot-message{width:calc(100vw - 34px) !important;max-width:calc(100vw - 34px) !important;align-self:center !important;margin-left:auto !important;margin-right:auto !important;}.user-message .user-text, .bot-message .ai-content{max-width:calc(100vw - 34px) !important;}.user-message.actions-visible .user-pin-btn, .user-message.actions-visible .user-copy-btn, .bot-message.actions-visible .bot-actions, .bot-message.actions-visible .bot-actions .message-action-btn{opacity:1 !important;visibility:visible !important;pointer-events:auto !important;transform:none !important;}.user-message .user-expand-btn{right:10px !important;bottom:10px !important;width:32px !important;height:32px !important;min-width:32px !important;min-height:32px !important;}
 }
 </style>
 
@@ -284,7 +284,7 @@
     -webkit-tap-highlight-color:transparent !important;
 }
 .user-message .user-text.user-text-collapsible {
-    max-height:6em !important;
+    max-height:300em !important;
     overflow:hidden !important;
     padding-bottom:42px !important;
     padding-right:58px !important;
@@ -731,7 +731,7 @@
 }
 
 .user-message .user-text.user-text-collapsible{
-    max-height:6em !important;
+    max-height:300em !important;
     overflow:hidden !important;
     max-height:calc(4.5em + 36px) !important;
     padding-bottom:36px !important;
@@ -3475,13 +3475,117 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
         text-decoration: none !important;
         transition: background .15s ease;
     }
+    #settingsModal #splashBtn { position:relative !important; width:46px !important; height:26px !important; padding:0 !important; border-radius:999px !important; border:1px solid #2c2c2c !important; background:#262626 !important; color:transparent !important; font-size:0 !important; cursor:pointer !important; flex:0 0 auto !important; }
+    #settingsModal #splashBtn::after { content:""; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.35); transition:transform .22s cubic-bezier(.22,1,.36,1); }
+    #settingsModal #splashBtn.is-on { background:#20c76b !important; border-color:#20c76b !important; }
+    #settingsModal #splashBtn.is-on::after { transform:translateX(20px); }
+    #settingsModal #splashBtn.is-off { background:#262626 !important; border-color:#2c2c2c !important; }
+    #settingsModal #splashBtn.is-off::after { transform:translateX(0); }
+
     #settingsModal .logout-btn:hover,
     #settingsModal .signup-btn:hover {
         background: rgba(255, 107, 107, .08) !important;
     }
 </style>
+
+<style id="oddi-splash-and-user-edit-final-fix">
+/* =========================================================
+   SPLASH GATE
+   Never allow the React phone sidebar launcher/rail to flash
+   while the video splash is active.
+   ========================================================= */
+body.oddi-splash-active #oddi-react-sidebar-root .oddi-rs-rail,
+body.oddi-splash-active #oddi-react-sidebar-root .oddi-rs-phone-launcher,
+body.oddi-splash-active .oddi-rs-rail,
+body.oddi-splash-active .oddi-rs-phone-launcher{
+    visibility:hidden !important;
+    opacity:0 !important;
+    pointer-events:none !important;
+}
+
+/* =========================================================
+   USER MESSAGE EDIT
+   The edit action belongs directly underneath the user's
+   message and uses the existing editUserMessage() handler.
+   ========================================================= */
+.user-message > .user-actions-row{
+    display:flex !important;
+    flex-direction:row !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:2px !important;
+    width:fit-content !important;
+    margin:7px 0 0 auto !important;
+    padding:0 !important;
+    background:transparent !important;
+    border:0 !important;
+    box-shadow:none !important;
+}
+
+.user-message > .user-actions-row .user-edit-btn{
+    margin:0 !important;
+    padding:4px 8px !important;
+    min-width:0 !important;
+    min-height:28px !important;
+    width:auto !important;
+    height:28px !important;
+    position:static !important;
+    display:inline-flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    border:0 !important;
+    border-radius:8px !important;
+    background:transparent !important;
+    color:#666 !important;
+    box-shadow:none !important;
+    font-size:13px !important;
+    line-height:1 !important;
+    cursor:pointer !important;
+    pointer-events:auto !important;
+    opacity:0 !important;
+    visibility:hidden !important;
+    transition:background .14s ease,color .14s ease,transform .14s ease !important;
+}
+
+
+/* Desktop/laptop: reveal Edit only when the user message is hovered. */
+.user-message:hover > .user-actions-row .user-edit-btn,
+.user-message:focus-within > .user-actions-row .user-edit-btn{
+    opacity:1 !important;
+    visibility:visible !important;
+}
+
+.user-message > .user-actions-row .user-edit-btn:hover{
+    background:#ededed !important;
+    color:#111 !important;
+}
+
+.user-message > .user-actions-row .user-edit-btn:active{
+    transform:scale(.95) !important;
+}
+
+body.dark-mode .user-message > .user-actions-row .user-edit-btn{
+    background:transparent !important;
+    color:#bdbdbd !important;
+}
+
+body.dark-mode .user-message > .user-actions-row .user-edit-btn:hover{
+    background:#242424 !important;
+    color:#fff !important;
+}
+
+/* On touch devices, keep Edit available directly below the message. */
+@media (max-width:768px) and (pointer:coarse){
+    .user-message > .user-actions-row .user-edit-btn{
+        opacity:1 !important;
+        visibility:visible !important;
+        pointer-events:auto !important;
+    }
+}
+</style>
+
 </head>
-<body data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
+<body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
 <div id="oddi-video-splash" class="oddi-video-splash" aria-hidden="false">
     <video
@@ -3509,6 +3613,21 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
     var video = document.getElementById("oddi-splash-video");
     if (!splash || !video) return;
 
+    var splashEnabled = true;
+    try {
+        var storedSplash = localStorage.getItem("oddi_splash_enabled_v1");
+        if (storedSplash !== null) splashEnabled = storedSplash === "1" || storedSplash === "true";
+    } catch (_) {}
+    if (!splashEnabled) {
+        document.body.classList.remove("oddi-splash-active");
+        splash.setAttribute("aria-hidden", "true");
+        splash.classList.add("oddi-splash-hidden");
+        try { video.pause(); video.removeAttribute("src"); video.load(); } catch (_) {}
+        splash.remove();
+        return;
+    }
+    document.body.classList.add("oddi-splash-active");
+
     var finished = false;
     var fallbackTimer = null;
     var started = false;
@@ -3533,6 +3652,10 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
         } catch (e) {}
 
         window.setTimeout(function () {
+            /* Reveal the React sidebar only after the splash has fully faded
+               and is about to leave the DOM. This prevents the phone
+               hamburger/rail from flashing over the splash on reload. */
+            document.body.classList.remove("oddi-splash-active");
             if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
         }, 500);
     }
@@ -4011,6 +4134,7 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
                 <button id="removeAttachment" type="button" title="Remove all files">✖</button>
             </div>
             <div id="attachmentList" class="attachment-list" style="display:none;"></div>
+            <div id="pastedImagePreview" class="pasted-image-preview" aria-label="Pasted image preview" hidden></div>
         </div>
         <button id="attach-btn" class="attach-btn">+</button>
         <input
@@ -4385,6 +4509,11 @@ body.dark-mode .chatbox > #oddiSparkLayer { display: block !important; }
                             <option value="ml">മലയാളം</option>
                             <option value="pa">ਪੰਜਾਬੀ</option>
                         </select>
+                    </div>
+                    <div class="oddi-setting-row">
+                        <div class="oddi-setting-icon">🎬</div>
+                        <div class="oddi-setting-copy"><strong>Splash Screen</strong><small>Show the ODDI splash screen when the app starts.</small></div>
+                        <button id="splashBtn" class="oddi-toggle-control is-on" type="button" aria-label="Toggle splash screen">ON</button>
                     </div>
                 </div>
             </section>
@@ -8316,7 +8445,7 @@ async function editUserMessage(button) {
     editActions.className = "user-message-edit-actions";
     editActions.innerHTML =
         '<button type="button" class="user-message-edit-cancel">Cancel</button>' +
-        '<button type="button" class="user-message-edit-save">Save</button>';
+        '<button type="button" class="user-message-edit-send">➤ Send</button>';
     actions.before(editActions);
 
     actions.querySelectorAll("button").forEach(action => {
@@ -8324,21 +8453,24 @@ async function editUserMessage(button) {
     });
 
     const cancel = editActions.querySelector(".user-message-edit-cancel");
-    const save = editActions.querySelector(".user-message-edit-save");
+    const send = editActions.querySelector(".user-message-edit-send");
 
-    const finish = (restoreText) => {
+    const finishEditor = () => {
         editActions.remove();
         editor.remove();
         textEl.style.display = originalDisplay;
-        if (restoreText) textEl.textContent = originalText;
         actions.querySelectorAll("button").forEach(action => {
             action.disabled = false;
         });
     };
 
-    cancel?.addEventListener("click", () => finish(true));
+    cancel?.addEventListener("click", () => {
+        textEl.textContent = originalText;
+        result.message.text = originalText;
+        finishEditor();
+    });
 
-    save?.addEventListener("click", async () => {
+    send?.addEventListener("click", async () => {
         const nextText = editor.value.replace(/\r\n/g, "\n").trim();
         if (!nextText) {
             editor.focus();
@@ -8346,52 +8478,98 @@ async function editUserMessage(button) {
         }
 
         if (nextText === originalText) {
-            finish(true);
+            finishEditor();
             return;
         }
 
-        if (save) {
-            save.disabled = true;
-            save.textContent = "Saving…";
-        }
+        send.disabled = true;
+        send.textContent = "Sending…";
         if (cancel) cancel.disabled = true;
+        actions.querySelectorAll("button").forEach(action => {
+            action.disabled = true;
+        });
+
+        const conversation = conversations[currentConversation];
+        if (!conversation) {
+            finishEditor();
+            return;
+        }
+
+        /* True edit + resend: remove the old answer/turns before generating. */
+        const followingMessages = conversation.messages
+            .slice(result.index + 1)
+            .filter(message => message && message.id)
+            .reverse();
 
         result.message.text = nextText;
         textEl.textContent = nextText;
 
-        const ok = await updateConversationMessageRemote(
-            conversations[currentConversation],
+        const updateOk = await updateConversationMessageRemote(
+            conversation,
             result.message.id,
             { text: nextText }
         );
 
-        if (!ok) {
+        if (!updateOk) {
             result.message.text = originalText;
-            finish(true);
-            alert("Could not save the edited message. Please try again.");
+            textEl.textContent = originalText;
+            finishEditor();
+            alert("Could not edit the message. Please try again.");
             return;
         }
 
-        finish(false);
+        for (const message of followingMessages) {
+            const deleted = await deleteConversationMessageRemote(
+                conversation,
+                message.id
+            );
+            if (!deleted) {
+                finishEditor();
+                alert("Could not replace the previous ODDI response. Please try again.");
+                renderConversation(currentConversation);
+                return;
+            }
+        }
+
+        conversation.messages = conversation.messages.slice(0, result.index + 1);
+        touchConversation(conversation);
+
+        /* Remove old rendered replies/turns after the edited user message. */
+        let node = result.bubble.nextElementSibling;
+        while (node) {
+            const next = node.nextElementSibling;
+            if (node.classList?.contains("user-message") || node.classList?.contains("bot-message")) {
+                node.remove();
+            }
+            node = next;
+        }
+
+        finishEditor();
         renderHistory();
+
+        /* Generate the edited prompt without adding a duplicate user message. */
+        await sendMessage(null, false, {
+            skipUserMessage: true,
+            editedMessage: true,
+            messageOverride: nextText
+        });
     });
 
     editor.addEventListener("keydown", event => {
         if (event.key === "Escape") {
             event.preventDefault();
-            finish(true);
+            cancel?.click();
             return;
         }
         if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
             event.preventDefault();
-            save?.click();
+            send?.click();
         }
     });
 
     editor.focus();
     editor.setSelectionRange(editor.value.length, editor.value.length);
 }
-
 function getMessageFromButton(button) {
     const bubble = button.closest(".user-message, .bot-message");
     if (!bubble || currentConversation === null) return null;
@@ -8424,6 +8602,8 @@ async function togglePinMessage(button) {
         result.message.id,
         { pinned: result.message.pinned }
     );
+
+    renderPinnedMessagesSection();
 }
 
 async function setMessageFeedback(button, type) {
@@ -9953,6 +10133,11 @@ const attachmentList =
         "attachmentList"
     );
 
+const pastedImagePreview =
+    document.getElementById(
+        "pastedImagePreview"
+    );
+
 attachBtn.onclick = () => {
     if (typeof lockIsActive === "function" && lockIsActive()) return;
     fileInput.click();
@@ -10017,6 +10202,11 @@ function updateAttachmentPreview() {
         attachmentList.style.display =
             "none";
 
+        if (pastedImagePreview) {
+            pastedImagePreview.innerHTML = "";
+            pastedImagePreview.hidden = true;
+        }
+
         attachmentArrow.textContent = "▴";
 
         attachmentToggle.setAttribute(
@@ -10041,6 +10231,45 @@ function updateAttachmentPreview() {
 
     // Clear old list
     attachmentList.innerHTML = "";
+
+    if (pastedImagePreview) {
+        pastedImagePreview.innerHTML = "";
+        const imageFiles = selectedFiles.filter(file =>
+            file && typeof file.type === "string" && file.type.startsWith("image/")
+        );
+        if (imageFiles.length) {
+            pastedImagePreview.hidden = false;
+            imageFiles.forEach(file => {
+                const card = document.createElement("div");
+                card.className = "pasted-image-card";
+                const img = document.createElement("img");
+                const objectUrl = URL.createObjectURL(file);
+                img.src = objectUrl;
+                img.alt = file.name || "Pasted image";
+                img.onload = () => URL.revokeObjectURL(objectUrl);
+                const remove = document.createElement("button");
+                remove.type = "button";
+                remove.className = "pasted-image-remove";
+                remove.textContent = "×";
+                remove.title = "Remove image";
+                remove.onclick = event => {
+                    event.stopPropagation();
+                    const realIndex = selectedFiles.indexOf(file);
+                    if (realIndex >= 0) selectedFiles.splice(realIndex, 1);
+                    updateAttachmentPreview();
+                };
+                card.appendChild(img);
+                card.appendChild(remove);
+                pastedImagePreview.appendChild(card);
+            });
+            const label = document.createElement("span");
+            label.className = "pasted-image-label";
+            label.textContent = imageFiles.length === 1 ? imageFiles[0].name : `${imageFiles.length} images ready to send`;
+            pastedImagePreview.appendChild(label);
+        } else {
+            pastedImagePreview.hidden = true;
+        }
+    }
 
     // Create one row for every file
     selectedFiles.forEach((file, index) => {
@@ -10137,6 +10366,8 @@ document.addEventListener("paste", event => {
     );
 
     if (!imageItems.length) return;
+
+    if (!event.target?.closest?.("#userInput")) return;
 
     event.preventDefault();
 
@@ -10551,8 +10782,9 @@ function renderHistory() {
         normalSection.appendChild(group);
     });
 
-    if (pinnedMatches.length || !query) historyContainer.appendChild(pinnedSection);
+    // Recents first; pinned chats are a separate section directly underneath.
     historyContainer.appendChild(normalSection);
+    if (pinnedMatches.length || !query) historyContainer.appendChild(pinnedSection);
 
     const visibleCount = pinnedMatches.length + normalMatches.length;
     if (query && !visibleCount) {
@@ -10573,6 +10805,42 @@ async function togglePinConversation(conversation) {
 async function removePinnedConversation(conversation) {
     if (!conversation?.id) return false;
     return updateConversationMetadata(conversation, { pinned: false });
+}
+
+function renderPinnedMessagesSection() {
+    document.querySelector(".oddi-pinned-messages-section")?.remove();
+    const conversation = conversations[currentConversation];
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    const pinned = messages.map((message,index)=>({message,index})).filter(item=>!!item.message?.pinned);
+    if (!pinned.length || !chat) return;
+
+    const section = document.createElement("section");
+    section.className = "oddi-pinned-messages-section";
+    section.setAttribute("aria-label", "Pinned chat messages");
+
+    const title = document.createElement("div");
+    title.className = "oddi-pinned-messages-title";
+    title.innerHTML = "📌 <span>Pinned chat</span>";
+    section.appendChild(title);
+
+    pinned.forEach(({message,index})=>{
+        const item=document.createElement("button");
+        item.type="button";
+        item.className="oddi-pinned-message-item";
+        const role=document.createElement("div");
+        role.className="oddi-pinned-message-role";
+        role.textContent=message.role === "user" ? "You" : "Oddi AI";
+        const text=document.createElement("div");
+        text.className="oddi-pinned-message-text";
+        text.textContent=String(message.text ?? "");
+        item.append(role,text);
+        item.addEventListener("click",()=>{
+            const target=chat.querySelector(`.user-message[data-message-index="${index}"], .bot-message[data-message-index="${index}"]`);
+            target?.scrollIntoView({behavior:"smooth",block:"center"});
+        });
+        section.appendChild(item);
+    });
+    chat.appendChild(section);
 }
 
 async function openConversation(
@@ -10741,6 +11009,8 @@ async function openConversation(
             }
         }
     );
+
+    renderPinnedMessagesSection();
 
     chat.querySelectorAll(".ai-content").forEach(content => {
         enhanceRichContent(content);
@@ -11347,42 +11617,72 @@ themeSettingBtn.onclick = () => {
     themeBtn.click();
 };
 
-const typingBtn =
-    document.getElementById(
-        "typingBtn"
-    );
+const typingBtn = document.getElementById("typingBtn");
+const notificationBtn = document.getElementById("notificationBtn");
+const splashBtn = document.getElementById("splashBtn");
 
-let typingEnabled = true;
+function readSettingBool(key, fallback = true) {
+    try {
+        const raw = localStorage.getItem(key);
+        if (raw === null) return fallback;
+        return raw === "1" || raw === "true";
+    } catch (_) { return fallback; }
+}
 
-typingBtn.onclick = () => {
+function writeSettingBool(key, value) {
+    try { localStorage.setItem(key, value ? "1" : "0"); } catch (_) {}
+}
 
-    typingEnabled =
-        !typingEnabled;
+function syncSettingToggle(button, enabled) {
+    if (!button) return;
+    button.textContent = enabled ? "ON" : "OFF";
+    button.classList.toggle("is-on", enabled);
+    button.classList.toggle("is-off", !enabled);
+    button.setAttribute("aria-pressed", enabled ? "true" : "false");
+}
 
-    typingBtn.innerText =
-        typingEnabled
-            ? "ON"
-            : "OFF";
-    typingBtn.classList.toggle("is-on", typingEnabled);
+let typingEnabled = readSettingBool("oddi_typing_enabled_v1", true);
+let notificationEnabled = readSettingBool("oddi_notifications_enabled_v1", true);
+let splashEnabled = readSettingBool("oddi_splash_enabled_v1", true);
+
+window.__oddiTypingEnabled = typingEnabled;
+window.__oddiNotificationsEnabled = notificationEnabled;
+window.__oddiSplashEnabled = splashEnabled;
+
+syncSettingToggle(typingBtn, typingEnabled);
+syncSettingToggle(notificationBtn, notificationEnabled);
+syncSettingToggle(splashBtn, splashEnabled);
+
+if (typingBtn) typingBtn.onclick = () => {
+    typingEnabled = !typingEnabled;
+    window.__oddiTypingEnabled = typingEnabled;
+    writeSettingBool("oddi_typing_enabled_v1", typingEnabled);
+    syncSettingToggle(typingBtn, typingEnabled);
 };
 
-const notificationBtn =
-    document.getElementById(
-        "notificationBtn"
-    );
+if (notificationBtn) notificationBtn.onclick = () => {
+    notificationEnabled = !notificationEnabled;
+    window.__oddiNotificationsEnabled = notificationEnabled;
+    writeSettingBool("oddi_notifications_enabled_v1", notificationEnabled);
+    syncSettingToggle(notificationBtn, notificationEnabled);
+};
 
-let notificationEnabled = true;
-
-notificationBtn.onclick = () => {
-
-    notificationEnabled =
-        !notificationEnabled;
-
-    notificationBtn.innerText =
-        notificationEnabled
-            ? "ON"
-            : "OFF";
-    notificationBtn.classList.toggle("is-on", notificationEnabled);
+if (splashBtn) splashBtn.onclick = () => {
+    splashEnabled = !splashEnabled;
+    window.__oddiSplashEnabled = splashEnabled;
+    writeSettingBool("oddi_splash_enabled_v1", splashEnabled);
+    syncSettingToggle(splashBtn, splashEnabled);
+    if (!splashEnabled) {
+        const sp = document.getElementById("oddi-video-splash");
+        const v = document.getElementById("oddi-splash-video");
+        if (sp) {
+            sp.classList.add("oddi-splash-hidden");
+            sp.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("oddi-splash-active");
+            if (v) { try { v.pause(); } catch (_) {} }
+            window.setTimeout(() => { if (sp && sp.parentNode) sp.parentNode.removeChild(sp); }, 520);
+        }
+    }
 };
 /* KEYBOARD SHORTCUTS — desktop friendly + input safe */
 document.addEventListener("keydown", event => {
@@ -13172,7 +13472,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
      * - Mutation/resize observers keep the control available as text grows.
      */
 
-    const MAX_LINES = 3;
+    const MAX_LINES = 200;
 
     function getBubble(textEl) {
         return textEl && textEl.closest(".user-message");
@@ -20045,6 +20345,23 @@ body.dark-mode .shortcut-row[data-capturing="true"] .shortcut-capture{background
 
 
 
+<style id="oddi-four-big-changes">
+/* Four requested UI fixes */
+.input-area textarea, #chatSearchInput, input, textarea, select, [contenteditable="true"]{-webkit-user-select:text !important;user-select:text !important;}
+.oddi-pinned-messages-section{width:min(760px,88%);margin:28px auto 36px;padding:16px;box-sizing:border-box;border:1px solid #e5e5e5;border-radius:16px;background:rgba(250,250,250,.96);box-shadow:0 8px 24px rgba(0,0,0,.06);}
+.oddi-pinned-messages-title{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:13px;font-weight:800;letter-spacing:.02em;color:#333;}
+.oddi-pinned-message-item{width:100%;box-sizing:border-box;margin:7px 0;padding:10px 12px;border:1px solid #e8e8e8;border-radius:12px;background:#fff;color:#222;text-align:left;cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .15s ease;}
+.oddi-pinned-message-item:hover{background:#f5f5f5;border-color:#d8d8d8;transform:translateY(-1px);}
+.oddi-pinned-message-role{font-size:11px;font-weight:800;opacity:.58;margin-bottom:4px;}
+.oddi-pinned-message-text{font-size:13px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap;overflow-wrap:anywhere;}
+.input-area > #pastedImagePreview{display:flex;flex:0 0 100%;width:100%;box-sizing:border-box;align-items:center;gap:9px;padding:2px 4px 7px;}
+.pasted-image-card{position:relative;width:82px;height:62px;overflow:hidden;border:1px solid #dedede;border-radius:10px;background:#f4f4f4;box-shadow:0 3px 12px rgba(0,0,0,.08);}
+.pasted-image-card img{display:block;width:100%;height:100%;object-fit:cover;}
+.pasted-image-remove{position:absolute;top:4px;right:4px;width:21px;height:21px;border:0;border-radius:50%;background:rgba(0,0,0,.68);color:#fff;font-size:12px;line-height:21px;padding:0;cursor:pointer;}
+.pasted-image-label{font-size:12px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px;}
+body.dark-mode .oddi-pinned-messages-section{background:#111;border-color:#2c2c2c;box-shadow:0 8px 24px rgba(0,0,0,.28);}body.dark-mode .oddi-pinned-messages-title{color:#eee;}body.dark-mode .oddi-pinned-message-item{background:#181818;border-color:#303030;color:#eee;}body.dark-mode .oddi-pinned-message-item:hover{background:#222;border-color:#444;}body.dark-mode .pasted-image-card{border-color:#333;background:#1a1a1a;}body.dark-mode .pasted-image-label{color:#aaa;}
+@media (max-width:768px) and (pointer:coarse){.oddi-pinned-messages-section{width:calc(100vw - 34px);margin:22px auto 30px;padding:13px;}.input-area > #pastedImagePreview{padding:2px 3px 5px;}.pasted-image-card{width:76px;height:58px;}.pasted-image-label{max-width:150px;font-size:11px;}}
+</style>
 <style id="oddi-three-request-fixes">
 /* =========================================================
    REQUEST 1 — Library files are individually deletable
@@ -20063,13 +20380,14 @@ body.dark-mode .oddi-library-delete:hover{background:#321818;border-color:#70404
 #sidebar .chat-history .pinned-history-section,
 #sidebar .sidebar-history .pinned-history-section,
 #oddi-react-sidebar-root .oddi-rs-history .pinned-history-section{
-  position:sticky !important;
-  top:0 !important;
-  z-index:50 !important;
+  position:relative !important;
+  top:auto !important;
+  z-index:1 !important;
   background:inherit !important;
-  padding:0 0 7px !important;
-  margin:0 !important;
-  border-bottom:1px solid rgba(127,127,127,.16) !important;
+  padding:8px 0 0 !important;
+  margin:8px 0 0 !important;
+  border-top:1px solid rgba(127,127,127,.16) !important;
+  border-bottom:0 !important;
 }
 #sidebar .chat-history .normal-history-section,
 #sidebar .sidebar-history .normal-history-section,
@@ -21585,9 +21903,11 @@ body.dark-mode .quick-actions .action-card:hover{transform:translateY(-2px) !imp
     const editable=e.target?.matches?.("input,textarea,select,[contenteditable=\"true\"]")||e.target?.isContentEditable;
     const order=["focusSearchMod","focusSearchSlash","newChat","moveChats","openSelected","memory","recentlyDeleted","keyboardShortcuts","toggleTheme","exportShare","openMore","closeDialogs"];
     for(const id of order){
-      if(matchesShortcut(e,savedShortcuts[id])){ if((id!=="focusSearchMod"&&id!=="focusSearchSlash")&&editable) continue; executeShortcut(id,e); e.stopImmediatePropagation(); return; }
+      if(matchesShortcut(e,savedShortcuts[id])){ if(editable) continue; executeShortcut(id,e); e.stopImmediatePropagation(); return; }
     }
     for(const id of order){
+      // Never suppress normal text entry inside an input/textarea/contenteditable.
+      if(editable) continue;
       if(isDefaultChanged(id) && matchesShortcut(e,shortcutDefaults[id])){e.preventDefault();e.stopImmediatePropagation();return;}
       if(id === "moveChats" && isDefaultChanged(id) && e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown") && !e.ctrlKey && !e.shiftKey && !e.metaKey){e.preventDefault();e.stopImmediatePropagation();return;}
     }

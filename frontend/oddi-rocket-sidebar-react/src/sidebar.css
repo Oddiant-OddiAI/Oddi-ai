@@ -722,3 +722,10 @@ body.dark-mode .oddi-rs-chat.pinned{background:rgba(255,255,255,.06);}
     pointer-events: auto !important;
   }
 }
+
+/* Desktop: no collapsed shortcut rail. The full sidebar is the only sidebar UI. */
+@media (min-width: 769px) {
+  #oddi-react-sidebar-root .oddi-rs-rail {
+    display: none !important;
+  }
+}

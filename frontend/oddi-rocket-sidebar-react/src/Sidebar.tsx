@@ -131,6 +131,11 @@ export default function Sidebar() {
   const [isPhone, setIsPhone] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
   );
+  // Do not render the phone hamburger until the splash screen has finished.
+  // This prevents the opener from flashing above the splash during a reload.
+  const [splashReady, setSplashReady] = useState(() =>
+    typeof document === 'undefined' || !document.getElementById('oddi-video-splash')
+  );
   const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string; type?: string; size?: number}>>([]);
 
   useEffect(() => {
@@ -159,6 +164,39 @@ export default function Sidebar() {
     syncPhone();
     media.addEventListener?.('change', syncPhone);
     return () => media.removeEventListener?.('change', syncPhone);
+  }, []);
+
+  // Splash-screen gate for the phone opener. The splash is controlled by
+  // index.html and is removed after it receives the `oddi-splash-hidden` class.
+  // Keep observing both its class and its removal so the hamburger appears only
+  // after the splash is actually gone.
+  useEffect(() => {
+    const splash = document.getElementById('oddi-video-splash');
+    if (!splash) {
+      setSplashReady(true);
+      return;
+    }
+
+    const syncSplash = () => {
+      setSplashReady(splash.classList.contains('oddi-splash-hidden'));
+    };
+
+    syncSplash();
+    const splashObserver = new MutationObserver(syncSplash);
+    splashObserver.observe(splash, { attributes: true, attributeFilter: ['class'] });
+
+    const bodyObserver = new MutationObserver(() => {
+      if (!document.getElementById('oddi-video-splash')) {
+        setSplashReady(true);
+        bodyObserver.disconnect();
+      }
+    });
+    bodyObserver.observe(document.body, { childList: true, subtree: true });
+
+    return () => {
+      splashObserver.disconnect();
+      bodyObserver.disconnect();
+    };
   }, []);
 
   useEffect(() => {
@@ -731,35 +769,16 @@ export default function Sidebar() {
       </div>
     )}
 
-    <div className={`oddi-rs-rail ${open ? 'is-sidebar-open' : 'is-sidebar-closed'}`} aria-label="Collapsed ODDI tools">
-      <button className={`oddi-rs-launcher ${isPhone ? 'oddi-rs-phone-launcher' : ''}`} onClick={() => {
-        setCollapsed(false);
-        setOpen(true);
-      }} title="Open sidebar" aria-label="Open sidebar">
-        {isPhone ? (
+    {isPhone && splashReady && (
+      <div className={`oddi-rs-rail ${open ? 'is-sidebar-open' : 'is-sidebar-closed'}`} aria-label="Mobile sidebar opener">
+        <button className="oddi-rs-launcher oddi-rs-phone-launcher" onClick={() => {
+          setCollapsed(false);
+          setOpen(true);
+        }} title="Open sidebar" aria-label="Open sidebar">
           <Menu size={21} aria-hidden="true" />
-        ) : (
-          <img
-            src={theme === 'dark' ? '/static/symbol-dark.png' : '/static/symbol.png'}
-            alt="Open sidebar"
-            style={{
-              background: theme === 'dark' ? '#fff' : 'transparent',
-              borderRadius: 5,
-              padding: theme === 'dark' ? 2 : 0,
-              display: 'block',
-            }}
-          />
-        )}
-      </button>
-      {!isPhone && (
-        <>
-          <button onClick={newChat} title="New Chat" aria-label="New Chat"><Plus size={17} /></button>
-          <button onClick={() => openExistingModal('binModal')} title="Bin" aria-label="Bin"><Archive size={16} /></button>
-          <button onClick={() => openExistingModal('shortcutsModal')} title="Shortcuts" aria-label="Shortcuts"><MessageSquare size={16} /></button>
-          <button onClick={openMemory} title="Memory" aria-label="Memory"><Brain size={16} /></button>
-        </>
-      )}
-    </div>
+        </button>
+      </div>
+    )}
 
   </>;
 }
