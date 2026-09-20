@@ -6088,13 +6088,15 @@ async function loadConversations() {
         for (const backup of getOddiLocalChatBackups()) {
             const id = String(backup.id);
             const serverConversation = serverById.get(id);
+            const isDirtyThisSession = conversationDirtyLocal.has(id);
+            // localStorage is recovery-only: never let a stale device copy overwrite
+            // an existing server conversation. Merge only changes made in this session.
             if (!serverConversation) {
                 conversationDirtyLocal.add(id);
                 conversations.push({ ...backup, __recoveredLocally: true });
                 continue;
             }
-            if (!conversationDataIsSame(backup, serverConversation)) {
-                conversationDirtyLocal.add(id);
+            if (isDirtyThisSession && !conversationDataIsSame(backup, serverConversation)) {
                 const merged = mergeConversationForRetry(backup, serverConversation);
                 const index = conversations.findIndex(c => String(c.id) === id);
                 if (index >= 0) conversations[index] = merged;
@@ -8689,6 +8691,307 @@ async function saveExplicitMemoryFromUserMessage(message) {
     }
 }
 
+
+/* =========================================================
+   ODDI LIBRARY MEMORY / RECALL LAYER
+   Lets a new chat reuse files already stored in the user's
+   server-side Library without asking the user to upload them
+   again.
+
+   Examples:
+     "Do you have my resume?"
+     "Tell me my skills from it."
+   ========================================================= */
+
+let oddiLibraryRecallCache = null;
+let oddiLibraryRecallCacheAt = 0;
+
+async function oddiFetchLibraryRecallFiles() {
+    const now = Date.now();
+
+    // Keep the metadata cache short-lived so newly uploaded/deleted
+    // Library files become visible quickly.
+    if (
+        Array.isArray(oddiLibraryRecallCache) &&
+        now - oddiLibraryRecallCacheAt < 15000
+    ) {
+        return oddiLibraryRecallCache;
+    }
+
+    try {
+        const response = await fetch("/api/files", {
+            credentials: "same-origin",
+            headers: { Accept: "application/json" },
+            cache: "no-store"
+        });
+
+        if (!response.ok) {
+            return [];
+        }
+
+        const data = await response.json();
+        const files = Array.isArray(data)
+            ? data
+            : (Array.isArray(data?.files) ? data.files : []);
+
+        oddiLibraryRecallCache = files.filter(file => file && file.id);
+        oddiLibraryRecallCacheAt = now;
+
+        return oddiLibraryRecallCache;
+    } catch (error) {
+        console.warn("ODDI Library recall metadata fetch failed:", error);
+        return [];
+    }
+}
+
+function oddiLibraryFileText(file) {
+    return [
+        file?.filename,
+        file?.name,
+        file?.mime_type,
+        file?.extension
+    ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+}
+
+function oddiLibraryLooksLikeResume(file) {
+    const value = oddiLibraryFileText(file);
+
+    return (
+        /\b(resume|cv|curriculum\s+vitae|biodata)\b/i.test(value) ||
+        /\b(resume|cv)\b/i.test(String(file?.filename || ""))
+    );
+}
+
+function oddiLibraryMessageNeedsResume(message, history) {
+    const combined = [
+        String(message || ""),
+        ...(Array.isArray(history) ? history.slice(-8) : [])
+            .map(item => `${item?.role || ""} ${item?.text || ""}`)
+    ].join(" ").toLowerCase();
+
+    return (
+        /\bresume\b/.test(combined) ||
+        /\bcv\b/.test(combined) ||
+        /\bcurriculum vitae\b/.test(combined) ||
+        /\bmy skills\b/.test(combined) ||
+        /\bskills from it\b/.test(combined) ||
+        /\bskills from my\b/.test(combined) ||
+        /\bexperience from it\b/.test(combined) ||
+        /\beducation from it\b/.test(combined) ||
+        /\bprojects from it\b/.test(combined)
+    );
+}
+
+function oddiLibraryScoreFile(file, message, history) {
+    const filename = String(
+        file?.filename || file?.name || ""
+    ).toLowerCase();
+
+    const query = String(message || "").toLowerCase();
+
+    let score = 0;
+
+    if (oddiLibraryLooksLikeResume(file)) {
+        score += 100;
+    }
+
+    // Exact filename words are useful for questions such as:
+    // "What is in my project_report.pdf?"
+    const queryWords = query
+        .replace(/[^a-z0-9._-]+/g, " ")
+        .split(/\s+/)
+        .filter(word => word.length >= 3);
+
+    for (const word of queryWords) {
+        if (filename.includes(word)) {
+            score += 15;
+        }
+    }
+
+    // Pronouns such as "it" become meaningful when the recent chat
+    // already discussed a resume/CV.
+    if (
+        /\b(it|that|this|the document|the file)\b/i.test(query) &&
+        Array.isArray(history) &&
+        history.some(item =>
+            /\b(resume|cv|curriculum vitae)\b/i.test(
+                String(item?.text || "")
+            )
+        ) &&
+        oddiLibraryLooksLikeResume(file)
+    ) {
+        score += 80;
+    }
+
+    return score;
+}
+
+async function oddiFindRelevantLibraryFile(message, history) {
+    const files = await oddiFetchLibraryRecallFiles();
+
+    if (!files.length) {
+        return null;
+    }
+
+    const needsResume = oddiLibraryMessageNeedsResume(message, history);
+
+    const scored = files
+        .map(file => ({
+            file,
+            score: oddiLibraryScoreFile(file, message, history)
+        }))
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score);
+
+    if (scored.length) {
+        return scored[0].file;
+    }
+
+    // If the user asks "do you have my resume?" but the filename is
+    // unconventional, use a single available resume/CV candidate.
+    if (needsResume) {
+        const resumeCandidates = files.filter(oddiLibraryLooksLikeResume);
+        if (resumeCandidates.length === 1) {
+            return resumeCandidates[0];
+        }
+    }
+
+    return null;
+}
+
+async function oddiRetrieveLibraryFileAsUpload(file) {
+    if (!file?.id) return null;
+
+    try {
+        const response = await fetch(
+            `/api/files/${encodeURIComponent(file.id)}`,
+            {
+                credentials: "same-origin",
+                headers: { Accept: "*/*" },
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            console.warn(
+                "ODDI Library file retrieval failed:",
+                response.status
+            );
+            return null;
+        }
+
+        const blob = await response.blob();
+
+        if (!blob || !blob.size) {
+            return null;
+        }
+
+        const filename =
+            file.filename ||
+            file.name ||
+            "library-file";
+
+        return new File(
+            [blob],
+            filename,
+            {
+                type:
+                    file.mime_type ||
+                    blob.type ||
+                    "application/octet-stream",
+                lastModified: Date.now()
+            }
+        );
+    } catch (error) {
+        console.warn(
+            "ODDI Library file retrieval error:",
+            error
+        );
+        return null;
+    }
+}
+
+function oddiLibraryRecallInstruction(file) {
+    const filename =
+        file?.filename ||
+        file?.name ||
+        "the Library file";
+
+    return (
+        "\n\n[ODDI LIBRARY RECALL]\n" +
+        "The user is asking about a file already stored in their " +
+        "ODDI Library.\n" +
+        `Library file: ${filename}\n` +
+        "Treat the retrieved attachment as the user's existing " +
+        "Library file, not as a newly uploaded file.\n" +
+        "If asked whether the file exists, answer clearly that " +
+        "ODDI has it in the user's Library.\n"
+    );
+}
+
+async function oddiPrepareLibraryRecall(
+    message,
+    history
+) {
+    if (!isLoggedIn) {
+        return {
+            file: null,
+            upload: null,
+            instruction: ""
+        };
+    }
+
+    const file =
+        await oddiFindRelevantLibraryFile(
+            message,
+            history
+        );
+
+    if (!file) {
+        return {
+            file: null,
+            upload: null,
+            instruction: ""
+        };
+    }
+
+    /*
+       A metadata-only question such as "Do you have my resume?"
+       does not need the file bytes. This avoids unnecessary transfer.
+    */
+    const metadataOnly =
+        /\b(do you have|have you got|is there|can you find|where is)\b/i
+            .test(String(message || "")) &&
+        !/\b(tell|show|read|analy[sz]e|summari[sz]e|extract|what|which|list|give)\b/i
+            .test(String(message || ""));
+
+    if (metadataOnly) {
+        return {
+            file,
+            upload: null,
+            instruction: oddiLibraryRecallInstruction(file)
+        };
+    }
+
+    /*
+       For content questions ("Tell me my skills from it", etc.),
+       retrieve the existing Library file and pass it through the
+       normal document-processing pipeline.
+    */
+    const upload =
+        await oddiRetrieveLibraryFileAsUpload(file);
+
+    return {
+        file,
+        upload,
+        instruction:
+            oddiLibraryRecallInstruction(file)
+    };
+}
+
 async function sendMessage(
     displayMessage = null,
     voiceReply = false,
@@ -8974,18 +9277,51 @@ async function sendMessage(
     const formData =
         new FormData();
 
+    const libraryHistory =
+        conversations[
+            currentConversation
+        ].messages.slice(-100);
+
+    /*
+       Library recall happens at send time, after the normal composer
+       files are known. This means a new chat can reuse an old Library
+       file without requiring the user to attach it manually.
+    */
+    let libraryRecall = {
+        file: null,
+        upload: null,
+        instruction: ""
+    };
+
+    try {
+        libraryRecall =
+            await oddiPrepareLibraryRecall(
+                message,
+                libraryHistory
+            );
+    } catch (libraryRecallError) {
+        console.warn(
+            "ODDI Library recall preparation failed:",
+            libraryRecallError
+        );
+    }
+
+    const backendMessage =
+        message +
+        (
+            libraryRecall.instruction
+                ? libraryRecall.instruction
+                : ""
+        );
+
     formData.append(
         "message",
-        message
+        backendMessage
     );
 
     formData.append(
         "history",
-        JSON.stringify(
-            conversations[
-                currentConversation
-            ].messages.slice(-100)
-        )
+        JSON.stringify(libraryHistory)
     );
 
     selectedFiles.forEach(file => {
@@ -8995,6 +9331,18 @@ async function sendMessage(
             file
         );
     });
+
+    /*
+       If the user asks about an existing Library document, retrieve
+       that exact stored document and feed it through the same upload
+       processing pipeline used for a normal attachment.
+    */
+    if (libraryRecall.upload) {
+        formData.append(
+            "files",
+            libraryRecall.upload
+        );
+    }
 
     /* -----------------------------------------
        CLEAR COMPOSER IMMEDIATELY AFTER SEND
@@ -9015,6 +9363,10 @@ async function sendMessage(
 
     selectedFiles = [];
     fileInput.value = "";
+
+    // The Library may have changed because this send contained a new upload.
+    oddiLibraryRecallCache = null;
+    oddiLibraryRecallCacheAt = 0;
 
     attachmentPreview.style.display = "none";
     attachmentList.style.display = "none";

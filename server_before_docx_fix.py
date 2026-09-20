@@ -225,19 +225,6 @@ class UploadedFileAdapter:
     def tell(self):
         return self.stream.tell()
 
-    def seekable(self):
-        """Expose the underlying stream's seek support to zipfile/python-docx."""
-        return self.stream.seekable()
-
-    def readable(self):
-        return self.stream.readable()
-
-    def writable(self):
-        return self.stream.writable()
-
-    def fileno(self):
-        return self.stream.fileno()
-
     def close(self):
         return self.stream.close()
 

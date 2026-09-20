@@ -48,29 +48,72 @@ class _DBConnection:
 # ---------------------------------------------------------------------------
 
 LEGACY_DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-CHAT_DATABASE_URL = os.getenv("DATABASE_URL_CHAT", "").strip() or LEGACY_DATABASE_URL
-FILES_DATABASE_URL = os.getenv("DATABASE_URL_FILES", "").strip() or LEGACY_DATABASE_URL
-ARCHIVE_MEMORY_DATABASE_URL = (
-    os.getenv("DATABASE_URL_ARCHIVE_MEMORY", "").strip() or LEGACY_DATABASE_URL
+RAW_CHAT_DATABASE_URL = os.getenv("DATABASE_URL_CHAT", "").strip()
+RAW_FILES_DATABASE_URL = os.getenv("DATABASE_URL_FILES", "").strip()
+RAW_ARCHIVE_MEMORY_DATABASE_URL = os.getenv("DATABASE_URL_ARCHIVE_MEMORY", "").strip()
+
+# A single DATABASE_URL is kept only as a local/development migration fallback.
+# Production must use three physically separate PostgreSQL databases.
+#
+# This prevents the old 1.5 GB Neon database from silently becoming the chat,
+# files, and archive/memory database again.
+_REQUIRE_ENV = os.getenv("ODDI_REQUIRE_THREE_DATABASES", "").strip().lower()
+_REQUIRE_EXPLICIT = _REQUIRE_ENV in {"1", "true", "yes", "on"}
+_ENVIRONMENT = os.getenv("ENVIRONMENT", "").strip().lower()
+_IS_PRODUCTION = (
+    _ENVIRONMENT in {"production", "prod"}
+    or os.getenv("RENDER", "").strip().lower() in {"1", "true", "yes", "on"}
+    or bool(os.getenv("RENDER_SERVICE_ID", "").strip())
 )
 
-REQUIRE_THREE_DATABASES = os.getenv("ODDI_REQUIRE_THREE_DATABASES", "0").strip().lower() in {
-    "1", "true", "yes", "on"
-}
+# If Render/production is detected, strict three-database separation is ON by
+# default. It can still be explicitly enabled in any environment.
+REQUIRE_THREE_DATABASES = _REQUIRE_EXPLICIT or _IS_PRODUCTION
 
 if REQUIRE_THREE_DATABASES:
     missing = []
-    if not os.getenv("DATABASE_URL_CHAT", "").strip():
+    if not RAW_CHAT_DATABASE_URL:
         missing.append("DATABASE_URL_CHAT")
-    if not os.getenv("DATABASE_URL_FILES", "").strip():
+    if not RAW_FILES_DATABASE_URL:
         missing.append("DATABASE_URL_FILES")
-    if not os.getenv("DATABASE_URL_ARCHIVE_MEMORY", "").strip():
+    if not RAW_ARCHIVE_MEMORY_DATABASE_URL:
         missing.append("DATABASE_URL_ARCHIVE_MEMORY")
     if missing:
         raise RuntimeError(
-            "ODDI_REQUIRE_THREE_DATABASES is enabled but these production database "
-            f"URLs are missing: {', '.join(missing)}"
+            "ODDI requires three separate production databases. Missing: "
+            f"{', '.join(missing)}. Set DATABASE_URL_CHAT, DATABASE_URL_FILES, "
+            "and DATABASE_URL_ARCHIVE_MEMORY to three different PostgreSQL databases."
         )
+
+    configured = {
+        "chat": RAW_CHAT_DATABASE_URL,
+        "files": RAW_FILES_DATABASE_URL,
+        "archive_memory": RAW_ARCHIVE_MEMORY_DATABASE_URL,
+    }
+    duplicates = []
+    seen = {}
+    for kind, url in configured.items():
+        if url in seen:
+            duplicates.append(f"{kind}={seen[url]}")
+        else:
+            seen[url] = kind
+    if duplicates:
+        raise RuntimeError(
+            "ODDI production databases must be physically separate. "
+            "Two or more database URLs are identical: "
+            + ", ".join(duplicates)
+        )
+
+# In strict production mode there is NO fallback to DATABASE_URL.
+# In local development, DATABASE_URL may still be used as a migration fallback.
+if REQUIRE_THREE_DATABASES:
+    CHAT_DATABASE_URL = RAW_CHAT_DATABASE_URL
+    FILES_DATABASE_URL = RAW_FILES_DATABASE_URL
+    ARCHIVE_MEMORY_DATABASE_URL = RAW_ARCHIVE_MEMORY_DATABASE_URL
+else:
+    CHAT_DATABASE_URL = RAW_CHAT_DATABASE_URL or LEGACY_DATABASE_URL
+    FILES_DATABASE_URL = RAW_FILES_DATABASE_URL or LEGACY_DATABASE_URL
+    ARCHIVE_MEMORY_DATABASE_URL = RAW_ARCHIVE_MEMORY_DATABASE_URL or LEGACY_DATABASE_URL
 
 USE_POSTGRES = bool(CHAT_DATABASE_URL or FILES_DATABASE_URL or ARCHIVE_MEMORY_DATABASE_URL)
 
@@ -1091,13 +1134,20 @@ def register_file(
     mime_type=None,
     size_bytes=0,
     conversation_id=None,
-    storage_backend="database",
+    storage_backend="filesystem",
     storage_key=None,
     external_file_id=None,
     file_data=None,
     status="received",
 ):
     extension = os.path.splitext(filename or "")[1].lower().lstrip(".") or None
+
+    # New ODDI uploads are filesystem/object-storage backed. Binary payloads
+    # must not be written into the Files database for the new architecture.
+    # file_data remains in the schema only for legacy records/migration.
+    if storage_backend == "filesystem":
+        file_data = None
+
     conn = get_db("files")
     try:
         if _use_postgres("files"):
@@ -1162,18 +1212,27 @@ def update_file_record(file_id, user_id, **patch):
 
 
 def get_files(user_id, conversation_id=None):
+    """Return file metadata only; never serialize binary file_data in Library responses."""
+    columns = (
+        "id, user_id, conversation_id, filename, mime_type, extension, "
+        "size_bytes, storage_backend, storage_key, external_file_id, status, "
+        "created_at, updated_at"
+    )
     conn = get_db("files")
     try:
         if conversation_id is None:
             rows = _fetchall(
                 conn,
-                "SELECT * FROM files WHERE user_id = ? ORDER BY created_at DESC, id DESC",
+                f"SELECT {columns} FROM files "
+                "WHERE user_id = ? ORDER BY created_at DESC, id DESC",
                 (user_id,),
             )
         else:
             rows = _fetchall(
                 conn,
-                "SELECT * FROM files WHERE user_id = ? AND conversation_id = ? ORDER BY created_at DESC, id DESC",
+                f"SELECT {columns} FROM files "
+                "WHERE user_id = ? AND conversation_id = ? "
+                "ORDER BY created_at DESC, id DESC",
                 (user_id, conversation_id),
             )
         return [dict(row) for row in rows]
@@ -1196,7 +1255,7 @@ def get_file(file_id, user_id):
 
 
 def delete_file_record(file_id, user_id):
-    """Permanently delete a Library file record and its stored binary data."""
+    """Delete a Library metadata record; physical storage is owned by Storage Router."""
     conn = get_db("files")
     try:
         cursor = conn.execute(
@@ -1207,6 +1266,17 @@ def delete_file_record(file_id, user_id):
         return int(getattr(cursor, "rowcount", 0) or 0) > 0
     finally:
         conn.close()
+
+
+def get_database_backends():
+    """Return safe diagnostics showing which logical DB each store uses."""
+    return {
+        "chat": _backend_label("chat"),
+        "files": _backend_label("files"),
+        "archive_memory": _backend_label("archive_memory"),
+        "strict_three_database_mode": REQUIRE_THREE_DATABASES,
+        "legacy_database_fallback": bool(LEGACY_DATABASE_URL) and not REQUIRE_THREE_DATABASES,
+    }
 
 
 if __name__ == "__main__":

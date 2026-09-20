@@ -10,7 +10,6 @@ from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import (
-    FileResponse,
     HTMLResponse,
     JSONResponse,
     PlainTextResponse,
@@ -51,11 +50,6 @@ from app.database import (
 )
 
 from app.engine import process_message
-from app.storage import (
-    storage_router,
-    StorageQuotaExceeded,
-    FileNotFound as StorageFileNotFound,
-)
 
 
 load_dotenv()
@@ -224,19 +218,6 @@ class UploadedFileAdapter:
 
     def tell(self):
         return self.stream.tell()
-
-    def seekable(self):
-        """Expose the underlying stream's seek support to zipfile/python-docx."""
-        return self.stream.seekable()
-
-    def readable(self):
-        return self.stream.readable()
-
-    def writable(self):
-        return self.stream.writable()
-
-    def fileno(self):
-        return self.stream.fileno()
 
     def close(self):
         return self.stream.close()
@@ -923,41 +904,8 @@ async def api_delete_memory(request: Request):
 def api_get_files(request: Request):
     user_id = require_user_id(request)
     raw_conversation_id = request.query_params.get("conversation_id")
-
-    try:
-        conversation_id = (
-            int(raw_conversation_id)
-            if raw_conversation_id
-            else None
-        )
-    except (TypeError, ValueError):
-        conversation_id = None
-
-    return JSONResponse(
-        content=jsonable_encoder(
-            get_files(
-                user_id,
-                conversation_id=conversation_id,
-            )
-        )
-    )
-
-
-@app.get("/api/storage", name="api_storage_info")
-def api_storage_info(request: Request):
-    """
-    Return user-visible storage information.
-
-    Only persistent user file storage is exposed here.
-    ODDI short-term memory is intentionally not exposed.
-    """
-    user_id = require_user_id(request)
-
-    return JSONResponse(
-        content=jsonable_encoder(
-            storage_router.get_user_storage_info(user_id)
-        )
-    )
+    conversation_id = int(raw_conversation_id) if raw_conversation_id else None
+    return JSONResponse(get_files(user_id, conversation_id=conversation_id))
 
 
 @app.get("/api/files/{file_id}", name="api_download_file")
@@ -966,56 +914,17 @@ def api_download_file(request: Request, file_id: int):
     record = get_file(file_id, user_id)
 
     if not record:
-        return JSONResponse(
-            {"error": "File not found."},
-            status_code=404,
-        )
+        return JSONResponse({"error": "File not found."}, status_code=404)
 
-    filename = record.get("filename") or "download"
-    media_type = record.get("mime_type") or "application/octet-stream"
-    storage_backend = record.get("storage_backend") or "database"
-
-    # New files live in the filesystem storage layer.
-    if storage_backend == "filesystem":
-        storage_key = record.get("storage_key")
-
-        if not storage_key:
-            return JSONResponse(
-                {"error": "File storage reference is missing."},
-                status_code=500,
-            )
-
-        try:
-            path = storage_router.get_file_path(
-                user_id,
-                storage_key,
-            )
-        except StorageFileNotFound:
-            return JSONResponse(
-                {"error": "Stored file content is missing."},
-                status_code=404,
-            )
-
-        response = FileResponse(
-            path=str(path),
-            media_type=media_type,
-            filename=filename,
-        )
-
-        response.headers["Content-Disposition"] = (
-            f"inline; filename*=UTF-8''{quote(filename)}"
-        )
-
-        return response
-
-    # Backward compatibility for legacy database-backed files.
     data = record.get("file_data")
-
     if data is None:
         return JSONResponse(
             {"error": "File content is not stored for this record."},
             status_code=404,
         )
+
+    filename = record.get("filename") or "download"
+    media_type = record.get("mime_type") or "application/octet-stream"
 
     response = StreamingResponse(
         io.BytesIO(bytes(data)),
@@ -1024,57 +933,18 @@ def api_download_file(request: Request, file_id: int):
     response.headers["Content-Disposition"] = (
         f"inline; filename*=UTF-8''{quote(filename)}"
     )
-
     return response
 
 
 @app.delete("/api/files/{file_id}", name="api_delete_file")
 def api_delete_file(request: Request, file_id: int):
     user_id = require_user_id(request)
-    record = get_file(file_id, user_id)
-
-    if not record:
-        return JSONResponse(
-            {"error": "File not found."},
-            status_code=404,
-        )
-
-    storage_backend = record.get("storage_backend") or "database"
-
-    if storage_backend == "filesystem":
-        storage_key = record.get("storage_key")
-
-        if storage_key:
-            try:
-                storage_router.delete_file(
-                    user_id,
-                    storage_key,
-                )
-            except Exception as storage_error:
-                logger.exception(
-                    "Physical file deletion failed for file %s: %s",
-                    file_id,
-                    storage_error,
-                )
-                return JSONResponse(
-                    {"error": "File content could not be deleted."},
-                    status_code=500,
-                )
-
     deleted = delete_file_record(file_id, user_id)
 
     if not deleted:
-        return JSONResponse(
-            {"error": "File not found."},
-            status_code=404,
-        )
+        return JSONResponse({"error": "File not found."}, status_code=404)
 
-    return JSONResponse(
-        {
-            "success": True,
-            "deleted": file_id,
-        }
-    )
+    return JSONResponse({"success": True, "deleted": file_id})
 
 
 # =========================================================
@@ -1107,138 +977,35 @@ async def chat(request: Request):
     # object before passing them to the existing ODDI engine.
     engine_files = adapt_uploaded_files(uploaded_files)
 
-    # Chat is private. Authenticate before storing uploaded files.
-    user_id = require_user_id(request)
-
-    # Store the actual uploaded bytes through the Storage Router.
-    # PostgreSQL keeps metadata/references only for new uploads.
+    # Record file metadata in the existing Files database exactly as before.
     file_record_ids = []
-    stored_file_keys = []
+    user_id = request.session.get("user_id")
 
-    if engine_files:
-        file_payloads = []
-
-        try:
-            total_upload_bytes = 0
-
-            for uploaded_file in engine_files:
+    if engine_files and user_id is not None:
+        for uploaded_file in engine_files:
+            try:
                 uploaded_file.stream.seek(0)
                 file_bytes = uploaded_file.stream.read()
                 uploaded_file.stream.seek(0)
 
-                file_payloads.append(
-                    (uploaded_file, file_bytes)
-                )
-                total_upload_bytes += len(file_bytes)
-
-            # Check the complete batch before writing anything so a request
-            # cannot partially consume the user's quota.  The Storage Router
-            # exposes quota information directly; do not reach into its
-            # internal FileStorage object here.
-            quota = storage_router.get_file_quota(user_id)
-            remaining_bytes = int(quota.get("remaining_bytes", 0) or 0)
-
-            if total_upload_bytes > remaining_bytes:
-                return JSONResponse(
-                    {
-                        "error": "File storage quota exceeded.",
-                        "storage": quota,
-                    },
-                    status_code=413,
-                )
-
-            for uploaded_file, file_bytes in file_payloads:
-                stored = storage_router.save_file(
+                file_record_id = register_file(
                     user_id=user_id,
-                    data=file_bytes,
-                    original_filename=(
-                        uploaded_file.filename
-                        or "unnamed-file"
-                    ),
+                    filename=uploaded_file.filename or "unnamed-file",
+                    mime_type=uploaded_file.mimetype,
+                    size_bytes=len(file_bytes),
+                    conversation_id=conversation_id,
+                    storage_backend="database",
+                    file_data=file_bytes,
+                    status="received",
                 )
-
-                storage_key = stored["storage_key"]
-                stored_file_keys.append(storage_key)
-
-                try:
-                    file_record_id = register_file(
-                        user_id=user_id,
-                        filename=(
-                            uploaded_file.filename
-                            or "unnamed-file"
-                        ),
-                        mime_type=uploaded_file.mimetype,
-                        size_bytes=len(file_bytes),
-                        conversation_id=conversation_id,
-                        storage_backend="filesystem",
-                        storage_key=storage_key,
-                        external_file_id=None,
-                        file_data=None,
-                        status="received",
-                    )
-
-                    file_record_ids.append(file_record_id)
-
-                except Exception as file_db_error:
-                    try:
-                        storage_router.delete_file(
-                            user_id,
-                            storage_key,
-                        )
-                    except Exception:
-                        logger.exception(
-                            "Failed to roll back physical file %s",
-                            storage_key,
-                        )
-
-                    logger.warning(
-                        "File metadata save failed: %s",
-                        file_db_error,
-                    )
-
-            # Rewind every upload so the existing engine receives the same
-            # file stream it received before the storage migration.
-            for uploaded_file, _ in file_payloads:
-                uploaded_file.stream.seek(0)
-
-        except StorageQuotaExceeded as quota_error:
-            logger.warning(
-                "File storage quota exceeded for user %s: %s",
-                user_id,
-                quota_error,
-            )
-
-            return JSONResponse(
-                {
-                    "error": "File storage quota exceeded.",
-                    "storage": storage_router.get_file_quota(user_id),
-                },
-                status_code=413,
-            )
-
-        except Exception as storage_error:
-            logger.exception(
-                "File storage failed for user %s: %s",
-                user_id,
-                storage_error,
-            )
-
-            for storage_key in stored_file_keys:
-                try:
-                    storage_router.delete_file(
-                        user_id,
-                        storage_key,
-                    )
-                except Exception:
-                    logger.exception(
-                        "Failed to roll back physical file %s",
-                        storage_key,
-                    )
-
-            return JSONResponse(
-                {"error": "Uploaded file could not be stored."},
-                status_code=500,
-            )
+                file_record_ids.append(file_record_id)
+            except Exception as file_db_error:
+                # File metadata persistence must never prevent the user from
+                # chatting or analyzing the upload.
+                logger.warning(
+                    "File metadata save failed: %s",
+                    file_db_error,
+                )
 
     history_json = str(form.get("history", "[]"))
 
