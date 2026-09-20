@@ -11,15 +11,13 @@ from pathlib import Path
 class ShortTermMemoryStorage:
     """
     ODDI internal temporary storage.
-
     This storage is NOT user-accessible.
 
     Physical structure:
-
-        C:\\ODDI_STORAGE\\
-        └── short_term_memory\\
-            ├── user_1\\
-            ├── user_2\\
+        C:\ODDI_STORAGE\
+        └── short_term_memory\
+            ├── user_1\
+            ├── user_2\
             └── ...
 
     Every memory has a TTL.
@@ -40,13 +38,12 @@ class ShortTermMemoryStorage:
                     "ODDI_STORAGE_ROOT",
                     r"C:\ODDI_STORAGE"
                     if os.name == "nt"
-                    else "/var/lib/oddi/storage",
+                    else "/tmp/oddi_storage",
                 )
             )
 
         self.root = storage_root.resolve()
         self.memory_root = self.root / "short_term_memory"
-
         self.default_ttl_seconds = int(
             default_ttl_seconds
             if default_ttl_seconds is not None
@@ -55,32 +52,21 @@ class ShortTermMemoryStorage:
                 str(self.DEFAULT_TTL_SECONDS),
             )
         )
-
         self.memory_root.mkdir(
             parents=True,
             exist_ok=True,
         )
-
-    # ---------------------------------------------------------
-    # USER DIRECTORY
-    # ---------------------------------------------------------
 
     def user_directory(
         self,
         user_id: int | str,
     ) -> Path:
         user_dir = self.memory_root / f"user_{int(user_id)}"
-
         user_dir.mkdir(
             parents=True,
             exist_ok=True,
         )
-
         return user_dir
-
-    # ---------------------------------------------------------
-    # SECURITY
-    # ---------------------------------------------------------
 
     def _safe_path(
         self,
@@ -89,17 +75,11 @@ class ShortTermMemoryStorage:
     ) -> Path:
         user_dir = self.user_directory(user_id).resolve()
         candidate = (user_dir / filename).resolve()
-
         try:
             candidate.relative_to(user_dir)
         except ValueError:
             raise ValueError("Invalid short-term memory path.")
-
         return candidate
-
-    # ---------------------------------------------------------
-    # STORE
-    # ---------------------------------------------------------
 
     def store(
         self,
@@ -109,20 +89,15 @@ class ShortTermMemoryStorage:
     ) -> str:
         """
         Store temporary data.
-
         Returns a unique memory ID.
         """
-
         if not isinstance(data, bytes):
             raise TypeError("data must be bytes.")
 
         memory_id = uuid.uuid4().hex
-
         user_dir = self.user_directory(user_id)
-
         data_filename = f"{memory_id}.bin"
         metadata_filename = f"{memory_id}.json"
-
         data_path = user_dir / data_filename
         metadata_path = user_dir / metadata_filename
 
@@ -131,7 +106,6 @@ class ShortTermMemoryStorage:
             if ttl_seconds is not None
             else self.default_ttl_seconds
         )
-
         created_at = time.time()
         expires_at = created_at + ttl
 
@@ -149,12 +123,7 @@ class ShortTermMemoryStorage:
             json.dumps(metadata),
             encoding="utf-8",
         )
-
         return memory_id
-
-    # ---------------------------------------------------------
-    # GET
-    # ---------------------------------------------------------
 
     def get(
         self,
@@ -163,15 +132,12 @@ class ShortTermMemoryStorage:
     ) -> bytes | None:
         """
         Retrieve temporary memory.
-
         Expired memory is automatically deleted.
         """
-
         metadata_path = self._safe_path(
             user_id,
             f"{memory_id}.json",
         )
-
         data_path = self._safe_path(
             user_id,
             f"{memory_id}.bin",
@@ -199,10 +165,6 @@ class ShortTermMemoryStorage:
 
         return data_path.read_bytes()
 
-    # ---------------------------------------------------------
-    # DELETE
-    # ---------------------------------------------------------
-
     def delete(
         self,
         user_id: int | str,
@@ -212,7 +174,6 @@ class ShortTermMemoryStorage:
             user_id,
             f"{memory_id}.bin",
         )
-
         metadata_path = self._safe_path(
             user_id,
             f"{memory_id}.json",
@@ -230,20 +191,14 @@ class ShortTermMemoryStorage:
 
         return deleted
 
-    # ---------------------------------------------------------
-    # CLEANUP
-    # ---------------------------------------------------------
-
     def cleanup_expired(
         self,
         user_id: int | str | None = None,
     ) -> int:
         """
         Delete expired temporary memories.
-
         Returns the number of deleted memories.
         """
-
         if user_id is not None:
             directories = [self.user_directory(user_id)]
         else:
@@ -254,7 +209,6 @@ class ShortTermMemoryStorage:
             ]
 
         deleted_count = 0
-
         now = time.time()
 
         for directory in directories:
@@ -290,10 +244,6 @@ class ShortTermMemoryStorage:
 
         return deleted_count
 
-    # ---------------------------------------------------------
-    # DELETE USER MEMORY
-    # ---------------------------------------------------------
-
     def delete_user_storage(
         self,
         user_id: int | str,
@@ -304,5 +254,4 @@ class ShortTermMemoryStorage:
             return False
 
         shutil.rmtree(user_dir)
-
         return True

@@ -13,18 +13,15 @@ from .short_term_memory import (
 
 
 class StorageRouter:
-
     CHAT = "chat"
     FILES = "files"
     SHORT_TERM_MEMORY = "short_term_memory"
 
     def __init__(self):
-
         self.files = FileStorage()
         self.short_term_memory = ShortTermMemoryStorage()
 
     def get_storage(self, storage_type):
-
         if storage_type == self.FILES:
             return self.files
 
@@ -44,7 +41,6 @@ class StorageRouter:
         data,
         original_filename=None,
     ):
-
         return self.files.save_bytes(
             user_id=user_id,
             data=data,
@@ -56,7 +52,6 @@ class StorageRouter:
         user_id,
         storage_key,
     ):
-
         return self.files.get_path(
             user_id,
             storage_key,
@@ -67,7 +62,6 @@ class StorageRouter:
         user_id,
         storage_key,
     ):
-
         return self.files.read_bytes(
             user_id,
             storage_key,
@@ -78,14 +72,12 @@ class StorageRouter:
         user_id,
         storage_key,
     ):
-
         return self.files.delete(
             user_id,
             storage_key,
         )
 
     def get_file_quota(self, user_id):
-
         return self.files.get_quota(user_id)
 
     def store_short_term_memory(
@@ -94,7 +86,6 @@ class StorageRouter:
         data,
         ttl_seconds=None,
     ):
-
         return self.short_term_memory.store(
             user_id=user_id,
             data=data,
@@ -106,7 +97,6 @@ class StorageRouter:
         user_id,
         memory_id,
     ):
-
         return self.short_term_memory.get(
             user_id,
             memory_id,
@@ -117,7 +107,6 @@ class StorageRouter:
         user_id,
         memory_id,
     ):
-
         return self.short_term_memory.delete(
             user_id,
             memory_id,
@@ -127,13 +116,11 @@ class StorageRouter:
         self,
         user_id=None,
     ):
-
         return self.short_term_memory.cleanup_expired(
             user_id
         )
 
     def get_user_storage_info(self, user_id):
-
         return {
             "files": self.get_file_quota(user_id),
         }
