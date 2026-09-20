@@ -466,6 +466,19 @@ body.dark-mode #oddi-react-sidebar-root {
   flex-direction: column;
   align-items: center;
   gap: 7px;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+.oddi-rs-rail.is-sidebar-open {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+.oddi-rs-rail.is-sidebar-closed {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
 }
 
 .oddi-rs-rail > button {
@@ -487,9 +500,9 @@ body.dark-mode #oddi-react-sidebar-root {
 .oddi-rs-launcher {
   margin-bottom: 4px !important;
   background: var(--rs-bg) !important;
-  color: transparent !important;
-  visibility: hidden;
-  pointer-events: none;
+  color: var(--rs-text) !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
 }
 
 .oddi-rs-launcher img { width: 24px; height: 24px; object-fit: contain; }
@@ -525,9 +538,6 @@ body.dark-mode #oddi-react-sidebar-root {
   .oddi-rs-sidebar { width: min(208px, 88vw); }
 }
 
-@media (min-width: 769px) {
-  .oddi-rs-sidebar.open ~ .oddi-rs-rail { display: none; }
-}
 
 /* Final utility-row alignment: keep all four rows anchored to the left. */
 .oddi-rs-nav button {
@@ -583,27 +593,6 @@ body.dark-mode #oddi-react-sidebar-root {
   }
 }
 
-/* Desktop: when sidebar is closed, keep its region completely blank.
-   Phone keeps its hamburger opener. */
-@media (min-width: 769px) {
-  #oddi-react-sidebar-root .oddi-rs-sidebar.closed ~ .oddi-rs-rail {
-    display: none !important;
-  }
-}
-/* While the legacy Memory workspace is open, keep the closed launcher out of
-   the Memory surface. When Memory closes, the same launcher reappears automatically. */
-body:has(#memoryModal.show) #oddi-react-sidebar-root .oddi-rs-rail {
-  display: none !important;
-}
-
-/* Memory close: restore the normal phone launcher explicitly.
-   React owns whether the rail is mounted; this rule only prevents the
-   legacy Memory surface from leaving the launcher visually suppressed. */
-@media (max-width: 768px) {
-  body:not(:has(#memoryModal.show)) #oddi-react-sidebar-root .oddi-rs-rail {
-    display: flex !important;
-  }
-}
 
 /* ODDI 11-change pass: attachment tray + light-mode profile contrast. */
 .oddi-rs-upload-strip{
@@ -722,9 +711,14 @@ body.dark-mode .oddi-rs-chat.pinned{background:rgba(255,255,255,.06);}
     opacity: 1 !important;
     pointer-events: auto !important;
   }
-  body:has(#memoryModal.show) #oddi-react-sidebar-root .oddi-rs-rail {
+  #oddi-react-sidebar-root .oddi-rs-rail.is-sidebar-open {
     visibility: hidden !important;
     opacity: 0 !important;
     pointer-events: none !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-rail.is-sidebar-closed {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
   }
 }

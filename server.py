@@ -246,6 +246,40 @@ def adapt_uploaded_files(uploaded_files):
     return [UploadedFileAdapter(upload) for upload in uploaded_files]
 
 
+def rollback_stored_files(user_id, storage_keys, file_record_ids=None):
+    """Best-effort rollback for a failed upload/chat transaction.
+
+    Physical storage and metadata are kept in sync: if processing fails after
+    the files were stored, remove both the filesystem objects and their DB
+    records. This prevents orphaned files from consuming the user's quota.
+    """
+    file_record_ids = list(file_record_ids or [])
+
+    for storage_key in list(storage_keys or []):
+        try:
+            storage_router.delete_file(user_id, storage_key)
+        except StorageFileNotFound:
+            pass
+        except Exception as error:
+            logger.exception(
+                "Failed to roll back physical file %s for user %s: %s",
+                storage_key,
+                user_id,
+                error,
+            )
+
+    for file_record_id in file_record_ids:
+        try:
+            delete_file_record(file_record_id, user_id)
+        except Exception as error:
+            logger.exception(
+                "Failed to roll back file metadata %s for user %s: %s",
+                file_record_id,
+                user_id,
+                error,
+            )
+
+
 def response_from_engine(reply):
     """Convert common engine return values into FastAPI responses.
 
@@ -1126,15 +1160,11 @@ async def chat(request: Request):
                 file_bytes = uploaded_file.stream.read()
                 uploaded_file.stream.seek(0)
 
-                file_payloads.append(
-                    (uploaded_file, file_bytes)
-                )
+                file_payloads.append((uploaded_file, file_bytes))
                 total_upload_bytes += len(file_bytes)
 
             # Check the complete batch before writing anything so a request
-            # cannot partially consume the user's quota.  The Storage Router
-            # exposes quota information directly; do not reach into its
-            # internal FileStorage object here.
+            # cannot partially consume the user's quota.
             quota = storage_router.get_file_quota(user_id)
             remaining_bytes = int(quota.get("remaining_bytes", 0) or 0)
 
@@ -1152,8 +1182,7 @@ async def chat(request: Request):
                     user_id=user_id,
                     data=file_bytes,
                     original_filename=(
-                        uploaded_file.filename
-                        or "unnamed-file"
+                        uploaded_file.filename or "unnamed-file"
                     ),
                 )
 
@@ -1164,8 +1193,7 @@ async def chat(request: Request):
                     file_record_id = register_file(
                         user_id=user_id,
                         filename=(
-                            uploaded_file.filename
-                            or "unnamed-file"
+                            uploaded_file.filename or "unnamed-file"
                         ),
                         mime_type=uploaded_file.mimetype,
                         size_bytes=len(file_bytes),
@@ -1176,25 +1204,17 @@ async def chat(request: Request):
                         file_data=None,
                         status="received",
                     )
-
                     file_record_ids.append(file_record_id)
 
                 except Exception as file_db_error:
-                    try:
-                        storage_router.delete_file(
-                            user_id,
-                            storage_key,
-                        )
-                    except Exception:
-                        logger.exception(
-                            "Failed to roll back physical file %s",
-                            storage_key,
-                        )
-
-                    logger.warning(
-                        "File metadata save failed: %s",
+                    logger.exception(
+                        "File metadata save failed for user %s: %s",
+                        user_id,
                         file_db_error,
                     )
+                    # Metadata failure is a transaction failure. Do not let
+                    # the engine process a file ODDI can no longer account for.
+                    raise
 
             # Rewind every upload so the existing engine receives the same
             # file stream it received before the storage migration.
@@ -1207,7 +1227,11 @@ async def chat(request: Request):
                 user_id,
                 quota_error,
             )
-
+            rollback_stored_files(
+                user_id,
+                stored_file_keys,
+                file_record_ids,
+            )
             return JSONResponse(
                 {
                     "error": "File storage quota exceeded.",
@@ -1222,19 +1246,11 @@ async def chat(request: Request):
                 user_id,
                 storage_error,
             )
-
-            for storage_key in stored_file_keys:
-                try:
-                    storage_router.delete_file(
-                        user_id,
-                        storage_key,
-                    )
-                except Exception:
-                    logger.exception(
-                        "Failed to roll back physical file %s",
-                        storage_key,
-                    )
-
+            rollback_stored_files(
+                user_id,
+                stored_file_keys,
+                file_record_ids,
+            )
             return JSONResponse(
                 {"error": "Uploaded file could not be stored."},
                 status_code=500,
@@ -1258,12 +1274,26 @@ async def chat(request: Request):
     # underlying AI engine even if someone calls /chat directly.
     user_id = require_user_id(request)
 
-    reply = process_message(
-        message,
-        engine_files,
-        conversation_history,
-        user_id,
-    )
+    try:
+        reply = process_message(
+            message,
+            engine_files,
+            conversation_history,
+            user_id,
+        )
+    except Exception:
+        # If AI processing fails after files have been persisted, roll back
+        # both the physical objects and their metadata so quota is not leaked.
+        rollback_stored_files(
+            user_id,
+            stored_file_keys,
+            file_record_ids,
+        )
+        logger.exception(
+            "Chat processing failed for user %s; uploaded files rolled back.",
+            user_id,
+        )
+        raise
 
     if file_record_ids:
         for file_record_id in file_record_ids:

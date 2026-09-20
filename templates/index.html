@@ -8290,6 +8290,108 @@ function copyUserMessage(button) {
         });
 }
 
+
+async function editUserMessage(button) {
+    const result = getMessageFromButton(button);
+    if (!result || result.message.role !== "user") return;
+
+    const textEl = result.bubble.querySelector(".user-text");
+    const actions = result.bubble.querySelector(".user-actions-row");
+    if (!textEl || !actions) return;
+    if (result.bubble.querySelector(".user-message-edit-input")) return;
+
+    const originalText = String(result.message.text ?? textEl.innerText ?? "");
+    const editor = document.createElement("textarea");
+    editor.className = "user-message-edit-input";
+    editor.value = originalText;
+    editor.setAttribute("aria-label", "Edit your message");
+    editor.spellcheck = true;
+    editor.rows = Math.max(2, Math.min(8, originalText.split("\n").length));
+
+    const originalDisplay = textEl.style.display;
+    textEl.style.display = "none";
+    textEl.parentNode?.insertBefore(editor, textEl);
+
+    const editActions = document.createElement("div");
+    editActions.className = "user-message-edit-actions";
+    editActions.innerHTML =
+        '<button type="button" class="user-message-edit-cancel">Cancel</button>' +
+        '<button type="button" class="user-message-edit-save">Save</button>';
+    actions.before(editActions);
+
+    actions.querySelectorAll("button").forEach(action => {
+        action.disabled = true;
+    });
+
+    const cancel = editActions.querySelector(".user-message-edit-cancel");
+    const save = editActions.querySelector(".user-message-edit-save");
+
+    const finish = (restoreText) => {
+        editActions.remove();
+        editor.remove();
+        textEl.style.display = originalDisplay;
+        if (restoreText) textEl.textContent = originalText;
+        actions.querySelectorAll("button").forEach(action => {
+            action.disabled = false;
+        });
+    };
+
+    cancel?.addEventListener("click", () => finish(true));
+
+    save?.addEventListener("click", async () => {
+        const nextText = editor.value.replace(/\r\n/g, "\n").trim();
+        if (!nextText) {
+            editor.focus();
+            return;
+        }
+
+        if (nextText === originalText) {
+            finish(true);
+            return;
+        }
+
+        if (save) {
+            save.disabled = true;
+            save.textContent = "Saving…";
+        }
+        if (cancel) cancel.disabled = true;
+
+        result.message.text = nextText;
+        textEl.textContent = nextText;
+
+        const ok = await updateConversationMessageRemote(
+            conversations[currentConversation],
+            result.message.id,
+            { text: nextText }
+        );
+
+        if (!ok) {
+            result.message.text = originalText;
+            finish(true);
+            alert("Could not save the edited message. Please try again.");
+            return;
+        }
+
+        finish(false);
+        renderHistory();
+    });
+
+    editor.addEventListener("keydown", event => {
+        if (event.key === "Escape") {
+            event.preventDefault();
+            finish(true);
+            return;
+        }
+        if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+            event.preventDefault();
+            save?.click();
+        }
+    });
+
+    editor.focus();
+    editor.setSelectionRange(editor.value.length, editor.value.length);
+}
+
 function getMessageFromButton(button) {
     const bubble = button.closest(".user-message, .bot-message");
     if (!bubble || currentConversation === null) return null;
@@ -9153,8 +9255,25 @@ async function sendMessage(
                         📌 Pin
                     </button>
                     <button
+
+                        class="message-action-btn user-edit-btn"
+
+                        onclick="editUserMessage(this)"
+
+                        title="Edit your message"
+
+                        aria-label="Edit your message">
+
+                        ✏️ Edit
+
+                    </button>
+
+                    <button
+
                         class="message-action-btn user-copy-btn"
+
                         onclick="copyUserMessage(this)"
+
                         title="Copy your message">
                         📋 Copy
                     </button>
@@ -10530,8 +10649,25 @@ async function openConversation(
                                 ${msg.pinned ? "📌 Pinned" : "📌 Pin"}
                             </button>
                             <button
+
+                                class="message-action-btn user-edit-btn"
+
+                                onclick="editUserMessage(this)"
+
+                                title="Edit your message"
+
+                                aria-label="Edit your message">
+
+                                ✏️ Edit
+
+                            </button>
+
+                            <button
+
                                 class="message-action-btn user-copy-btn"
+
                                 onclick="copyUserMessage(this)"
+
                                 title="Copy your message">
                                 📋 Copy
                             </button>
@@ -12992,6 +13128,36 @@ loadConversations();
 })();
 </script>
 
+<style id="oddi-user-message-edit-final-css">
+.user-message-edit-input{
+    width:min(760px,88vw);
+    max-width:100%;
+    min-height:92px;
+    box-sizing:border-box;
+    resize:vertical;
+    padding:12px 14px;
+    border:1px solid #cfcfcf;
+    border-radius:16px;
+    background:#fff;
+    color:#111;
+    font:inherit;
+    line-height:1.5;
+    outline:none;
+    box-shadow:0 5px 18px rgba(0,0,0,.08);
+}
+.user-message-edit-input:focus{border-color:#20c76b;box-shadow:0 0 0 3px rgba(32,199,107,.12);}
+.user-message-edit-actions{display:flex;gap:7px;align-items:center;margin-top:7px;align-self:flex-end;}
+.user-message-edit-actions button{
+    min-height:30px;padding:5px 11px;border:1px solid #ddd;border-radius:8px;
+    background:#f5f5f5;color:#222;font:600 12px inherit;cursor:pointer;
+}
+.user-message-edit-actions .user-message-edit-save{background:#0a0a0a;color:#fff;border-color:#0a0a0a;}
+.user-message-edit-actions button:disabled{opacity:.55;cursor:wait;}
+.user-message .user-actions-row button:disabled{opacity:.45;cursor:wait;}
+body.dark-mode .user-message-edit-input{background:#171717;color:#f5f5f5;border-color:#3a3a3a;}
+body.dark-mode .user-message-edit-actions button{background:#222;color:#eee;border-color:#3a3a3a;}
+body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5f5f5;color:#111;border-color:#f5f5f5;}
+</style>
 <script id="oddi-final-message-ui-v7-js">
 (function () {
     "use strict";
@@ -18130,6 +18296,74 @@ body.dark-mode .home-goal-chip:focus-visible {
 </script>
 
 <div id="oddi-react-sidebar-root"></div>
+
+<!-- ODDI permanent sidebar opener: deliberately outside the React root so
+     Library/Memory/legacy DOM operations can never remove the reopen control. -->
+<style id="oddi-permanent-sidebar-opener">
+  #oddi-hard-sidebar-launcher{
+    position:fixed !important;
+    left:10px !important;
+    top:12px !important;
+    width:40px !important;
+    height:40px !important;
+    min-width:40px !important;
+    min-height:40px !important;
+    display:flex !important;
+    align-items:center !important;
+    justify-content:center !important;
+    padding:0 !important;
+    margin:0 !important;
+    border:1px solid #d9d9d9 !important;
+    border-radius:10px !important;
+    background:#fff !important;
+    color:#111 !important;
+    box-shadow:0 7px 18px rgba(0,0,0,.22) !important;
+    cursor:pointer !important;
+    z-index:2147483647 !important;
+    visibility:visible !important;
+    opacity:1 !important;
+    pointer-events:auto !important;
+  }
+  #oddi-hard-sidebar-launcher:hover{background:#f2f2f2 !important;}
+  #oddi-hard-sidebar-launcher svg{width:21px;height:21px;display:block;}
+  body.dark-mode #oddi-hard-sidebar-launcher{background:#111 !important;color:#fff !important;border-color:#333 !important;}
+  body.dark-mode #oddi-hard-sidebar-launcher:hover{background:#1d1d1d !important;}
+  body.oddi-react-sidebar-open #oddi-hard-sidebar-launcher{display:none !important;}
+  @media (max-width:768px){
+    #oddi-hard-sidebar-launcher{left:10px !important;top:12px !important;}
+  }
+</style>
+<button id="oddi-hard-sidebar-launcher" type="button" aria-label="Open sidebar" title="Open sidebar">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+    <path d="M4 6h16M4 12h16M4 18h16"></path>
+  </svg>
+</button>
+<script id="oddi-permanent-sidebar-opener-js">
+(function(){
+  "use strict";
+  var btn=document.getElementById("oddi-hard-sidebar-launcher");
+  if(!btn) return;
+  function openSidebarHard(){
+    var root=document.getElementById("oddi-react-sidebar-root");
+    var sidebar=root && root.querySelector(".oddi-rs-sidebar");
+    document.body.classList.add("oddi-react-sidebar-open");
+    document.body.classList.remove("oddi-react-sidebar-collapsed");
+    if(root){
+      root.classList.add("is-open");
+      root.classList.remove("is-closed","is-collapsed");
+    }
+    if(sidebar){
+      sidebar.classList.add("open");
+      sidebar.classList.remove("closed","collapsed");
+    }
+    window.dispatchEvent(new CustomEvent("oddi:sidebar-open"));
+  }
+  btn.addEventListener("click",openSidebarHard);
+  window.addEventListener("oddi:sidebar-close",function(){btn.style.display="flex";});
+  window.addEventListener("oddi:sidebar-open",function(){btn.style.display="none";});
+  window.addEventListener("oddi:keep-sidebar-rail-visible",function(){btn.style.display="flex";});
+})();
+</script>
 <script src="/static/oddi-sidebar/oddi-sidebar.js"></script>
 <style id="oddi-spark-mobile-final-fix">
 /* FINAL: circuit signals remain visible on mobile; reduced-motion still wins. */
@@ -20102,6 +20336,7 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
     document.getElementById("oddi-react-sidebar-root")?.classList.remove("is-open","is-collapsed");
     document.getElementById("oddi-react-sidebar-root")?.classList.add("is-closed");
     window.dispatchEvent(new CustomEvent("oddi:sidebar-close"));
+    window.dispatchEvent(new CustomEvent("oddi:keep-sidebar-rail-visible"));
     libraryModal.classList.add("show"); libraryModal.setAttribute("aria-hidden","false");
     libraryCache=await collectLibraryFiles(); renderLibrary(libraryCache); librarySearch?.focus();
   }

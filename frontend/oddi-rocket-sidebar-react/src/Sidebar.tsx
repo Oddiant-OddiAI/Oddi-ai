@@ -218,6 +218,55 @@ export default function Sidebar() {
     return () => observer.disconnect();
   }, []);
 
+  // Library is a legacy modal created by index.html. Opening Library closes
+  // the React sidebar, but closing Library must restore the desktop sidebar.
+  // Phone intentionally keeps its hamburger-only closed state.
+  useEffect(() => {
+    let modalObserver: MutationObserver | null = null;
+    let bodyObserver: MutationObserver | null = null;
+
+    const attachLibraryObserver = (modal: HTMLElement | null) => {
+      if (!modal || modalObserver) return;
+      let wasOpen = modal.classList.contains('show');
+
+      const onLibraryClassChange = () => {
+        const isOpenNow = modal.classList.contains('show');
+        if (wasOpen && !isOpenNow && !window.matchMedia('(max-width: 768px)').matches) {
+          setCollapsed(false);
+          setOpen(true);
+        }
+        wasOpen = isOpenNow;
+      };
+
+      modalObserver = new MutationObserver(onLibraryClassChange);
+      modalObserver.observe(modal, {
+        attributes: true,
+        attributeFilter: ['class'],
+      });
+    };
+
+    attachLibraryObserver(document.getElementById('oddiLibraryModal'));
+
+    if (!modalObserver) {
+      bodyObserver = new MutationObserver(() => {
+        const modal = document.getElementById('oddiLibraryModal');
+        if (modal) {
+          attachLibraryObserver(modal);
+          bodyObserver?.disconnect();
+          bodyObserver = null;
+        }
+      });
+      bodyObserver.observe(document.body, { childList: true, subtree: true });
+    }
+
+    return () => {
+      modalObserver?.disconnect();
+      bodyObserver?.disconnect();
+      modalObserver = null;
+      bodyObserver = null;
+    };
+  }, []);
+
   // File/gesture bridge from the legacy index.html. A selected upload expands
   // the React sidebar and shows the attachment directly inside it on desktop
   // and phone. This is presentation-only; the actual upload pipeline remains
@@ -485,7 +534,7 @@ export default function Sidebar() {
   }, []);
 
   return <>
-    {open && <button className="oddi-rs-backdrop" aria-label="Close sidebar" onClick={() => setOpen(false)} />}
+    <button className={`oddi-rs-backdrop ${open ? 'is-open' : 'is-closed'}`} aria-label="Close sidebar" onClick={() => setOpen(false)} />
 
     <aside className={`oddi-rs-sidebar ${open ? 'open' : 'closed'} ${collapsed ? 'collapsed' : ''}`} aria-label="ODDI AI sidebar">
       <header className="oddi-rs-header">
@@ -682,8 +731,11 @@ export default function Sidebar() {
       </div>
     )}
 
-    {!open && <div className="oddi-rs-rail" aria-label="Collapsed ODDI tools">
-      <button className={`oddi-rs-launcher ${isPhone ? 'oddi-rs-phone-launcher' : ''}`} onClick={() => setOpen(true)} title="Open sidebar" aria-label="Open sidebar">
+    <div className={`oddi-rs-rail ${open ? 'is-sidebar-open' : 'is-sidebar-closed'}`} aria-label="Collapsed ODDI tools">
+      <button className={`oddi-rs-launcher ${isPhone ? 'oddi-rs-phone-launcher' : ''}`} onClick={() => {
+        setCollapsed(false);
+        setOpen(true);
+      }} title="Open sidebar" aria-label="Open sidebar">
         {isPhone ? (
           <Menu size={21} aria-hidden="true" />
         ) : (
@@ -707,7 +759,7 @@ export default function Sidebar() {
           <button onClick={openMemory} title="Memory" aria-label="Memory"><Brain size={16} /></button>
         </>
       )}
-    </div>}
+    </div>
 
   </>;
 }
