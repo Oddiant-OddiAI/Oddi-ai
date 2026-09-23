@@ -3613,6 +3613,18 @@ body.dark-mode .user-message > .user-actions-row .user-edit-btn:hover{
     var video = document.getElementById("oddi-splash-video");
     if (!splash || !video) return;
 
+    /* Make the actual video frame visible immediately. Do not depend on
+       CSS animation timing for splash visibility. */
+    video.style.opacity = "1";
+    video.style.visibility = "visible";
+    try {
+        var splashSource = video.querySelector("source");
+        if (splashSource && splashSource.getAttribute("src") && !video.getAttribute("src")) {
+            video.src = splashSource.getAttribute("src");
+        }
+        video.load();
+    } catch (_) {}
+
     var splashEnabled = true;
     try {
         var storedSplash = localStorage.getItem("oddi_splash_enabled_v1");
@@ -3669,6 +3681,8 @@ body.dark-mode .user-message > .user-actions-row .user-edit-btn:hover{
     function startVideo() {
         if (started || finished) return;
         started = true;
+        video.style.opacity = "1";
+        video.style.visibility = "visible";
         armFallback();
 
         try {
@@ -4492,7 +4506,7 @@ body.dark-mode .user-message > .user-actions-row .user-edit-btn:hover{
                     <div class="oddi-setting-row">
                         <div class="oddi-setting-icon">◐</div>
                         <div class="oddi-setting-copy"><strong>Theme</strong><small>Switch between light and dark mode.</small></div>
-                        <button id="themeSettingBtn" class="oddi-setting-control" type="button">Toggle</button>
+                        <button id="themeSettingBtn" class="oddi-toggle-control" type="button">Toggle</button>
                     </div>
                     <div class="oddi-setting-row">
                         <div class="oddi-setting-icon">文</div>
@@ -8155,15 +8169,30 @@ function openShareModal() {
     if (!conversation) return;
     const modal = document.getElementById("oddiShareModal");
     if (!modal) return;
+    document.body.classList.add("oddi-share-open");
+    document.body.style.overflow = "hidden";
     modal.classList.add("show");
     modal.setAttribute("aria-hidden", "false");
+    const closeBtn = document.getElementById("oddiShareClose");
+    if (closeBtn) setTimeout(() => closeBtn.focus({preventScroll:true}), 0);
 }
 
 function closeShareModal() {
     const modal = document.getElementById("oddiShareModal");
     if (!modal) return;
+    // Remove focus BEFORE aria-hidden so Chrome does not retain focus inside
+    // an accessibility-hidden dialog.
+    if (modal.contains(document.activeElement) && document.activeElement && typeof document.activeElement.blur === "function") {
+        document.activeElement.blur();
+    }
     modal.classList.remove("show");
     modal.setAttribute("aria-hidden", "true");
+    modal.style.display = "none";
+    document.body.classList.remove("oddi-share-open");
+    document.body.style.overflow = "";
+    requestAnimationFrame(() => {
+        modal.style.removeProperty("display");
+    });
 }
 
 async function shareCurrentChat() {
@@ -8241,86 +8270,102 @@ function getSelectedShareFormat() {
 async function handleShareTarget(target) {
     const conversation = getCurrentExportConversation();
     if (!conversation) return;
+
     const format = getSelectedShareFormat();
     const text = buildPlainTextExport(conversation);
     const title = conversation.title || "Oddi Chat";
 
+    // Keep the browser user-gesture alive: sharing/navigation must happen
+    // immediately from the click handler, not after a slow export await.
     if (target === "copy") {
         try {
-            await navigator.clipboard.writeText(text);
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                document.execCommand("copy");
+                ta.remove();
+            }
             closeShareModal();
             alert("Chat copied to clipboard.");
         } catch (error) {
+            console.error("Copy failed:", error);
             alert("Could not copy the chat.");
         }
         return;
     }
 
     if (target === "whatsapp") {
-        try {
-            const file = await createShareFile(format, conversation);
-            // On browsers with a real file-share API (typically mobile), use
-            // it so the selected PDF/DOCX/etc. can be attached to WhatsApp.
-            if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-                await navigator.share({ title, text: `Shared from Oddi AI: ${title}`, files: [file] });
-                closeShareModal();
-                return;
-            }
-
-            // WhatsApp Web does not expose a browser API that lets a website
-            // silently attach a local File to a chat. Download the selected
-            // file first, then open WhatsApp Web with the chat text so the user
-            // can attach the downloaded file normally.
-            if (file) {
-                downloadExportFile(await file.arrayBuffer(), file.name, file.type);
-                const url = `https://web.whatsapp.com/send?text=${encodeURIComponent(`Shared from Oddi AI: ${title}`)}`;
-                window.open(url, "_blank", "noopener,noreferrer");
-                closeShareModal();
-                setTimeout(() => alert(`${file.name} was downloaded. In WhatsApp Web, open the chat and attach this file.`), 250);
-                return;
-            }
-        } catch (error) {
-            if (error?.name === "AbortError") return;
-            console.error("WhatsApp sharing failed:", error);
+        // Open immediately while the click is still trusted. Do not wait for
+        // PDF/DOCX generation, which causes popup blocking on mobile Chrome.
+        const url = `https://wa.me/?text=${encodeURIComponent(`Shared from Oddi AI: ${title}\n\n${text}`)}`;
+        const popup = window.open(url, "_blank", "noopener,noreferrer");
+        if (!popup) {
+            window.location.href = url;
         }
+        closeShareModal();
 
-        const url = `https://web.whatsapp.com/send?text=${encodeURIComponent(text)}`;
-        window.open(url, "_blank", "noopener,noreferrer");
+        // If the user selected a non-TXT format, create/download it separately.
+        if (format !== "txt") {
+            try {
+                const file = await createShareFile(format, conversation);
+                if (file) downloadExportFile(await file.arrayBuffer(), file.name, file.type);
+            } catch (error) {
+                console.error("Share attachment preparation failed:", error);
+            }
+        }
         return;
     }
 
     if (target === "email") {
-        const body = format === "txt" ? text : `${text}\n\n(Attachment sharing depends on your mail app.)`;
-        const subject = encodeURIComponent(title);
-        window.location.href = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+        const body = format === "txt" ? text : `${text}\n\n(Selected export: ${format.toUpperCase()})`;
+        const mailto = `mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+        closeShareModal();
+        window.location.href = mailto;
         return;
     }
 
     if (target === "more") {
-        try {
-            const file = await createShareFile(format, conversation);
-            if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-                await navigator.share({ title, text: `Shared from Oddi AI: ${title}`, files: [file] });
-                closeShareModal();
-                return;
-            }
-            if (navigator.share) {
+        // Native share must be called synchronously from the user gesture.
+        if (navigator.share) {
+            try {
                 await navigator.share({ title, text });
                 closeShareModal();
                 return;
+            } catch (error) {
+                if (error?.name === "AbortError") return;
             }
-        } catch (error) {
-            if (error?.name === "AbortError") return;
         }
+
+        // Reliable desktop fallback.
         try {
-            await navigator.clipboard.writeText(text);
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(text);
+            } else {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                ta.style.position = "fixed";
+                ta.style.opacity = "0";
+                document.body.appendChild(ta);
+                ta.focus(); ta.select();
+                document.execCommand("copy");
+                ta.remove();
+            }
             closeShareModal();
-            alert("Your browser does not provide native share options here. The chat was copied so you can paste it into any app.");
+            alert("Native sharing is unavailable here, so the chat was copied to your clipboard.");
         } catch (error) {
+            console.error("More sharing failed:", error);
             alert("More sharing options are not available in this browser.");
         }
     }
 }
+
 async function copyCurrentChat() {
     const conversation = getCurrentExportConversation();
     if (!conversation) return;
@@ -11615,6 +11660,7 @@ const themeSettingBtn =
 
 themeSettingBtn.onclick = () => {
     themeBtn.click();
+    syncSettingToggle(themeSettingBtn, document.body.classList.contains("dark-mode"));
 };
 
 const typingBtn = document.getElementById("typingBtn");
@@ -11649,6 +11695,7 @@ window.__oddiTypingEnabled = typingEnabled;
 window.__oddiNotificationsEnabled = notificationEnabled;
 window.__oddiSplashEnabled = splashEnabled;
 
+syncSettingToggle(themeSettingBtn, document.body.classList.contains("dark-mode"));
 syncSettingToggle(typingBtn, typingEnabled);
 syncSettingToggle(notificationBtn, notificationEnabled);
 syncSettingToggle(splashBtn, splashEnabled);
@@ -11749,6 +11796,10 @@ document.addEventListener("keydown", event => {
         if (editable) return;
         event.preventDefault();
         document.getElementById("themeBtn")?.click();
+        return;
+    }
+
+    if (event.key === "/" && (target === document.getElementById("userInput") || target?.closest?.("#userInput"))) {
         return;
     }
 
@@ -18625,6 +18676,39 @@ body.dark-mode .home-goal-chip:focus-visible {
     pointer-events:auto !important;
   }
   #oddi-hard-sidebar-launcher:hover{background:#f2f2f2 !important;}
+
+  /* Never show the hamburger above a workspace, modal, share/export surface,
+     splash, or the sidebar itself. */
+  body.oddi-splash-active #oddi-hard-sidebar-launcher,
+  body.oddi-react-sidebar-open #oddi-hard-sidebar-launcher,
+  body.oddi-memory-workspace-open #oddi-hard-sidebar-launcher,
+  body:has(#memoryModal.show) #oddi-hard-sidebar-launcher,
+  body:has(#settingsModal.show) #oddi-hard-sidebar-launcher,
+  body:has(#oddiShareModal.show) #oddi-hard-sidebar-launcher,
+  body:has(#exportChatMenu.show) #oddi-hard-sidebar-launcher,
+  body:has(#headerMoreOverlay.show) #oddi-hard-sidebar-launcher,
+  body:has(#accountSettingsModal.show) #oddi-hard-sidebar-launcher,
+  body:has(.utility-modal.show) #oddi-hard-sidebar-launcher,
+  body:has(#binModal.show) #oddi-hard-sidebar-launcher,
+  body:has(#appLockOverlay[aria-hidden="false"]) #oddi-hard-sidebar-launcher{
+    visibility:hidden !important; opacity:0 !important; pointer-events:none !important;
+  }
+
+  body.oddi-splash-active #oddi-react-sidebar-root .oddi-rs-rail,
+  body.oddi-splash-active #oddi-react-sidebar-root .oddi-rs-phone-launcher,
+  body.oddi-react-sidebar-open #oddi-react-sidebar-root .oddi-rs-rail,
+  body.oddi-react-sidebar-open #oddi-react-sidebar-root .oddi-rs-phone-launcher,
+  body.oddi-memory-workspace-open #oddi-react-sidebar-root .oddi-rs-rail,
+  body:has(#memoryModal.show) #oddi-react-sidebar-root .oddi-rs-rail,
+  body:has(#settingsModal.show) #oddi-react-sidebar-root .oddi-rs-rail,
+  body:has(#oddiShareModal.show) #oddi-react-sidebar-root .oddi-rs-rail,
+  body:has(#exportChatMenu.show) #oddi-react-sidebar-root .oddi-rs-rail,
+  body:has(#headerMoreOverlay.show) #oddi-react-sidebar-root .oddi-rs-rail,
+  body:has(#accountSettingsModal.show) #oddi-react-sidebar-root .oddi-rs-rail,
+  body:has(.utility-modal.show) #oddi-react-sidebar-root .oddi-rs-rail,
+  body:has(#binModal.show) #oddi-react-sidebar-root .oddi-rs-rail{
+    visibility:hidden !important; opacity:0 !important; pointer-events:none !important;
+  }
   #oddi-hard-sidebar-launcher svg{width:21px;height:21px;display:block;}
   body.dark-mode #oddi-hard-sidebar-launcher{background:#111 !important;color:#fff !important;border-color:#333 !important;}
   body.dark-mode #oddi-hard-sidebar-launcher:hover{background:#1d1d1d !important;}
@@ -18633,16 +18717,71 @@ body.dark-mode .home-goal-chip:focus-visible {
     #oddi-hard-sidebar-launcher{left:10px !important;top:12px !important;}
   }
 </style>
+<style id="oddi-sidebar-backdrop-state-fix">
+/* The React sidebar renders a mobile backdrop while open. If React/state
+   cleanup races with navigation, the backdrop can remain over the app and
+   make the whole page look dim. The body class is the authoritative state. */
+@media (max-width: 768px) and (pointer: coarse) {
+  body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root .oddi-rs-backdrop {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  body.oddi-react-sidebar-open #oddi-react-sidebar-root .oddi-rs-backdrop {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+
+  /* The permanent launcher is a plain button, not a glow/overlay. */
+  #oddi-hard-sidebar-launcher {
+    box-shadow: 0 3px 10px rgba(0,0,0,.14) !important;
+    filter: none !important;
+  }
+  #oddi-hard-sidebar-launcher svg {
+    filter: none !important;
+  }
+}
+</style>
 <button id="oddi-hard-sidebar-launcher" type="button" aria-label="Open sidebar" title="Open sidebar">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
     <path d="M4 6h16M4 12h16M4 18h16"></path>
   </svg>
 </button>
+<style id="oddi-share-export-final-mobile-fix">
+#exportChatMenu.export-chat-menu.show{width:min(390px,calc(100vw - 28px)) !important;max-height:min(78dvh,620px) !important;padding:12px !important;border-radius:20px !important;background:rgba(255,255,255,.98) !important;box-shadow:0 28px 90px rgba(0,0,0,.28) !important;z-index:2147483640 !important;}
+#exportChatMenu .export-menu-title{padding:8px 10px 10px !important;font-size:11px !important;color:#777 !important;}
+#exportChatMenu button[data-export-action]{min-height:46px !important;padding:0 13px !important;border-radius:11px !important;font-size:14px !important;gap:10px !important;}
+.oddi-share-modal.show{z-index:2147483641 !important;}
+.oddi-share-card{width:min(440px,calc(100vw - 28px)) !important;max-height:min(82dvh,680px) !important;overflow:auto !important;padding:18px !important;border-radius:20px !important;box-sizing:border-box !important;}
+.oddi-share-format-row{flex-wrap:wrap !important;align-items:stretch !important;}
+.oddi-share-format-row select{flex:1 1 190px !important;min-width:0 !important;height:42px !important;box-sizing:border-box !important;}
+.oddi-share-options{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:9px !important;margin-top:16px !important;}
+.oddi-share-options button{min-height:76px !important;width:100% !important;touch-action:manipulation !important;}
+body.dark-mode #exportChatMenu.export-chat-menu.show{background:#111 !important;border-color:#333 !important;}
+@media(max-width:420px) and (pointer:coarse){.oddi-share-card{padding:15px !important;}.oddi-share-options button{min-height:72px !important;}}
+</style>
+
 <script id="oddi-permanent-sidebar-opener-js">
 (function(){
   "use strict";
   var btn=document.getElementById("oddi-hard-sidebar-launcher");
   if(!btn) return;
+  function syncHardLauncher(){
+    var blocked = !!(
+      document.body.classList.contains("oddi-splash-active") ||
+      document.body.classList.contains("oddi-react-sidebar-open") ||
+      document.body.classList.contains("oddi-memory-workspace-open") ||
+      document.querySelector("#memoryModal.show,#settingsModal.show,#oddiShareModal.show,#exportChatMenu.show,#headerMoreOverlay.show,#accountSettingsModal.show,.utility-modal.show,#binModal.show,#appLockOverlay[aria-hidden=\"false\"]")
+    );
+    btn.style.visibility = blocked ? "hidden" : "visible";
+    btn.style.opacity = blocked ? "0" : "1";
+    btn.style.pointerEvents = blocked ? "none" : "auto";
+  }
+
   function openSidebarHard(){
     var root=document.getElementById("oddi-react-sidebar-root");
     var sidebar=root && root.querySelector(".oddi-rs-sidebar");
@@ -18660,8 +18799,10 @@ body.dark-mode .home-goal-chip:focus-visible {
   }
   btn.addEventListener("click",openSidebarHard);
   window.addEventListener("oddi:sidebar-close",function(){btn.style.display="flex";});
-  window.addEventListener("oddi:sidebar-open",function(){btn.style.display="none";});
-  window.addEventListener("oddi:keep-sidebar-rail-visible",function(){btn.style.display="flex";});
+  window.addEventListener("oddi:sidebar-open",function(){btn.style.display="none"; syncHardLauncher();});
+  window.addEventListener("oddi:keep-sidebar-rail-visible",function(){btn.style.display="flex"; syncHardLauncher();});
+  new MutationObserver(syncHardLauncher).observe(document.body,{attributes:true,attributeFilter:["class"],childList:true,subtree:true});
+  syncHardLauncher();
 })();
 </script>
 <script src="/static/oddi-sidebar/oddi-sidebar.js"></script>
@@ -20345,6 +20486,14 @@ body.dark-mode .shortcut-row[data-capturing="true"] .shortcut-capture{background
 
 
 
+<style id="oddi-settings-toggle-final-fix">
+#settingsModal #themeSettingBtn,#settingsModal #typingBtn,#settingsModal #notificationBtn,#settingsModal #splashBtn{position:relative !important;flex:0 0 46px !important;width:46px !important;min-width:46px !important;height:26px !important;padding:0 !important;border:1px solid #2c2c2c !important;border-radius:999px !important;background:#262626 !important;color:transparent !important;font-size:0 !important;line-height:0 !important;cursor:pointer !important;box-sizing:border-box !important;transition:background .2s ease,border-color .2s ease !important;}
+#settingsModal #themeSettingBtn::after,#settingsModal #typingBtn::after,#settingsModal #notificationBtn::after,#settingsModal #splashBtn::after{content:"" !important;position:absolute !important;top:2px !important;left:2px !important;width:20px !important;height:20px !important;border-radius:50% !important;background:#fff !important;box-shadow:0 2px 6px rgba(0,0,0,.35) !important;transform:translateX(0) !important;transition:transform .22s cubic-bezier(.22,1,.36,1) !important;}
+#settingsModal #themeSettingBtn.is-on,#settingsModal #typingBtn.is-on,#settingsModal #notificationBtn.is-on,#settingsModal #splashBtn.is-on{background:#20c76b !important;border-color:#20c76b !important;}
+#settingsModal #themeSettingBtn.is-on::after,#settingsModal #typingBtn.is-on::after,#settingsModal #notificationBtn.is-on::after,#settingsModal #splashBtn.is-on::after{transform:translateX(20px) !important;}
+#settingsModal #themeSettingBtn.is-off,#settingsModal #typingBtn.is-off,#settingsModal #notificationBtn.is-off,#settingsModal #splashBtn.is-off{background:#262626 !important;border-color:#2c2c2c !important;}
+</style>
+
 <style id="oddi-four-big-changes">
 /* Four requested UI fixes */
 .input-area textarea, #chatSearchInput, input, textarea, select, [contenteditable="true"]{-webkit-user-select:text !important;user-select:text !important;}
@@ -21771,10 +21920,11 @@ body.dark-mode .quick-actions .action-card:hover{transform:translateY(-2px) !imp
     localStorage.setItem(shortcutStorageKey,JSON.stringify(savedShortcuts));
   }
   function normalizeKey(key){
-    if(key === " ") return "Space";
-    if(key.length === 1) return key.toLowerCase();
-    return key;
-  }
+     if(typeof key !== "string") return "";
+     if(key === " ") return "Space";
+     if(key.length === 1) return key.toLowerCase();
+     return key;
+   }
   function formatShortcut(sc){
     if(sc.key === "ArrowUp") return "Alt + ↑";
     if(sc.key === "ArrowDown") return "Alt + ↓";
@@ -21916,5 +22066,37 @@ body.dark-mode .quick-actions .action-card:hover{transform:translateY(-2px) !imp
   renderShortcutKeys();
 })();
 </script>
+
+<style id="oddi-share-final-functional-fix">
+/* Share modal: keep the app readable; never leave a backdrop behind after close. */
+.oddi-share-modal{
+  background:rgba(0,0,0,.10) !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  z-index:2147483640 !important;
+}
+.oddi-share-modal.show{display:flex !important;}
+.oddi-share-modal:not(.show){display:none !important;visibility:hidden !important;pointer-events:none !important;}
+.oddi-share-card{
+  position:relative !important;
+  z-index:2147483641 !important;
+  pointer-events:auto !important;
+}
+.oddi-share-options button{
+  position:relative !important;
+  z-index:2147483642 !important;
+  pointer-events:auto !important;
+  cursor:pointer !important;
+  touch-action:manipulation !important;
+}
+body.oddi-share-open #oddi-react-sidebar-root,
+body.oddi-share-open #oddi-hard-sidebar-launcher{
+  pointer-events:none !important;
+}
+#oddiShareModal[aria-hidden="true"]{
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
+</style>
 </body>
 </html>
