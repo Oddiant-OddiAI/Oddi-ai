@@ -6856,59 +6856,6 @@ ${bodyHtml}
 </main>
     
 
-
-<style id="oddi-message-pinned-unpinned-final-v1">
-/* Final message hierarchy: normal AI replies stay subtle; pinned replies get the stronger card. */
-.bot-message:not(.pinned-message):not(.stopped-message){
-  background:rgba(128,128,128,.075) !important;
-  border:1px solid rgba(128,128,128,.18) !important;
-  border-radius:16px !important;
-  box-shadow:0 3px 14px rgba(0,0,0,.025) !important;
-  padding:14px 17px 15px !important;
-}
-.bot-message:not(.pinned-message):not(.stopped-message) .ai-content,
-.bot-message:not(.pinned-message):not(.stopped-message) .bot-header,
-.bot-message:not(.pinned-message):not(.stopped-message) .bot-actions{
-  background:transparent !important;
-}
-
-.bot-message.pinned-message{
-  background:#ffffff !important;
-  border:1px solid #dedede !important;
-  border-radius:18px !important;
-  box-shadow:0 9px 28px rgba(0,0,0,.085) !important;
-  padding:17px 20px 18px !important;
-}
-.bot-message.pinned-message::before,
-.bot-message.pinned-message::after{display:none !important;content:none !important;}
-.bot-message.pinned-message .ai-content,
-.bot-message.pinned-message .bot-header,
-.bot-message.pinned-message .bot-actions{
-  background:transparent !important;
-}
-
-body.dark-mode .bot-message:not(.pinned-message):not(.stopped-message){
-  background:rgba(255,255,255,.035) !important;
-  border-color:rgba(255,255,255,.10) !important;
-  box-shadow:0 3px 14px rgba(0,0,0,.10) !important;
-}
-body.dark-mode .bot-message.pinned-message{
-  background:#171717 !important;
-  border-color:#303030 !important;
-  box-shadow:0 10px 30px rgba(0,0,0,.32) !important;
-}
-
-@media (max-width:768px) and (pointer:coarse){
-  .bot-message:not(.pinned-message):not(.stopped-message){
-    padding:13px 15px 14px !important;
-    border-radius:15px !important;
-  }
-  .bot-message.pinned-message{
-    padding:15px 16px 16px !important;
-    border-radius:17px !important;
-  }
-}
-</style>
 </body></html>`;
 }
 </script>
@@ -8108,6 +8055,89 @@ function buildDocxHtml(conversation, clone) {
 .chatbox > #oddiSparkLayer .spark-5,
 .chatbox > #oddiLightLayer .light-spark-5 { animation-delay: -5.2s !important; }
 </style>
+
+<style id="oddi-final-message-style-safe">
+/* ONLY message presentation — do not alter the home/welcome screen. */
+.bot-message:not(.pinned-message):not(.stopped-message){
+  width:min(760px,88%) !important;
+  max-width:min(760px,88%) !important;
+  align-self:center !important;
+  margin:0 auto 20px !important;
+  padding:14px 18px 15px !important;
+  box-sizing:border-box !important;
+  background:rgba(255,255,255,.72) !important;
+  border:1px solid rgba(190,190,190,.52) !important;
+  border-radius:16px !important;
+  box-shadow:0 4px 14px rgba(0,0,0,.035) !important;
+  color:#151515 !important;
+}
+.bot-message.pinned-message{
+  width:min(760px,88%) !important;
+  max-width:min(760px,88%) !important;
+  align-self:center !important;
+  margin:0 auto 20px !important;
+  padding:14px 18px 15px !important;
+  box-sizing:border-box !important;
+  background:rgba(255,255,255,.94) !important;
+  border:1px solid rgba(160,160,160,.72) !important;
+  border-left:3px solid #20c76b !important;
+  border-radius:16px !important;
+  box-shadow:0 7px 22px rgba(0,0,0,.075) !important;
+  color:#111 !important;
+}
+.bot-message .bot-header{
+  width:100% !important;
+  margin:0 0 8px !important;
+  padding:0 !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+.bot-message .ai-content{
+  width:100% !important;
+  max-width:none !important;
+  margin:0 !important;
+  padding:0 !important;
+  background:transparent !important;
+  border:0 !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  color:inherit !important;
+}
+.bot-message .bot-actions{
+  margin:8px 0 0 !important;
+  width:fit-content !important;
+  background:transparent !important;
+  border:0 !important;
+  box-shadow:none !important;
+}
+body.dark-mode .bot-message:not(.pinned-message):not(.stopped-message){
+  background:rgba(17,17,17,.72) !important;
+  border-color:rgba(70,70,70,.62) !important;
+  box-shadow:0 4px 14px rgba(0,0,0,.18) !important;
+  color:#f2f2f2 !important;
+}
+body.dark-mode .bot-message.pinned-message{
+  background:rgba(20,20,20,.94) !important;
+  border-color:rgba(90,90,90,.78) !important;
+  border-left-color:#20c76b !important;
+  box-shadow:0 8px 24px rgba(0,0,0,.32) !important;
+  color:#f5f5f5 !important;
+}
+@media (max-width:768px) and (pointer:coarse){
+  .bot-message:not(.pinned-message):not(.stopped-message),
+  .bot-message.pinned-message{
+    width:calc(100vw - 28px) !important;
+    max-width:calc(100vw - 28px) !important;
+    padding:14px 15px 15px !important;
+    border-radius:16px !important;
+  }
+}
+</style>
 </head><body><h1>${title}</h1><p>Exported from Oddi AI · ${escapeHtml(new Date().toLocaleString())}</p>${clone?.innerHTML || ""}
 
 
@@ -8136,59 +8166,6 @@ function buildDocxHtml(conversation, clone) {
   .quick-actions .action-arrow{
     display:none !important;
   }
-</style>
-
-<style id="oddi-message-pinned-unpinned-final-v1">
-/* Final message hierarchy: normal AI replies stay subtle; pinned replies get the stronger card. */
-.bot-message:not(.pinned-message):not(.stopped-message){
-  background:rgba(128,128,128,.075) !important;
-  border:1px solid rgba(128,128,128,.18) !important;
-  border-radius:16px !important;
-  box-shadow:0 3px 14px rgba(0,0,0,.025) !important;
-  padding:14px 17px 15px !important;
-}
-.bot-message:not(.pinned-message):not(.stopped-message) .ai-content,
-.bot-message:not(.pinned-message):not(.stopped-message) .bot-header,
-.bot-message:not(.pinned-message):not(.stopped-message) .bot-actions{
-  background:transparent !important;
-}
-
-.bot-message.pinned-message{
-  background:#ffffff !important;
-  border:1px solid #dedede !important;
-  border-radius:18px !important;
-  box-shadow:0 9px 28px rgba(0,0,0,.085) !important;
-  padding:17px 20px 18px !important;
-}
-.bot-message.pinned-message::before,
-.bot-message.pinned-message::after{display:none !important;content:none !important;}
-.bot-message.pinned-message .ai-content,
-.bot-message.pinned-message .bot-header,
-.bot-message.pinned-message .bot-actions{
-  background:transparent !important;
-}
-
-body.dark-mode .bot-message:not(.pinned-message):not(.stopped-message){
-  background:rgba(255,255,255,.035) !important;
-  border-color:rgba(255,255,255,.10) !important;
-  box-shadow:0 3px 14px rgba(0,0,0,.10) !important;
-}
-body.dark-mode .bot-message.pinned-message{
-  background:#171717 !important;
-  border-color:#303030 !important;
-  box-shadow:0 10px 30px rgba(0,0,0,.32) !important;
-}
-
-@media (max-width:768px) and (pointer:coarse){
-  .bot-message:not(.pinned-message):not(.stopped-message){
-    padding:13px 15px 14px !important;
-    border-radius:15px !important;
-  }
-  .bot-message.pinned-message{
-    padding:15px 16px 16px !important;
-    border-radius:17px !important;
-  }
-}
 </style>
 </body></html>`;
 }
@@ -22202,59 +22179,6 @@ body.oddi-share-open #oddi-hard-sidebar-launcher{
 #oddiShareModal[aria-hidden="true"]{
   visibility:hidden !important;
   pointer-events:none !important;
-}
-</style>
-
-<style id="oddi-message-pinned-unpinned-final-v1">
-/* Final message hierarchy: normal AI replies stay subtle; pinned replies get the stronger card. */
-.bot-message:not(.pinned-message):not(.stopped-message){
-  background:rgba(128,128,128,.075) !important;
-  border:1px solid rgba(128,128,128,.18) !important;
-  border-radius:16px !important;
-  box-shadow:0 3px 14px rgba(0,0,0,.025) !important;
-  padding:14px 17px 15px !important;
-}
-.bot-message:not(.pinned-message):not(.stopped-message) .ai-content,
-.bot-message:not(.pinned-message):not(.stopped-message) .bot-header,
-.bot-message:not(.pinned-message):not(.stopped-message) .bot-actions{
-  background:transparent !important;
-}
-
-.bot-message.pinned-message{
-  background:#ffffff !important;
-  border:1px solid #dedede !important;
-  border-radius:18px !important;
-  box-shadow:0 9px 28px rgba(0,0,0,.085) !important;
-  padding:17px 20px 18px !important;
-}
-.bot-message.pinned-message::before,
-.bot-message.pinned-message::after{display:none !important;content:none !important;}
-.bot-message.pinned-message .ai-content,
-.bot-message.pinned-message .bot-header,
-.bot-message.pinned-message .bot-actions{
-  background:transparent !important;
-}
-
-body.dark-mode .bot-message:not(.pinned-message):not(.stopped-message){
-  background:rgba(255,255,255,.035) !important;
-  border-color:rgba(255,255,255,.10) !important;
-  box-shadow:0 3px 14px rgba(0,0,0,.10) !important;
-}
-body.dark-mode .bot-message.pinned-message{
-  background:#171717 !important;
-  border-color:#303030 !important;
-  box-shadow:0 10px 30px rgba(0,0,0,.32) !important;
-}
-
-@media (max-width:768px) and (pointer:coarse){
-  .bot-message:not(.pinned-message):not(.stopped-message){
-    padding:13px 15px 14px !important;
-    border-radius:15px !important;
-  }
-  .bot-message.pinned-message{
-    padding:15px 16px 16px !important;
-    border-radius:17px !important;
-  }
 }
 </style>
 </body>
