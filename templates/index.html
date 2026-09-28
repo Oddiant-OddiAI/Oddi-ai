@@ -3584,40 +3584,6 @@ body.dark-mode .user-message > .user-actions-row .user-edit-btn:hover{
 }
 </style>
 
-<style id="oddi-suggestion-cards-style">
-.oddi-suggestion-cards{width:min(780px,calc(100% - 32px));margin:24px auto 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;position:relative;z-index:20}
-.oddi-suggestion-card{min-height:62px;padding:14px 18px;border-radius:15px;border:1px solid rgba(120,120,120,.25);background:rgba(255,255,255,.72);color:#111;display:flex;align-items:center;justify-content:flex-start;gap:12px;text-align:left;font:600 15px/1.2 inherit;cursor:pointer;transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.oddi-suggestion-card:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,0,0,.08)}
-.oddi-suggestion-card:active{transform:scale(.985)}
-.oddi-suggestion-card:focus-visible,.oddi-last-message-card:focus-visible{outline:2px solid currentColor;outline-offset:2px}
-.oddi-suggestion-icon{width:28px;height:28px;flex:0 0 28px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;font-size:16px;font-weight:700;line-height:1}
-.suggestion-blue{color:#1683ff;border-color:rgba(50,140,255,.30);background:rgba(225,239,255,.76)}
-.suggestion-blue .oddi-suggestion-icon{background:rgba(70,150,255,.12)}
-.suggestion-purple{color:#a463ff;border-color:rgba(164,99,255,.30);background:rgba(239,227,255,.76)}
-.suggestion-purple .oddi-suggestion-icon{background:rgba(164,99,255,.12)}
-.suggestion-neutral{color:#171717;border-color:rgba(100,100,100,.25);background:rgba(255,255,255,.72)}
-.suggestion-neutral .oddi-suggestion-icon{background:rgba(0,0,0,.06)}
-.suggestion-orange{color:#ff8a22;border-color:rgba(255,138,34,.32);background:rgba(255,234,216,.78)}
-.suggestion-orange .oddi-suggestion-icon{background:rgba(255,138,34,.12)}
-.oddi-last-message-card{width:min(470px,calc(100% - 32px));min-height:72px;margin:16px auto 0;padding:12px 18px;border-radius:15px;border:1px solid rgba(100,100,100,.25);background:rgba(255,255,255,.82);color:#111;display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;position:relative;z-index:20;transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.oddi-last-message-card:hover{transform:translateY(-1px);box-shadow:0 8px 22px rgba(0,0,0,.08)}
-.oddi-last-message-card:active{transform:scale(.985)}
-.oddi-last-message-icon{width:30px;height:30px;flex:0 0 30px;display:inline-flex;align-items:center;justify-content:center;font-size:21px;font-weight:700;color:#171717}
-.oddi-last-message-copy{min-width:0;display:flex;flex-direction:column;gap:3px}
-.oddi-last-message-label{font-size:12px;line-height:1.2;color:#777}
-.oddi-last-message-title{font-size:15px;line-height:1.25;font-weight:650;color:#111}
-body.dark-mode .oddi-suggestion-card{background:rgba(18,18,18,.76);color:#f5f5f5;border-color:rgba(255,255,255,.12)}
-body.dark-mode .suggestion-blue{color:#58a6ff;background:rgba(25,55,90,.32);border-color:rgba(70,145,255,.34)}
-body.dark-mode .suggestion-purple{color:#c084ff;background:rgba(65,35,90,.30);border-color:rgba(180,100,255,.34)}
-body.dark-mode .suggestion-neutral{color:#f5f5f5;background:rgba(20,20,20,.76);border-color:rgba(255,255,255,.14)}
-body.dark-mode .suggestion-orange{color:#ff9b45;background:rgba(80,42,15,.32);border-color:rgba(255,145,50,.34)}
-body.dark-mode .oddi-last-message-card{background:rgba(18,18,18,.82);color:#f5f5f5;border-color:rgba(255,255,255,.14)}
-body.dark-mode .oddi-last-message-icon{color:#f5f5f5}
-body.dark-mode .oddi-last-message-label{color:#8d8d8d}
-body.dark-mode .oddi-last-message-title{color:#f5f5f5}
-@media(max-width:620px){.oddi-suggestion-cards{grid-template-columns:1fr;width:min(560px,calc(100% - 24px))}.oddi-last-message-card{width:min(560px,calc(100% - 24px))}}
-@media(prefers-reduced-motion:reduce){.oddi-suggestion-card,.oddi-last-message-card{transition:none}}
-</style>
 </head>
 <body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
 <!-- ODDI AI Video Splash Screen -->
@@ -4124,21 +4090,53 @@ body.dark-mode .oddi-last-message-title{color:#f5f5f5}
                     <span class="welcome-line">work on today?</span>
                 {% endif %}
             </h2>
-        
-        <div id="oddiSuggestionCards" class="oddi-suggestion-cards" aria-label="Quick suggestions">
-            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true">?</span><span>Help me understand something</span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true">✎</span><span>Write something for me</span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-neutral" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true">☷</span><span>Help me plan a project</span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true">⌕</span><span>Analyze a file or document</span></button>
+            <p id="welcomeSubtitle">Explore opportunities, build skills, and prepare for what's next.</p>
+            <div id="homeMemoryContext" class="home-memory-context" aria-live="polite" hidden></div>
+            <div class="home-suggestion-label">SUGGESTED FOR YOU</div>
+            <div class="quick-actions">
+                <button type="button" class="action-card"
+                    data-message="Improve my resume"
+                    data-prompt="I want you to improve my resume. Review it for gaps, clarity, job suitability and stronger wording, then help me make it more effective.">
+                    <span class="action-card-main">
+                        <span class="action-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M15 3v4h4"/><path d="M9 12h6"/><path d="M9 16h5"/><path d="M9 8h2"/></svg>
+                        </span>
+                        <span class="action-card-copy"><strong>Improve my resume</strong><small>Find gaps and make it stronger</small></span>
+                    </span>
+                    <span class="action-arrow" aria-hidden="true">→</span>
+                </button>
+                <button type="button" class="action-card"
+                    data-message="Find jobs for me"
+                    data-prompt="I want to find suitable jobs for me. Ask me for my preferred job role, skills, location, experience and other relevant details, then help me find suitable opportunities.">
+                    <span class="action-card-main">
+                        <span class="action-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 11h18"/><path d="M10 12v1h4v-1"/></svg>
+                        </span>
+                        <span class="action-card-copy"><strong>Find jobs for me</strong><small>Discover roles that match your skills and goals</small></span>
+                    </span>
+                    <span class="action-arrow" aria-hidden="true">→</span>
+                </button>
+                <button type="button" class="action-card"
+                    data-message="Build my career roadmap"
+                    data-prompt="Help me build a practical career roadmap based on what you know about my learning, skills and goal. Start with the most useful next steps and ask only for missing details.">
+                    <span class="action-card-main">
+                        <span class="action-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19V5"/><path d="M5 7h10l-2.5 3L15 13H5"/><path d="M18 16v3"/><path d="M16.5 17.5h3"/></svg>
+                        </span>
+                        <span class="action-card-copy"><strong>Career roadmap</strong><small>Plan your next steps toward your goal</small></span>
+                    </span>
+                    <span class="action-arrow" aria-hidden="true">→</span>
+                </button>
+            </div>
+            <div id="homeLearningMount" aria-live="polite"></div>
+            <div id="continueCardMount"></div>
+            <section class="home-next-move" aria-label="Your next career move">
+                <div class="home-next-move-kicker">YOUR NEXT CAREER MOVE</div>
+                <h3>What are you aiming for?</h3>
+                <p>Tell me your goal and I’ll help you plan the next step.</p>
+                <button type="button" class="home-next-move-btn" id="homeNextMoveBtn">Tell me your goal <span aria-hidden="true">→</span></button>
+            </section>
         </div>
-        <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-prompt="Question about Hello">
-            <span class="oddi-last-message-icon" aria-hidden="true">ϟ</span>
-            <span class="oddi-last-message-copy">
-                <span class="oddi-last-message-label">Continue where you left off</span>
-                <span class="oddi-last-message-title">Question about Hello</span>
-            </span>
-        </button>
-    </div>
     </main>
     <div class="input-area">
         <div id="attachmentPreview" class="attachment-preview" style="display:none;">
@@ -6859,95 +6857,58 @@ ${bodyHtml}
     
 
 
-<style id="oddi-pinned-message-box-only-v1">
-/* Normal ODDI replies stay inline/transparent. Only a message explicitly
-   pinned by the user gets the message card/box treatment. */
-.chatbox .bot-message:not(.pinned-message),
-.chatbox .bot-message.stopped-message:not(.pinned-message) {
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  padding: 0 !important;
+<style id="oddi-message-pinned-unpinned-final-v1">
+/* Final message hierarchy: normal AI replies stay subtle; pinned replies get the stronger card. */
+.bot-message:not(.pinned-message):not(.stopped-message){
+  background:rgba(128,128,128,.075) !important;
+  border:1px solid rgba(128,128,128,.18) !important;
+  border-radius:16px !important;
+  box-shadow:0 3px 14px rgba(0,0,0,.025) !important;
+  padding:14px 17px 15px !important;
 }
-.chatbox .bot-message:not(.pinned-message) .ai-content,
-.chatbox .bot-message:not(.pinned-message) .bot-header,
-.chatbox .bot-message:not(.pinned-message) .bot-actions {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
+.bot-message:not(.pinned-message):not(.stopped-message) .ai-content,
+.bot-message:not(.pinned-message):not(.stopped-message) .bot-header,
+.bot-message:not(.pinned-message):not(.stopped-message) .bot-actions{
+  background:transparent !important;
 }
 
-/* Pinned AI response = visible card. */
-.chatbox .bot-message.pinned-message {
-  width: min(760px, 88%) !important;
-  max-width: min(760px, 88%) !important;
-  align-self: center !important;
-  margin: 0 auto 22px !important;
-  padding: 17px 20px 18px !important;
-  box-sizing: border-box !important;
-  background: #fff !important;
-  color: #111 !important;
-  border: 1px solid #e5e5e5 !important;
-  border-radius: 18px !important;
-  box-shadow: 0 8px 28px rgba(0,0,0,.055) !important;
+.bot-message.pinned-message{
+  background:#ffffff !important;
+  border:1px solid #dedede !important;
+  border-radius:18px !important;
+  box-shadow:0 9px 28px rgba(0,0,0,.085) !important;
+  padding:17px 20px 18px !important;
 }
-.chatbox .bot-message.pinned-message .bot-header {
-  width: 100% !important;
-  margin: 0 0 10px !important;
-  padding: 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  gap: 8px !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-.chatbox .bot-message.pinned-message .ai-content {
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  color: inherit !important;
-}
-.chatbox .bot-message.pinned-message .bot-actions {
-  margin: 10px 0 0 !important;
-  justify-content: flex-start !important;
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
+.bot-message.pinned-message::before,
+.bot-message.pinned-message::after{display:none !important;content:none !important;}
+.bot-message.pinned-message .ai-content,
+.bot-message.pinned-message .bot-header,
+.bot-message.pinned-message .bot-actions{
+  background:transparent !important;
 }
 
-body.dark-mode .chatbox .bot-message:not(.pinned-message),
-body.dark-mode .chatbox .bot-message.stopped-message:not(.pinned-message) {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  color: #f2f2f2 !important;
+body.dark-mode .bot-message:not(.pinned-message):not(.stopped-message){
+  background:rgba(255,255,255,.035) !important;
+  border-color:rgba(255,255,255,.10) !important;
+  box-shadow:0 3px 14px rgba(0,0,0,.10) !important;
 }
-body.dark-mode .chatbox .bot-message.pinned-message {
-  background: #111 !important;
-  color: #f2f2f2 !important;
-  border-color: #292929 !important;
-  box-shadow: 0 10px 30px rgba(0,0,0,.30) !important;
+body.dark-mode .bot-message.pinned-message{
+  background:#171717 !important;
+  border-color:#303030 !important;
+  box-shadow:0 10px 30px rgba(0,0,0,.32) !important;
 }
 
-@media (max-width: 768px) and (pointer: coarse) {
-  .chatbox .bot-message.pinned-message {
-    width: calc(100vw - 34px) !important;
-    max-width: calc(100vw - 34px) !important;
-    margin: 0 auto 18px !important;
-    padding: 16px !important;
-    border-radius: 18px !important;
+@media (max-width:768px) and (pointer:coarse){
+  .bot-message:not(.pinned-message):not(.stopped-message){
+    padding:13px 15px 14px !important;
+    border-radius:15px !important;
+  }
+  .bot-message.pinned-message{
+    padding:15px 16px 16px !important;
+    border-radius:17px !important;
   }
 }
 </style>
-
 </body></html>`;
 }
 </script>
@@ -8175,6 +8136,59 @@ function buildDocxHtml(conversation, clone) {
   .quick-actions .action-arrow{
     display:none !important;
   }
+</style>
+
+<style id="oddi-message-pinned-unpinned-final-v1">
+/* Final message hierarchy: normal AI replies stay subtle; pinned replies get the stronger card. */
+.bot-message:not(.pinned-message):not(.stopped-message){
+  background:rgba(128,128,128,.075) !important;
+  border:1px solid rgba(128,128,128,.18) !important;
+  border-radius:16px !important;
+  box-shadow:0 3px 14px rgba(0,0,0,.025) !important;
+  padding:14px 17px 15px !important;
+}
+.bot-message:not(.pinned-message):not(.stopped-message) .ai-content,
+.bot-message:not(.pinned-message):not(.stopped-message) .bot-header,
+.bot-message:not(.pinned-message):not(.stopped-message) .bot-actions{
+  background:transparent !important;
+}
+
+.bot-message.pinned-message{
+  background:#ffffff !important;
+  border:1px solid #dedede !important;
+  border-radius:18px !important;
+  box-shadow:0 9px 28px rgba(0,0,0,.085) !important;
+  padding:17px 20px 18px !important;
+}
+.bot-message.pinned-message::before,
+.bot-message.pinned-message::after{display:none !important;content:none !important;}
+.bot-message.pinned-message .ai-content,
+.bot-message.pinned-message .bot-header,
+.bot-message.pinned-message .bot-actions{
+  background:transparent !important;
+}
+
+body.dark-mode .bot-message:not(.pinned-message):not(.stopped-message){
+  background:rgba(255,255,255,.035) !important;
+  border-color:rgba(255,255,255,.10) !important;
+  box-shadow:0 3px 14px rgba(0,0,0,.10) !important;
+}
+body.dark-mode .bot-message.pinned-message{
+  background:#171717 !important;
+  border-color:#303030 !important;
+  box-shadow:0 10px 30px rgba(0,0,0,.32) !important;
+}
+
+@media (max-width:768px) and (pointer:coarse){
+  .bot-message:not(.pinned-message):not(.stopped-message){
+    padding:13px 15px 14px !important;
+    border-radius:15px !important;
+  }
+  .bot-message.pinned-message{
+    padding:15px 16px 16px !important;
+    border-radius:17px !important;
+  }
+}
 </style>
 </body></html>`;
 }
@@ -10977,14 +10991,7 @@ function renderPinnedMessagesSection() {
         });
         section.appendChild(item);
     });
-    /* Keep the pinned preview as a single top-level card, separate from the
-       normal message bubbles. This is intentionally restored on every reload. */
-    const firstMessage = chat.querySelector('.user-message, .bot-message');
-    if (firstMessage) {
-        chat.insertBefore(section, firstMessage);
-    } else {
-        chat.appendChild(section);
-    }
+    chat.appendChild(section);
 }
 
 async function openConversation(
@@ -11154,8 +11161,6 @@ async function openConversation(
         }
     );
 
-    // Restore the pinned-message preview after rendering the conversation.
-    // The preview is separate from the normal message bubble and is clickable.
     renderPinnedMessagesSection();
 
     chat.querySelectorAll(".ai-content").forEach(content => {
@@ -22200,316 +22205,57 @@ body.oddi-share-open #oddi-hard-sidebar-launcher{
 }
 </style>
 
-<style id="oddi-card-system-final">
-/* =========================================================
-   ODDI CARD SYSTEM — FINAL HOME POLISH
-   Neutral premium cards that sit naturally on both home
-   backgrounds. Existing JS hooks/classes are preserved.
-   ========================================================= */
-
-/* Suggested-action cards */
-.quick-actions .action-card{
-  position:relative !important;
-  isolation:isolate !important;
-  overflow:hidden !important;
-  display:flex !important;
-  align-items:center !important;
-  justify-content:space-between !important;
-  gap:14px !important;
-  min-height:72px !important;
-  padding:13px 15px !important;
-  border:1px solid rgba(30,30,30,.12) !important;
+<style id="oddi-message-pinned-unpinned-final-v1">
+/* Final message hierarchy: normal AI replies stay subtle; pinned replies get the stronger card. */
+.bot-message:not(.pinned-message):not(.stopped-message){
+  background:rgba(128,128,128,.075) !important;
+  border:1px solid rgba(128,128,128,.18) !important;
   border-radius:16px !important;
-  background:rgba(255,255,255,.72) !important;
-  color:#171717 !important;
-  box-shadow:0 10px 28px rgba(0,0,0,.055), inset 0 1px 0 rgba(255,255,255,.78) !important;
-  backdrop-filter:blur(12px) saturate(115%) !important;
-  -webkit-backdrop-filter:blur(12px) saturate(115%) !important;
-  transition:transform .18s ease,border-color .18s ease,box-shadow .18s ease,background .18s ease !important;
+  box-shadow:0 3px 14px rgba(0,0,0,.025) !important;
+  padding:14px 17px 15px !important;
 }
-.quick-actions .action-card::before{
-  content:"" !important;
-  position:absolute !important;
-  inset:0 !important;
-  z-index:-1 !important;
-  pointer-events:none !important;
-  background:linear-gradient(135deg,rgba(255,255,255,.28),transparent 52%) !important;
-}
-.quick-actions .action-card:hover,
-.quick-actions .action-card:focus-visible{
-  transform:translateY(-3px) !important;
-  border-color:rgba(30,30,30,.22) !important;
-  background:rgba(255,255,255,.84) !important;
-  box-shadow:0 15px 34px rgba(0,0,0,.09), inset 0 1px 0 rgba(255,255,255,.9) !important;
-  outline:none !important;
-}
-.quick-actions .action-card:active{
-  transform:translateY(-1px) scale(.995) !important;
-}
-.quick-actions .action-card-main{
-  display:flex !important;
-  align-items:center !important;
-  min-width:0 !important;
-  gap:11px !important;
-}
-.quick-actions .action-card-icon{
-  width:36px !important;
-  height:36px !important;
-  min-width:36px !important;
-  border-radius:11px !important;
-  display:inline-flex !important;
-  align-items:center !important;
-  justify-content:center !important;
-  background:rgba(0,0,0,.035) !important;
-  border:1px solid rgba(0,0,0,.07) !important;
-}
-.quick-actions .action-card-copy{
-  min-width:0 !important;
-  display:flex !important;
-  flex-direction:column !important;
-  gap:3px !important;
-}
-.quick-actions .action-card-copy strong{
-  color:#171717 !important;
-  font-size:12.5px !important;
-  font-weight:800 !important;
-  line-height:1.2 !important;
-}
-.quick-actions .action-card-copy small{
-  color:#747474 !important;
-  font-size:9.5px !important;
-  line-height:1.25 !important;
-}
-.quick-actions .action-arrow{
-  flex:0 0 auto !important;
-  color:#777 !important;
-  opacity:.65 !important;
-  transition:transform .18s ease,opacity .18s ease !important;
-}
-.quick-actions .action-card:hover .action-arrow,
-.quick-actions .action-card:focus-visible .action-arrow{
-  transform:translateX(3px) !important;
-  opacity:1 !important;
+.bot-message:not(.pinned-message):not(.stopped-message) .ai-content,
+.bot-message:not(.pinned-message):not(.stopped-message) .bot-header,
+.bot-message:not(.pinned-message):not(.stopped-message) .bot-actions{
+  background:transparent !important;
 }
 
-/* Learning / continue cards */
-#homeLearningMount .home-learning-card,
-#continueCardMount .continue-card,
-.continue-card{
-  position:relative !important;
-  overflow:hidden !important;
-  border:1px solid rgba(30,30,30,.12) !important;
-  border-radius:16px !important;
-  background:rgba(255,255,255,.72) !important;
-  box-shadow:0 10px 28px rgba(0,0,0,.055), inset 0 1px 0 rgba(255,255,255,.82) !important;
-  backdrop-filter:blur(12px) saturate(115%) !important;
-  -webkit-backdrop-filter:blur(12px) saturate(115%) !important;
+.bot-message.pinned-message{
+  background:#ffffff !important;
+  border:1px solid #dedede !important;
+  border-radius:18px !important;
+  box-shadow:0 9px 28px rgba(0,0,0,.085) !important;
+  padding:17px 20px 18px !important;
 }
-#homeLearningMount .home-learning-card::before,
-#continueCardMount .continue-card::before,
-.continue-card::before{
-  content:"" !important;
-  position:absolute !important;
-  inset:0 !important;
-  pointer-events:none !important;
-  background:linear-gradient(135deg,rgba(255,255,255,.25),transparent 55%) !important;
-}
-#homeLearningMount .home-learning-card:hover,
-#homeLearningMount .home-learning-card:focus-within,
-#continueCardMount .continue-card:hover,
-.continue-card:hover{
-  border-color:rgba(30,30,30,.20) !important;
-  box-shadow:0 15px 34px rgba(0,0,0,.085), inset 0 1px 0 rgba(255,255,255,.92) !important;
+.bot-message.pinned-message::before,
+.bot-message.pinned-message::after{display:none !important;content:none !important;}
+.bot-message.pinned-message .ai-content,
+.bot-message.pinned-message .bot-header,
+.bot-message.pinned-message .bot-actions{
+  background:transparent !important;
 }
 
-/* Next-career card */
-.home-next-move{
-  position:relative !important;
-  overflow:hidden !important;
-  border:1px solid rgba(30,30,30,.12) !important;
-  border-radius:16px !important;
-  background:rgba(255,255,255,.72) !important;
-  box-shadow:0 10px 28px rgba(0,0,0,.055), inset 0 1px 0 rgba(255,255,255,.82) !important;
-  backdrop-filter:blur(12px) saturate(115%) !important;
-  -webkit-backdrop-filter:blur(12px) saturate(115%) !important;
+body.dark-mode .bot-message:not(.pinned-message):not(.stopped-message){
+  background:rgba(255,255,255,.035) !important;
+  border-color:rgba(255,255,255,.10) !important;
+  box-shadow:0 3px 14px rgba(0,0,0,.10) !important;
 }
-.home-next-move::after{
-  content:"" !important;
-  position:absolute !important;
-  left:-20% !important;
-  right:-20% !important;
-  top:0 !important;
-  height:1px !important;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.9),transparent) !important;
-  pointer-events:none !important;
-}
-.home-next-move h3{color:#171717 !important;}
-.home-next-move p{color:#6d6d6d !important;}
-.home-next-move-btn{
-  border:1px solid rgba(30,30,30,.12) !important;
-  border-radius:11px !important;
-  background:rgba(255,255,255,.58) !important;
-  color:#171717 !important;
-  box-shadow:0 5px 14px rgba(0,0,0,.045),inset 0 1px 0 rgba(255,255,255,.8) !important;
-}
-.home-next-move-btn:hover{
-  background:rgba(255,255,255,.84) !important;
-  border-color:rgba(30,30,30,.20) !important;
-  transform:translateY(-1px) !important;
+body.dark-mode .bot-message.pinned-message{
+  background:#171717 !important;
+  border-color:#303030 !important;
+  box-shadow:0 10px 30px rgba(0,0,0,.32) !important;
 }
 
-/* Goal chips */
-.home-goal-chip{
-  border:1px solid rgba(30,30,30,.11) !important;
-  background:rgba(255,255,255,.68) !important;
-  color:#333 !important;
-  box-shadow:0 6px 18px rgba(0,0,0,.04),inset 0 1px 0 rgba(255,255,255,.8) !important;
-  backdrop-filter:blur(10px) !important;
-  -webkit-backdrop-filter:blur(10px) !important;
-}
-.home-goal-chip:hover,
-.home-goal-chip:focus-visible{
-  background:rgba(255,255,255,.84) !important;
-  border-color:rgba(30,30,30,.20) !important;
-  box-shadow:0 9px 22px rgba(0,0,0,.07) !important;
-}
-
-/* Conversation response cards / attachment surfaces */
-.bot-message{
-  border:1px solid rgba(30,30,30,.11) !important;
-  background:rgba(255,255,255,.70) !important;
-  box-shadow:0 9px 26px rgba(0,0,0,.045),inset 0 1px 0 rgba(255,255,255,.78) !important;
-  backdrop-filter:blur(12px) !important;
-  -webkit-backdrop-filter:blur(12px) !important;
-}
-.attachment-preview{
-  background:rgba(255,255,255,.68) !important;
-  border-color:rgba(30,30,30,.11) !important;
-  box-shadow:0 9px 24px rgba(0,0,0,.05) !important;
-  backdrop-filter:blur(10px) !important;
-  -webkit-backdrop-filter:blur(10px) !important;
-}
-
-/* ---------------- Dark mode ---------------- */
-body.dark-mode .quick-actions .action-card,
-body.dark-mode #homeLearningMount .home-learning-card,
-body.dark-mode #continueCardMount .continue-card,
-body.dark-mode .continue-card,
-body.dark-mode .home-next-move,
-body.dark-mode .home-goal-chip,
-body.dark-mode .bot-message,
-body.dark-mode .attachment-preview{
-  border-color:rgba(255,255,255,.105) !important;
-  background:rgba(18,18,18,.76) !important;
-  color:#f3f3f3 !important;
-  box-shadow:0 12px 32px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.045) !important;
-  backdrop-filter:blur(13px) saturate(110%) !important;
-  -webkit-backdrop-filter:blur(13px) saturate(110%) !important;
-}
-body.dark-mode .quick-actions .action-card::before,
-body.dark-mode #homeLearningMount .home-learning-card::before,
-body.dark-mode #continueCardMount .continue-card::before,
-body.dark-mode .continue-card::before{
-  background:linear-gradient(135deg,rgba(255,255,255,.045),transparent 55%) !important;
-}
-body.dark-mode .quick-actions .action-card:hover,
-body.dark-mode .quick-actions .action-card:focus-visible,
-body.dark-mode #homeLearningMount .home-learning-card:hover,
-body.dark-mode #homeLearningMount .home-learning-card:focus-within,
-body.dark-mode #continueCardMount .continue-card:hover,
-body.dark-mode .continue-card:hover,
-body.dark-mode .home-next-move:hover,
-body.dark-mode .home-goal-chip:hover,
-body.dark-mode .home-goal-chip:focus-visible{
-  border-color:rgba(255,255,255,.19) !important;
-  background:rgba(24,24,24,.84) !important;
-  box-shadow:0 16px 38px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.065) !important;
-}
-body.dark-mode .quick-actions .action-card-icon{
-  background:rgba(255,255,255,.045) !important;
-  border-color:rgba(255,255,255,.08) !important;
-}
-body.dark-mode .quick-actions .action-card-copy strong,
-body.dark-mode .home-next-move h3{
-  color:#f5f5f5 !important;
-}
-body.dark-mode .quick-actions .action-card-copy small,
-body.dark-mode .home-next-move p{
-  color:#929292 !important;
-}
-body.dark-mode .quick-actions .action-arrow{color:#aaa !important;}
-body.dark-mode .home-next-move-btn{
-  background:rgba(255,255,255,.055) !important;
-  border-color:rgba(255,255,255,.12) !important;
-  color:#f3f3f3 !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05) !important;
-}
-body.dark-mode .home-next-move-btn:hover{
-  background:rgba(255,255,255,.09) !important;
-  border-color:rgba(255,255,255,.20) !important;
-}
-body.dark-mode .home-goal-chip{color:#ddd !important;}
-body.dark-mode .home-goal-chip:hover,
-body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
-
-/* Keep selected goal state/accent functionality intact. */
-.home-goal-chip.is-selected{
-  background:rgba(32,199,107,.78) !important;
-  border-color:rgba(255,255,255,.30) !important;
-  color:#fff !important;
-}
-
-/* Mobile: preserve the existing responsive widths/heights. */
-@media (max-width:768px){
-  .quick-actions .action-card{min-height:58px !important;border-radius:14px !important;padding:10px 12px !important;}
-  .quick-actions .action-card-icon{width:32px !important;height:32px !important;min-width:32px !important;}
-  #homeLearningMount .home-learning-card,
-  #continueCardMount .continue-card,
-  .continue-card,
-  .home-next-move{border-radius:14px !important;}
+@media (max-width:768px) and (pointer:coarse){
+  .bot-message:not(.pinned-message):not(.stopped-message){
+    padding:13px 15px 14px !important;
+    border-radius:15px !important;
+  }
+  .bot-message.pinned-message{
+    padding:15px 16px 16px !important;
+    border-radius:17px !important;
+  }
 }
 </style>
-
-
-<script id="oddi-suggestion-cards-live-fix">
-(function () {
-  "use strict";
-  function bindOddiSuggestionCards() {
-    var root = document.getElementById("oddiSuggestionCards");
-    var lastCard = document.getElementById("oddiLastMessageCard");
-    var input = document.getElementById("userInput");
-    if (!input) return;
-
-    var cards = root ? Array.prototype.slice.call(root.querySelectorAll("[data-oddi-prompt]")) : [];
-    if (lastCard) cards.push(lastCard);
-
-    cards.forEach(function (card) {
-      if (!card || card.getAttribute("data-oddi-bound") === "1") return;
-      card.setAttribute("data-oddi-bound", "1");
-      card.addEventListener("click", function () {
-        var prompt = String(card.getAttribute("data-oddi-prompt") || "").trim();
-        if (!prompt) return;
-        input.value = prompt;
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-        input.focus();
-        var sendButton = document.getElementById("send-btn");
-        if (sendButton && !sendButton.disabled) {
-          sendButton.click();
-        } else if (typeof window.sendMessage === "function") {
-          window.sendMessage();
-        }
-      });
-    });
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bindOddiSuggestionCards, { once: true });
-  } else {
-    bindOddiSuggestionCards();
-  }
-  setTimeout(bindOddiSuggestionCards, 250);
-  setTimeout(bindOddiSuggestionCards, 750);
-})();
-</script>
 </body>
 </html>
