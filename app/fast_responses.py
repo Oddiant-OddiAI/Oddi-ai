@@ -27,6 +27,7 @@ FAST_RESPONSES = {
     "what are you doing": "Just waiting here to chat with you and help out with your work!",
     "can you help me": "I'd love to! What do you need help with? 💡",
     "help": "I'm here! What do you need help with? 💡",
+    "HelpmeVedanssh":"/count, /usage, /provider_statistics",
     "nice to meet you": "Nice to meet you too! Glad to have you here. ✨",
     "are you okay": "I'm an AI, so I'm always running at 100%! Thanks for asking. 👍",
     "what can you do": "I can chat, help you brainstorm, and answer questions! 💡",

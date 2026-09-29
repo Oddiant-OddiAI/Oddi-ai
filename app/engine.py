@@ -4,11 +4,7 @@ import subprocess
 import tempfile
 import shutil
 from app.fast_responses import fast_response, is_job_context_question
-from app.memory_handler import (
-    is_memory_message,
-    remember,
-    recall_memory
-)
+from app.memory_handler import recall_memory
 from app.chatbot import get_response
 from request_analyzer.analyzer import analyze_request
 from providers.adapters import execute_route, ProviderAdapterError
@@ -31,7 +27,6 @@ from app.database import (
     get_memory
 )
 from app import state
-from app.memory_ai import analyze_memory
 
 RESUME_ANALYSIS_TRIGGERS = {
     "analyze my resume",
@@ -573,8 +568,16 @@ def process_message(
     user_role=None,
     user_priority=None,
     is_host=False,
-    quota_exempt=False
+    quota_exempt=False,
+    identity=None,
 ):
+    # The HTTP layer resolves identity from the authenticated session. Keep
+    # identity optional so existing internal/legacy callers remain compatible.
+    if identity is not None:
+        user_id = getattr(identity, "user_id", user_id)
+        user_role = getattr(identity, "role", user_role)
+        is_host = getattr(identity, "is_host", is_host)
+
     if user_id is not None:
         user_id = str(user_id)
 
@@ -963,55 +966,12 @@ def process_message(
 
             # ---------- POWERPOINT ----------
 
-    # ==========================================
-    # 2. GROQ MEMORY AI
-    # ==========================================
-    # Run Memory AI BEFORE fast responses so that short/direct replies
-    # can also create memories in real time.
-    memory_notice = ""
-
-    if user_id is not None:
-        try:
-            memory_result = analyze_memory(user_message)
-
-            # memory_ai.py may return either a dict or a JSON string.
-            if isinstance(memory_result, str):
-                import json
-                memory_result = json.loads(memory_result)
-
-            if (
-                isinstance(memory_result, dict)
-                and memory_result.get("action") == "ADD"
-            ):
-                memory_key = memory_result.get("category", "").strip()
-                memory_value = memory_result.get("memory", "").strip()
-
-                if memory_key and memory_value:
-                    save_memory(
-                        user_id,
-                        memory_key,
-                        memory_value
-                    )
-
-                    memory_notice = "🧠 Memory Saved!"
-
-                    print(
-                        f"🧠 Memory AI saved for user {user_id}: "
-                        f"[{memory_key}] {memory_value}"
-                    )
-
-        except Exception as memory_error:
-            # A Memory AI/API failure must not break normal ODDI chat.
-            print("⚠️ Memory AI error:", memory_error)
-
     # 2. Fast Responses
     if not uploaded_files:
 
         fast_reply = fast_response(user_message)
 
         if fast_reply:
-            if memory_notice:
-                return fast_reply + "\n\n" + memory_notice
             return fast_reply
 
 
@@ -1051,7 +1011,7 @@ def process_message(
     """ + documents
 
     # 1. Commands
-    command_reply = handle_command(user_message)
+    command_reply = handle_command(user_message, identity=identity)
     if command_reply:
         return command_reply
 
@@ -1348,9 +1308,6 @@ def process_message(
             user_id=user_id
         )
 
-        if memory_notice:
-            return response + "\n\n" + memory_notice
-
         return response
 
     try:
@@ -1462,9 +1419,6 @@ def process_message(
                 f"{execution['capacity_id']}"
             )
 
-        if memory_notice:
-            response = response + "\n\n" + memory_notice
-
         return response
 
     except Exception as routing_error:
@@ -1512,19 +1466,9 @@ def process_message(
 
             print("✅ Using Groq final fallback.")
 
-            if memory_notice:
-                response = response + "\n\n" + memory_notice
-
             return response
 
         except Exception as groq_error:
             print("❌ Groq final fallback failed:", groq_error)
-
-            if memory_notice:
-                return (
-                    PROVIDER_UNAVAILABLE_RESPONSE
-                    + "\n\n"
-                    + memory_notice
-                )
 
             return PROVIDER_UNAVAILABLE_RESPONSE

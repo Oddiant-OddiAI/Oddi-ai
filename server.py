@@ -8,7 +8,7 @@ from urllib.parse import quote
 
 from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import (
     FileResponse,
     HTMLResponse,
@@ -51,6 +51,8 @@ from app.database import (
 )
 
 from app.engine import process_message
+from identity.identity import create_identity
+from app.memory_ai import update_user_memory_from_chat
 from app.storage import (
     storage_router,
     StorageQuotaExceeded,
@@ -888,6 +890,33 @@ def api_delete_conversation(request: Request, conversation_id: int):
 # MEMORY CONTROLS
 # =========================================================
 
+MEMORY_CATEGORY_LABELS = {
+    "goal": "Goals",
+    "project": "Projects",
+    "preference": "Preferences",
+    "interest": "Interests",
+    "person": "People",
+    "skill": "Learning",
+}
+
+
+def _memory_category_label(category, all_categories):
+    label = MEMORY_CATEGORY_LABELS.get(str(category).strip().casefold())
+    if not label:
+        return category
+
+    identity = label.casefold()
+    for other_category in all_categories:
+        if other_category == category:
+            continue
+        other = str(other_category).strip().casefold()
+        other_label = MEMORY_CATEGORY_LABELS.get(other, str(other_category)).casefold()
+        if other == identity or other_label == identity:
+            return category
+
+    return label
+
+
 @app.get("/api/memory", name="api_get_memory")
 def api_get_memory(request: Request):
     user_id = require_user_id(request)
@@ -896,7 +925,11 @@ def api_get_memory(request: Request):
     return JSONResponse(
         {
             "memories": [
-                {"category": key, "memory": value}
+                {
+                    "key": key,
+                    "category": _memory_category_label(key, memories),
+                    "memory": value,
+                }
                 for key, value in memories.items()
             ]
         }
@@ -915,10 +948,6 @@ async def api_update_memory(request: Request):
         return JSONResponse({"error": "Memory key is required."}, status_code=400)
     if not memory:
         return JSONResponse({"error": "Memory cannot be empty."}, status_code=400)
-
-    existing = get_memory(user_id, key)
-    if existing is None:
-        return JSONResponse({"error": "Memory not found."}, status_code=404)
 
     save_memory(user_id, key, memory)
 
@@ -1116,13 +1145,20 @@ def api_delete_file(request: Request, file_id: int):
 # =========================================================
 
 @app.post("/chat", name="chat")
-async def chat(request: Request):
+async def chat(request: Request, background_tasks: BackgroundTasks):
     form = await request.form()
 
     message = form.get("message")
     if message is None:
         return JSONResponse({"error": "Message is required."}, status_code=400)
     message = str(message)
+    memory_message = str(form.get("memory_message") or message).strip()
+    memory_enabled_value = form.get("memory_enabled")
+    memory_enabled = (
+        str(memory_enabled_value).strip().casefold() in {"1", "true", "yes", "on"}
+        if memory_enabled_value is not None
+        else False
+    )
 
     raw_conversation_id = form.get("conversation_id")
     try:
@@ -1143,6 +1179,13 @@ async def chat(request: Request):
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = require_user_id(request)
+
+    # Build the authoritative identity from the authenticated session.
+    # The message itself must never be allowed to determine host/admin status.
+    identity = create_identity(
+        user_id=str(user_id),
+        email=str(request.session.get("email", "")),
+    )
 
     # Store the actual uploaded bytes through the Storage Router.
     # PostgreSQL keeps metadata/references only for new uploads.
@@ -1279,7 +1322,8 @@ async def chat(request: Request):
             message,
             engine_files,
             conversation_history,
-            user_id,
+            user_id=user_id,
+            identity=identity,
         )
     except Exception:
         # If AI processing fails after files have been persisted, roll back
@@ -1294,6 +1338,14 @@ async def chat(request: Request):
             user_id,
         )
         raise
+
+    if memory_enabled and memory_message:
+        background_tasks.add_task(
+            update_user_memory_from_chat,
+            str(user_id),
+            conversation_history,
+            memory_message,
+        )
 
     if file_record_ids:
         for file_record_id in file_record_ids:

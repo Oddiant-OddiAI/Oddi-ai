@@ -10112,6 +10112,7 @@ function speakAIMessage(button) {
 
 async function saveExplicitMemoryFromUserMessage(message) {
     if (document.body?.dataset?.loggedIn !== "true") return false;
+    if (localStorage.getItem("oddi_memory_enabled") === "false") return false;
 
     const text = String(message || "").trim();
     if (!text) return false;
@@ -10159,9 +10160,6 @@ async function saveExplicitMemoryFromUserMessage(message) {
         memory
     };
 
-    // The existing /api/memory PUT endpoint is an UPDATE endpoint: it
-    // deliberately returns 404 when this key does not exist yet. Use it
-    // first so existing memories continue to update normally.
     try {
         const response = await fetch("/api/memory", {
             method: "PUT",
@@ -10175,79 +10173,16 @@ async function saveExplicitMemoryFromUserMessage(message) {
             body: JSON.stringify(memoryPayload)
         });
 
-        if (response.ok) {
-            if (document.getElementById("memoryModal")?.classList.contains("show")) {
-                loadMemory();
-            }
-            return true;
-        }
-
-        // IMPORTANT: the backend has no POST /api/memory/create endpoint.
-        // For a brand-new memory, route the request through the existing
-        // engine memory pipeline using one of its supported memory phrases.
-        if (response.status !== 404) {
+        if (!response.ok) {
             throw new Error(await response.text() || `Memory save failed (${response.status})`);
-        }
-    } catch (error) {
-        // A 404 is handled below. Other API errors are reported immediately.
-        if (!(error && /404/.test(String(error.message || "")))) {
-            console.error("Explicit memory API save error:", error);
-            return false;
-        }
-    }
-
-    const enginePhraseByKey = {
-        name: "my name is",
-        favorite_color: "my favorite color is",
-        college: "my college is",
-        university: "my university is",
-        hometown: "my hometown is",
-        age: "my age is",
-        company: "i work at",
-        hobby: "my hobby is",
-        goal: "my goal is",
-        favorite_subject: "my favorite subject is",
-        pet: "my pet is",
-        favorite_food: "my favorite food is",
-        dream_job: "my dream job is",
-        favorite_movie: "my favorite movie is",
-        favorite_music: "my favorite music is",
-        language: "i speak",
-        sport: "my favorite sport is",
-        favorite_book: "my favorite book is",
-        favorite_game: "my favorite game is"
-    };
-
-    const phrase = enginePhraseByKey[key];
-    if (!phrase) {
-        console.warn("Explicit memory key is not supported by the current engine memory rules:", key);
-        return false;
-    }
-
-    try {
-        const formData = new FormData();
-        formData.append("message", `${phrase} ${memory}`.trim());
-        formData.append("history", "[]");
-
-        const bridgeResponse = await fetch("/chat", {
-            method: "POST",
-            body: formData,
-            credentials: "same-origin",
-            cache: "no-store"
-        });
-
-        if (!bridgeResponse.ok) {
-            throw new Error(await bridgeResponse.text() || `Memory engine save failed (${bridgeResponse.status})`);
         }
 
         if (document.getElementById("memoryModal")?.classList.contains("show")) {
-            await loadMemory();
+            loadMemory();
         }
-
-        console.info("Explicit memory saved through engine pipeline:", key);
         return true;
     } catch (error) {
-        console.error("Explicit memory engine save error:", error);
+        console.error("Explicit memory API save error:", error);
         return false;
     }
 }
@@ -10783,8 +10718,8 @@ async function sendMessage(
 
         renderHistory();
 
-        // Save only explicit "remember ..." requests to long-term memory.
-        // Chat messages themselves remain in the Chat DB.
+        // Handle explicit "remember ..." requests immediately. The server
+        // separately checks normal chat for durable memories after replying.
         await saveExplicitMemoryFromUserMessage(message);
     }
 
@@ -10905,6 +10840,16 @@ async function sendMessage(
     formData.append(
         "message",
         backendMessage
+    );
+
+    formData.append(
+        "memory_message",
+        message
+    );
+
+    formData.append(
+        "memory_enabled",
+        localStorage.getItem("oddi_memory_enabled") === "false" ? "false" : "true"
     );
 
     formData.append(
@@ -15682,7 +15627,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
   function normalizeMemory(item, index) {
     const category = String(item?.category ?? item?.memory_key ?? `Other`).trim() || "Other";
     const memory = String(item?.memory ?? item?.memory_value ?? item?.value ?? "").trim();
-    const key = String(item?.id ?? item?.memory_key ?? category);
+    const key = String(item?.key ?? item?.id ?? item?.memory_key ?? category);
     return {
       ...item,
       category,
