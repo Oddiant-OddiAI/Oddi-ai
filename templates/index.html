@@ -6487,12 +6487,20 @@ async function retryDirtyConversationRecoveries() {
 
 async function syncConversationsFromServer(options = {}) {
     if (!isLoggedIn || conversationSyncInFlight) return;
+    /* A New Chat creates a fresh UI state with no active conversation.
+       Capture an epoch so a sync that was already in flight cannot restore
+       the conversation that was active before New Chat was clicked. */
+    const newChatEpochAtStart = Number(window.__oddiNewChatEpoch || 0);
     conversationSyncInFlight = true;
     try {
         const response = await fetch("/api/conversations", { method: "GET", credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) return;
         const loaded = await response.json();
         if (!Array.isArray(loaded)) return;
+        /* If New Chat happened while this request was in flight, its result
+           is stale for the currently visible workspace. Do not restore or
+           reopen the old conversation from this response. */
+        if (newChatEpochAtStart !== Number(window.__oddiNewChatEpoch || 0)) return;
         const serverConversations = loaded.map(normalizeConversationObject);
         const serverIds = new Set(serverConversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => String(c.id)));
         const currentId = currentConversation !== null && conversations[currentConversation]?.id !== null && conversations[currentConversation]?.id !== undefined ? String(conversations[currentConversation].id) : null;
@@ -9674,6 +9682,11 @@ async function sendMessage(
     voiceReply = false,
     options = {}
 ) {
+    /* Sending from a fresh-chat workspace intentionally exits the
+       fresh-chat guard and creates/uses the new conversation path below. */
+    window.__oddiFreshChatActive = false;
+    window.__oddiFreshChatLockUntil = 0;
+
 
     if (generationActive) {
         stopGeneration();
@@ -11249,6 +11262,14 @@ async function openConversation(
     index
 ) {
 
+    /* New Chat is a real empty workspace. Any stale/programmatic
+       openConversation call must not immediately put the previous chat back
+       on screen. Explicit history/Continue clicks clear this guard first. */
+    if (window.__oddiFreshChatActive || Number(window.__oddiFreshChatLockUntil || 0) > Date.now()) {
+        console.debug("openConversation ignored while a fresh chat is active:", index);
+        return false;
+    }
+
     if (generationActive) {
         return false;
     }
@@ -11454,6 +11475,12 @@ window.__oddiWelcomeTemplate = window.__oddiWelcomeTemplate || (() => {
 })();
 
 async function newChat() {
+
+    /* Invalidate any in-flight conversation restoration and mark this
+       workspace as a fresh chat. This prevents stale sidebar/sync callbacks
+       from immediately reopening the previous conversation. */
+    window.__oddiNewChatEpoch = Number(window.__oddiNewChatEpoch || 0) + 1;
+    window.__oddiFreshChatActive = true;
 
     /* Close every sidebar presentation layer so New Chat always returns to the main workspace. */
     try {
@@ -22751,6 +22778,7 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
       lastCard.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation();
+        window.__oddiFreshChatActive = false;
         var index = Number(lastCard.dataset.conversationIndex);
         if (!Number.isInteger(index) || index < 0 || index >= (window.oddiConversations || []).length) {
           syncContinueCard();
@@ -22766,6 +22794,15 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
 
     syncContinueCard();
   }
+
+  /* A fresh chat suppresses stale/programmatic conversation restores. A real
+     user click on a history item or Continue is an explicit request to open
+     a conversation, so release that guard before the app's normal handler. */
+  document.addEventListener("click", function (event) {
+    if (!event.target || !event.target.closest) return;
+    var explicitOpen = event.target.closest(".history-item, #oddiLastMessageCard, .continue-card, [data-conversation-index]");
+    if (explicitOpen) window.__oddiFreshChatActive = false;
+  }, true);
 
   /* The React sidebar is dynamic, so capture the New Chat click before its
      own handler. This keeps the button reliable even after sidebar rerenders. */
@@ -22804,6 +22841,427 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
   setInterval(syncContinueCard, 2500);
   window.addEventListener("focus", syncContinueCard);
   document.addEventListener("visibilitychange", syncContinueCard);
+})();
+</script>
+
+<style id="oddi-new-chat-rail-final-fix">
+/* FINAL NEW-CHAT STATE:
+   A fresh chat must leave the sidebar CLOSED but keep the compact rail visible.
+   The emergency hamburger is only a fallback when the real React rail is absent. */
+body:not(.oddi-react-sidebar-open):not(.oddi-memory-workspace-open) #oddi-react-sidebar-root .oddi-rs-rail {
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* When the real closed rail exists, never show the fallback hamburger. */
+body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root .oddi-rs-rail ~ * + * { }
+body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~ #oddi-hard-sidebar-launcher {
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  display: none !important;
+}
+</style>
+<script id="oddi-new-chat-rail-final-fix-js">
+(function () {
+  "use strict";
+
+  function railExists() {
+    return !!document.querySelector("#oddi-react-sidebar-root .oddi-rs-rail");
+  }
+
+  function keepClosedRailState() {
+    if (document.body.classList.contains("oddi-react-sidebar-open")) return;
+    if (document.body.classList.contains("oddi-memory-workspace-open")) return;
+
+    var root = document.getElementById("oddi-react-sidebar-root");
+    if (root && root.querySelector(".oddi-rs-rail")) {
+      root.classList.remove("is-open", "is-collapsed");
+      root.classList.add("is-closed");
+      document.body.classList.remove("oddi-react-sidebar-open", "oddi-react-sidebar-collapsed");
+      window.dispatchEvent(new CustomEvent("oddi:sidebar-close"));
+      window.dispatchEvent(new CustomEvent("oddi:keep-sidebar-rail-visible"));
+    }
+
+    var fallback = document.getElementById("oddi-hard-sidebar-launcher");
+    if (fallback && railExists()) {
+      fallback.style.display = "none";
+      fallback.style.visibility = "hidden";
+      fallback.style.opacity = "0";
+      fallback.style.pointerEvents = "none";
+    }
+  }
+
+  function isRailNewChatTarget(target) {
+    if (!target || !target.closest) return false;
+    var rail = target.closest(".oddi-rs-rail");
+    if (!rail) return false;
+
+    var el = target.closest("button,[role='button'],a");
+    if (!el) return false;
+
+    var text = String(el.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
+    var aria = String(el.getAttribute("aria-label") || "").trim().toLowerCase();
+    var title = String(el.getAttribute("title") || "").trim().toLowerCase();
+    var cls = String(el.className || "").toLowerCase();
+
+    if (cls.includes("new-chat") || aria.includes("new chat") || title.includes("new chat")) return true;
+    if (text === "+" || text === "＋" || text === "+ new chat" || text === "new chat") return true;
+
+    /* The compact rail can wrap its controls in divs, so the + button is
+       not necessarily a direct child of the rail. Treat the first visible
+       actionable control in the rail as New Chat when it has no more specific label. */
+    var controls = Array.prototype.filter.call(
+      rail.querySelectorAll("button,[role='button'],a"),
+      function (node) { return node && node.offsetParent !== null; }
+    );
+    if (controls.length && controls[0] === el) return true;
+
+    /* Some versions render the + as a nested icon/button with no text. */
+    var firstControl = controls[0];
+    if (firstControl && firstControl.contains(el)) return true;
+
+    return false;
+  }
+
+  document.addEventListener("click", function (event) {
+    if (!isRailNewChatTarget(event.target)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (typeof window.newChat === "function") {
+      Promise.resolve(window.newChat()).catch(function (err) {
+        console.error("ODDI rail New Chat failed:", err);
+      });
+    }
+  }, true);
+
+  /* The main New Chat flow is allowed to rebuild the home screen, but it must
+     always finish with the same compact closed rail shown on the homepage. */
+  window.addEventListener("oddi:new-chat-ready", function () {
+    setTimeout(keepClosedRailState, 0);
+    setTimeout(keepClosedRailState, 80);
+    setTimeout(keepClosedRailState, 250);
+    setTimeout(keepClosedRailState, 700);
+  });
+
+  /* React may rerender the rail after the state change. Re-apply the visual
+     state without touching any chat/history data. */
+  var observer = new MutationObserver(function () {
+    if (!document.body.classList.contains("oddi-react-sidebar-open")) {
+      var root = document.getElementById("oddi-react-sidebar-root");
+      if (root && root.querySelector(".oddi-rs-rail")) {
+        var fallback = document.getElementById("oddi-hard-sidebar-launcher");
+        if (fallback) {
+          fallback.style.display = "none";
+          fallback.style.visibility = "hidden";
+          fallback.style.opacity = "0";
+          fallback.style.pointerEvents = "none";
+        }
+      }
+    }
+  });
+
+  function startObserver() {
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+    keepClosedRailState();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", startObserver, { once: true });
+  } else {
+    startObserver();
+  }
+})();
+</script>
+
+<script id="oddi-fresh-chat-visibility-guard">
+(function(){
+  "use strict";
+
+  /*
+     FINAL fresh-chat guard.
+     The sidebar is React/dynamic, while the main chat is legacy DOM.  A
+     conversation sync or a previously queued sidebar callback can therefore
+     repaint the old conversation immediately after New Chat.  Keep the fresh
+     workspace authoritative until the user explicitly sends a message or
+     chooses a conversation to resume.
+  */
+  var freshRepairTimer = null;
+  var freshRepairUntil = 0;
+
+  function markFresh(){
+    window.__oddiFreshChatActive = true;
+    window.__oddiFreshChatLockUntil = Date.now() + 3200;
+    window.__oddiFreshChatEpoch = Number(window.__oddiFreshChatEpoch || 0) + 1;
+    freshRepairUntil = Date.now() + 3200;
+    document.body && document.body.setAttribute("data-oddi-fresh-chat", "1");
+  }
+
+  function isFresh(){
+    return window.__oddiFreshChatActive === true &&
+           document.body && document.body.getAttribute("data-oddi-fresh-chat") === "1";
+  }
+
+  function buildFreshView(){
+    if (!isFresh()) return;
+    var chat = document.getElementById("chatbox");
+    if (!chat) return;
+
+    /* If the fresh welcome is already present, nothing is wrong. */
+    if (chat.querySelector("#welcomeContainer")) return;
+
+    var template = window.__oddiWelcomeTemplate;
+    if (!template) return;
+
+    var spark = document.getElementById("oddiSparkLayer");
+    var light = document.getElementById("oddiLightLayer");
+    chat.innerHTML = "";
+    if (spark) chat.appendChild(spark);
+    if (light) chat.appendChild(light);
+
+    var welcome = template.cloneNode(true);
+    welcome.querySelectorAll("[data-oddi-bound]").forEach(function(node){
+      node.removeAttribute("data-oddi-bound");
+    });
+
+    var heading = welcome.querySelector(".welcome-message h2");
+    var greetings = [
+      "Ready when you are. ✨",
+      "What are we building today? 🚀",
+      "Let’s make some progress. 💡",
+      "What’s on your mind today? 👋",
+      "A fresh chat. A fresh start. ✨",
+      "Where should we begin? 🎯",
+      "Let’s get to work. ⚡",
+      "What can I help you with? 🤝",
+      "Your next idea starts here. 💭",
+      "Let’s figure it out together. 🧠",
+      "What should we tackle first? 🔥",
+      "Ready for something new? 🚀"
+    ];
+    var index = 0;
+    try {
+      var last = Number(sessionStorage.getItem("oddiFreshRepairGreeting"));
+      index = Number.isInteger(last) ? (last + 1) % greetings.length : Math.floor(Math.random() * greetings.length);
+      sessionStorage.setItem("oddiFreshRepairGreeting", String(index));
+    } catch(e) {
+      index = Math.floor(Math.random() * greetings.length);
+    }
+    if (heading) heading.innerHTML = '<span class="welcome-line">' + greetings[index] + '</span>';
+
+    chat.classList.remove("ui-scrolled");
+    document.querySelector(".app")?.classList.remove("chat-started");
+    chat.appendChild(welcome);
+
+    var input = document.getElementById("userInput");
+    if (input) input.value = "";
+
+    window.dispatchEvent(new CustomEvent("oddi:new-chat-ready"));
+  }
+
+  function scheduleRepair(){
+    if (freshRepairTimer) clearInterval(freshRepairTimer);
+    var started = Date.now();
+    freshRepairTimer = setInterval(function(){
+      if (!isFresh() || Date.now() - started > 1800 || Date.now() > freshRepairUntil) {
+        clearInterval(freshRepairTimer);
+        freshRepairTimer = null;
+        return;
+      }
+      buildFreshView();
+    }, 60);
+    buildFreshView();
+  }
+
+  /* Explicit conversation opens are the ONLY way to leave fresh mode. */
+  document.addEventListener("click", function(event){
+    var target = event.target && event.target.closest ? event.target.closest(".history-item, #oddiLastMessageCard, .continue-card") : null;
+    if (target) {
+      window.__oddiFreshChatActive = false;
+      window.__oddiFreshChatLockUntil = 0;
+      document.body && document.body.removeAttribute("data-oddi-fresh-chat");
+      if (freshRepairTimer) { clearInterval(freshRepairTimer); freshRepairTimer = null; }
+    }
+  }, true);
+
+  /* Sending a real message intentionally exits fresh mode. */
+  window.addEventListener("oddi:message-send-start", function(){
+    window.__oddiFreshChatActive = false;
+    window.__oddiFreshChatLockUntil = 0;
+    document.body && document.body.removeAttribute("data-oddi-fresh-chat");
+    if (freshRepairTimer) { clearInterval(freshRepairTimer); freshRepairTimer = null; }
+  });
+
+  /* Wrap the public New Chat entry point used by the dynamic sidebar. */
+  var originalNewChat = window.newChat;
+  if (typeof originalNewChat === "function") {
+    window.newChat = async function(){
+      markFresh();
+      var result = await originalNewChat.apply(this, arguments);
+      markFresh();
+      scheduleRepair();
+      return result;
+    };
+  }
+
+  /* Hard fallback for the compact + control.  This intentionally uses the
+     rail's first actionable control / its small top-left hit area, so it also
+     works when React changes the internal button class names. */
+  document.addEventListener("click", function(event){
+    var target = event.target;
+    if (!target) return;
+    var rail = target.closest ? target.closest("#oddi-react-sidebar-root .oddi-rs-rail") : null;
+    var button = target.closest ? target.closest("button,[role='button'],a") : null;
+    var isPlus = false;
+
+    if (rail && button) {
+      var text = String(button.textContent || "").replace(/\s+/g," ").trim();
+      var aria = String(button.getAttribute("aria-label") || "").toLowerCase();
+      var title = String(button.getAttribute("title") || "").toLowerCase();
+      var cls = String(button.className || "").toLowerCase();
+      isPlus = text === "+" || text === "＋" || aria.includes("new chat") || title.includes("new chat") || cls.includes("new-chat");
+      if (!isPlus) {
+        var controls = Array.prototype.filter.call(rail.querySelectorAll("button,[role='button'],a"), function(el){ return el.offsetParent !== null; });
+        isPlus = controls.length && (controls[0] === button || controls[0].contains(button));
+      }
+    }
+
+    /* Closed rail fallback: the visible + sits in the first ~55px and below
+       the logo.  Never use this hit area while the full sidebar is open. */
+    if (!isPlus && !document.body.classList.contains("oddi-react-sidebar-open")) {
+      var x = event.clientX, y = event.clientY;
+      if (x >= 0 && x <= 58 && y >= 55 && y <= 116) isPlus = true;
+    }
+
+    if (!isPlus) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    markFresh();
+    if (typeof window.newChat === "function") {
+      Promise.resolve(window.newChat()).catch(function(err){ console.error("ODDI hard New Chat failed:", err); });
+    }
+  }, true);
+
+})();
+</script>
+
+<script id="oddi-collapsed-rail-plus-direct-fix">
+(function(){
+  "use strict";
+
+  /*
+     The compact rail is rendered by the React sidebar. Its collapsed +
+     control does not always carry a stable class/aria-label, so delegated
+     document handlers cannot reliably identify it. Bind directly to the
+     actual first visible action button in the closed rail instead.
+  */
+  var bound = new WeakSet();
+
+  function isSidebarOpen(){
+    return document.body && document.body.classList.contains("oddi-react-sidebar-open");
+  }
+
+  function isVisible(el){
+    if (!el) return false;
+    var r = el.getBoundingClientRect();
+    var cs = getComputedStyle(el);
+    return r.width > 0 && r.height > 0 &&
+           cs.display !== "none" && cs.visibility !== "hidden" &&
+           cs.pointerEvents !== "none";
+  }
+
+  function isPlusButton(btn){
+    if (!isVisible(btn)) return false;
+
+    var text = String(btn.textContent || "").replace(/\s+/g, " ").trim();
+    var aria = String(btn.getAttribute("aria-label") || "").trim().toLowerCase();
+    var title = String(btn.getAttribute("title") || "").trim().toLowerCase();
+    var cls = String(btn.className || "").toLowerCase();
+
+    if (text === "+" || text === "＋") return true;
+    if (aria.includes("new chat") || title.includes("new chat") || cls.includes("new-chat")) return true;
+
+    return false;
+  }
+
+  function findCollapsedPlus(){
+    if (isSidebarOpen()) return null;
+
+    var root = document.getElementById("oddi-react-sidebar-root");
+    if (!root) return null;
+
+    var rail = root.querySelector(".oddi-rs-rail");
+    var scope = rail || root;
+    var buttons = Array.prototype.slice.call(scope.querySelectorAll("button,[role='button'],a"));
+
+    /* First prefer an explicit + / New Chat control. */
+    for (var i=0; i<buttons.length; i++) {
+      if (isPlusButton(buttons[i])) return buttons[i];
+    }
+
+    /* Collapsed React sidebar: the + control is the first visible action
+       below the logo/header. Ignore controls sitting in the top header. */
+    var candidates = buttons.filter(function(btn){
+      if (!isVisible(btn)) return false;
+      var r = btn.getBoundingClientRect();
+      return r.left < 65 && r.top >= 50 && r.top <= 125;
+    });
+
+    return candidates.length ? candidates[0] : null;
+  }
+
+  function handlePlus(event){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    /* Prevent the same physical click from reaching a second fallback
+       listener and starting two fresh chats. */
+    if (window.__oddiDirectPlusBusy) return;
+    window.__oddiDirectPlusBusy = true;
+
+    try {
+      if (typeof window.newChat === "function") {
+        Promise.resolve(window.newChat()).catch(function(err){
+          console.error("ODDI collapsed + New Chat failed:", err);
+        }).finally(function(){
+          setTimeout(function(){ window.__oddiDirectPlusBusy = false; }, 80);
+        });
+      } else {
+        window.__oddiDirectPlusBusy = false;
+      }
+    } catch (err) {
+      window.__oddiDirectPlusBusy = false;
+      console.error("ODDI collapsed + New Chat failed:", err);
+    }
+  }
+
+  function bind(){
+    var btn = findCollapsedPlus();
+    if (!btn || bound.has(btn)) return;
+    bound.add(btn);
+    btn.addEventListener("click", handlePlus, false);
+  }
+
+  function start(){
+    bind();
+    var root = document.getElementById("oddi-react-sidebar-root");
+    if (root) {
+      new MutationObserver(function(){ bind(); }).observe(root, {
+        childList:true,
+        subtree:true,
+        attributes:true,
+        attributeFilter:["class","style","aria-label","title"]
+      });
+    }
+    setInterval(bind, 500);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, {once:true});
+  } else {
+    start();
+  }
 })();
 </script>
 </body>
