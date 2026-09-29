@@ -3017,179 +3017,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
         100% { background-position: 200% 200%; }
     }
 
-    /* Traveling spark dots along diagonal "circuit" paths */
-    .oddi-spark {
-        position: absolute;
-        z-index: 1;
-        width: 600px;
-        height: 8px;
-        border-radius: 999px;
-        pointer-events: none;
-        offset-rotate: auto;
-        offset-anchor: 0% 50%;
-        offset-position: 0 0;
-        animation: oddiSparkTravel linear infinite;
-    }
-    .oddi-spark-layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 0;
-        height: 0;
-        transform-origin: 0 0;
-        pointer-events: none;
-        z-index: 1;
-    }
-    
-    .oddi-spark.cyan { background: #35e8ff; box-shadow: 0 0 10px 2px rgba(53,232,255,.95), 0 0 20px 4px rgba(53,232,255,.35); }
-    .oddi-spark.gold { background: #ffc04d; box-shadow: 0 0 10px 2px rgba(255,192,77,.95), 0 0 20px 4px rgba(255,192,77,.32); }
 
-    .spark-1 {
-        offset-path: path("M 47 74 L 211 244 L 541 246 L 600 192 L 898 194 L 1073 381");
-        animation-duration: 6s;
-        animation-delay: 0s;
-    }
-    .spark-2 {
-        offset-path: path("M 48 73 L 219 255 L 218 423 L 66 576");
-        animation-duration: 6s;
-        animation-delay: -4.5s;
-    }
-    .spark-3 {
-        offset-path: path("M 1143 65 L 1148 430 L 1330 622 L 1327 835 L 1178 835 L 1046 692 L 778 693 L 764 692 L 768 873 L 768 873");
-        animation-duration: 6s;
-        animation-delay: -2.2s;
-    }
-    .spark-4 {
-        offset-path: path("M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616");
-        animation-duration: 6s;
-        animation-delay: -6.7s;
-    }
-    .spark-5 {
-        offset-path: path("M 43 926 L 154 812 L 533 817 L 613 898 L 614 936");
-        animation-duration: 6s;
-        animation-delay: -7.8s;
-    }
-    body:not(.dark-mode) .oddi-spark {
-        display: none !important;
-    }   
-    /* Light mode uses the EXACT same circuit paths as dark mode.
-       The wrapper is aligned to the 1614x975 background by JS below, so
-       changing theme never changes the animation geometry. */
-    .oddi-light-layer {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 0;
-        height: 0;
-        transform-origin: 0 0;
-        pointer-events: none;
-        z-index: 1;
-    }
-
-    .oddi-light-dot {
-        display: none;
-        position: absolute;
-        width: 24px;
-        height: 4px;
-        border-radius: 999px;
-        pointer-events: none;
-        z-index: 1;
-        offset-rotate: auto;
-        offset-anchor: 0% 50%;
-        offset-position: 0 0;
-        animation: oddiSparkTravel linear infinite;
-    }
-
-    body:not(.dark-mode) .oddi-light-dot {
-        display: block !important;
-    }
-
-    body.dark-mode .oddi-light-dot {
-        display: none !important;
-    }
-
-    /* Deliberately darker/brighter than the pale background so the dots
-       remain clearly visible without becoming neon-heavy. */
-    .oddi-light-dot.teal {
-        background: #007BFF;
-        box-shadow: 0 0 10px 2px rgba(0, 123, 255, .72),
-                    0 0 22px 6px rgba(0, 123, 255, .30);
-    }
-
-    .oddi-light-dot.amber {
-        background: #F59E0B;
-        box-shadow: 0 0 10px 2px rgba(245, 158, 11, .72),
-                    0 0 22px 6px rgba(245, 158, 11, .28);
-    }
-
-    /* Same geometry as .spark-1 ... .spark-5. */
-    .light-spark-1 {
-        offset-path: path("M 47 74 L 211 244 L 541 246 L 600 192 L 898 194 L 1073 381");
-        animation-duration: 6s;
-        animation-delay: 0s;
-    }
-    .light-spark-2 {
-        offset-path: path("M 48 73 L 219 255 L 218 423 L 66 576");
-        animation-duration: 6s;
-        animation-delay: -4.5s;
-    }
-    .light-spark-3 {
-        offset-path: path("M 1143 65 L 1148 430 L 1330 622 L 1327 835 L 1178 835 L 1046 692 L 778 693 L 764 692 L 768 873 L 768 873");
-        animation-duration: 6s;
-        animation-delay: -2.2s;
-    }
-    .light-spark-4 {
-        offset-path: path("M 1736 222 L 1453 222 L 1456 486 L 1588 616 L 1737 616");
-        animation-duration: 6s;
-        animation-delay: -6.7s;
-    }
-    .light-spark-5 {
-        offset-path: path("M 43 926 L 154 812 L 533 817 L 613 898 L 614 936");
-        animation-duration: 6s;
-        animation-delay: -7.8s;
-    }
-
-    @media (max-width: 768px), (prefers-reduced-motion: reduce) {
-        .oddi-light-dot { animation: none !important; opacity: .72 !important; }
-    }
-        @keyframes oddiSparkTravel {
-            0%   { offset-distance: 0%; opacity: 0; }
-            8%   { opacity: 1; }
-            92%  { opacity: 1; }
-            100% { offset-distance: 100%; opacity: 0; }
-        }
-
-        /* Turn it off on phones (perf) and for anyone who asked for less motion */
-        @media (max-width: 768px), (prefers-reduced-motion: reduce) {
-            .chatbox::before,
-            .oddi-spark { animation: none !important; opacity: 0 !important; }
-        }
-</style>
-<style id="oddi-line-spark-size-spacing-final">
-/* FINAL line-spark tuning: long, visible signals with deliberate spacing. */
-.chatbox > #oddiSparkLayer .oddi-spark,
-.chatbox > #oddiLightLayer .oddi-light-dot {
-    width: 600px !important;
-    height: 8px !important;
-    border-radius: 999px !important;
-}
-.chatbox > #oddiSparkLayer .oddi-spark,
-.chatbox > #oddiLightLayer .oddi-light-dot {
-    animation-duration: 6s !important;
-}
-.chatbox > #oddiSparkLayer .spark-1,
-.chatbox > #oddiLightLayer .light-spark-1 { animation-delay: 0s !important; }
-.chatbox > #oddiSparkLayer .spark-2,
-.chatbox > #oddiLightLayer .light-spark-2 { animation-delay: -1.5s !important; }
-.chatbox > #oddiSparkLayer .spark-3,
-.chatbox > #oddiLightLayer .light-spark-3 { animation-delay: -3s !important; }
-.chatbox > #oddiSparkLayer .spark-4,
-.chatbox > #oddiLightLayer .light-spark-4 { animation-delay: -4.5s !important; }
-.chatbox > #oddiSparkLayer .spark-5,
-.chatbox > #oddiLightLayer .light-spark-5 { animation-delay: -5.2s !important; }
-</style>
-
-<style id="oddi-flexible-spark-final-fix">
 /* Flexible circuit signals: a moving head plus a path-shaped trail. */
 .chatbox > #oddiSparkLayer, .chatbox > #oddiLightLayer {
     width: 0 !important; height: 0 !important;
@@ -3617,6 +3445,262 @@ body.dark-mode .oddi-last-message-label{color:#8d8d8d}
 body.dark-mode .oddi-last-message-title{color:#f5f5f5}
 @media(max-width:620px){.oddi-suggestion-cards{grid-template-columns:1fr;width:min(560px,calc(100% - 24px))}.oddi-last-message-card{width:min(560px,calc(100% - 24px))}}
 @media(prefers-reduced-motion:reduce){.oddi-suggestion-card,.oddi-last-message-card{transition:none}}
+</style>
+
+<style id="oddi-clean-ambient-motion-v1">
+/* ================================================================
+   ODDI CLEAN AMBIENT MOTION v1
+   - Removes the old colourful floating-dot/spark system completely.
+   - Keeps the existing Background.png / Background-dark.png artwork.
+   - Adds subtle, premium motion that does not compete with the UI.
+   ================================================================ */
+
+/* Kill every legacy decorative particle/spark layer. */
+#oddiSparkLayer,
+#oddiLightLayer,
+#oddiPhoneDots,
+.oddi-spark-layer,
+.oddi-light-layer,
+.oddi-light-dot,
+.oddi-spark,
+.oddi-svg-spark,
+.oddi-phone-dots,
+.oddi-phone-dot,
+.oddi-circuit-svg {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  animation: none !important;
+}
+
+/* The background artwork stays untouched; these pseudo-elements are only
+   soft ambient light moving above it and below the actual UI content. */
+.chatbox {
+  isolation: isolate !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.chatbox::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: -35% !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(ellipse at 30% 28%, rgba(40, 150, 255, .055), transparent 30%),
+    radial-gradient(ellipse at 72% 68%, rgba(32, 199, 107, .045), transparent 31%);
+  filter: blur(18px) !important;
+  opacity: .85 !important;
+  transform: translate3d(-2%, -1%, 0) scale(1.04) !important;
+  animation: oddiAmbientDrift 18s ease-in-out infinite alternate !important;
+}
+
+.chatbox::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255,255,255,.055), transparent 24%),
+    linear-gradient(115deg, transparent 0%, rgba(255,255,255,.018) 46%, rgba(255,255,255,.055) 50%, rgba(255,255,255,.018) 54%, transparent 100%);
+  background-size: 100% 100%, 260% 100%;
+  background-position: center, -180% 0;
+  opacity: .65 !important;
+  animation: oddiAmbientSweep 13s ease-in-out infinite !important;
+}
+
+/* Keep real content above the ambient layer. */
+.chatbox > *:not(#oddiSparkLayer):not(#oddiLightLayer):not(#oddiPhoneDots) {
+  position: relative;
+  z-index: 2;
+}
+
+/* Gentle entrance on the home composition. */
+#welcomeContainer .welcome-message h2 {
+  animation: oddiWelcomeIn .65s cubic-bezier(.22,1,.36,1) both !important;
+}
+#welcomeContainer .welcome-message > p {
+  animation: oddiWelcomeIn .65s .07s cubic-bezier(.22,1,.36,1) both !important;
+}
+#welcomeContainer .quick-actions {
+  animation: oddiWelcomeIn .65s .14s cubic-bezier(.22,1,.36,1) both !important;
+}
+
+/* Premium card motion: small lift + moving highlight, no particle effects. */
+.quick-actions .action-card {
+  position: relative !important;
+  overflow: hidden !important;
+  will-change: transform !important;
+}
+.quick-actions .action-card::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
+  background: linear-gradient(105deg, transparent 28%, rgba(255,255,255,.30) 50%, transparent 72%) !important;
+  transform: translateX(-125%) !important;
+  transition: transform .65s cubic-bezier(.22,1,.36,1) !important;
+}
+.quick-actions .action-card:hover::after,
+.quick-actions .action-card:focus-visible::after {
+  transform: translateX(125%) !important;
+}
+.quick-actions .action-card:hover {
+  transform: translateY(-3px) !important;
+}
+
+/* The continue/last-message card gets a restrained breathing effect. */
+#oddiLastMessageCard,
+.home-next-move,
+.home-learning-card {
+  animation: oddiCardBreath 4.8s ease-in-out infinite !important;
+}
+
+/* Composer focus is a clean glow rather than a hard visual jump. */
+.input-area {
+  transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease !important;
+}
+.input-area:focus-within {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 16px 44px rgba(0,0,0,.13), 0 0 0 3px rgba(32,199,107,.07) !important;
+}
+
+body.dark-mode .chatbox::before {
+  background:
+    radial-gradient(ellipse at 28% 25%, rgba(53,232,255,.075), transparent 29%),
+    radial-gradient(ellipse at 74% 70%, rgba(32,199,107,.055), transparent 31%),
+    radial-gradient(ellipse at 52% 45%, rgba(255,192,77,.025), transparent 26%);
+  opacity: .75 !important;
+}
+
+body.dark-mode .chatbox::after {
+  background:
+    radial-gradient(circle at 50% 8%, rgba(255,255,255,.035), transparent 25%),
+    linear-gradient(115deg, transparent 0%, rgba(53,232,255,.012) 46%, rgba(53,232,255,.045) 50%, rgba(53,232,255,.012) 54%, transparent 100%);
+  background-size: 100% 100%, 260% 100%;
+  background-position: center, -180% 0;
+  opacity: .72 !important;
+}
+
+@keyframes oddiAmbientDrift {
+  0%   { transform: translate3d(-2%, -1%, 0) scale(1.04); }
+  50%  { transform: translate3d(2%, 1.5%, 0) scale(1.07); }
+  100% { transform: translate3d(-1%, 2%, 0) scale(1.05); }
+}
+
+@keyframes oddiAmbientSweep {
+  0%, 18% { background-position: center, -180% 0; }
+  55%     { background-position: center, 80% 0; }
+  100%    { background-position: center, 180% 0; }
+}
+
+@keyframes oddiWelcomeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes oddiCardBreath {
+  0%, 100% { box-shadow: 0 5px 18px rgba(0,0,0,.045); }
+  50%      { box-shadow: 0 8px 25px rgba(0,0,0,.065); }
+}
+
+body.dark-mode #oddiLastMessageCard,
+body.dark-mode .home-next-move,
+body.dark-mode .home-learning-card {
+  animation-name: oddiDarkCardBreath !important;
+}
+
+@keyframes oddiDarkCardBreath {
+  0%, 100% { box-shadow: 0 5px 18px rgba(0,0,0,.22); }
+  50%      { box-shadow: 0 8px 27px rgba(0,0,0,.32); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chatbox::before,
+  .chatbox::after,
+  #welcomeContainer .welcome-message h2,
+  #welcomeContainer .welcome-message > p,
+  #welcomeContainer .quick-actions,
+  #oddiLastMessageCard,
+  .home-next-move,
+  .home-learning-card {
+    animation: none !important;
+  }
+  .quick-actions .action-card::after {
+    display: none !important;
+  }
+  .input-area {
+    transition: none !important;
+  }
+}
+</style>
+
+
+<style id="oddi-final-three-fixes">
+/* ================================================================
+   ODDI — FINAL THREE FIXES
+   1. Continue card resumes the latest saved conversation only.
+   2. New Chat restores the clean welcome state without deleting history.
+   3. Bot responses are completely transparent in both themes, pinned or not.
+   ================================================================ */
+.oddi-last-message-card{
+  min-height:76px !important;
+  width:min(520px,calc(100% - 32px)) !important;
+  justify-content:flex-start !important;
+}
+.oddi-last-message-copy{flex:1 1 auto !important;min-width:0 !important;}
+.oddi-last-message-label{
+  font-size:17px !important;
+  line-height:1.25 !important;
+  font-weight:700 !important;
+  color:#111 !important;
+}
+.oddi-last-message-card.is-disabled{opacity:.55 !important;cursor:default !important;}
+.oddi-last-message-card.is-disabled:hover{transform:none !important;box-shadow:none !important;}
+body.dark-mode .oddi-last-message-label{color:#f5f5f5 !important;}
+body.dark-mode .oddi-last-message-card.is-disabled{opacity:.45 !important;}
+
+/* BOT MESSAGE: no container/bubble/background whatsoever. This deliberately
+   overrides older styling that may have been added by earlier UI passes. */
+.chatbox .bot-message,
+.chatbox .bot-message.pinned-message,
+.chatbox .bot-message.stopped-message,
+body.dark-mode .chatbox .bot-message,
+body.dark-mode .chatbox .bot-message.pinned-message,
+body.dark-mode .chatbox .bot-message.stopped-message{
+  background:transparent !important;
+  background-color:transparent !important;
+  border:0 !important;
+  border-color:transparent !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  outline:0 !important;
+}
+.chatbox .bot-message .ai-content,
+body.dark-mode .chatbox .bot-message .ai-content{
+  background:transparent !important;
+  background-color:transparent !important;
+  border:0 !important;
+  border-color:transparent !important;
+  border-radius:0 !important;
+  box-shadow:none !important;
+  outline:0 !important;
+}
+.chatbox .bot-message::before,
+.chatbox .bot-message::after,
+.chatbox .bot-message .ai-content::before,
+.chatbox .bot-message .ai-content::after,
+body.dark-mode .chatbox .bot-message::before,
+body.dark-mode .chatbox .bot-message::after,
+body.dark-mode .chatbox .bot-message .ai-content::before,
+body.dark-mode .chatbox .bot-message .ai-content::after{
+  content:none !important;
+  display:none !important;
+  background:transparent !important;
+  box-shadow:none !important;
+}
 </style>
 </head>
 <body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
@@ -4125,18 +4209,20 @@ body.dark-mode .oddi-last-message-title{color:#f5f5f5}
                 {% endif %}
             </h2>
         
+        <p class="oddi-home-subtitle">Understand, create, plan, and explore — all in one place.</p>
+
         <div id="oddiSuggestionCards" class="oddi-suggestion-cards" aria-label="Quick suggestions">
-            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true">?</span><span>Help me understand something</span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true">✎</span><span>Write something for me</span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-neutral" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true">☷</span><span>Help me plan a project</span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true">⌕</span><span>Analyze a file or document</span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true">?</span><span class="oddi-suggestion-copy"><strong>Help me understand something</strong><small>Break down a concept, article, or topic</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true">✎</span><span class="oddi-suggestion-copy"><strong>Write something for me</strong><small>Draft, rewrite, or polish your ideas</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true">☷</span><span class="oddi-suggestion-copy"><strong>Help me plan a project</strong><small>Turn an idea into clear steps and milestones</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true">⌕</span><span class="oddi-suggestion-copy"><strong>Analyze a file or document</strong><small>Extract, summarize, and find key information</small></span></button>
         </div>
-        <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-prompt="Question about Hello">
+        <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-action="continue" aria-label="Continue where you left off">
             <span class="oddi-last-message-icon" aria-hidden="true">ϟ</span>
             <span class="oddi-last-message-copy">
                 <span class="oddi-last-message-label">Continue where you left off</span>
-                <span class="oddi-last-message-title">Question about Hello</span>
             </span>
+            <span class="oddi-last-message-arrow" aria-hidden="true">→</span>
         </button>
     </div>
     </main>
@@ -6828,27 +6914,7 @@ function buildExportDocument(conversation, clone) {
 <style>body{margin:0;padding:32px;background:#fff;color:#111;font-family:Arial,Helvetica,sans-serif;line-height:1.6}.export-page{max-width:900px;margin:0 auto}.export-title{margin:0 0 4px;font-size:26px}.export-meta{margin:0 0 26px;color:#666;font-size:12px}.user-message,.bot-message{margin:0 0 20px;padding:14px;border:1px solid #ddd;border-radius:10px;page-break-inside:avoid;break-inside:avoid}.bot-header,.user-message-header{font-weight:700;margin-bottom:8px}.user-actions,.bot-actions,.message-sound-btn,.message-action-btn,.ai-code-copy{display:none!important}.katex-display{overflow-x:auto;overflow-y:hidden;margin:1em 0}pre{padding:12px;background:#f5f5f5;border-radius:8px;white-space:pre-wrap;overflow-wrap:anywhere}code{font-family:Consolas,monospace}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7px;text-align:left}th{background:#f1f1f1}img{max-width:100%}
 </style>
 <style id="oddi-line-spark-size-spacing-final">
-/* FINAL line-spark tuning: long, visible signals with deliberate spacing. */
-.chatbox > #oddiSparkLayer .oddi-spark,
-.chatbox > #oddiLightLayer .oddi-light-dot {
-    width: 600px !important;
-    height: 8px !important;
-    border-radius: 999px !important;
-}
-.chatbox > #oddiSparkLayer .oddi-spark,
-.chatbox > #oddiLightLayer .oddi-light-dot {
-    animation-duration: 6s !important;
-}
-.chatbox > #oddiSparkLayer .spark-1,
-.chatbox > #oddiLightLayer .light-spark-1 { animation-delay: 0s !important; }
-.chatbox > #oddiSparkLayer .spark-2,
-.chatbox > #oddiLightLayer .light-spark-2 { animation-delay: -1.5s !important; }
-.chatbox > #oddiSparkLayer .spark-3,
-.chatbox > #oddiLightLayer .light-spark-3 { animation-delay: -3s !important; }
-.chatbox > #oddiSparkLayer .spark-4,
-.chatbox > #oddiLightLayer .light-spark-4 { animation-delay: -4.5s !important; }
-.chatbox > #oddiSparkLayer .spark-5,
-.chatbox > #oddiLightLayer .light-spark-5 { animation-delay: -5.2s !important; }
+
 </style>
 </head>
 <body><main class="export-page">
@@ -6947,6 +7013,19 @@ body.dark-mode .chatbox .bot-message.pinned-message {
   }
 }
 </style>
+
+
+<script id="oddi-clean-ambient-motion-v1-js">
+/*
+ * Ambient decoration is disabled by CSS above.
+ * Keep the legacy DOM nodes intact because the existing application scripts
+ * may legitimately query/update these nodes while switching views.
+ * Removing them at runtime caused avoidable null-reference failures.
+ */
+(function () {
+  "use strict";
+  /* Intentionally no DOM mutation here. */
+})();<\/script>
 
 </body></html>`;
 }
@@ -8124,28 +8203,207 @@ function buildDocxHtml(conversation, clone) {
 }
 </style>
 
-<style id="oddi-line-spark-size-spacing-final">
-/* FINAL line-spark tuning: long, visible signals with deliberate spacing. */
-.chatbox > #oddiSparkLayer .oddi-spark,
-.chatbox > #oddiLightLayer .oddi-light-dot {
-    width: 600px !important;
-    height: 8px !important;
-    border-radius: 999px !important;
+
+<style id="oddi-general-home-polish-v2">
+/* ODDI GENERAL HOME — clarity, color balance, responsive polish. */
+
+/* Broader assistant identity: no career-only framing. */
+.welcome-message::before{
+  content:"✦ ODDI AI" !important;
+  color:#20c76b !important;
+  font-size:10px !important;
+  font-weight:800 !important;
+  letter-spacing:.12em !important;
 }
-.chatbox > #oddiSparkLayer .oddi-spark,
-.chatbox > #oddiLightLayer .oddi-light-dot {
-    animation-duration: 6s !important;
+
+.welcome-message h2{
+  margin-bottom:7px !important;
 }
-.chatbox > #oddiSparkLayer .spark-1,
-.chatbox > #oddiLightLayer .light-spark-1 { animation-delay: 0s !important; }
-.chatbox > #oddiSparkLayer .spark-2,
-.chatbox > #oddiLightLayer .light-spark-2 { animation-delay: -1.5s !important; }
-.chatbox > #oddiSparkLayer .spark-3,
-.chatbox > #oddiLightLayer .light-spark-3 { animation-delay: -3s !important; }
-.chatbox > #oddiSparkLayer .spark-4,
-.chatbox > #oddiLightLayer .light-spark-4 { animation-delay: -4.5s !important; }
-.chatbox > #oddiSparkLayer .spark-5,
-.chatbox > #oddiLightLayer .light-spark-5 { animation-delay: -5.2s !important; }
+
+.oddi-home-subtitle{
+  display:block !important;
+  max-width:620px !important;
+  margin:0 auto !important;
+  padding:0 !important;
+  color:#6f6f6f !important;
+  font-size:13px !important;
+  line-height:1.5 !important;
+  text-align:center !important;
+}
+
+/* Compact the home stack so the composer does not feel disconnected. */
+.oddi-suggestion-cards{
+  width:min(780px,calc(100% - 32px)) !important;
+  margin:18px auto 0 !important;
+  gap:12px !important;
+}
+
+.oddi-suggestion-card{
+  min-height:72px !important;
+  padding:13px 16px !important;
+  gap:12px !important;
+  align-items:center !important;
+  border-radius:15px !important;
+  transition:transform .18s ease,border-color .18s ease,background .18s ease,box-shadow .18s ease !important;
+}
+
+.oddi-suggestion-copy{
+  min-width:0 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  gap:4px !important;
+}
+.oddi-suggestion-copy strong{
+  display:block !important;
+  font-size:14px !important;
+  line-height:1.2 !important;
+  font-weight:700 !important;
+}
+.oddi-suggestion-copy small{
+  display:block !important;
+  font-size:11px !important;
+  line-height:1.35 !important;
+  font-weight:500 !important;
+  opacity:.72 !important;
+}
+
+/* Stronger, intentional light-mode accents. */
+.suggestion-blue{
+  color:#0878ed !important;
+  border-color:rgba(8,120,237,.28) !important;
+  background:rgba(226,241,255,.92) !important;
+}
+.suggestion-blue .oddi-suggestion-icon{
+  color:#0878ed !important;
+  background:rgba(8,120,237,.14) !important;
+}
+.suggestion-purple{
+  color:#9148ed !important;
+  border-color:rgba(145,72,237,.28) !important;
+  background:rgba(241,230,255,.92) !important;
+}
+.suggestion-purple .oddi-suggestion-icon{
+  color:#9148ed !important;
+  background:rgba(145,72,237,.14) !important;
+}
+.suggestion-green{
+  color:#139957 !important;
+  border-color:rgba(32,199,107,.34) !important;
+  background:rgba(225,249,237,.94) !important;
+}
+.suggestion-green .oddi-suggestion-icon{
+  color:#139957 !important;
+  background:rgba(32,199,107,.16) !important;
+}
+.suggestion-orange{
+  color:#e66f0a !important;
+  border-color:rgba(230,111,10,.30) !important;
+  background:rgba(255,237,220,.94) !important;
+}
+.suggestion-orange .oddi-suggestion-icon{
+  color:#e66f0a !important;
+  background:rgba(230,111,10,.15) !important;
+}
+
+/* Per-card hover glow. */
+.suggestion-blue:hover{box-shadow:0 10px 28px rgba(8,120,237,.16) !important;border-color:rgba(8,120,237,.45) !important;}
+.suggestion-purple:hover{box-shadow:0 10px 28px rgba(145,72,237,.16) !important;border-color:rgba(145,72,237,.45) !important;}
+.suggestion-green:hover{box-shadow:0 10px 28px rgba(32,199,107,.18) !important;border-color:rgba(32,199,107,.48) !important;}
+.suggestion-orange:hover{box-shadow:0 10px 28px rgba(230,111,10,.17) !important;border-color:rgba(230,111,10,.45) !important;}
+
+/* Continue card is visually distinct and explicitly actionable. */
+.oddi-last-message-card{
+  width:min(470px,calc(100% - 32px)) !important;
+  min-height:66px !important;
+  margin:14px auto 0 !important;
+  padding:11px 14px 11px 16px !important;
+  gap:12px !important;
+}
+.oddi-last-message-copy{flex:1 1 auto !important;}
+.oddi-last-message-arrow{
+  flex:0 0 auto !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:28px !important;
+  height:28px !important;
+  border-radius:9px !important;
+  color:#20a85f !important;
+  background:rgba(32,199,107,.10) !important;
+  font-size:18px !important;
+  line-height:1 !important;
+  transition:transform .18s ease,background .18s ease !important;
+}
+.oddi-last-message-card:hover .oddi-last-message-arrow{
+  transform:translateX(3px) !important;
+  background:rgba(32,199,107,.16) !important;
+}
+
+/* Dark mode keeps the same four-color language without washing it out. */
+body.dark-mode .oddi-home-subtitle{color:#929292 !important;}
+body.dark-mode .suggestion-blue{color:#64b0ff !important;background:rgba(24,66,108,.42) !important;border-color:rgba(82,163,255,.40) !important;}
+body.dark-mode .suggestion-purple{color:#ca91ff !important;background:rgba(69,39,101,.40) !important;border-color:rgba(184,111,255,.40) !important;}
+body.dark-mode .suggestion-green{color:#57df91 !important;background:rgba(21,88,55,.40) !important;border-color:rgba(50,211,119,.42) !important;}
+body.dark-mode .suggestion-orange{color:#ffad62 !important;background:rgba(91,48,18,.42) !important;border-color:rgba(255,151,61,.42) !important;}
+body.dark-mode .suggestion-blue .oddi-suggestion-icon{background:rgba(82,163,255,.17) !important;}
+body.dark-mode .suggestion-purple .oddi-suggestion-icon{background:rgba(184,111,255,.17) !important;}
+body.dark-mode .suggestion-green .oddi-suggestion-icon{background:rgba(50,211,119,.17) !important;}
+body.dark-mode .suggestion-orange .oddi-suggestion-icon{background:rgba(255,151,61,.17) !important;}
+body.dark-mode .oddi-last-message-arrow{color:#5de49a !important;background:rgba(32,199,107,.14) !important;}
+
+/* Fade the decorative artwork slightly so the remaining dots read as texture, not particles. */
+.chatbox{
+  background:
+    linear-gradient(rgba(255,255,255,.90),rgba(255,255,255,.90)),
+    url("/static/Background.png") center / cover no-repeat !important;
+}
+body.dark-mode .chatbox{
+  background:
+    linear-gradient(rgba(10,10,10,.86),rgba(10,10,10,.86)),
+    url("/static/Background-dark.png") center / cover no-repeat !important;
+}
+
+/* Desktop: pull the content block together. */
+@media (min-width:769px){
+  .welcome-message{padding-bottom:38px !important;}
+}
+
+/* Mobile: true single-column cards with enough room for descriptions. */
+@media (max-width:768px){
+  .welcome-message{
+    padding:46px 6px 42px !important;
+  }
+  .welcome-message h2{
+    max-width:350px !important;
+    font-size:28px !important;
+    line-height:1.08 !important;
+  }
+  .oddi-home-subtitle{
+    width:min(350px,100%) !important;
+    font-size:12.5px !important;
+  }
+  .oddi-suggestion-cards{
+    grid-template-columns:1fr !important;
+    width:min(560px,calc(100% - 20px)) !important;
+    margin-top:16px !important;
+    gap:9px !important;
+  }
+  .oddi-suggestion-card{
+    min-height:68px !important;
+    padding:12px 14px !important;
+  }
+  .oddi-suggestion-copy strong{font-size:14px !important;}
+  .oddi-suggestion-copy small{font-size:10.5px !important;}
+  .oddi-last-message-card{
+    width:min(560px,calc(100% - 20px)) !important;
+    margin-top:12px !important;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .oddi-suggestion-card,.oddi-last-message-card,.oddi-last-message-arrow{transition:none !important;}
+}
 </style>
 </head><body><h1>${title}</h1><p>Exported from Oddi AI · ${escapeHtml(new Date().toLocaleString())}</p>${clone?.innerHTML || ""}
 
@@ -11189,38 +11447,32 @@ window.__oddiOpenConversation = openConversation;
    NEW CHAT
  */
 
+/* Preserve a clean welcome template before the active chat can replace it. */
+window.__oddiWelcomeTemplate = window.__oddiWelcomeTemplate || (() => {
+    const initialWelcome = document.getElementById("welcomeContainer");
+    return initialWelcome ? initialWelcome.cloneNode(true) : null;
+})();
+
 async function newChat() {
 
-    /* New Chat must close the sidebar immediately, even before confirmation. */
+    /* Close every sidebar presentation layer so New Chat always returns to the main workspace. */
+    try {
+        document.body.classList.remove("oddi-react-sidebar-open", "oddi-react-sidebar-collapsed");
+        const sidebarRoot = document.getElementById("oddi-react-sidebar-root");
+        sidebarRoot?.classList.remove("is-open", "is-collapsed");
+        sidebarRoot?.classList.add("is-closed");
+        window.dispatchEvent(new CustomEvent("oddi:sidebar-close"));
+        window.dispatchEvent(new CustomEvent("oddi:keep-sidebar-rail-visible"));
+    } catch (e) {}
 
     /* Keep the existing welcome UI (including quick actions) as the template. */
     const existingWelcome = document.getElementById("welcomeContainer");
     const welcomeTemplate = existingWelcome
         ? existingWelcome.cloneNode(true)
-        : null;
+        : (window.__oddiWelcomeTemplate ? window.__oddiWelcomeTemplate.cloneNode(true) : null);
 
-    const activeConversation =
-        currentConversation !== null
-            ? conversations[currentConversation]
-            : null;
-
-    if (
-        activeConversation &&
-        Array.isArray(activeConversation.messages) &&
-        activeConversation.messages.length > 0
-    ) {
-        const confirmed =
-            await showActionConfirmation(
-                "Start a New Chat?",
-                "Your current conversation will remain saved.",
-                "Continue",
-                false
-            );
-
-        if (!confirmed) {
-            return;
-        }
-    }
+    /* New Chat is immediate: the current conversation remains saved and
+       the home composer/welcome state is restored without a confirmation. */
 
     // Keep both circuit-spark layers alive when switching to a fresh chat.
     const preservedSparkLayer = document.getElementById("oddiSparkLayer");
@@ -11234,47 +11486,55 @@ async function newChat() {
     /* Recreate the welcome screen for every new chat. */
     if (welcomeTemplate) {
         const welcome = welcomeTemplate.cloneNode(true);
+        /* Cloned welcome cards must be rebound after New Chat. */
+        welcome.querySelectorAll("[data-oddi-bound]").forEach(node => node.removeAttribute("data-oddi-bound"));
         const welcomeHeading = welcome.querySelector(".welcome-message h2");
         const welcomeText = welcome.querySelector(".welcome-message > p");
+        /*
+           Every New Chat gets a fresh greeting.  Rotate through a fixed
+           12-message set so repeated clicks never immediately show the same
+           headline, while everything else on the home screen stays identical.
+        */
         const newChatHeadings = [
-            "What would you like to work on today?",
-            "Ready for your next career move?",
-            "What should we tackle together?",
-            "Where should we start?"
-        ];
-        const welcomeMessages = [
-            "Jobs, resumes, interviews, career advice — tell me what you need.",
-            "Bring me a goal, a question, or a career problem to solve.",
-            "Start with anything on your mind. I’ll help you work through it.",
-            "We can explore opportunities, strengthen your profile, or plan your next step.",
-            "Tell me what you’re working toward and we’ll take it from there."
+            "Ready when you are. ✨",
+            "What are we building today? 🚀",
+            "Let’s make some progress. 💡",
+            "What’s on your mind today? 👋",
+            "A fresh chat. A fresh start. ✨",
+            "Where should we begin? 🎯",
+            "Let’s get to work. ⚡",
+            "What can I help you with? 🤝",
+            "Your next idea starts here. 💭",
+            "Let’s figure it out together. 🧠",
+            "What should we tackle first? 🔥",
+            "Ready for something new? 🚀"
         ];
 
-        let lastWelcome = "";
+        let nextHeadingIndex = 0;
         try {
-            lastWelcome = sessionStorage.getItem("oddiLastWelcomeMessage") || "";
-        } catch (e) {}
+            const lastIndex = Number(sessionStorage.getItem("oddiNewChatHeadingIndex"));
+            nextHeadingIndex = Number.isInteger(lastIndex) && lastIndex >= 0
+                ? (lastIndex + 1) % newChatHeadings.length
+                : Math.floor(Math.random() * newChatHeadings.length);
+            sessionStorage.setItem("oddiNewChatHeadingIndex", String(nextHeadingIndex));
+        } catch (e) {
+            nextHeadingIndex = Math.floor(Math.random() * newChatHeadings.length);
+        }
 
-        const available = welcomeMessages.filter(message => message !== lastWelcome);
-        const nextWelcome = available[Math.floor(Math.random() * available.length)];
+        const nextHeading = newChatHeadings[nextHeadingIndex];
 
-        const nextHeading = newChatHeadings[Math.floor(Math.random() * newChatHeadings.length)];
-
-        /* New Chat keeps the same career-assistant identity without repeating the home greeting. */
+        /* New Chat changes ONLY the main greeting. Subtitle, cards, continue card,
+           background, composer and the rest of the homepage remain untouched. */
         if (welcomeHeading) {
             welcomeHeading.innerHTML = `<span class="welcome-line">${nextHeading}</span>`;
         }
-        if (welcomeText) {
-            welcomeText.textContent = nextWelcome;
-        }
-
-        try {
-            sessionStorage.setItem("oddiLastWelcomeMessage", nextWelcome);
-        } catch (e) {}
 
         chat.appendChild(welcome);
+        /* Re-bind quick actions and Continue after cloning the welcome screen. */
+        window.dispatchEvent(new CustomEvent("oddi:new-chat-ready"));
     }
 
+    chat.scrollTop = 0;
     input.value = "";
 
     if (chatSearchInput.value) {
@@ -11291,7 +11551,9 @@ async function newChat() {
        create their server conversation in sendMessage() and then persist
        messages through the same conversation endpoints.
     */
-    conversations = [];
+    /* Keep the existing conversation list intact so the home screen can
+       immediately resume the most recent chat. New Chat only clears the
+       active conversation, it does not erase chat history. */
     currentConversation = null;
 
     renderHistory();
@@ -18710,10 +18972,6 @@ body.dark-mode .home-goal-chip:focus-visible {
         overflow: hidden !important;
     }
 
-    .chatbox > .oddi-light-dot,
-    .chatbox > .oddi-spark-layer {
-        z-index: 1 !important;
-    }
 
     .chatbox > .welcome-message,
     .chatbox > .bot-message,
@@ -18722,25 +18980,9 @@ body.dark-mode .home-goal-chip:focus-visible {
         z-index: 2 !important;
     }
 
-    /* Bright mode owns the floating dots. Dark mode owns the path sparks. */
-    body:not(.dark-mode) .chatbox > .oddi-light-dot {
-        display: block !important;
-    }
-    body.dark-mode .chatbox > .oddi-light-dot {
-        display: none !important;
-    }
-    body:not(.dark-mode) .chatbox > .oddi-spark-layer {
-        display: none !important;
-    }
-    body.dark-mode .chatbox > .oddi-spark-layer {
-        display: block !important;
-    }
-
+    
     /* Keep the ambient effects away from interaction. */
-    .chatbox > .oddi-light-dot,
-    .chatbox > .oddi-spark-layer {
-        pointer-events: none !important;
-    }
+    
 </style>
 <script id="oddi-memory-sidebar-final-js">
 /* Memory controls the workspace itself; the React sidebar remains untouched
@@ -18935,32 +19177,7 @@ body.dark-mode #exportChatMenu.export-chat-menu.show{background:#111 !important;
 /* No separate spark-head dots: the colored flexible trail is the complete signal. */
 .oddi-svg-spark circle { display: none !important; }
 </style>
-<style id="oddi-light-spark-final-fix">
-/* FINAL: bright mode travels on the exact dark-mode circuit geometry. */
-.chatbox > #oddiLightLayer {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 0 !important;
-    height: 0 !important;
-    transform-origin: 0 0 !important;
-    pointer-events: none !important;
-    z-index: 1 !important;
-}
-body:not(.dark-mode) .chatbox > #oddiLightLayer .oddi-light-dot {
-    display: block !important;
-    position: absolute !important;
-    width: 24px !important;
-    height: 4px !important;
-    z-index: 1 !important;
-    opacity: 1 !important;
-    offset-rotate: auto !important;
-    offset-anchor: 0% 50% !important;
-    offset-position: 0 0 !important;
-}
-body.dark-mode .chatbox > #oddiLightLayer { display: none !important; }
-body:not(.dark-mode) .chatbox > .oddi-spark-layer { display: none !important; }
-</style>
+
 <style id="oddi-spark-viewport-lock-final-fix">
 /*
    HOME-ONLY SPARK LAYER:
@@ -22474,15 +22691,43 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
 <script id="oddi-suggestion-cards-live-fix">
 (function () {
   "use strict";
+
+  function getRecentConversationIndex() {
+    if (!Array.isArray(window.oddiConversations)) return -1;
+    var list = window.oddiConversations;
+    var bestIndex = -1;
+    var bestTime = -Infinity;
+    list.forEach(function (conversation, index) {
+      if (!conversation || conversation.archived || conversation.deleted) return;
+      var raw = conversation.updated_at || conversation.updatedAt || conversation.created_at || conversation.createdAt;
+      var time = raw ? Date.parse(raw) : NaN;
+      if (!Number.isFinite(time)) time = index;
+      if (time > bestTime) {
+        bestTime = time;
+        bestIndex = index;
+      }
+    });
+    return bestIndex;
+  }
+
+  function syncContinueCard() {
+    var card = document.getElementById("oddiLastMessageCard");
+    if (!card) return;
+    var index = getRecentConversationIndex();
+    var hasRecent = index >= 0;
+    card.dataset.conversationIndex = hasRecent ? String(index) : "";
+    card.disabled = !hasRecent;
+    card.setAttribute("aria-disabled", hasRecent ? "false" : "true");
+    card.classList.toggle("is-disabled", !hasRecent);
+  }
+
   function bindOddiSuggestionCards() {
     var root = document.getElementById("oddiSuggestionCards");
-    var lastCard = document.getElementById("oddiLastMessageCard");
     var input = document.getElementById("userInput");
+    var lastCard = document.getElementById("oddiLastMessageCard");
     if (!input) return;
 
     var cards = root ? Array.prototype.slice.call(root.querySelectorAll("[data-oddi-prompt]")) : [];
-    if (lastCard) cards.push(lastCard);
-
     cards.forEach(function (card) {
       if (!card || card.getAttribute("data-oddi-bound") === "1") return;
       card.setAttribute("data-oddi-bound", "1");
@@ -22500,15 +22745,65 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
         }
       });
     });
+
+    if (lastCard && lastCard.getAttribute("data-oddi-bound") !== "1") {
+      lastCard.setAttribute("data-oddi-bound", "1");
+      lastCard.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        var index = Number(lastCard.dataset.conversationIndex);
+        if (!Number.isInteger(index) || index < 0 || index >= (window.oddiConversations || []).length) {
+          syncContinueCard();
+          return;
+        }
+        if (typeof window.openConversation === "function") {
+          window.openConversation(index);
+        } else if (typeof openConversation === "function") {
+          openConversation(index);
+        }
+      });
+    }
+
+    syncContinueCard();
   }
+
+  /* The React sidebar is dynamic, so capture the New Chat click before its
+     own handler. This keeps the button reliable even after sidebar rerenders. */
+  document.addEventListener("click", function (event) {
+    var target = null;
+    if (event.target && event.target.closest) {
+      target = event.target.closest(".new-chat-btn, .sidebar-new-chat-utility-btn, button[aria-label*='New Chat' i], button[title*='New Chat' i]");
+      if (!target) {
+        var button = event.target.closest("button");
+        var label = button ? String(button.textContent || "").replace(/\s+/g, " ").trim().toLowerCase() : "";
+        if (button && (label === "new chat" || label === "+ new chat" || label.includes("new chat"))) target = button;
+      }
+    }
+    if (!target) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (typeof window.newChat === "function") {
+      Promise.resolve(window.newChat()).catch(function(err){ console.error("ODDI New Chat failed:", err); });
+    }
+  }, true);
+
+  window.addEventListener("oddi:new-chat-ready", function () {
+    bindOddiSuggestionCards();
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", bindOddiSuggestionCards, { once: true });
   } else {
     bindOddiSuggestionCards();
   }
-  setTimeout(bindOddiSuggestionCards, 250);
-  setTimeout(bindOddiSuggestionCards, 750);
+
+  /* Refresh after conversation API hydration/sync without changing chat state. */
+  [150, 500, 1200, 2500].forEach(function (delay) {
+    setTimeout(bindOddiSuggestionCards, delay);
+  });
+  setInterval(syncContinueCard, 2500);
+  window.addEventListener("focus", syncContinueCard);
+  document.addEventListener("visibilitychange", syncContinueCard);
 })();
 </script>
 </body>
