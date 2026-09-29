@@ -5217,6 +5217,7 @@ let activeAbortController = null;
 let activeTypingInterval = null;
 let activeTypingResolve = null;
 let activeTypingElement = null;
+let activeGenerationPartialText = "";
 let activeGenerationConversation = null;
 
 function setGenerationUI(active) {
@@ -5267,6 +5268,7 @@ function stopGeneration() {
         conversations[conversationIndex]
     ) {
         const conversation = conversations[conversationIndex];
+        const partialText = activeGenerationPartialText.trim();
 
         /* Store the stopped generation so it survives reloads. */
         const alreadySaved =
@@ -5274,14 +5276,18 @@ function stopGeneration() {
             conversation.messages[Number(botMessage.dataset.messageIndex)]?.stopped;
 
         if (!alreadySaved) {
-            activeTypingElement.innerHTML = 'Generation stopped.';
+            if (partialText) {
+                renderRichContent(activeTypingElement, partialText, { final: true });
+            } else {
+                activeTypingElement.textContent = 'Generation stopped.';
+            }
 
             const stoppedIndex = conversation.messages.length;
 
             const stoppedMessage = {
                 id: makeMessageId(),
                 role: 'assistant',
-                text: 'Generation stopped.',
+                text: partialText || 'Generation stopped.',
                 pinned: false,
                 feedback: null,
                 stopped: true
@@ -5293,6 +5299,7 @@ function stopGeneration() {
             botMessage.querySelector('.thinking-actions')?.remove();
             addBotMessageActions(botMessage, stoppedIndex, conversationIndex);
 
+            touchConversation(conversation);
             appendConversationMessage(conversation, stoppedMessage);
         }
     } else {
@@ -10575,6 +10582,7 @@ async function sendMessage(
     if (!message) return;
 
     generationStopped = false;
+    activeGenerationPartialText = "";
 
     /* -----------------------------------------
        CREATE CONVERSATION
@@ -11037,9 +11045,6 @@ async function sendMessage(
     } catch (error) {
 
         if (generationStopped || error?.name === "AbortError") {
-            if (typing) {
-                typing.innerHTML = "Generation stopped.";
-            }
             return;
         }
 
@@ -11091,6 +11096,7 @@ function typeAIResponse(
     return new Promise(resolve => {
 
         let i = 0;
+        activeGenerationPartialText = "";
 
         activeTypingResolve = resolve;
 
@@ -11137,6 +11143,7 @@ function typeAIResponse(
             if (targetIndex !== i) {
 
                 i = targetIndex;
+                activeGenerationPartialText = text.substring(0, i);
 
                 /*
                  * Render Markdown continuously instead of
@@ -11181,6 +11188,7 @@ function typeAIResponse(
                  * One final complete Markdown render.
                  */
                 renderRichContent(element, text, { final: true });
+                activeGenerationPartialText = text;
 
                 element
                     .querySelectorAll("pre code")
