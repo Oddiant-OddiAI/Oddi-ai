@@ -7,7 +7,7 @@ from threading import Lock
 from typing import Any, Deque, Dict, Optional
 
 
-from config.limits import PROVIDER_LIMITS
+from config.limits import PROVIDER_LIMITS, USER_LIMITS
 
 
 @dataclass
@@ -103,32 +103,7 @@ class QuotaManager:
         self.user_limits = (
             user_limits
             if user_limits is not None
-            else {
-                "user": {
-                    "rpd": 10,
-                    "tpd": 2000,
-                    "rpm": 5,
-                    "tpm": 2000,
-                },
-                "member": {
-                    "rpd": 10,
-                    "tpd": 2000,
-                    "rpm": 5,
-                    "tpm": 2000,
-                },
-                "admin": {
-                    "rpd": None,
-                    "tpd": None,
-                    "rpm": None,
-                    "tpm": None,
-                },
-                "owner": {
-                    "rpd": None,
-                    "tpd": None,
-                    "rpm": None,
-                    "tpm": None,
-                },
-            }
+            else USER_LIMITS
         )
 
         self.usage: Dict[str, ProviderUsage] = {}
@@ -1709,15 +1684,15 @@ class QuotaManager:
 DEFAULT_USER_LIMITS = {
     "user": {
         "rpd": 10,
-        "tpd": 2000,
+        "tpd": 20000,
         "rpm": 5,
-        "tpm": 2000,
+        "tpm": 20000,
     },
     "member": {
         "rpd": 10,
-        "tpd": 2000,
+        "tpd": 20000,
         "rpm": 5,
-        "tpm": 2000,
+        "tpm": 20000,
     },
     "admin": {
         "rpd": None,
@@ -1738,7 +1713,7 @@ DEFAULT_USER_LIMITS = {
 # SHARED QUOTA MANAGER
 # ==========================================================
 
-quota_manager = QuotaManager()
+quota_manager = QuotaManager(user_limits=USER_LIMITS)
 
 
 # ==========================================================

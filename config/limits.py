@@ -9,7 +9,7 @@
 # User quota scope:
 # - User-level limits apply independently from provider capacity.
 # - Default users receive at least 10 requests/day.
-# - Default users receive 2000 tokens/day.
+# - Default users receive 20000 tokens/day.
 # - Role-based limits allow trusted elevated roles to be exempt.
 #
 # None means the exact provider limit has not been configured yet.
@@ -29,7 +29,7 @@
 # rpm = rolling requests per minute fair-use guard
 # tpm = rolling tokens per minute fair-use guard
 #
-# The 10-request and 2000-token values are the default minimum
+# The 10-request and 20000-token values are the default minimum
 # product allowance for ordinary users.
 #
 # Priority is supplied by the identity / permissions / memory layer;
@@ -42,22 +42,22 @@ USER_LIMITS = {
 
     "user": {
         "rpd": 10,
-        "tpd": 2000,
+        "tpd": 20000,
 
         # Fair-use protection. This is separate from the daily
         # product allowance and prevents short bursts from consuming
         # shared provider capacity.
         "rpm": 5,
-        "tpm": 2000,
+        "tpm": 20000,
 
         "priority": "normal",
     },
 
     "member": {
         "rpd": 10,
-        "tpd": 2000,
+        "tpd": 20000,
         "rpm": 5,
-        "tpm": 2000,
+        "tpm": 20000,
         "priority": "normal",
     },
 

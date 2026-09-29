@@ -1,5 +1,6 @@
 from app.config import client, groq_client
 from app.prompts import SYSTEM_PROMPT
+from config.limits import USER_LIMITS
 
 from limits.user_limits import UserLimitManager
 
@@ -19,7 +20,14 @@ from request_analyzer.analyzer import analyze_request
 # PHASE 6 — USER LIMIT MANAGER
 # ==========================================
 
-user_limit_manager = UserLimitManager()
+DEFAULT_USER_DAILY_LIMIT = int(
+    USER_LIMITS.get("user", {}).get("tpd", 5000)
+    or 5000
+)
+
+user_limit_manager = UserLimitManager(
+    daily_token_limit=DEFAULT_USER_DAILY_LIMIT,
+)
 
 # Conservative output allowance used when checking whether
 # a request can fit inside the user's remaining daily quota.
@@ -30,7 +38,7 @@ ESTIMATED_OUTPUT_TOKEN_BUFFER = 1000
 
 USER_QUOTA_ERROR = (
     "⚠️ You have reached your daily ODDI-AI "
-    "usage limit of 5,000 tokens. "
+    f"usage limit of {user_limit_manager.daily_token_limit} tokens. "
     "Please try again tomorrow."
 )
 
