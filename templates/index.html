@@ -4590,10 +4590,10 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         <p class="oddi-home-subtitle">Understand, create, plan, and explore — all in one place.</p>
 
         <div id="oddiSuggestionCards" class="oddi-suggestion-cards" aria-label="Quick suggestions">
-            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true">?</span><span class="oddi-suggestion-copy"><strong>Help me understand something</strong><small>Break down a concept, article, or topic</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true">✎</span><span class="oddi-suggestion-copy"><strong>Write something for me</strong><small>Draft, rewrite, or polish your ideas</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true">☷</span><span class="oddi-suggestion-copy"><strong>Help me plan a project</strong><small>Turn an idea into clear steps and milestones</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true">⌕</span><span class="oddi-suggestion-copy"><strong>Analyze a file or document</strong><small>Extract, summarize, and find key information</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true">?</span><span class="oddi-suggestion-copy"><strong>Help me understand something</strong><br><small>Break down a concept, article, or topic</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true">✎</span><span class="oddi-suggestion-copy"><strong>Write something for me</strong><br><small>Draft, rewrite, or polish your ideas</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true">☷</span><span class="oddi-suggestion-copy"><strong>Help me plan a project</strong><br><small>Turn an idea into clear steps and milestones</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true">⌕</span><span class="oddi-suggestion-copy"><strong>Analyze a file or document</strong><br><small>Extract, summarize, and find key information</small></span></button>
         </div>
         <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-action="continue" aria-label="Continue where you left off">
             <span class="oddi-last-message-icon" aria-hidden="true">ϟ</span>
@@ -9413,6 +9413,27 @@ function buildDocxHtml(conversation, clone) {
   opacity:.72 !important;
 }
 
+#oddiSuggestionCards .oddi-suggestion-card{
+    display:grid !important;
+    grid-template-columns:28px minmax(0,1fr) !important;
+    column-gap:12px !important;
+    text-align:left !important;
+}
+#oddiSuggestionCards .oddi-suggestion-card > .oddi-suggestion-copy{
+    grid-column:2 !important;
+    display:grid !important;
+    grid-template-columns:minmax(0,1fr) !important;
+    row-gap:4px !important;
+    min-width:0 !important;
+}
+#oddiSuggestionCards .oddi-suggestion-card > .oddi-suggestion-copy > strong,
+#oddiSuggestionCards .oddi-suggestion-card > .oddi-suggestion-copy > small{
+    grid-column:1 !important;
+    display:block !important;
+    width:100% !important;
+    text-align:left !important;
+}
+
 /* Stronger, intentional light-mode accents. */
 .suggestion-blue{
   color:#0878ed !important;
@@ -9530,7 +9551,7 @@ body.dark-mode .chatbox{
   }
   .oddi-suggestion-cards{
     grid-template-columns:1fr !important;
-    width:min(560px,calc(100% - 20px)) !important;
+    width:min(560px,calc(100% - 44px)) !important;
     margin-top:16px !important;
     gap:9px !important;
   }
@@ -9538,8 +9559,11 @@ body.dark-mode .chatbox{
     min-height:68px !important;
     padding:12px 14px !important;
   }
-  .oddi-suggestion-copy strong{font-size:14px !important;}
-  .oddi-suggestion-copy small{font-size:10.5px !important;}
+    .oddi-suggestion-copy{flex:1 1 0% !important;min-width:0 !important;}
+    .oddi-suggestion-copy strong,
+    .oddi-suggestion-copy small{display:block !important;width:100% !important;text-align:left !important;}
+    .oddi-suggestion-copy strong{font-size:14px !important;}
+    .oddi-suggestion-copy small{font-size:10.5px !important;}
   .oddi-last-message-card{
     width:min(560px,calc(100% - 20px)) !important;
     margin-top:12px !important;
@@ -20316,6 +20340,10 @@ body.dark-mode .home-goal-chip:focus-visible {
    cleanup races with navigation, the backdrop can remain over the app and
    make the whole page look dim. The body class is the authoritative state. */
 @media (max-width: 768px) and (pointer: coarse) {
+  /* Keep the legacy hamburger below the React mount's stacking context. */
+  #menuBtn.menu-btn {
+    z-index: 2147482997 !important;
+  }
   body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root .oddi-rs-backdrop {
     display: none !important;
     visibility: hidden !important;
@@ -20377,19 +20405,12 @@ body.dark-mode #exportChatMenu.export-chat-menu.show{background:#111 !important;
   }
 
   function openSidebarHard(){
-    var root=document.getElementById("oddi-react-sidebar-root");
-    var sidebar=root && root.querySelector(".oddi-rs-sidebar");
-    document.body.classList.add("oddi-react-sidebar-open");
-    document.body.classList.remove("oddi-react-sidebar-collapsed");
-    if(root){
-      root.classList.add("is-open");
-      root.classList.remove("is-closed","is-collapsed");
+    /* Ask the mounted React component to update its own state and DOM. */
+    if (typeof window.__oddiOpenSidebar === "function") {
+      window.__oddiOpenSidebar();
+    } else {
+      window.dispatchEvent(new CustomEvent("oddi:sidebar-open"));
     }
-    if(sidebar){
-      sidebar.classList.add("open");
-      sidebar.classList.remove("closed","collapsed");
-    }
-    window.dispatchEvent(new CustomEvent("oddi:sidebar-open"));
   }
   btn.addEventListener("click",openSidebarHard);
   window.addEventListener("oddi:sidebar-close",function(){btn.style.display="flex";});
@@ -21252,14 +21273,14 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
       } else if(!edgeTouch.triggered && dx>=EDGE_TRIGGER && Math.abs(dy)<=EDGE_MAX_Y){
         edgeTouch.triggered=true;
         const sidebar=document.querySelector(".oddi-rs-sidebar");
-        const launcher=document.querySelector(".oddi-rs-phone-launcher") ||
-                        document.querySelector(".oddi-rs-launcher");
+        const launcher=document.querySelector(".oddi-rs-phone-launcher[aria-label*='Open sidebar' i]") ||
+                        document.querySelector(".oddi-rs-launcher[aria-label*='Open sidebar' i]") ||
+                        document.querySelector("#oddi-hard-sidebar-launcher");
         if(launcher){
           launcher.click();
         } else if(sidebar && !sidebar.classList.contains("open")){
-          document.body.classList.add("oddi-rs-sidebar-open-request");
-          const evt=new MouseEvent("click",{bubbles:true,cancelable:true,view:window});
-          sidebar.dispatchEvent(evt);
+          if (typeof window.__oddiOpenSidebar === "function") window.__oddiOpenSidebar();
+          else window.dispatchEvent(new CustomEvent("oddi:sidebar-open"));
         }
         ensureUI();
         hint.classList.add("active");
@@ -21363,7 +21384,7 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
       const dx=e.clientX-mouseGesture.x;
       const dy=e.clientY-mouseGesture.y;
       if(dx>=EDGE_TRIGGER && Math.abs(dy)<=EDGE_MAX_Y){
-        const launcher=document.querySelector(".oddi-rs-phone-launcher") || document.querySelector(".oddi-rs-launcher");
+        const launcher=document.querySelector(".oddi-rs-phone-launcher[aria-label*='Open sidebar' i]") || document.querySelector(".oddi-rs-launcher[aria-label*='Open sidebar' i]") || document.querySelector("#oddi-hard-sidebar-launcher");
         if(launcher) launcher.click();
         mouseGesture=null;
       }
@@ -24033,6 +24054,8 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
   document.addEventListener("click", function (event) {
     var target = null;
     if (event.target && event.target.closest) {
+      /* Keep hamburger clicks out of the compact-rail New Chat fallback. */
+      if (event.target.closest("#oddi-hard-sidebar-launcher, .oddi-rs-phone-launcher, .oddi-rs-launcher[aria-label*='Open sidebar' i], .oddi-rs-launcher[title*='Open sidebar' i]")) return;
       target = event.target.closest(".new-chat-btn, .sidebar-new-chat-utility-btn, button[aria-label*='New Chat' i], button[title*='New Chat' i]");
       if (!target) {
         var button = event.target.closest("button");
@@ -24129,6 +24152,11 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
     var aria = String(el.getAttribute("aria-label") || "").trim().toLowerCase();
     var title = String(el.getAttribute("title") || "").trim().toLowerCase();
     var cls = String(el.className || "").toLowerCase();
+
+    /* The phone rail contains only its hamburger. Do not let the generic
+       "first visible rail action" fallback reclassify that opener as New Chat. */
+    if (aria.includes("open sidebar") || title.includes("open sidebar") ||
+        cls.includes("phone-launcher") || cls.includes("sidebar-launcher")) return false;
 
     if (cls.includes("new-chat") || aria.includes("new chat") || title.includes("new chat")) return true;
     if (text === "+" || text === "＋" || text === "+ new chat" || text === "new chat") return true;
@@ -24335,11 +24363,13 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
   document.addEventListener("click", function(event){
     var target = event.target;
     if (!target) return;
+    /* Sidebar opener controls are never New Chat controls. */
+    if (target.closest && target.closest("#oddi-hard-sidebar-launcher, .oddi-rs-phone-launcher, .oddi-rs-launcher[aria-label*='Open sidebar' i], .oddi-rs-launcher[title*='Open sidebar' i]")) return;
     var rail = target.closest ? target.closest("#oddi-react-sidebar-root .oddi-rs-rail") : null;
     var button = target.closest ? target.closest("button,[role='button'],a") : null;
     var isPlus = false;
 
-    if (rail && button) {
+    if (rail && button && !button.matches(".oddi-rs-phone-launcher, .oddi-rs-launcher[aria-label*='Open sidebar' i], .oddi-rs-launcher[title*='Open sidebar' i]")) {
       var text = String(button.textContent || "").replace(/\s+/g," ").trim();
       var aria = String(button.getAttribute("aria-label") || "").toLowerCase();
       var title = String(button.getAttribute("title") || "").toLowerCase();

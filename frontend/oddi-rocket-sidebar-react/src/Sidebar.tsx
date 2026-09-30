@@ -20,6 +20,7 @@ type Conversation = {
 type OddiWindow = Window & {
   oddiConversations?: Conversation[];
   __oddiOpenConversation?: (index: number) => void;
+  __oddiOpenSidebar?: () => void;
   togglePinConversation?: (conversation: Conversation) => Promise<unknown>;
   toggleArchiveConversation?: (conversation: Conversation) => Promise<unknown>;
   updateConversationMetadata?: (conversation: Conversation, patch: Record<string, unknown>) => Promise<boolean>;
@@ -168,6 +169,19 @@ export default function Sidebar() {
     sync();
     return () => document.body.classList.remove('oddi-react-sidebar-open', 'oddi-react-sidebar-collapsed');
   }, [open, collapsed]);
+
+  // Expose the React-owned open action to the legacy template hamburger and
+  // gesture handler. They must never mutate sidebar DOM classes directly.
+  useEffect(() => {
+    const openSidebar = () => {
+      setCollapsed(false);
+      setOpen(true);
+    };
+    WIN().__oddiOpenSidebar = openSidebar;
+    return () => {
+      if (WIN().__oddiOpenSidebar === openSidebar) delete WIN().__oddiOpenSidebar;
+    };
+  }, []);
 
   useEffect(() => {
     const observer = new MutationObserver(() => setTheme(document.body.classList.contains('dark-mode') ? 'dark' : 'light'));
@@ -355,7 +369,7 @@ export default function Sidebar() {
       }
     };
     const onClearAttachments = () => setUploadedFiles([]);
-    const onOpenSidebarShortcut = () => { setCollapsed(false); setOpen(true); };
+    const onOpenSidebarShortcut = () => WIN().__oddiOpenSidebar?.();
     const onCloseSidebarShortcut = () => { setCollapsed(false); setOpen(false); };
     const onToggleSidebarShortcut = () => setOpen(v => !v);
     window.addEventListener('oddi:attachments-changed', onAttachments as EventListener);
@@ -812,8 +826,7 @@ export default function Sidebar() {
     {isPhone && splashReady && (
       <div className={`oddi-rs-rail ${open ? 'is-sidebar-open' : 'is-sidebar-closed'}`} aria-label="Mobile sidebar opener">
         <button className="oddi-rs-launcher oddi-rs-phone-launcher" onClick={() => {
-          setCollapsed(false);
-          setOpen(true);
+          WIN().__oddiOpenSidebar?.();
         }} title="Open sidebar" aria-label="Open sidebar">
           <Menu size={21} aria-hidden="true" />
         </button>
