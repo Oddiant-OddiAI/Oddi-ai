@@ -4604,6 +4604,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         </button>
     </div>
     </main>
+    <button type="button" id="oddiSayHello" class="oddi-say-hello" aria-label="Say hello to learn about Vedanssh">Say Hello to know about me</button>
     <div class="input-area">
         <div id="attachmentPreview" class="attachment-preview" style="display:none;">
             <div class="attachment-header">
@@ -4655,6 +4656,16 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         </div>
     </div>
 </div>
+<style id="oddi-say-hello-style">
+.oddi-say-hello{position:fixed;left:50%;bottom:91px;transform:translateX(-50%);z-index:599;border:1px solid rgba(32,199,107,.3);border-radius:999px;padding:8px 14px;background:rgba(32,199,107,.08);color:#16884a;font:600 13px/1.2 inherit;cursor:pointer;transition:background .16s ease,transform .16s ease,border-color .16s ease;}
+.oddi-say-hello:hover{background:rgba(32,199,107,.15);border-color:rgba(32,199,107,.55);transform:translateX(-50%) translateY(-1px)}
+body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);border-color:rgba(32,199,107,.28)}
+@media(max-width:768px) and (pointer:coarse){.oddi-say-hello{bottom:65px;padding:7px 12px;font-size:12px}}
+.app.chat-started .oddi-say-hello{display:none}
+</style>
+<script id="oddi-say-hello-handler">
+(()=>{const button=document.getElementById('oddiSayHello');if(!button)return;button.addEventListener('click',()=>{const hello='Hello';if(typeof window.sendMessage==='function')window.sendMessage(hello,false,{messageOverride:hello,fastResponse:'special-hello'});});})();
+</script>
 <div id="binModal" class="utility-modal" aria-hidden="true">
     <div class="utility-box">
         <div class="utility-header">
@@ -4970,6 +4981,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
     <div class="oddi-settings-page-body">
       <aside class="oddi-settings-nav" aria-label="Settings navigation">
         <button type="button" class="oddi-settings-nav-item is-active" data-settings-tab="appearance"><span>◉</span>Appearance</button>
+        <button type="button" class="oddi-settings-nav-item" data-settings-tab="personalize"><span>✦</span>Personalize</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="voice"><span>♬</span>Voice &amp; Response</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="data"><span>▣</span>Data</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="account"><span>♙</span>Account</button>
@@ -5002,6 +5014,34 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
               <button id="splashBtn" class="oddi-toggle-control is-on" type="button" aria-label="Toggle splash screen">ON</button>
             </div>
           </div>
+        </section>
+
+        <section class="oddi-settings-section oddi-settings-tab" data-settings-panel="personalize">
+          <div class="oddi-settings-content-heading"><h4>Personalize</h4><p>Choose your chat bubble, thinking dots, and send button colors</p></div>
+          <div class="oddi-settings-label">User message color</div>
+          <div class="oddi-settings-group">
+            <label class="oddi-setting-row" for="oddiPersonalUserLight"><span class="oddi-setting-icon">☼</span><span class="oddi-setting-copy"><strong>Light mode</strong><small>Choose the background of your messages</small></span><input class="oddi-personal-color-input" type="color" id="oddiPersonalUserLight" value="#f1f1f1" aria-label="User message color in light mode"></label>
+            <label class="oddi-setting-row" for="oddiPersonalUserDark"><span class="oddi-setting-icon">☾</span><span class="oddi-setting-copy"><strong>Dark mode</strong><small>Choose the background of your messages</small></span><input class="oddi-personal-color-input" type="color" id="oddiPersonalUserDark" value="#171717" aria-label="User message color in dark mode"></label>
+          </div>
+          <div class="oddi-settings-label oddi-personal-subheading">Thinking dots color</div>
+          <div class="oddi-settings-group">
+            <label class="oddi-setting-row" for="oddiPersonalDotsLight"><span class="oddi-setting-icon">☼</span><span class="oddi-setting-copy"><strong>Light mode</strong><small>Default: black</small></span><input class="oddi-personal-color-input" type="color" id="oddiPersonalDotsLight" value="#111111" aria-label="Thinking dots color in light mode"></label>
+            <label class="oddi-setting-row" for="oddiPersonalDotsDark"><span class="oddi-setting-icon">☾</span><span class="oddi-setting-copy"><strong>Dark mode</strong><small>Default: white</small></span><input class="oddi-personal-color-input" type="color" id="oddiPersonalDotsDark" value="#ffffff" aria-label="Thinking dots color in dark mode"></label>
+            <label class="oddi-setting-row oddi-personal-match-row" for="oddiPersonalDotsMatchUser"><span class="oddi-setting-icon">↗</span><span class="oddi-setting-copy"><strong>Match user message color</strong><small>Use your message color for the dots in each theme</small></span><input type="checkbox" id="oddiPersonalDotsMatchUser" aria-label="Match thinking dots to user message color"></label>
+          </div>
+          <div class="oddi-settings-label oddi-personal-subheading">Send button color</div>
+          <div class="oddi-settings-group">
+            <label class="oddi-setting-row" for="oddiPersonalSendLight"><span class="oddi-setting-icon">☼</span><span class="oddi-setting-copy"><strong>Light mode</strong><small>Pick any color you like</small></span><input class="oddi-personal-color-input" type="color" id="oddiPersonalSendLight" value="#0a0a0a" aria-label="Send button color in light mode"></label>
+            <label class="oddi-setting-row" for="oddiPersonalSendDark"><span class="oddi-setting-icon">☾</span><span class="oddi-setting-copy"><strong>Dark mode</strong><small>Pick any color you like</small></span><input class="oddi-personal-color-input" type="color" id="oddiPersonalSendDark" value="#f4f4f4" aria-label="Send button color in dark mode"></label>
+            <div class="oddi-personal-presets" aria-label="Send button color presets">
+              <span>Quick colors</span>
+              <button type="button" data-send-preset="#0a0a0a" aria-label="Set send button to black" title="Black" style="--preset-color:#0a0a0a"></button>
+              <button type="button" data-send-preset="#20c76b" aria-label="Set send button to green" title="Green" style="--preset-color:#20c76b"></button>
+              <button type="button" data-send-preset="#7c3aed" aria-label="Set send button to purple" title="Purple" style="--preset-color:#7c3aed"></button>
+              <button type="button" data-send-preset="#2563eb" aria-label="Set send button to blue" title="Blue" style="--preset-color:#2563eb"></button>
+            </div>
+          </div>
+          <button type="button" id="oddiPersonalReset" class="oddi-personal-reset">Reset colors to default</button>
         </section>
 
         <section class="oddi-settings-section oddi-settings-tab" data-settings-panel="voice">
@@ -5044,6 +5084,103 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
 <script>
 let currentConversation = null;
 let selectedFiles = [];
+const ODDI_LAST_OPEN_CONVERSATION_KEY = "oddi_last_open_conversation_v1";
+const ODDI_PENDING_GENERATION_KEY = "oddi_pending_chat_generation_v1";
+const ODDI_FRESH_CHAT_MARKER = "__oddi_fresh_chat__";
+
+function persistLastOpenConversation(conversation) {
+    if (conversation?.id === null || conversation?.id === undefined) return;
+    try {
+        // Keep chat restoration scoped to this tab. localStorage is shared
+        // across tabs and made every new tab reopen the same conversation.
+        sessionStorage.setItem(ODDI_LAST_OPEN_CONVERSATION_KEY, String(conversation.id));
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent("oddi:conversation-opened", { detail: { id: conversation.id } }));
+}
+
+function restoreLastOpenConversation() {
+    let savedId = "";
+    try { savedId = sessionStorage.getItem(ODDI_LAST_OPEN_CONVERSATION_KEY) || ""; } catch (_) {}
+    if (!savedId) return false;
+    if (savedId === ODDI_FRESH_CHAT_MARKER) return false;
+
+    const savedIndex = conversations.findIndex(conversation =>
+        conversation?.id !== null && conversation?.id !== undefined &&
+        String(conversation.id) === String(savedId)
+    );
+    if (savedIndex < 0) {
+        try { sessionStorage.removeItem(ODDI_LAST_OPEN_CONVERSATION_KEY); } catch (_) {}
+        return false;
+    }
+
+    window.__oddiFreshChatActive = false;
+    window.__oddiFreshChatLockUntil = 0;
+    openConversation(savedIndex);
+    return true;
+}
+
+function getPersistedPendingGeneration() {
+    try {
+        const pending = JSON.parse(localStorage.getItem(ODDI_PENDING_GENERATION_KEY) || "null");
+        if (!pending || !pending.conversationId || !pending.assistantMessageId) return null;
+        if (Date.now() - Number(pending.startedAt || 0) > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem(ODDI_PENDING_GENERATION_KEY);
+            window.dispatchEvent(new CustomEvent("oddi:generation-state-changed"));
+            return null;
+        }
+        return pending;
+    } catch (_) {
+        return null;
+    }
+}
+
+function persistPendingGeneration(conversation, assistantMessageId, generationId) {
+    if (conversation?.id === null || conversation?.id === undefined) return;
+    try {
+        localStorage.setItem(ODDI_PENDING_GENERATION_KEY, JSON.stringify({
+            conversationId: String(conversation.id),
+            assistantMessageId: String(assistantMessageId),
+            generationId: String(generationId),
+            startedAt: Date.now()
+        }));
+    } catch (_) {}
+    window.dispatchEvent(new CustomEvent("oddi:generation-state-changed"));
+    window.dispatchEvent(new CustomEvent("oddi:conversations-changed"));
+}
+
+function clearPendingGeneration(generationId = null) {
+    const pending = getPersistedPendingGeneration();
+    if (!pending || (generationId && String(pending.generationId) !== String(generationId))) return false;
+    try { localStorage.removeItem(ODDI_PENDING_GENERATION_KEY); } catch (_) {}
+    window.dispatchEvent(new CustomEvent("oddi:generation-state-changed"));
+    window.dispatchEvent(new CustomEvent("oddi:conversations-changed"));
+    return true;
+}
+
+function clearCompletedPendingGeneration(conversationList) {
+    const pending = getPersistedPendingGeneration();
+    if (!pending) return false;
+    const completed = (Array.isArray(conversationList) ? conversationList : []).some(conversation =>
+        String(conversation?.id ?? "") === String(pending.conversationId) &&
+        (Array.isArray(conversation.messages) ? conversation.messages : []).some(message =>
+            String(message?.id ?? "") === String(pending.assistantMessageId)
+        )
+    );
+    return completed ? clearPendingGeneration(pending.generationId) : false;
+}
+
+function isConversationGenerating(conversation) {
+    if (!conversation) return false;
+    if (generationActive && activeGenerationConversation) {
+        if (activeGenerationConversation === conversation) return true;
+        if (activeGenerationConversation.id !== null && activeGenerationConversation.id !== undefined &&
+            conversation.id !== null && conversation.id !== undefined &&
+            String(activeGenerationConversation.id) === String(conversation.id)) return true;
+    }
+    const pending = getPersistedPendingGeneration();
+    return !!(pending && conversation.id !== null && conversation.id !== undefined &&
+        String(conversation.id) === String(pending.conversationId));
+}
 
 /* 
    UPLOADED FILE STORE
@@ -5219,6 +5356,118 @@ let activeTypingResolve = null;
 let activeTypingElement = null;
 let activeGenerationPartialText = "";
 let activeGenerationConversation = null;
+let activeGenerationId = null;
+let activeGenerationAssistantMessageId = null;
+const seenBackgroundResponseIdsInMemory = new Set();
+
+function showResponseReadyToast(message) {
+    const oldToast = document.getElementById("oddiResponseReadyToast");
+    oldToast?.remove();
+
+    const toast = document.createElement("div");
+    toast.id = "oddiResponseReadyToast";
+    toast.setAttribute("role", "status");
+    toast.setAttribute("aria-live", "polite");
+    toast.textContent = message || "Response ready";
+    toast.style.cssText = [
+        "position:fixed",
+        "left:50%",
+        "bottom:max(86px,calc(env(safe-area-inset-bottom) + 72px))",
+        "transform:translateX(-50%)",
+        "z-index:2147483002",
+        "max-width:calc(100vw - 32px)",
+        "padding:11px 16px",
+        "border:1px solid rgba(255,255,255,.14)",
+        "border-radius:999px",
+        "background:rgba(24,24,24,.96)",
+        "color:#fff",
+        "box-shadow:0 8px 28px rgba(0,0,0,.24)",
+        "font:600 13px/1.3 system-ui,sans-serif",
+        "text-align:center",
+        "opacity:1",
+        "transition:opacity .18s ease"
+    ].join(";");
+    document.body.appendChild(toast);
+
+    window.setTimeout(() => {
+        toast.style.opacity = "0";
+        window.setTimeout(() => toast.remove(), 200);
+    }, 2000);
+}
+
+const ODDI_SEEN_BACKGROUND_RESPONSES_KEY = "oddi_seen_background_responses_v1";
+
+function readSeenBackgroundResponseIds() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(ODDI_SEEN_BACKGROUND_RESPONSES_KEY) || "[]");
+        return new Set([
+            ...seenBackgroundResponseIdsInMemory,
+            ...(Array.isArray(stored) ? stored.map(String) : [])
+        ]);
+    } catch (_) {
+        return new Set(seenBackgroundResponseIdsInMemory);
+    }
+}
+
+function markBackgroundResponseSeen(messageId) {
+    if (!messageId) return false;
+    const seen = readSeenBackgroundResponseIds();
+    const key = String(messageId);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    seenBackgroundResponseIdsInMemory.add(key);
+    try {
+        localStorage.setItem(
+            ODDI_SEEN_BACKGROUND_RESPONSES_KEY,
+            JSON.stringify(Array.from(seen).slice(-500))
+        );
+    } catch (_) {}
+    return true;
+}
+
+function notifyUnseenBackgroundResponses(conversationList) {
+    const responses = [];
+    (Array.isArray(conversationList) ? conversationList : []).forEach(conversation => {
+        (Array.isArray(conversation?.messages) ? conversation.messages : []).forEach(message => {
+            if (message?.role === "assistant" && message.background_completion && message.id) {
+                responses.push({ conversation, message });
+            }
+        });
+    });
+
+    const activeMessageId = String(activeGenerationAssistantMessageId || "");
+    const candidates = responses.filter(item => String(item.message.id) !== activeMessageId);
+
+    let firstLoad = false;
+    try {
+        firstLoad = localStorage.getItem(ODDI_SEEN_BACKGROUND_RESPONSES_KEY) === null;
+    } catch (_) {}
+
+    if (firstLoad) {
+        candidates.forEach(item => markBackgroundResponseSeen(item.message.id));
+        if (candidates.length) {
+            candidates.sort((a, b) => String(a.message.completed_at || "").localeCompare(String(b.message.completed_at || "")));
+            const latest = candidates[candidates.length - 1];
+            const title = String(latest.conversation?.title || "your chat").trim();
+            showResponseReadyToast(`Response ready in ${title}`);
+        } else {
+            try { localStorage.setItem(ODDI_SEEN_BACKGROUND_RESPONSES_KEY, "[]"); } catch (_) {}
+        }
+        return;
+    }
+
+    const seen = readSeenBackgroundResponseIds();
+    const unseen = candidates.filter(item =>
+        !seen.has(String(item.message.id))
+    );
+    if (!unseen.length) return;
+
+    unseen.forEach(item => markBackgroundResponseSeen(item.message.id));
+    unseen.sort((a, b) => String(a.message.completed_at || "").localeCompare(String(b.message.completed_at || "")));
+    const latest = unseen[unseen.length - 1];
+    const title = String(latest.conversation?.title || "your chat").trim();
+    showResponseReadyToast(`Response ready in ${title}`);
+}
 
 function setGenerationUI(active) {
     generationActive = active;
@@ -5243,6 +5492,15 @@ function stopGeneration() {
     if (!generationActive) return;
 
     generationStopped = true;
+    clearPendingGeneration(activeGenerationId);
+
+    if (activeGenerationId && isLoggedIn) {
+        fetch(`/api/chat-generations/${encodeURIComponent(activeGenerationId)}/cancel`, {
+            method: "POST",
+            credentials: "same-origin",
+            keepalive: true
+        }).catch(() => {});
+    }
 
     if (activeAbortController) {
         activeAbortController.abort();
@@ -5258,16 +5516,15 @@ function stopGeneration() {
         activeTypingResolve = null;
     }
 
-    const conversationIndex = activeGenerationConversation;
+    const conversation = activeGenerationConversation;
+    const conversationIndex = conversations.indexOf(conversation);
     const botMessage = activeTypingElement?.closest('.bot-message');
 
     if (
         botMessage &&
-        conversationIndex !== null &&
-        conversationIndex !== undefined &&
-        conversations[conversationIndex]
+        conversation &&
+        conversationIndex >= 0
     ) {
-        const conversation = conversations[conversationIndex];
         const partialText = activeGenerationPartialText.trim();
 
         /* Store the stopped generation so it survives reloads. */
@@ -5301,11 +5558,6 @@ function stopGeneration() {
 
             touchConversation(conversation);
             appendConversationMessage(conversation, stoppedMessage);
-        }
-    } else {
-        const thinking = document.querySelector('.bot-message .thinking-indicator');
-        if (thinking) {
-            thinking.textContent = 'Generation stopped.';
         }
     }
 
@@ -6852,16 +7104,22 @@ async function loadConversations() {
         }
 
         await migrateLegacyConversationState();
+        clearCompletedPendingGeneration(conversations);
+        notifyUnseenBackgroundResponses(conversations);
         currentConversation = null;
         renderHistory();
+        restoreLastOpenConversation();
         startConversationSync();
     } catch (error) {
         console.error("Load conversations error:", error);
         const backups = getOddiLocalChatBackups();
         if (backups.length) {
             conversations = backups.map(backup => ({ ...normalizeConversationObject(backup), __recoveredLocally: true }));
+            clearCompletedPendingGeneration(conversations);
+            notifyUnseenBackgroundResponses(conversations);
             currentConversation = null;
             renderHistory();
+            restoreLastOpenConversation();
         }
     }
 }
@@ -7049,6 +7307,8 @@ async function syncConversationsFromServer(options = {}) {
             const restoredIndex = conversations.findIndex(c => c?.id && String(c.id) === currentId);
             currentConversation = restoredIndex >= 0 ? restoredIndex : null;
         }
+        if (clearCompletedPendingGeneration(conversations)) listChanged = true;
+        notifyUnseenBackgroundResponses(conversations);
         if (listChanged) renderHistory();
         if (openConversationChanged && options.refreshOpen !== false && !generationActive && currentConversation !== null) openConversation(currentConversation);
         await retryDirtyConversationRecoveries();
@@ -8584,14 +8844,18 @@ body.dark-mode .input-area > #attachmentPreview{
 }
 </style>
 <style id="oddi-thinking-dots-v1">
-/* ODDI thinking loader: small monochrome dots with a simple up/down wave. */
+/* ODDI thinking loader: visible dots with a simple up/down wave. */
 .thinking-indicator {
-  display:inline-flex !important;
+  display:flex !important;
   align-items:center !important;
-  justify-content:center !important;
-  gap:6px !important;
-  width:34px !important;
-  height:20px !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+  width:44px !important;
+  min-width:44px !important;
+  height:26px !important;
+  margin:0 !important;
+  padding:0 !important;
+  text-align:left !important;
   vertical-align:middle !important;
   animation:none !important;
   transform:none !important;
@@ -8599,13 +8863,12 @@ body.dark-mode .input-area > #attachmentPreview{
 }
 .thinking-indicator .thinking-dot {
   display:block !important;
-  width:6px !important;
-  height:6px !important;
-  flex:0 0 6px !important;
+  width:9px !important;
+  height:9px !important;
+  flex:0 0 9px !important;
   border-radius:50% !important;
-  background:#111 !important;
+  background:var(--oddi-thinking-dot-light, #111111) !important;
   box-shadow:none !important;
-  transform:translateY(0) !important;
   animation:oddiThinkingWave .72s ease-in-out infinite !important;
   will-change:transform,opacity !important;
 }
@@ -8614,7 +8877,7 @@ body.dark-mode .input-area > #attachmentPreview{
 .thinking-indicator .thinking-dot:nth-child(3){animation-delay:.24s !important;}
 body.dark-mode .thinking-indicator .thinking-dot,
 body[data-theme="dark"] .thinking-indicator .thinking-dot {
-  background:#fff !important;
+  background:var(--oddi-thinking-dot-dark, #ffffff) !important;
 }
 @keyframes oddiThinkingWave {
   0%, 100% { transform:translateY(0); opacity:.72; }
@@ -10614,8 +10877,14 @@ async function sendMessage(
         }
     }
 
-    if (!Array.isArray(conversations[currentConversation].messages)) {
-        conversations[currentConversation].messages = [];
+    const targetConversation = conversations[currentConversation];
+    const targetConversationId = targetConversation?.id ?? null;
+    persistLastOpenConversation(targetConversation);
+    const assistantMessageId = makeMessageId();
+    const generationId = makeMessageId();
+
+    if (!Array.isArray(targetConversation.messages)) {
+        targetConversation.messages = [];
     }
 
     if (!skipUserMessage) {
@@ -10635,10 +10904,10 @@ async function sendMessage(
             }
         }
 
-        const userMessageIndex =
-            conversations[currentConversation].messages.length;
+        const userMessageIndex = targetConversation.messages.length;
 
-        chat.innerHTML += `
+        if (conversations[currentConversation] === targetConversation) {
+            chat.innerHTML += `
             <div class="user-message" data-message-index="${userMessageIndex}">
                 ${fileHTML}
 
@@ -10679,9 +10948,10 @@ async function sendMessage(
                     </button>
                 </div>
             </div>
-        `;
+            `;
 
-        oddiSmartScroll(true);
+            oddiSmartScroll(true);
+        }
 
         const newUserMessage = {
             id: makeMessageId(),
@@ -10695,23 +10965,17 @@ async function sendMessage(
             pinned: false
         };
 
-        conversations[
-            currentConversation
-        ].messages.push(newUserMessage);
+        targetConversation.messages.push(newUserMessage);
 
-        touchConversation(
-            conversations[currentConversation]
-        );
+        touchConversation(targetConversation);
 
-        const activeConversation = conversations[currentConversation];
-
-        if (activeConversation.__newConversationSave) {
+        if (targetConversation.__newConversationSave) {
             // New conversations use the same full-conversation persistence
             // path as the established conversation saver.
-            await saveConversation(activeConversation);
+            await saveConversation(targetConversation);
         } else {
             await appendConversationMessage(
-                activeConversation,
+                targetConversation,
                 newUserMessage
             );
         }
@@ -10730,68 +10994,47 @@ async function sendMessage(
        ⭐ BEFORE FETCH
     ----------------------------------------- */
 
-    const typingId =
-        "typing-" +
-        Date.now();
-
-    chat.innerHTML += `
+    const thinkingHost = document.createElement("div");
+    thinkingHost.innerHTML = `
         <div class="bot-message">
-
             <div class="bot-header">
-
-                <button
-                    class="message-sound-btn"
-                    onclick="speakAIMessage(this)"
-                    title="Read this AI message aloud"
-                    aria-label="Read this AI message aloud">
-                    🔊
-                </button>
-
+                <button class="message-sound-btn" onclick="speakAIMessage(this)" title="Read this AI message aloud" aria-label="Read this AI message aloud">🔊</button>
                 <b>Oddi AI:</b>
-
             </div>
-
-            <div
-                class="ai-content"
-                id="${typingId}">
+            <div class="ai-content">
                 <span class="thinking-indicator" aria-label="Thinking" role="status">
                     <span class="thinking-dot" aria-hidden="true"></span>
                     <span class="thinking-dot" aria-hidden="true"></span>
                     <span class="thinking-dot" aria-hidden="true"></span>
                 </span>
             </div>
-
             <div class="bot-actions thinking-actions">
-                <button
-                    class="message-action-btn stop-generation-btn"
-                    onclick="stopGeneration()"
-                    title="Stop generating"
-                    aria-label="Stop generating">
-                    ■ Stop
-                </button>
+                <button class="message-action-btn stop-generation-btn" onclick="stopGeneration()" title="Stop generating" aria-label="Stop generating">■ Stop</button>
             </div>
-
         </div>
     `;
-
-    const typing =
-        document.getElementById(
-            typingId
-        );
+    const thinkingBubble = thinkingHost.firstElementChild;
+    const typing = thinkingBubble.querySelector(".ai-content");
+    if (conversations[currentConversation] === targetConversation) {
+        chat.appendChild(thinkingBubble);
+        oddiSmartScroll(true);
+    }
 
     activeTypingElement = typing;
-    activeGenerationConversation = currentConversation;
+    activeGenerationConversation = targetConversation;
+    activeGenerationId = generationId;
+    activeGenerationAssistantMessageId = assistantMessageId;
+    renderHistory();
 
-    const activeConversation = conversations[currentConversation];
-
-    const scrollKey = activeConversation
-        ? `oddi_chat_scroll_${getConversationKey(activeConversation)}`
-        : '';
-
+    const scrollKey = targetConversationId
+        ? `oddi_chat_scroll_${getConversationKey(targetConversation)}`
+        : "";
     const savedScroll = scrollKey
         ? Number(localStorage.getItem(scrollKey) || 0)
         : 0;
-    oddiRestoreChatScroll(savedScroll);
+    if (conversations[currentConversation] === targetConversation) {
+        oddiRestoreChatScroll(savedScroll);
+    }
 
     /* -----------------------------------------
        SEND TO BACKEND
@@ -10800,10 +11043,7 @@ async function sendMessage(
     const formData =
         new FormData();
 
-    const libraryHistory =
-        conversations[
-            currentConversation
-        ].messages.slice(-100);
+    const libraryHistory = targetConversation.messages.slice(-100);
 
     /*
        Library recall happens at send time, after the normal composer
@@ -10856,6 +11096,12 @@ async function sendMessage(
         "history",
         JSON.stringify(libraryHistory)
     );
+
+    if (targetConversationId !== null) {
+        formData.append("conversation_id", String(targetConversationId));
+    }
+    formData.append("assistant_message_id", assistantMessageId);
+    formData.append("generation_id", generationId);
 
     selectedFiles.forEach(file => {
 
@@ -10917,6 +11163,8 @@ async function sendMessage(
        WAIT FOR AI
     ----------------------------------------- */
 
+    persistPendingGeneration(targetConversation, assistantMessageId, generationId);
+
     try {
 
         const response =
@@ -10930,13 +11178,17 @@ async function sendMessage(
             );
 
         if (!response.ok) {
+            clearPendingGeneration(generationId);
             throw new Error(
                 await response.text()
             );
         }
 
-        const reply =
-            await response.text();
+        const reply = await response.text();
+        const persistedAssistantMessageId =
+            response.headers.get("X-Oddi-Assistant-Message-Id") || assistantMessageId;
+        const completedAt =
+            response.headers.get("X-Oddi-Completed-At") || new Date().toISOString();
 
         if (generationStopped) {
             return;
@@ -10961,31 +11213,40 @@ async function sendMessage(
                 return;
             }
 
-            finishAIMessage(
+            await finishAIMessage(
                 reply,
                 message,
                 typing,
-                voiceReply
+                voiceReply,
+                targetConversation,
+                persistedAssistantMessageId,
+                completedAt
             );
 
         } else {
 
             await typeAIResponse(
                 reply,
-                typing
+                typing,
+                targetConversation
             );
 
             if (generationStopped) {
                 return;
             }
 
-            finishAIMessage(
+            await finishAIMessage(
                 reply,
                 message,
                 typing,
-                voiceReply
+                voiceReply,
+                targetConversation,
+                persistedAssistantMessageId,
+                completedAt
             );
         }
+
+        clearPendingGeneration(generationId);
 
     } catch (error) {
 
@@ -11016,8 +11277,11 @@ async function sendMessage(
         activeAbortController = null;
         activeTypingElement = null;
         activeGenerationConversation = null;
+        activeGenerationId = null;
+        activeGenerationAssistantMessageId = null;
         setGenerationUI(false);
         generationStopped = false;
+        renderHistory();
 
         updateActionButton();
 
@@ -11025,7 +11289,9 @@ async function sendMessage(
             input.focus();
         }
 
-        oddiSmartScroll(true);
+        if (conversations[currentConversation] === targetConversation) {
+            oddiSmartScroll(true);
+        }
     }
 }
 
@@ -11035,7 +11301,8 @@ async function sendMessage(
 
 function typeAIResponse(
     text,
-    element
+    element,
+    targetConversation = activeGenerationConversation
 ) {
 
     return new Promise(resolve => {
@@ -11114,7 +11381,9 @@ function typeAIResponse(
 
                     });
 
-                oddiSmartScroll(false);
+                if (conversations[currentConversation] === targetConversation) {
+                    oddiSmartScroll(false);
+                }
             }
 
             /*
@@ -11219,43 +11488,53 @@ async function finishAIMessage(
     reply,
     userMessage,
     typing,
-    voiceReply
+    voiceReply,
+    targetConversation = activeGenerationConversation,
+    assistantMessageId = null,
+    completedAt = null
 ) {
 
     if (generationStopped) return;
 
-    if (
-        conversations[
-            currentConversation
-        ].messages.length === 1
-    ) {
-
-        conversations[
-            currentConversation
-        ].title =
-            userMessage;
-
-        renderHistory();
+    let conversation = targetConversation;
+    let conversationIndex = conversations.indexOf(conversation);
+    if (conversationIndex < 0 && conversation?.id !== null && conversation?.id !== undefined) {
+        conversationIndex = conversations.findIndex(
+            item => String(item?.id) === String(conversation.id)
+        );
+        if (conversationIndex >= 0) conversation = conversations[conversationIndex];
     }
-
-    const assistantIndex =
-        conversations[currentConversation].messages.length;
+    if (!conversation) return;
+    if (!Array.isArray(conversation.messages)) conversation.messages = [];
 
     const newAssistantMessage = {
-        id: makeMessageId(),
+        id: assistantMessageId || makeMessageId(),
         role: "assistant",
         text: reply,
         pinned: false,
-        feedback: null
+        feedback: null,
+        background_completion: true,
+        completed_at: completedAt || new Date().toISOString()
     };
 
-    conversations[
-        currentConversation
-    ].messages.push(newAssistantMessage);
+    const existingMessageIndex = conversation.messages.findIndex(
+        item => String(item?.id || "") === String(newAssistantMessage.id)
+    );
+    let assistantIndex = existingMessageIndex;
+    if (existingMessageIndex >= 0) {
+        Object.assign(conversation.messages[existingMessageIndex], newAssistantMessage);
+    } else {
+        assistantIndex = conversation.messages.length;
+        conversation.messages.push(newAssistantMessage);
+    }
+
+    if (conversation.messages.length === 2 && !conversation.title) {
+        conversation.title = userMessage;
+    }
 
     const botMessage = typing?.closest(".bot-message");
 
-    if (botMessage) {
+    if (botMessage && botMessage.isConnected && conversationIndex >= 0 && conversations[currentConversation] === conversation) {
         botMessage.dataset.messageIndex = assistantIndex;
         addBotMessageActions(
             botMessage,
@@ -11263,23 +11542,18 @@ async function finishAIMessage(
         );
     }
 
-    touchConversation(
-        conversations[currentConversation]
-    );
+    touchConversation(conversation);
+    await appendConversationMessage(conversation, newAssistantMessage);
 
-    const activeConversation = conversations[currentConversation];
-
-    if (activeConversation.__newConversationSave) {
-        // Keep the new conversation on the same persistence lifecycle.
-        const saved = await saveConversation(activeConversation);
-        if (saved) {
-            activeConversation.__newConversationSave = false;
-        }
-    } else {
-        await appendConversationMessage(
-            activeConversation,
-            newAssistantMessage
-        );
+    // If this response finished while its chat was open but its old bubble had
+    // been detached during navigation, render the saved message into the view.
+    const visibleConversationIndex = conversations.indexOf(conversation);
+    if (
+        visibleConversationIndex >= 0 &&
+        conversations[currentConversation] === conversation &&
+        typing && !typing.isConnected
+    ) {
+        await openConversation(visibleConversationIndex);
     }
 
     renderHistory();
@@ -11288,7 +11562,9 @@ async function finishAIMessage(
         speakVoiceReply(reply);
     }
 
-    oddiSmartScroll(true);
+    if (conversationIndex >= 0 && conversations[currentConversation] === conversation) {
+        oddiSmartScroll(true);
+    }
 }
 
 /* 
@@ -11863,6 +12139,7 @@ function createHistoryItem(conversation, options = {}) {
     const { archived = false, searchQuery = '' } = options;
     const pinned = isConversationPinned(conversation);
     const active = conversations[currentConversation] === conversation;
+    const generating = isConversationGenerating(conversation);
     const timestamp = getConversationDate(conversation);
     const preview = getConversationPreview(conversation);
     const item = document.createElement('div');
@@ -11878,6 +12155,7 @@ function createHistoryItem(conversation, options = {}) {
         <div class="history-main">
             <div class="history-topline">
                 <span class="history-title">${pinned ? '<span class="history-pin-mark" aria-hidden="true">📌</span>' : ''}${highlightText(conversation.title || 'New Chat', searchQuery)}</span>
+                ${generating ? '<span class="history-generating-spinner" role="status" aria-label="Generating response" title="Generating response"></span>' : ''}
             </div>
             <div class="history-preview">${highlightText(preview, searchQuery)}</div>
             <div class="history-meta"><span>${getConversationMeta(conversation, timestamp)}</span>${archived ? '<span class="history-dot">·</span><span>Archived</span>' : ''}</div>
@@ -12096,10 +12374,6 @@ async function openConversation(
         return false;
     }
 
-    if (generationActive) {
-        return false;
-    }
-
     // Sidebar/history clicks can race with conversation sync and briefly
     // produce an invalid index. Never dereference an undefined conversation.
     const parsedIndex = Number(index);
@@ -12115,6 +12389,7 @@ async function openConversation(
     }
 
     currentConversation = parsedIndex;
+    persistLastOpenConversation(conversation);
 
     if (!Array.isArray(conversation.messages)) {
         conversation.messages = [];
@@ -12259,6 +12534,19 @@ async function openConversation(
         }
     );
 
+    // Keep the live generation bubble attached when returning to its chat.
+    // The timer continues updating this same node even while another chat is open.
+    const activeBubble = activeTypingElement?.closest(".bot-message");
+    const activeConversationId = activeGenerationConversation?.id;
+    const isActiveGenerationConversation =
+        activeGenerationConversation === conversation ||
+        (activeConversationId !== null && activeConversationId !== undefined &&
+            conversation.id !== null && conversation.id !== undefined &&
+            String(activeConversationId) === String(conversation.id));
+    if (generationActive && isActiveGenerationConversation && activeBubble && !activeBubble.isConnected) {
+        chat.appendChild(activeBubble);
+    }
+
     // Restore the pinned-message preview after rendering the conversation.
     // The preview is separate from the normal message bubble and is clickable.
     renderPinnedMessagesSection();
@@ -12307,6 +12595,8 @@ async function newChat() {
        from immediately reopening the previous conversation. */
     window.__oddiNewChatEpoch = Number(window.__oddiNewChatEpoch || 0) + 1;
     window.__oddiFreshChatActive = true;
+    try { sessionStorage.setItem(ODDI_LAST_OPEN_CONVERSATION_KEY, ODDI_FRESH_CHAT_MARKER); } catch (_) {}
+    window.dispatchEvent(new CustomEvent("oddi:conversation-opened", { detail: { id: null } }));
 
     /* Close every sidebar presentation layer so New Chat always returns to the main workspace. */
     try {
@@ -13147,6 +13437,112 @@ input.style.height =
     input.scrollHeight + "px";
 updateActionButton();
 loadConversations();
+</script>
+
+<script id="oddi-personal-colors">
+(function () {
+    "use strict";
+
+    const storageKey = "oddi_personal_colors_v1";
+    const defaults = {
+        userLight: "#f1f1f1",
+        userDark: "#171717",
+        dotsLight: "#111111",
+        dotsDark: "#ffffff",
+        dotsMatchUser: false,
+        sendLight: "#0a0a0a",
+        sendDark: "#f4f4f4"
+    };
+    const fields = {
+        userLight: document.getElementById("oddiPersonalUserLight"),
+        userDark: document.getElementById("oddiPersonalUserDark"),
+        dotsLight: document.getElementById("oddiPersonalDotsLight"),
+        dotsDark: document.getElementById("oddiPersonalDotsDark"),
+        sendLight: document.getElementById("oddiPersonalSendLight"),
+        sendDark: document.getElementById("oddiPersonalSendDark")
+    };
+    const matchUserField = document.getElementById("oddiPersonalDotsMatchUser");
+    const dotsColorRows = [fields.dotsLight, fields.dotsDark].map(field => field?.closest(".oddi-setting-row")).filter(Boolean);
+    const root = document.documentElement;
+
+    function readColors() {
+        try {
+            const stored = JSON.parse(localStorage.getItem(storageKey) || "{}");
+            const values = Object.fromEntries(Object.keys(defaults).filter(key => key !== "dotsMatchUser").map(key => {
+                const value = String(stored?.[key] || "");
+                return [key, /^#[0-9a-f]{6}$/i.test(value) ? value : defaults[key]];
+            }));
+            values.dotsMatchUser = stored?.dotsMatchUser === true;
+            return values;
+        } catch (_) {
+            return { ...defaults };
+        }
+    }
+
+    function readableTextColor(hex) {
+        const value = hex.replace("#", "");
+        const channels = [0, 2, 4].map(index => parseInt(value.slice(index, index + 2), 16) / 255);
+        const linear = channels.map(channel => channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4);
+        const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+        return luminance > 0.42 ? "#111111" : "#ffffff";
+    }
+
+    function applyColors(colors, save = true) {
+        Object.entries(fields).forEach(([key, field]) => {
+            if (field) field.value = colors[key];
+        });
+        if (matchUserField) matchUserField.checked = colors.dotsMatchUser === true;
+        dotsColorRows.forEach(row => {
+            row.classList.toggle("is-disabled", colors.dotsMatchUser === true);
+            const colorInput = row.querySelector("input[type='color']");
+            if (colorInput) colorInput.disabled = colors.dotsMatchUser === true;
+        });
+
+        root.style.setProperty("--oddi-user-bg-light", colors.userLight);
+        root.style.setProperty("--oddi-user-text-light", readableTextColor(colors.userLight));
+        root.style.setProperty("--oddi-user-bg-dark", colors.userDark);
+        root.style.setProperty("--oddi-user-text-dark", readableTextColor(colors.userDark));
+        root.style.setProperty("--oddi-thinking-dot-light", colors.dotsMatchUser ? colors.userLight : colors.dotsLight);
+        root.style.setProperty("--oddi-thinking-dot-dark", colors.dotsMatchUser ? colors.userDark : colors.dotsDark);
+        root.style.setProperty("--oddi-send-bg-light", colors.sendLight);
+        root.style.setProperty("--oddi-send-text-light", readableTextColor(colors.sendLight));
+        root.style.setProperty("--oddi-send-bg-dark", colors.sendDark);
+        root.style.setProperty("--oddi-send-text-dark", readableTextColor(colors.sendDark));
+
+        if (save) {
+            try { localStorage.setItem(storageKey, JSON.stringify(colors)); } catch (_) {}
+        }
+    }
+
+    const colors = readColors();
+    applyColors(colors, false);
+
+    Object.entries(fields).forEach(([key, field]) => {
+        field?.addEventListener("input", () => {
+            colors[key] = /^#[0-9a-f]{6}$/i.test(field.value) ? field.value : defaults[key];
+            applyColors(colors);
+        });
+    });
+    matchUserField?.addEventListener("change", () => {
+        colors.dotsMatchUser = matchUserField.checked;
+        applyColors(colors);
+    });
+
+    document.querySelectorAll("[data-send-preset]").forEach(button => {
+        button.addEventListener("click", () => {
+            const color = button.getAttribute("data-send-preset");
+            if (!/^#[0-9a-f]{6}$/i.test(color || "")) return;
+            colors.sendLight = color;
+            colors.sendDark = color;
+            applyColors(colors);
+        });
+    });
+
+    document.getElementById("oddiPersonalReset")?.addEventListener("click", () => {
+        Object.assign(colors, defaults);
+        applyColors(colors);
+    });
+})();
 </script>
 
 <script id="oddi-ui-behavior">
@@ -24220,8 +24616,18 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
   if (typeof window.finishAIMessage === 'function' && !window.__oddiFinishWrapped) {
     const originalFinishAIMessage = window.finishAIMessage;
     window.finishAIMessage = async function(reply, userMessage, typing, voiceReply){
-      const result = await originalFinishAIMessage.apply(this, arguments);
+      const finishArgs = arguments;
+      const result = await originalFinishAIMessage.apply(this, finishArgs);
       try {
+        const assistantMessageId = finishArgs[5];
+        const conversation = finishArgs[4];
+        if (assistantMessageId && typeof window.markBackgroundResponseSeen === 'function') {
+          window.markBackgroundResponseSeen(assistantMessageId);
+        }
+        const title = String(conversation?.title || 'your chat').trim();
+        if (typeof window.showResponseReadyToast === 'function') {
+          window.showResponseReadyToast(`Response ready in ${title}`);
+        }
         const enabled = window.__oddiNotificationsEnabled !== false;
         if (enabled && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
           new Notification('ODDI finished a response', { body: String(reply || '').slice(0, 140) || 'Your response is ready.' });
@@ -24755,5 +25161,160 @@ body.dark-mode #settingsModal #oddiEmbeddedAccountSettings .app-lock-change-card
     left: 56px !important;
     inset-inline-start: 56px !important;
   }
+}
+</style>
+
+<style id="oddi-personal-color-overrides-v1">
+#chatbox .user-message .user-text {
+  background: var(--oddi-user-bg-light, #f1f1f1) !important;
+  color: var(--oddi-user-text-light, #111111) !important;
+}
+body.dark-mode #chatbox .user-message .user-text,
+body[data-theme="dark"] #chatbox .user-message .user-text {
+  background: var(--oddi-user-bg-dark, #171717) !important;
+  color: var(--oddi-user-text-dark, #f2f2f2) !important;
+}
+body:not(.dark-mode) .input-area #send-btn.send-btn:not(.stop-active) {
+  background: var(--oddi-send-bg-light, #0a0a0a) !important;
+  color: var(--oddi-send-text-light, #ffffff) !important;
+  border-color: var(--oddi-send-bg-light, #0a0a0a) !important;
+}
+body.dark-mode .input-area #send-btn.send-btn:not(.stop-active),
+body[data-theme="dark"] .input-area #send-btn.send-btn:not(.stop-active) {
+  background: var(--oddi-send-bg-dark, #f4f4f4) !important;
+  color: var(--oddi-send-text-dark, #111111) !important;
+  border-color: var(--oddi-send-bg-dark, #f4f4f4) !important;
+}
+body:not(.dark-mode):not([data-theme="dark"]) #chatbox .thinking-indicator .thinking-dot {
+  background: var(--oddi-thinking-dot-light, #111111) !important;
+}
+body.dark-mode #chatbox .thinking-indicator .thinking-dot,
+body[data-theme="dark"] #chatbox .thinking-indicator .thinking-dot {
+  background: var(--oddi-thinking-dot-dark, #ffffff) !important;
+}
+/* Keep the thinking row at the same left edge in both themes. */
+#chatbox .bot-message .ai-content,
+body.dark-mode #chatbox .bot-message .ai-content,
+body[data-theme="dark"] #chatbox .bot-message .ai-content {
+  text-align: left !important;
+}
+#chatbox .bot-message .thinking-indicator,
+body.dark-mode #chatbox .bot-message .thinking-indicator,
+body[data-theme="dark"] #chatbox .bot-message .thinking-indicator {
+  display: flex !important;
+  justify-content: flex-start !important;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}
+.history-topline {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+.history-topline .history-title {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+.history-generating-spinner {
+  display: inline-block !important;
+  width: 14px !important;
+  height: 14px !important;
+  flex: 0 0 14px !important;
+  box-sizing: border-box !important;
+  border: 2px solid rgba(128, 128, 128, .24) !important;
+  border-top-color: currentColor !important;
+  border-radius: 50% !important;
+  animation: oddiHistorySpinner .72s linear infinite !important;
+}
+@keyframes oddiHistorySpinner { to { transform: rotate(360deg); } }
+.oddi-rs-chat-spinner {
+  display: inline-block !important;
+  width: 15px !important;
+  min-width: 15px !important;
+  height: 15px !important;
+  flex: 0 0 15px !important;
+  align-self: center !important;
+  box-sizing: border-box !important;
+  border: 2px solid rgba(128, 128, 128, .35) !important;
+  border-top-color: currentColor !important;
+  border-radius: 50% !important;
+  animation: oddiHistorySpinner .72s linear infinite !important;
+}
+.oddi-rs-chat > .oddi-rs-chat-spinner {
+  min-width: 15px !important;
+  width: 15px !important;
+  height: 15px !important;
+  flex: 0 0 15px !important;
+}
+.oddi-personal-subheading { margin-top: 24px !important; }
+.oddi-personal-color-input {
+  width: 48px !important;
+  height: 36px !important;
+  flex: 0 0 48px !important;
+  padding: 3px !important;
+  border: 1px solid #d5d5d5 !important;
+  border-radius: 9px !important;
+  background: transparent !important;
+  cursor: pointer !important;
+}
+body.dark-mode .oddi-personal-color-input { border-color: #3a3a3a !important; }
+.oddi-personal-match-row { cursor: pointer !important; }
+.oddi-personal-match-row input[type="checkbox"] {
+  width: 17px !important;
+  height: 17px !important;
+  flex: 0 0 17px !important;
+  accent-color: #111 !important;
+  cursor: pointer !important;
+}
+body.dark-mode .oddi-personal-match-row input[type="checkbox"] { accent-color: #fff !important; }
+.oddi-personal-color-input:disabled { opacity: .45 !important; cursor: not-allowed !important; }
+.oddi-personal-match-row.is-disabled { opacity: .58 !important; }
+.oddi-personal-presets {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  padding: 12px 14px !important;
+  border-top: 1px solid #e5e5e5 !important;
+  color: #666 !important;
+  font-size: 12px !important;
+}
+.oddi-personal-presets span { margin-right: auto !important; }
+.oddi-personal-presets button {
+  width: 25px !important;
+  height: 25px !important;
+  padding: 0 !important;
+  border: 2px solid rgba(128, 128, 128, .24) !important;
+  border-radius: 50% !important;
+  background: var(--preset-color) !important;
+  cursor: pointer !important;
+}
+.oddi-personal-presets button:hover { outline: 2px solid rgba(128, 128, 128, .45) !important; outline-offset: 2px !important; }
+body.dark-mode .oddi-personal-presets { border-top-color: #292929 !important; color: #aaa !important; }
+.oddi-personal-reset {
+  display: block !important;
+  margin: 18px 0 0 auto !important;
+  padding: 10px 14px !important;
+  border: 1px solid #dedede !important;
+  border-radius: 9px !important;
+  background: #fff !important;
+  color: #222 !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.2 !important;
+  cursor: pointer !important;
+}
+.oddi-personal-reset:hover { background: #f5f5f5 !important; }
+body.dark-mode .oddi-personal-reset,
+body[data-theme="dark"] .oddi-personal-reset { background: #171717 !important; color: #eee !important; border-color: #383838 !important; }
+body.dark-mode .oddi-personal-reset:hover,
+body[data-theme="dark"] .oddi-personal-reset:hover { background: #222 !important; }
+@media (max-width: 700px) {
+  .oddi-personal-presets { gap: 8px !important; padding: 11px !important; }
+  .oddi-personal-presets span { font-size: 11px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .history-generating-spinner, .oddi-rs-chat-spinner { animation: none !important; }
 }
 </style>

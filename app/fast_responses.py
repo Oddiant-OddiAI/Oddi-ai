@@ -1,6 +1,9 @@
 import string
 import re
-from app.job_fast_responses import JOB_FAST_RESPONSES
+from app.job_fast_responses import (
+    JOB_FAST_RESPONSES,
+    match_job_interview_request,
+)
 def is_job_context_question(message):
     text = normalize_text(message)
     
@@ -9,7 +12,20 @@ def is_job_context_question(message):
 FAST_RESPONSES = {
 # Greetings
     "hi": "Hello! 👋 How are you today?",
-    "hello": "Hello! 👋 It's great to see you!",
+    "hello": (
+        "Hello! 👋 I’m Oddi AI, your career and job-search assistant, created by Oddiant. "
+        "I’m here to help you figure out your next career move and make the steps toward it easier.\n\n"
+        "You can ask me to explore career paths, find and compare job opportunities, understand job "
+        "descriptions, tailor your resume or cover letter, prepare for interviews, practice answers, "
+        "build skills, or make a clear job-search plan. Share your experience and what kind of role "
+        "you’re aiming for, and I’ll tailor my suggestions to your goals. You can also upload a resume "
+        "or document for me to review, and ask follow-up questions whenever you need.\n\n"
+        "For more personalized career help, open the Memory section in the sidebar and add details "
+        "you want me to keep in mind, such as your education, skills, work experience, target roles, "
+        "career goals, location preferences, or the kind of workplace you’re looking for. You can "
+        "review and update those details there. Only save information you’re comfortable keeping in memory.\n\n"
+        "Tell me what you’re working toward, and we’ll take it one step at a time. 🚀"
+    ),
     "hey": "Hey! 😄 What's up?",
     "yo": "Yo! What's on your mind?",
     "namaste": "Namaste! 🙏 Welcome! How can I help?",
@@ -468,6 +484,20 @@ def fast_response(message, history=None):
 
         if context != "__JOB_CONTEXT__":
             LAST_JOB_CONTEXT = context
+
+# Route supported interview-preparation phrasings to the same role-specific
+# answer, even when that wording is not listed as a one-off alias above.
+    interview_match = match_job_interview_request(message)
+    if interview_match:
+        response_key, response = interview_match
+        response_prefix = "help me in preparation for "
+        response_suffix = " interview"
+        role = response_key[len(response_prefix):-len(response_suffix)]
+        LAST_JOB_CONTEXT = JOB_CONTEXTS.get(
+            f"prepare me for {role} interview",
+            role.title(),
+        )
+        return response
 
 # 2. CHECK NORMAL FAST RESPONSES
 

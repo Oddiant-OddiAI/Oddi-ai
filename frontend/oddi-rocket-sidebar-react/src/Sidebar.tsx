@@ -28,6 +28,23 @@ type OddiWindow = Window & {
 };
 
 const WIN = () => window as OddiWindow;
+const PENDING_GENERATION_KEY = 'oddi_pending_chat_generation_v1';
+const LAST_OPEN_CONVERSATION_KEY = 'oddi_last_open_conversation_v1';
+const FRESH_CHAT_MARKER = '__oddi_fresh_chat__';
+
+function getPendingConversationId() {
+  try {
+    const pending = JSON.parse(localStorage.getItem(PENDING_GENERATION_KEY) || 'null');
+    return pending?.conversationId ? String(pending.conversationId) : null;
+  } catch { return null; }
+}
+
+function getLastOpenConversationId() {
+  // sessionStorage preserves the selected chat on reload in this tab without
+  // making a separately opened tab inherit the same conversation.
+  try { return sessionStorage.getItem(LAST_OPEN_CONVERSATION_KEY); }
+  catch { return null; }
+}
 
 function groupFor(value?: string) {
   if (!value) return 'Earlier';
@@ -121,6 +138,7 @@ export default function Sidebar() {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Conversation[]>([]);
   const [active, setActive] = useState<string | number | null>(null);
+  const [generatingConversationId, setGeneratingConversationId] = useState<string | null>(getPendingConversationId);
   const [menuId, setMenuId] = useState<string | number | null>(null);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>(document.body.classList.contains('dark-mode') ? 'dark' : 'light');
@@ -155,6 +173,23 @@ export default function Sidebar() {
     const observer = new MutationObserver(() => setTheme(document.body.classList.contains('dark-mode') ? 'dark' : 'light'));
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
     return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const syncGeneration = () => setGeneratingConversationId(getPendingConversationId());
+    const onConversationOpened = (event: Event) => {
+      const id = (event as CustomEvent<{ id?: string | number | null }>).detail?.id;
+      setActive(id ?? null);
+    };
+    syncGeneration();
+    window.addEventListener('oddi:generation-state-changed', syncGeneration);
+    window.addEventListener('storage', syncGeneration);
+    window.addEventListener('oddi:conversation-opened', onConversationOpened);
+    return () => {
+      window.removeEventListener('oddi:generation-state-changed', syncGeneration);
+      window.removeEventListener('storage', syncGeneration);
+      window.removeEventListener('oddi:conversation-opened', onConversationOpened);
+    };
   }, []);
 
   // Phone-only behavior: keep the desktop/sidebar rail exactly as it is.
@@ -362,7 +397,11 @@ export default function Sidebar() {
       const data = await r.json();
       const list = Array.isArray(data) ? data : (Array.isArray(data?.conversations) ? data.conversations : []);
       setItems(list);
-      if (active === null && list[0]) setActive(list[0].id);
+      const preferredId = getLastOpenConversationId();
+      const preferred = preferredId && list.find(c => String(c.id) === String(preferredId));
+      if (preferredId === FRESH_CHAT_MARKER) setActive(null);
+      else if (preferred) setActive(preferred.id);
+      else if (active === null && list[0]) setActive(list[0].id);
     } catch (error) { console.error('ODDI sidebar conversation load failed:', error); }
   }
 
@@ -620,9 +659,9 @@ export default function Sidebar() {
 
         <div className="oddi-rs-history">
           {collapsed
-            ? [...pinnedItems, ...visible.flatMap(g => g.items).filter(c => !c.pinned)].slice(0, 8).map(c =>
-              <button key={c.id} className={`oddi-rs-mini-chat ${active === c.id ? 'active' : ''}`} onClick={() => { setCollapsed(false); select(c); }} title={c.title || 'New Chat'}>
-                {c.pinned ? <Pin size={13} /> : <MessageSquare size={13} />}
+              ? [...pinnedItems, ...visible.flatMap(g => g.items).filter(c => !c.pinned)].slice(0, 8).map(c =>
+              <button key={c.id} className={`oddi-rs-mini-chat ${active === c.id ? 'active' : ''}`} onClick={() => { setCollapsed(false); select(c); }} title={`${generatingConversationId === String(c.id) ? 'Generating response · ' : ''}${c.title || 'New Chat'}`}>
+                {generatingConversationId === String(c.id) ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" /> : c.pinned ? <Pin size={13} /> : <MessageSquare size={13} />}
               </button>
             )
             : <>
@@ -631,6 +670,7 @@ export default function Sidebar() {
                   {pinnedItems.map(c => <div key={`pinned-${c.id}`} className={`oddi-rs-chat pinned ${active === c.id ? 'active' : ''}`} onClick={() => select(c)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && select(c)}>
                     <Pin size={11} />
                     <span>{c.title || 'New Chat'}</span>
+                    {generatingConversationId === String(c.id) && <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" />}
                     <div className="oddi-rs-actions">
                       <button onClick={e => { e.stopPropagation(); pin(c); }} title="Unpin chat" aria-label="Unpin chat"><Pin size={11} /></button>
                       <div className="oddi-rs-chat-menu">
@@ -648,7 +688,7 @@ export default function Sidebar() {
                   <section className="oddi-rs-group" key={g.label}>
                     <div className="oddi-rs-label">{g.label}</div>
                     {g.items.filter(c => !c.pinned).map(c => <div key={c.id} className={`oddi-rs-chat ${active === c.id ? 'active' : ''}`} onClick={() => select(c)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && select(c)}>
-                      <MessageSquare size={11} />
+                      {generatingConversationId === String(c.id) ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" /> : <MessageSquare size={11} />}
                       <span>{c.title || 'New Chat'}</span>
                       <div className="oddi-rs-actions">
                         <button onClick={e => { e.stopPropagation(); pin(c); }} title="Pin chat" aria-label="Pin chat"><Pin size={11} /></button>

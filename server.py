@@ -3,7 +3,9 @@ import json
 import logging
 import os
 import secrets
-from datetime import timedelta
+import threading
+import uuid
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from fastapi.encoders import jsonable_encoder
@@ -20,6 +22,7 @@ from fastapi.responses import (
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.templating import Jinja2Templates
+from starlette.concurrency import run_in_threadpool
 
 from authlib.integrations.base_client import OAuthError
 from authlib.integrations.starlette_client import OAuth
@@ -51,6 +54,7 @@ from app.database import (
 )
 
 from app.engine import process_message
+from app.fast_responses import fast_response
 from identity.identity import create_identity
 from app.memory_ai import update_user_memory_from_chat
 from app.storage import (
@@ -64,6 +68,9 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("oddi.persistence")
+
+_chat_generation_lock = threading.Lock()
+_active_chat_generations = {}
 
 
 # =========================================================
@@ -1144,6 +1151,17 @@ def api_delete_file(request: Request, file_id: int):
 # CHAT / FILE UPLOAD
 # =========================================================
 
+@app.post("/api/chat-generations/{generation_id}/cancel", name="cancel_chat_generation")
+async def cancel_chat_generation(request: Request, generation_id: str):
+    user_id = str(require_user_id(request))
+    with _chat_generation_lock:
+        generation = _active_chat_generations.get(generation_id)
+        if generation and generation["user_id"] == user_id:
+            generation["cancelled"].set()
+            return JSONResponse({"success": True, "cancelled": True})
+    return JSONResponse({"success": True, "cancelled": False})
+
+
 @app.post("/chat", name="chat")
 async def chat(request: Request, background_tasks: BackgroundTasks):
     form = await request.form()
@@ -1153,6 +1171,12 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse({"error": "Message is required."}, status_code=400)
     message = str(message)
     memory_message = str(form.get("memory_message") or message).strip()
+    assistant_message_id = str(form.get("assistant_message_id") or "").strip()
+    if not assistant_message_id or len(assistant_message_id) > 128:
+        assistant_message_id = str(uuid.uuid4())
+    generation_id = str(form.get("generation_id") or "").strip()
+    if not generation_id or len(generation_id) > 128:
+        generation_id = str(uuid.uuid4())
     memory_enabled_value = form.get("memory_enabled")
     memory_enabled = (
         str(memory_enabled_value).strip().casefold() in {"1", "true", "yes", "on"}
@@ -1317,14 +1341,36 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     # underlying AI engine even if someone calls /chat directly.
     user_id = require_user_id(request)
 
+    cancel_event = threading.Event()
+    with _chat_generation_lock:
+        _active_chat_generations[generation_id] = {
+            "user_id": str(user_id),
+            "cancelled": cancel_event,
+        }
+
     try:
-        reply = process_message(
-            message,
-            engine_files,
-            conversation_history,
-            user_id=user_id,
-            identity=identity,
+        # Match the original text the user typed before the frontend's
+        # Library-recall instructions or other internal context can alter it.
+        # Requests with attachments continue through the document-aware engine.
+        fast_reply = (
+            fast_response(memory_message)
+            if not engine_files
+            else None
         )
+
+        if fast_reply is not None:
+            reply = fast_reply
+        else:
+            reply = await run_in_threadpool(
+                process_message,
+                message,
+                engine_files,
+                conversation_history,
+                user_id=user_id,
+                identity=identity,
+            )
+        if cancel_event.is_set():
+            return PlainTextResponse("Generation stopped.", status_code=409)
     except Exception:
         # If AI processing fails after files have been persisted, roll back
         # both the physical objects and their metadata so quota is not leaked.
@@ -1338,6 +1384,31 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             user_id,
         )
         raise
+    finally:
+        with _chat_generation_lock:
+            _active_chat_generations.pop(generation_id, None)
+
+    completed_at = datetime.now(timezone.utc).isoformat()
+    if conversation_id is not None and isinstance(reply, str):
+        saved_conversation = append_conversation_message(
+            conversation_id,
+            user_id,
+            {
+                "id": assistant_message_id,
+                "role": "assistant",
+                "text": reply,
+                "pinned": False,
+                "feedback": None,
+                "background_completion": True,
+                "completed_at": completed_at,
+            },
+        )
+        if not saved_conversation:
+            logger.warning(
+                "Completed chat response could not be saved conversation=%s user=%s",
+                conversation_id,
+                user_id,
+            )
 
     if memory_enabled and memory_message:
         background_tasks.add_task(
@@ -1361,7 +1432,10 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                     file_db_error,
                 )
 
-    return response_from_engine(reply)
+    response = response_from_engine(reply)
+    response.headers["X-Oddi-Assistant-Message-Id"] = assistant_message_id
+    response.headers["X-Oddi-Completed-At"] = completed_at
+    return response
 
 
 # =========================================================

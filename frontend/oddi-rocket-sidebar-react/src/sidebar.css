@@ -729,3 +729,36 @@ body.dark-mode .oddi-rs-chat.pinned{background:rgba(255,255,255,.06);}
     display: none !important;
   }
 }
+
+/* Keep the in-progress chat easy to spot in both the full list and compact rail. */
+@keyframes oddiRsChatSpin {
+  to { transform: rotate(360deg); }
+}
+.oddi-rs-chat-spinner {
+  display: inline-block !important;
+  width: 15px !important;
+  min-width: 15px !important;
+  height: 15px !important;
+  flex: 0 0 15px !important;
+  align-self: center !important;
+  box-sizing: border-box !important;
+  border: 2px solid var(--rs-border) !important;
+  border-top-color: var(--rs-text) !important;
+  border-radius: 50% !important;
+  animation: oddiRsChatSpin .72s linear infinite !important;
+}
+.oddi-rs-chat > .oddi-rs-chat-spinner {
+  width: 15px !important;
+  min-width: 15px !important;
+  height: 15px !important;
+  flex: 0 0 15px !important;
+}
+.oddi-rs-mini-chat .oddi-rs-chat-spinner {
+  width: 16px !important;
+  min-width: 16px !important;
+  height: 16px !important;
+  flex-basis: 16px !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .oddi-rs-chat-spinner { animation: none !important; }
+}
