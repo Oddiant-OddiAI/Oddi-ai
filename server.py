@@ -4,6 +4,7 @@ import logging
 import os
 import secrets
 import threading
+import time
 import uuid
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
@@ -51,9 +52,17 @@ from app.database import (
     get_files,
     get_file,
     delete_file_record,
+    delete_user_record,
+    get_user_settings,
+    get_user_by_id,
+    save_user_settings,
+    update_user_profile,
+    clear_memory,
+    get_vector_store_id,
 )
 
 from app.engine import process_message
+from app.config import client
 from app.fast_responses import fast_response
 from identity.identity import create_identity
 from app.memory_ai import update_user_memory_from_chat
@@ -191,10 +200,24 @@ def set_user_session(request: Request, user, auth_provider=None):
         request.session["auth_provider"] = auth_provider
 
 
+def _request_logging_enabled(request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return True
+    try:
+        privacy = get_user_settings(user_id).get("privacy", {})
+        return privacy.get("request_logging", True) is not False
+    except Exception:
+        return True
+
+
 def require_user_id(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Not logged in.")
+    if not get_user_by_id(user_id):
+        request.session.clear()
+        raise HTTPException(status_code=401, detail="This account is no longer available. Sign in again.")
     return user_id
 
 
@@ -603,17 +626,129 @@ def api_auth_me(request: Request):
     if not user_id:
         return JSONResponse({"authenticated": False}, status_code=401)
 
+    user = get_user_by_id(user_id)
+    if not user:
+        request.session.clear()
+        return JSONResponse({"authenticated": False}, status_code=401)
+
     return JSONResponse(
         {
             "authenticated": True,
             "user": {
-                "id": request.session.get("user_id"),
-                "name": request.session.get("username"),
-                "email": request.session.get("email"),
+                "id": user["id"],
+                "name": user["username"],
+                "email": user["email"],
             },
             "auth_provider": request.session.get("auth_provider", "password"),
         }
     )
+
+
+@app.get("/api/settings", name="api_get_settings")
+def api_get_settings(request: Request):
+    user_id = require_user_id(request)
+    settings = get_user_settings(user_id)
+    return JSONResponse({"settings": settings})
+
+
+@app.put("/api/settings", name="api_update_settings")
+async def api_update_settings(request: Request):
+    user_id = require_user_id(request)
+    data = await safe_json(request)
+    incoming = data.get("settings")
+    if not isinstance(incoming, dict):
+        return JSONResponse({"error": "Settings must be an object."}, status_code=400)
+    current = get_user_settings(user_id)
+    # Only settings used by the UI are accepted. Never store arbitrary payloads.
+    if isinstance(current.get("chat_preferences"), dict):
+        current["chat_preferences"].pop("default_provider", None)
+    allowed = {"privacy", "chat_preferences", "profile", "memory"}
+    for key in allowed:
+        value = incoming.get(key)
+        if isinstance(value, dict):
+            if key == "chat_preferences":
+                value = {name: item for name, item in value.items() if name != "default_provider"}
+            current[key] = value
+    save_user_settings(user_id, current)
+    return JSONResponse({"success": True, "settings": current})
+
+
+@app.put("/api/account/profile", name="api_update_profile")
+async def api_update_profile(request: Request):
+    user_id = require_user_id(request)
+    data = await safe_json(request)
+    name = str(data.get("name") or "").strip()
+    bio = str(data.get("bio") or "").strip()
+    avatar = str(data.get("avatar") or "").strip()
+    if not name or len(name) > 80:
+        return JSONResponse({"error": "Enter a name up to 80 characters."}, status_code=400)
+    if len(bio) > 500:
+        return JSONResponse({"error": "Bio must be 500 characters or less."}, status_code=400)
+    allowed_avatar_prefixes = (
+        "data:image/png;base64,", "data:image/jpeg;base64,",
+        "data:image/gif;base64,", "data:image/webp;base64,",
+    )
+    if avatar and (len(avatar) > 2_800_000 or not avatar.startswith(allowed_avatar_prefixes)):
+        return JSONResponse({"error": "Choose an image smaller than 2 MB."}, status_code=400)
+    update_user_profile(user_id, name)
+    request.session["username"] = name
+    settings = get_user_settings(user_id)
+    profile = settings.get("profile", {})
+    profile.update({"bio": bio, "avatar": avatar})
+    settings["profile"] = profile
+    save_user_settings(user_id, settings)
+    return JSONResponse({"success": True, "user": {"name": name, "email": request.session.get("email", "")}, "profile": profile})
+
+
+@app.get("/api/account/export", name="api_export_account_data")
+def api_export_account_data(request: Request):
+    user_id = require_user_id(request)
+    payload = {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "user": {"id": str(user_id), "name": request.session.get("username"), "email": request.session.get("email")},
+        "conversations": get_conversations(user_id),
+        "deleted_conversations": get_deleted_conversations(user_id),
+        "memories": get_memory(user_id) or {},
+        "files": get_files(user_id),
+        "settings": get_user_settings(user_id),
+    }
+    return JSONResponse(
+        content=jsonable_encoder(payload),
+        headers={"Content-Disposition": 'attachment; filename="oddi-data-export.json"'},
+    )
+
+
+@app.delete("/api/account", name="api_delete_account")
+async def api_delete_account(request: Request):
+    user_id = require_user_id(request)
+    email = str(request.session.get("email") or "")
+    data = await safe_json(request)
+    if not email or str(data.get("email") or "").strip().casefold() != email.strip().casefold():
+        return JSONResponse({"error": "Enter the exact email address on your account to confirm deletion."}, status_code=400)
+
+    # Remove the user's remote document index before erasing its identifier.
+    vector_store_id = get_vector_store_id(user_id)
+    if vector_store_id:
+        try:
+            client.vector_stores.delete(vector_store_id)
+        except Exception:
+            logger.exception("Could not delete account vector store for user %s", user_id)
+            return JSONResponse({"error": "Your remote document index could not be deleted; the account was left intact."}, status_code=502)
+
+    for file_record in get_files(user_id):
+        if file_record.get("storage_backend") == "filesystem" and file_record.get("storage_key"):
+            try:
+                storage_router.delete_file(user_id, file_record["storage_key"])
+            except Exception:
+                logger.exception("Could not delete account file %s", file_record.get("id"))
+                return JSONResponse({"error": "An uploaded file could not be deleted; the account was left intact."}, status_code=502)
+        delete_file_record(file_record.get("id"), user_id)
+
+    delete_all_conversations(user_id)
+    clear_memory(user_id)
+    delete_user_record(user_id)
+    request.session.clear()
+    return JSONResponse({"success": True, "redirect": "/login"})
 
 
 @app.post("/api/auth/logout", name="api_logout")
@@ -628,22 +763,24 @@ def api_logout(request: Request):
 
 @app.get("/api/conversations", name="api_get_conversations")
 def api_get_conversations(request: Request):
-    logger.info(
-        "HTTP GET /api/conversations pid=%s user=%s",
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.info(
+            "HTTP GET /api/conversations pid=%s user=%s",
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
     return JSONResponse(content=jsonable_encoder(get_conversations(user_id)))
 
 
 @app.post("/api/conversations", name="api_create_conversation")
 async def api_create_conversation(request: Request):
-    logger.info(
-        "HTTP POST /api/conversations pid=%s user=%s",
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.info(
+            "HTTP POST /api/conversations pid=%s user=%s",
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
     data = await safe_json(request)
     title = data.get("title", "New Chat")
@@ -676,12 +813,13 @@ def api_get_deleted_conversations(request: Request):
 
 @app.put("/api/conversations/{conversation_id}/metadata", name="api_update_conversation_metadata")
 async def api_update_conversation_metadata(request: Request, conversation_id: int):
-    logger.info(
-        "HTTP PUT /api/conversations/%s/metadata pid=%s user=%s",
-        conversation_id,
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.info(
+            "HTTP PUT /api/conversations/%s/metadata pid=%s user=%s",
+            conversation_id,
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
     data = await safe_json(request)
 
@@ -721,12 +859,13 @@ def api_get_conversation(request: Request, conversation_id: int):
 
 @app.put("/api/conversations/{conversation_id}", name="api_update_conversation")
 async def api_update_conversation(request: Request, conversation_id: int):
-    logger.info(
-        "HTTP PUT /api/conversations/%s pid=%s user=%s",
-        conversation_id,
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.info(
+            "HTTP PUT /api/conversations/%s pid=%s user=%s",
+            conversation_id,
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
     data = await safe_json(request)
 
@@ -765,12 +904,13 @@ async def api_update_conversation(request: Request, conversation_id: int):
 
 @app.post("/api/conversations/{conversation_id}/messages", name="api_append_conversation_message")
 async def api_append_conversation_message(request: Request, conversation_id: int):
-    logger.info(
-        "HTTP POST /api/conversations/%s/messages pid=%s user=%s",
-        conversation_id,
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.info(
+            "HTTP POST /api/conversations/%s/messages pid=%s user=%s",
+            conversation_id,
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
     data = await safe_json(request)
     message = data.get("message")
@@ -799,13 +939,14 @@ async def api_update_conversation_message(
     conversation_id: int,
     message_id: str,
 ):
-    logger.info(
-        "HTTP PUT /api/conversations/%s/messages/%s pid=%s user=%s",
-        conversation_id,
-        message_id,
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.info(
+            "HTTP PUT /api/conversations/%s/messages/%s pid=%s user=%s",
+            conversation_id,
+            message_id,
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
     data = await safe_json(request)
     patch = data.get("patch", data)
@@ -838,13 +979,14 @@ def api_delete_conversation_message(
     conversation_id: int,
     message_id: str,
 ):
-    logger.warning(
-        "HTTP DELETE /api/conversations/%s/messages/%s pid=%s user=%s",
-        conversation_id,
-        message_id,
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.warning(
+            "HTTP DELETE /api/conversations/%s/messages/%s pid=%s user=%s",
+            conversation_id,
+            message_id,
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
 
     conversation = delete_conversation_message(
@@ -864,11 +1006,12 @@ def api_delete_conversation_message(
 
 @app.delete("/api/conversations/clear", name="api_clear_conversations")
 def api_clear_conversations(request: Request):
-    logger.warning(
-        "HTTP DELETE /api/conversations/clear pid=%s user=%s",
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.warning(
+            "HTTP DELETE /api/conversations/clear pid=%s user=%s",
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
     delete_all_conversations(user_id)
     return JSONResponse({"success": True})
@@ -876,12 +1019,13 @@ def api_clear_conversations(request: Request):
 
 @app.delete("/api/conversations/{conversation_id}", name="api_delete_conversation")
 def api_delete_conversation(request: Request, conversation_id: int):
-    logger.warning(
-        "HTTP DELETE /api/conversations/%s pid=%s user=%s",
-        conversation_id,
-        os.getpid(),
-        request.session.get("user_id"),
-    )
+    if _request_logging_enabled(request):
+        logger.warning(
+            "HTTP DELETE /api/conversations/%s pid=%s user=%s",
+            conversation_id,
+            os.getpid(),
+            request.session.get("user_id"),
+        )
     user_id = require_user_id(request)
 
     conversation = get_conversation(conversation_id, user_id)
@@ -1164,6 +1308,7 @@ async def cancel_chat_generation(request: Request, generation_id: str):
 
 @app.post("/chat", name="chat")
 async def chat(request: Request, background_tasks: BackgroundTasks):
+    generation_started = time.perf_counter()
     form = await request.form()
 
     message = form.get("message")
@@ -1182,6 +1327,12 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         str(memory_enabled_value).strip().casefold() in {"1", "true", "yes", "on"}
         if memory_enabled_value is not None
         else False
+    )
+    auto_extract_value = form.get("memory_auto_extract")
+    memory_auto_extract = (
+        str(auto_extract_value).strip().casefold() in {"1", "true", "yes", "on"}
+        if auto_extract_value is not None
+        else memory_enabled
     )
 
     raw_conversation_id = form.get("conversation_id")
@@ -1203,6 +1354,9 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = require_user_id(request)
+    user_settings = get_user_settings(user_id)
+    privacy_settings = user_settings.get("privacy", {}) if isinstance(user_settings, dict) else {}
+    request_logging_enabled = privacy_settings.get("request_logging", True) is not False
 
     # Build the authoritative identity from the authenticated session.
     # The message itself must never be allowed to determine host/admin status.
@@ -1332,10 +1486,11 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 
     conversation_history = conversation_history[-100:]
 
-    if engine_files:
-        logger.info("Files received: %s", [f.filename for f in engine_files])
-    else:
-        logger.info("No files uploaded")
+    if request_logging_enabled:
+        if engine_files:
+            logger.info("Files received: %s", [f.filename for f in engine_files])
+        else:
+            logger.info("No files uploaded")
 
     # Chat is also private: do not allow unauthenticated access to the
     # underlying AI engine even if someone calls /chat directly.
@@ -1368,6 +1523,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 conversation_history,
                 user_id=user_id,
                 identity=identity,
+                long_term_memory_enabled=memory_enabled,
             )
         if cancel_event.is_set():
             return PlainTextResponse("Generation stopped.", status_code=409)
@@ -1389,6 +1545,8 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             _active_chat_generations.pop(generation_id, None)
 
     completed_at = datetime.now(timezone.utc).isoformat()
+    latency_ms = max(0, int((time.perf_counter() - generation_started) * 1000))
+    token_estimate = max(1, (len(str(reply)) + 3) // 4) if isinstance(reply, str) else 0
     if conversation_id is not None and isinstance(reply, str):
         saved_conversation = append_conversation_message(
             conversation_id,
@@ -1401,6 +1559,11 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 "feedback": None,
                 "background_completion": True,
                 "completed_at": completed_at,
+                "response_meta": {
+                    "latency_ms": latency_ms,
+                    "token_estimate": token_estimate,
+                    "provider": "Auto routing",
+                },
             },
         )
         if not saved_conversation:
@@ -1410,7 +1573,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 user_id,
             )
 
-    if memory_enabled and memory_message:
+    if memory_enabled and memory_auto_extract and memory_message:
         background_tasks.add_task(
             update_user_memory_from_chat,
             str(user_id),
@@ -1435,6 +1598,9 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     response = response_from_engine(reply)
     response.headers["X-Oddi-Assistant-Message-Id"] = assistant_message_id
     response.headers["X-Oddi-Completed-At"] = completed_at
+    response.headers["X-Oddi-Provider"] = "Auto routing"
+    response.headers["X-Oddi-Latency-Ms"] = str(latency_ms)
+    response.headers["X-Oddi-Token-Estimate"] = str(token_estimate)
     return response
 
 

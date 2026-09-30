@@ -570,6 +570,7 @@ def process_message(
     is_host=False,
     quota_exempt=False,
     identity=None,
+    long_term_memory_enabled=True,
 ):
     # The HTTP layer resolves identity from the authenticated session. Keep
     # identity optional so existing internal/legacy callers remain compatible.
@@ -1049,7 +1050,7 @@ def process_message(
                         f"{pending['key'].replace('_', ' ')} "
                         f"as '{pending['old']}'."
                     )
-                memory_reply = recall_memory(user_message, user_id)
+                memory_reply = recall_memory(user_message, user_id) if long_term_memory_enabled else None
 
                 if memory_reply:
                     return memory_reply
@@ -1060,7 +1061,7 @@ def process_message(
     # ==========================================
     user_memories = {}
 
-    if user_id is not None:
+    if user_id is not None and long_term_memory_enabled:
         try:
             user_memories = get_memory(user_id) or {}
         except Exception as memory_load_error:

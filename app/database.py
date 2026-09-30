@@ -263,6 +263,13 @@ def _create_chat_tables():
                 )
             """)
             conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    user_id BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    settings TEXT NOT NULL DEFAULT '{}',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS conversations (
                     id BIGSERIAL PRIMARY KEY,
                     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -284,6 +291,14 @@ def _create_chat_tables():
                     email TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS user_settings (
+                    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+                    settings TEXT NOT NULL DEFAULT '{}',
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 )
             """)
             conn.execute("""
@@ -471,6 +486,71 @@ def get_user_by_email(email):
     conn = get_db("chat")
     try:
         return _fetchone(conn, "SELECT * FROM users WHERE email = ?", (email,))
+    finally:
+        conn.close()
+
+
+def get_user_by_id(user_id):
+    conn = get_db("chat")
+    try:
+        return _fetchone(conn, "SELECT id, username, email, created_at FROM users WHERE id = ?", (user_id,))
+    finally:
+        conn.close()
+
+
+def get_user_settings(user_id):
+    conn = get_db("chat")
+    try:
+        row = _fetchone(conn, "SELECT settings FROM user_settings WHERE user_id = ?", (user_id,))
+        if not row:
+            return {}
+        value = _row_value(row, "settings", "{}")
+        parsed = json.loads(value) if isinstance(value, str) else (value or {})
+        return parsed if isinstance(parsed, dict) else {}
+    finally:
+        conn.close()
+
+
+def save_user_settings(user_id, settings):
+    payload = json.dumps(settings if isinstance(settings, dict) else {}, ensure_ascii=False)
+    conn = get_db("chat")
+    try:
+        existing = _fetchone(conn, "SELECT user_id FROM user_settings WHERE user_id = ?", (user_id,))
+        if existing:
+            conn.execute(
+                "UPDATE user_settings SET settings = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?",
+                (payload, user_id),
+            )
+        else:
+            conn.execute("INSERT INTO user_settings(user_id, settings) VALUES (?, ?)", (user_id, payload))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def update_user_profile(user_id, username):
+    conn = get_db("chat")
+    try:
+        conn.execute("UPDATE users SET username = ? WHERE id = ?", (username, user_id))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def delete_user_record(user_id):
+    conn = get_db("chat")
+    try:
+        conn.execute("DELETE FROM user_settings WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
+        conn.commit()
+    finally:
+        conn.close()
+
+    conn = get_db("archive_memory")
+    try:
+        conn.execute("DELETE FROM memories WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM user_knowledge WHERE user_id = ?", (user_id,))
+        conn.commit()
     finally:
         conn.close()
 

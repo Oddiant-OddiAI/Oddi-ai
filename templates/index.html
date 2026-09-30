@@ -5009,7 +5009,10 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="personalize"><span>✦</span>Personalize</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="voice"><span>♬</span>Voice &amp; Response</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="data"><span>▣</span>Data</button>
+        <button type="button" class="oddi-settings-nav-item" data-settings-tab="privacy"><span>&#128274;</span>Privacy</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="account"><span>♙</span>Account</button>
+        <button type="button" class="oddi-settings-nav-item" data-settings-tab="chat-preferences"><span>&#128172;</span>Chat Preference</button>
+        <button type="button" class="oddi-settings-nav-item" data-settings-tab="memory"><span>🧠</span>Memory</button>
       </aside>
 
       <main class="oddi-settings-page-content">
@@ -5038,6 +5041,14 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
               <div class="oddi-setting-copy"><strong>Splash Screen</strong><small>Show the ODDI loading screen on startup</small></div>
               <button id="splashBtn" class="oddi-toggle-control is-on" type="button" aria-label="Toggle splash screen">ON</button>
             </div>
+            <div class="oddi-pref-card oddi-pref-block oddi-appearance-extra">
+              <label><strong>Font Size</strong><small>Adjust text size in the chat interface</small></label>
+              <div class="oddi-font-size-grid" role="group" aria-label="Font size">
+                <button type="button" data-font-size="small">Small</button><button type="button" data-font-size="default">Default</button><button type="button" data-font-size="large">Large</button>
+              </div>
+              <p class="oddi-font-preview">Preview: ODDI routes your requests intelligently across multiple AI providers.</p>
+            </div>
+            <label class="oddi-pref-card oddi-pref-row oddi-appearance-compact"><span><strong>Compact Message Layout</strong><small>Reduce spacing between messages for a denser view</small></span><input type="checkbox" id="oddiCompactMessages"></label>
           </div>
         </section>
 
@@ -5062,7 +5073,7 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
               <span>Quick colors</span>
               <button type="button" data-send-preset="#0a0a0a" aria-label="Set send button to black" title="Black" style="--preset-color:#0a0a0a"></button>
               <button type="button" data-send-preset="#20c76b" aria-label="Set send button to green" title="Green" style="--preset-color:#20c76b"></button>
-              <button type="button" data-send-preset="#7c3aed" aria-label="Set send button to purple" title="Purple" style="--preset-color:#7c3aed"></button>
+              <button type="button" data-send-preset="#777777" aria-label="Set send button to gray" title="Gray" style="--preset-color:#777777"></button>
               <button type="button" data-send-preset="#2563eb" aria-label="Set send button to blue" title="Blue" style="--preset-color:#2563eb"></button>
             </div>
           </div>
@@ -5090,18 +5101,50 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
           </div>
         </section>
 
-        <section class="oddi-settings-section oddi-settings-tab oddi-account-section" data-settings-panel="account">
-          <div class="oddi-settings-content-heading"><h4>Account</h4><p>Manage your account and security settings</p></div>
-          <div class="oddi-settings-group">
-            <div class="oddi-account-current"><div class="oddi-account-avatar">👤</div><div><strong>{{ username if logged_in else "Guest" }}</strong><small>{{ 'Currently signed in' if logged_in else 'Not signed in' }}</small></div></div>
-            <button type="button" id="accountSettingsInlineBtn" class="oddi-account-route"><span class="oddi-setting-icon">⚙</span><span class="oddi-setting-copy"><strong>Account Settings</strong><small>Profile, security, app lock and sign-out options</small></span><span class="oddi-setting-arrow">→</span></button>
-            {% if logged_in %}
-            <button id="logoutBtn" class="oddi-logout-action" type="button"><span class="oddi-setting-icon">↪</span><span class="oddi-setting-copy"><strong>Log out</strong><small>Sign out of this account on this device</small></span></button>
-            {% else %}
-            <a href="/signup" class="oddi-logout-action oddi-signup-action"><span class="oddi-setting-icon">＋</span><span class="oddi-setting-copy"><strong>Sign up</strong><small>Create an ODDI account to continue</small></span></a>
-            {% endif %}
+
+        <section class="oddi-settings-section oddi-settings-tab oddi-pref-panel" data-settings-panel="privacy">
+          <div class="oddi-settings-content-heading"><h4>Privacy</h4><p>Control how your data is used and stored by ODDI.</p></div>
+          <div class="oddi-pref-card" id="oddiPrivacyRows">
+            <label class="oddi-pref-row"><span><strong>Share usage analytics</strong><small>Help improve ODDI by sharing anonymous usage data</small></span><input type="checkbox" data-privacy-pref="analytics" aria-label="Share usage analytics"></label>
+            <label class="oddi-pref-row"><span><strong>Allow training data use</strong><small>Allow ODDI to use your conversations to improve AI models (anonymized)</small></span><input type="checkbox" data-privacy-pref="training" aria-label="Allow training data use"></label>
+            <label class="oddi-pref-row"><span><strong>Request logging</strong><small>Store request logs for debugging and performance analysis</small></span><input type="checkbox" data-privacy-pref="request_logging" aria-label="Request logging"></label>
+            <label class="oddi-pref-row"><span><strong>Crash reporting</strong><small>Automatically send error reports to help fix bugs</small></span><input type="checkbox" data-privacy-pref="crash_reporting" aria-label="Crash reporting"></label>
           </div>
+          <div class="oddi-pref-card oddi-pref-block"><label for="oddiRetention"><strong>Conversation Data Retention</strong><small>How long ODDI keeps your conversation history</small></label><select id="oddiRetention"><option value="30">30 days</option><option value="90">90 days (recommended)</option><option value="365">1 year</option><option value="forever">Forever</option></select><small class="oddi-pref-note">Retention preference is saved; conversation expiry is not automated yet.</small></div>
+          <div class="oddi-pref-card oddi-pref-block"><strong>Export Your Data</strong><small>Download an archive of your conversations, memories, settings, and file records in JSON format.</small><button id="oddiExportData" type="button" class="oddi-pref-action">Request data export</button></div>
+          <button id="oddiSavePrivacy" class="oddi-pref-primary" type="button">Save Privacy Settings</button>
+          <small class="oddi-pref-note">This deployment has no analytics, model-training, or crash-reporting integration configured. Those consent choices are saved but cannot enable data sharing yet.</small>
         </section>
+
+        <section class="oddi-settings-section oddi-settings-tab oddi-pref-panel" data-settings-panel="account">
+          <div class="oddi-settings-content-heading"><h4>Account</h4><p>Profile, sign-in security, and active device</p></div>
+          <div class="oddi-pref-card oddi-profile-card"><strong>Profile</strong><div class="oddi-profile-avatar-row"><button id="oddiAvatarButton" type="button" aria-label="Change avatar"><img id="oddiProfileAvatar" alt="" hidden><span id="oddiAvatarInitial">?</span></button><div><button id="oddiChooseAvatar" type="button" class="oddi-link-button">Change avatar</button><small>JPG, PNG or GIF &middot; max 2MB</small></div><input id="oddiAvatarFile" type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden></div><div class="oddi-profile-fields"><label>Full name<input id="oddiProfileName" maxlength="80" autocomplete="name" placeholder="Your name"></label><label>Email address<input id="oddiProfileEmail" type="email" readonly placeholder="No email available"></label></div><label class="oddi-profile-bio">Bio<small>Shown on your account profile.</small><textarea id="oddiProfileBio" maxlength="500" rows="3" placeholder="Add a short bio"></textarea></label><button id="oddiSaveProfile" type="button" class="oddi-pref-primary">Save profile</button><div id="oddiProfileStatus" role="status" aria-live="polite"></div></div>
+          <div class="oddi-pref-card oddi-lock-card"><div class="oddi-lock-heading"><strong>App Lock (PIN)</strong><label class="oddi-switch-wrap"><input id="oddiAccountLockProxy" type="checkbox" aria-label="Enable App Lock"><span></span></label></div><small>Require your existing PIN to access ODDI. Useful on shared devices.</small><div id="oddiAppLockMount"></div></div>
+          <div class="oddi-pref-card oddi-pref-block"><strong>Active Session</strong><small id="oddiCurrentSession">This device &middot; current browser session</small><button id="oddiLogoutCurrent" class="oddi-pref-action" type="button">Sign out on this device</button></div>
+          <div class="oddi-pref-card oddi-pref-block oddi-danger-zone"><strong>Danger Zone</strong><small>Permanently delete your account, conversations, memories, and uploaded files. This cannot be undone.</small><button id="oddiDeleteAccount" class="oddi-pref-action" type="button">Delete my account</button></div>
+          <button id="accountSettingsInlineBtn" type="button" hidden>Account details</button>
+        </section>
+
+        <section class="oddi-settings-section oddi-settings-tab oddi-pref-panel" data-settings-panel="chat-preferences">
+          <div class="oddi-settings-content-heading"><h4>Chat Preferences</h4><p>Customize how ODDI behaves during conversations.</p></div>
+          <div class="oddi-pref-card" id="oddiChatPrefRows"><label class="oddi-pref-row"><span><strong>Enter to send</strong><small>Press Enter to send, Shift+Enter for newline</small></span><input type="checkbox" data-chat-pref="enter_to_send" aria-label="Enter to send"></label><label class="oddi-pref-row"><span><strong>Stream responses</strong><small>Animate responses as they appear</small></span><input type="checkbox" data-chat-pref="stream_responses" aria-label="Stream responses"></label><label class="oddi-pref-row"><span><strong>Show token count</strong><small>Display estimated token usage below each response</small></span><input type="checkbox" data-chat-pref="show_token_count" aria-label="Show token count"></label><label class="oddi-pref-row"><span><strong>Show response latency</strong><small>Display milliseconds next to each response</small></span><input type="checkbox" data-chat-pref="show_latency" aria-label="Show response latency"></label><label class="oddi-pref-row"><span><strong>Show provider badge</strong><small>Display the selected routing mode below each response</small></span><input type="checkbox" data-chat-pref="show_provider" aria-label="Show provider badge"></label></div>
+          <div class="oddi-pref-card oddi-pref-block"><label for="oddiContextWindow"><strong>Context Window <output id="oddiContextValue">20 msgs</output></strong><small>How many previous messages to include in each request</small></label><input id="oddiContextWindow" type="range" min="5" max="50" step="1" value="20"><div class="oddi-range-ends"><span>5 (minimal)</span><span>50 (full history)</span></div><small class="oddi-pref-note">Larger context windows use more tokens. Recommended: 15&ndash;25 for most use cases.</small></div>
+          <button id="oddiSaveChatPrefs" class="oddi-pref-primary" type="button">Save Chat Preferences</button>
+        </section>
+
+        <section class="oddi-settings-section oddi-settings-tab oddi-pref-panel" data-settings-panel="memory">
+          <div class="oddi-settings-content-heading"><h4>Memory</h4><p>Manage the facts ODDI remembers to personalize responses.</p></div>
+          <div class="oddi-pref-card" id="oddiMemoryToggles">
+            <label class="oddi-pref-row"><span><strong>Long-term Memory</strong><small>Use saved facts from your conversations when responding</small></span><input type="checkbox" id="oddiMemoryEnabled"></label>
+            <label class="oddi-pref-row"><span><strong>Auto-extract from conversations</strong><small>Automatically detect and save useful new memories</small></span><input type="checkbox" id="oddiMemoryAutoExtract"></label>
+          </div>
+          <div class="oddi-memory-stats" id="oddiMemoryStats" aria-live="polite"></div>
+          <div class="oddi-memory-list-head"><h5>Stored Memories <span id="oddiMemoryCount">(0)</span></h5><button type="button" id="oddiMemoryClearAll" class="oddi-memory-danger">Clear all memories</button></div>
+          <div class="oddi-memory-filters" id="oddiMemoryFilters"></div>
+          <div id="oddiMemoryList" class="oddi-memory-list" aria-live="polite"><div class="oddi-memory-empty">Loading memories…</div></div>
+          <div class="oddi-pref-card oddi-memory-add"><label><strong>Add a memory</strong><small>Save a fact for future conversations</small></label><div><input id="oddiMemoryNewCategory" maxlength="40" placeholder="Category (e.g. preference)"><input id="oddiMemoryNewValue" maxlength="1000" placeholder="Memory detail"><button type="button" id="oddiMemoryAddBtn" class="oddi-pref-primary">Add memory</button></div></div>
+        </section>
+
       </main>
     </div>
   </div>
@@ -9809,6 +9852,48 @@ async function createShareFile(format, conversation) {
     return null;
 }
 
+function showOddiToast(message, type) {
+    let toast = document.getElementById("oddiActionToast");
+    if (!toast) {
+        toast = document.createElement("div");
+        toast.id = "oddiActionToast";
+        toast.setAttribute("role", "status");
+        toast.setAttribute("aria-live", "polite");
+        document.body.appendChild(toast);
+    }
+    window.clearTimeout(toast.__oddiHideTimer);
+    toast.className = "oddi-action-toast" + (type === "error" ? " is-error" : "");
+    toast.textContent = String(message || "Done");
+    requestAnimationFrame(() => toast.classList.add("is-visible"));
+    toast.__oddiHideTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 2600);
+}
+
+async function copyTextToClipboard(value) {
+    const text = String(value || "");
+    if (navigator.clipboard && window.isSecureContext) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return;
+        } catch (_) {}
+    }
+
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.setAttribute("aria-hidden", "true");
+    area.tabIndex = -1;
+    area.style.cssText = "position:fixed;left:-10000px;top:0;opacity:0;pointer-events:none;";
+    document.body.appendChild(area);
+    area.focus({ preventScroll: true });
+    area.select();
+    let copied = false;
+    try { copied = document.execCommand("copy"); }
+    finally { area.remove(); }
+    if (!copied) throw new Error("Clipboard write was denied.");
+}
+window.showOddiToast = showOddiToast;
+window.copyTextToClipboard = copyTextToClipboard;
+
 function getSelectedShareFormat() {
     return document.getElementById("oddiShareFormat")?.value || "pdf";
 }
@@ -9825,24 +9910,12 @@ async function handleShareTarget(target) {
     // immediately from the click handler, not after a slow export await.
     if (target === "copy") {
         try {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(text);
-            } else {
-                const ta = document.createElement("textarea");
-                ta.value = text;
-                ta.style.position = "fixed";
-                ta.style.opacity = "0";
-                document.body.appendChild(ta);
-                ta.focus();
-                ta.select();
-                document.execCommand("copy");
-                ta.remove();
-            }
+            await copyTextToClipboard(text);
             closeShareModal();
-            alert("Chat copied to clipboard.");
+            showOddiToast("Conversation copied to clipboard");
         } catch (error) {
             console.error("Copy failed:", error);
-            alert("Could not copy the chat.");
+            showOddiToast("Could not copy conversation", "error");
         }
         return;
     }
@@ -9891,23 +9964,12 @@ async function handleShareTarget(target) {
 
         // Reliable desktop fallback.
         try {
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(text);
-            } else {
-                const ta = document.createElement("textarea");
-                ta.value = text;
-                ta.style.position = "fixed";
-                ta.style.opacity = "0";
-                document.body.appendChild(ta);
-                ta.focus(); ta.select();
-                document.execCommand("copy");
-                ta.remove();
-            }
+            await copyTextToClipboard(text);
             closeShareModal();
-            alert("Native sharing is unavailable here, so the chat was copied to your clipboard.");
+            showOddiToast("Conversation copied to clipboard");
         } catch (error) {
             console.error("More sharing failed:", error);
-            alert("More sharing options are not available in this browser.");
+            showOddiToast("Could not copy conversation", "error");
         }
     }
 }
@@ -9917,11 +9979,11 @@ async function copyCurrentChat() {
     if (!conversation) return;
 
     try {
-        await navigator.clipboard.writeText(buildPlainTextExport(conversation));
-        alert("Conversation copied to clipboard.");
+        await copyTextToClipboard(buildPlainTextExport(conversation));
+        showOddiToast("Conversation copied to clipboard");
     } catch (error) {
         console.error("Could not copy conversation:", error);
-        alert("Could not copy the conversation.");
+        showOddiToast("Could not copy conversation", "error");
     }
 }
 
@@ -11092,7 +11154,8 @@ async function sendMessage(
     const formData =
         new FormData();
 
-    const libraryHistory = targetConversation.messages.slice(-100);
+    const contextLimit = Math.max(5, Math.min(50, Number(window.__oddiChatPreferences?.context_window || 20)));
+    const libraryHistory = targetConversation.messages.slice(-contextLimit);
 
     /*
        Library recall happens at send time, after the normal composer
@@ -11136,10 +11199,9 @@ async function sendMessage(
         message
     );
 
-    formData.append(
-        "memory_enabled",
-        localStorage.getItem("oddi_memory_enabled") === "false" ? "false" : "true"
-    );
+    const memorySettings = window.__oddiMemorySettings || {};
+    formData.append("memory_enabled", memorySettings.enabled === false ? "false" : "true");
+    formData.append("memory_auto_extract", memorySettings.auto_extract === false ? "false" : "true");
 
     formData.append(
         "history",
@@ -11234,6 +11296,11 @@ async function sendMessage(
         }
 
         const reply = await response.text();
+        const responseMeta = {
+            latency_ms: Number(response.headers.get("X-Oddi-Latency-Ms") || 0),
+            token_estimate: Number(response.headers.get("X-Oddi-Token-Estimate") || Math.ceil(reply.length / 4)),
+            provider: response.headers.get("X-Oddi-Provider") || "auto"
+        };
         const persistedAssistantMessageId =
             response.headers.get("X-Oddi-Assistant-Message-Id") || assistantMessageId;
         const completedAt =
@@ -11254,7 +11321,7 @@ async function sendMessage(
 
         typing.innerHTML = "";
 
-        if (!typingEnabled) {
+        if (!typingEnabled || window.__oddiChatPreferences?.stream_responses === false) {
 
             renderRichContent(typing, reply, { final: true });
 
@@ -11269,7 +11336,8 @@ async function sendMessage(
                 voiceReply,
                 targetConversation,
                 persistedAssistantMessageId,
-                completedAt
+                completedAt,
+                responseMeta
             );
 
         } else {
@@ -11291,7 +11359,8 @@ async function sendMessage(
                 voiceReply,
                 targetConversation,
                 persistedAssistantMessageId,
-                completedAt
+                completedAt,
+                responseMeta
             );
         }
 
@@ -11540,7 +11609,8 @@ async function finishAIMessage(
     voiceReply,
     targetConversation = activeGenerationConversation,
     assistantMessageId = null,
-    completedAt = null
+    completedAt = null,
+    responseMeta = {}
 ) {
 
     if (generationStopped) return;
@@ -11563,7 +11633,8 @@ async function finishAIMessage(
         pinned: false,
         feedback: null,
         background_completion: true,
-        completed_at: completedAt || new Date().toISOString()
+        completed_at: completedAt || new Date().toISOString(),
+        response_meta: responseMeta
     };
 
     const existingMessageIndex = conversation.messages.findIndex(
@@ -11585,6 +11656,16 @@ async function finishAIMessage(
 
     if (botMessage && botMessage.isConnected && conversationIndex >= 0 && conversations[currentConversation] === conversation) {
         botMessage.dataset.messageIndex = assistantIndex;
+        const metaHost = botMessage.querySelector(".odd-chat-meta");
+        const prefs = window.__oddiChatPreferences || {};
+        if (metaHost) {
+            metaHost.replaceChildren();
+            const chip = value => { const node=document.createElement("span"); node.textContent=value; metaHost.appendChild(node); };
+            if (prefs.show_token_count !== false && responseMeta.token_estimate) chip(`~${responseMeta.token_estimate} tokens`);
+            if (prefs.show_latency !== false && responseMeta.latency_ms) chip(`${responseMeta.latency_ms} ms`);
+            if (prefs.show_provider !== false && responseMeta.provider) chip(responseMeta.provider === "auto" ? "Auto routing" : responseMeta.provider);
+            metaHost.hidden = !metaHost.childElementCount;
+        }
         addBotMessageActions(
             botMessage,
             assistantIndex
@@ -11629,14 +11710,17 @@ input.addEventListener(
     "keydown",
     event => {
 
-        if (
-            event.key === "Enter" &&
-            !event.shiftKey
-        ) {
+        const enterSends = window.__oddiChatPreferences?.enter_to_send !== false;
+        const shouldSend = event.key === "Enter" && (enterSends ? !event.shiftKey : (event.ctrlKey || event.metaKey));
+        if (shouldSend) {
 
             event.preventDefault();
 
             sendMessage();
+        } else if (event.key === "Enter" && enterSends && event.shiftKey) {
+            return;
+        } else if (event.key === "Enter" && !enterSends && !event.ctrlKey && !event.metaKey) {
+            return;
         }
     }
 );
@@ -12542,6 +12626,8 @@ async function openConversation(
                             ${renderRichContentToHtml(msg.text)}
                         </div>
 
+                        <div class="odd-chat-meta" data-response-meta="${messageIndex}"></div>
+
                         <div class="bot-actions">
                             <button
                                 class="message-action-btn bot-pin-btn ${msg.pinned ? "active" : ""}"
@@ -12602,6 +12688,19 @@ async function openConversation(
 
     chat.querySelectorAll(".ai-content").forEach(content => {
         enhanceRichContent(content);
+        const bubble = content.closest(".bot-message");
+        const msg = conversations[currentConversation]?.messages?.[Number(bubble?.dataset.messageIndex)];
+        const meta = msg?.response_meta;
+        const host = bubble?.querySelector(".odd-chat-meta");
+        const prefs = window.__oddiChatPreferences || {};
+        if (host && meta) {
+            host.replaceChildren();
+            const add = value => { const chip=document.createElement("span"); chip.textContent=value; host.appendChild(chip); };
+            if (prefs.show_token_count !== false && meta.token_estimate) add(`~${meta.token_estimate} tokens`);
+            if (prefs.show_latency !== false && meta.latency_ms) add(`${meta.latency_ms} ms`);
+            if (prefs.show_provider !== false && meta.provider) add(meta.provider === "auto" ? "Auto routing" : meta.provider);
+            host.hidden = !host.childElementCount;
+        }
     });
 
     oddiSmartScroll(true);
@@ -12836,7 +12935,8 @@ const logo =
 const ODDI_THEME_KEY = "oddi_theme_v1";
 
 function applyOddiTheme(theme) {
-    const isDark = theme === "dark";
+    const preference = theme === "system" ? "system" : (theme === "dark" ? "dark" : "light");
+    const isDark = preference === "dark" || (preference === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
     document.body.classList.toggle(
         "dark-mode",
@@ -12855,14 +12955,16 @@ function applyOddiTheme(theme) {
             "/static/logo.png";
     }
 }
+window.__oddiApplyTheme = applyOddiTheme;
 
 /* Restore the selected theme after every page reload. */
 const savedOddiTheme =
     localStorage.getItem(ODDI_THEME_KEY);
 
-applyOddiTheme(
-    savedOddiTheme === "dark" ? "dark" : "light"
-);
+applyOddiTheme(savedOddiTheme === "system" ? "system" : (savedOddiTheme === "dark" ? "dark" : "light"));
+window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change", () => {
+    if (localStorage.getItem(ODDI_THEME_KEY) === "system") applyOddiTheme("system");
+});
 
 themeBtn.onclick = () => {
     const nextTheme =
@@ -12870,10 +12972,7 @@ themeBtn.onclick = () => {
             ? "light"
             : "dark";
 
-    localStorage.setItem(
-        ODDI_THEME_KEY,
-        nextTheme
-    );
+    localStorage.setItem(ODDI_THEME_KEY, nextTheme);
 
     applyOddiTheme(nextTheme);
 };
@@ -13621,6 +13720,8 @@ loadConversations();
     const archivedBtn = document.getElementById("archivedBtn");
     let archivedModal = document.getElementById("archivedModal");
     function openModal(modal) {
+        if (!modal) return;
+        modal.__oddiReturnFocus = document.activeElement;
         modal?.classList.add("show");
         modal?.setAttribute("aria-hidden", "false");
     }
@@ -13628,10 +13729,13 @@ loadConversations();
         if (!modal) return;
         const active = document.activeElement;
         if (active && modal.contains(active)) {
-            active.blur();
+            const returnFocus = modal.__oddiReturnFocus;
+            if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+            if (modal.contains(document.activeElement)) active.blur();
         }
         modal.classList.remove("show");
         modal.setAttribute("aria-hidden", "true");
+        delete modal.__oddiReturnFocus;
     }
     binBtn?.addEventListener("click", () => {
         /* Bin is a replacement modal: never leave Account Settings underneath it. */
@@ -13665,7 +13769,6 @@ loadConversations();
             </div>`;
         document.body.appendChild(archivedModal);
         archivedModal.addEventListener("click", e => { if (e.target === archivedModal) closeModal(archivedModal); });
-        archivedModal.querySelector("#closeArchived")?.addEventListener("click", () => closeModal(archivedModal));
         return archivedModal;
     }
 
@@ -13703,6 +13806,13 @@ loadConversations();
         renderArchivedModal();
         openModal(ensureArchivedModal());
     });
+    document.addEventListener("click", event => {
+        const closeButton = event.target?.closest?.("#closeArchived");
+        if (!closeButton || !archivedModal) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        closeModal(archivedModal);
+    }, true);
     document.addEventListener("keydown", e => {
         if (e.key === "Escape") { closeModal(binModal); closeModal(shortcutsModal); closeModal(archivedModal); }
     });
@@ -15966,6 +16076,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
   const clearAllBtn = document.getElementById("memoryClearAllBtn");
   const mobileCategories = document.getElementById("memoryCategories");
   const categoryToggle = document.getElementById("memoryCategoryToggle");
+  let memoryOpener = null;
 
   const defaultCategories = [
     ["All Memories","✨"],["Name","👤"],["Preferences","⚙️"],["Goals","🎯"],
@@ -15979,6 +16090,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
   let memoryEnabled = localStorage.getItem("oddi_memory_enabled") !== "false";
 
   function openMemory() {
+    memoryOpener = memoryBtn?.isConnected ? memoryBtn : document.activeElement;
     document.getElementById("mobileToolMenu")?.classList.remove("open", "mobile-tools-hiding");
     document.getElementById("mobileToolMenu")?.setAttribute("aria-hidden", "true");
     if (window.matchMedia("(min-width:769px)").matches) {
@@ -16030,6 +16142,11 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
   }
 
   function closeMemoryModal() {
+    const active = document.activeElement;
+    if (active && memoryModal?.contains(active)) {
+      if (memoryOpener?.isConnected) memoryOpener.focus({ preventScroll: true });
+      if (memoryModal.contains(document.activeElement)) active.blur();
+    }
     memoryModal?.classList.remove("show");
     memoryModal?.setAttribute("aria-hidden", "true");
     addModal?.classList.remove("show");
@@ -16519,6 +16636,8 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
     if (addBtn) addBtn.disabled = !memoryEnabled;
     if (clearAllBtn) clearAllBtn.disabled = !memoryEnabled;
     document.body.dataset.oddiMemoryEnabled = String(memoryEnabled);
+    window.__oddiSetMemoryEnabled = setMemoryToggle;
+    window.dispatchEvent(new CustomEvent("oddi:memory-setting-changed", {detail:{enabled:memoryEnabled, source:"memory-ui"}}));
   }
 
   function openAddModal() {
@@ -18062,29 +18181,11 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
         }
 
         try {
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
-                await navigator.clipboard.writeText(text);
-                alert("Selected chats copied to clipboard.");
-                return;
-            }
-        } catch (_) {}
-
-        const area = document.createElement("textarea");
-        area.value = text;
-        area.setAttribute("readonly", "");
-        area.style.position = "fixed";
-        area.style.left = "-9999px";
-        area.style.top = "0";
-        document.body.appendChild(area);
-        area.focus();
-        area.select();
-        try {
-            if (document.execCommand("copy")) alert("Selected chats copied to clipboard.");
-            else alert("Could not share the selected chats.");
-        } catch (_) {
-            alert("Could not share the selected chats.");
-        } finally {
-            area.remove();
+            await copyTextToClipboard(text);
+            showOddiToast("Selected chats copied to clipboard");
+        } catch (error) {
+            console.error("Could not copy selected chats:", error);
+            showOddiToast("Could not copy selected chats", "error");
         }
     }
 
@@ -24783,20 +24884,16 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
         event.preventDefault();
         event.stopPropagation();
         const choice = button.getAttribute("data-theme-choice") || "light";
-        try { localStorage.setItem("oddiTheme", choice); } catch (_) {}
-
-        const isDark = document.body.classList.contains("dark-mode");
-        const themeButton = document.getElementById("themeBtn");
-        if (choice === "dark" && !isDark) themeButton?.click();
-        if (choice === "light" && isDark) themeButton?.click();
-        if (choice === "system") {
-          const prefersDark = !!window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
-          if (prefersDark !== document.body.classList.contains("dark-mode")) themeButton?.click();
-        }
+        try { localStorage.setItem("oddi_theme_v1", choice); } catch (_) {}
+        window.__oddiApplyTheme?.(choice);
         settings.querySelectorAll("[data-theme-choice]").forEach(function (item) {
           item.classList.toggle("is-active", item === button);
         });
       }, true);
+    });
+    const savedThemeChoice = localStorage.getItem("oddi_theme_v1") || "light";
+    settings.querySelectorAll("[data-theme-choice]").forEach(function (item) {
+      item.classList.toggle("is-active", item.getAttribute("data-theme-choice") === savedThemeChoice);
     });
 
     const closeButton = document.getElementById("closeSettings");
@@ -25998,4 +26095,330 @@ body.dark-mode #oddiLastMessageCard .oddi-last-message-icon,
 body[data-theme="dark"] #oddiLastMessageCard .oddi-last-message-icon,
 body.dark-mode #oddiLastMessageCard .oddi-last-message-arrow,
 body[data-theme="dark"] #oddiLastMessageCard .oddi-last-message-arrow { color: #aaf1c0 !important; }
+</style>
+
+<style id="oddi-action-toast-style">
+#oddiActionToast {
+  position: fixed !important;
+  left: 50% !important;
+  bottom: 26px !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  width: max-content !important;
+  max-width: min(440px, calc(100vw - 32px)) !important;
+  box-sizing: border-box !important;
+  padding: 12px 17px !important;
+  border: 1px solid rgba(32, 199, 107, .28) !important;
+  border-radius: 14px !important;
+  background: rgba(20, 24, 22, .96) !important;
+  color: #f4f7f5 !important;
+  box-shadow: 0 12px 34px rgba(0,0,0,.34), 0 0 18px rgba(32,199,107,.10) !important;
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  line-height: 1.35 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: translate(-50%, 8px) !important;
+  transition: opacity .18s ease, transform .18s ease, visibility .18s ease !important;
+  pointer-events: none !important;
+}
+#oddiActionToast::before {
+  content: "✓";
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  border-radius: 50%;
+  background: rgba(32,199,107,.16);
+  color: #5ce28b;
+  font-size: 13px;
+  font-weight: 800;
+}
+#oddiActionToast.is-visible { opacity: 1 !important; visibility: visible !important; transform: translate(-50%, 0) !important; }
+#oddiActionToast.is-error { border-color: rgba(255, 100, 100, .34) !important; box-shadow: 0 12px 34px rgba(0,0,0,.34), 0 0 16px rgba(255,80,80,.09) !important; }
+#oddiActionToast.is-error::before { content: "!"; background: rgba(255,90,90,.15); color: #ff9a9a; }
+@media (max-width: 768px) and (pointer: coarse) {
+  #oddiActionToast { bottom: calc(76px + env(safe-area-inset-bottom)) !important; padding: 11px 15px !important; }
+}
+</style>
+
+
+<style id="oddi-settings-reference-sections">
+.oddi-pref-panel{max-width:900px!important;margin:0 auto!important;width:100%!important;box-sizing:border-box!important}
+.oddi-pref-card{background:var(--settings-card-bg,#f5f5f7);border:1px solid var(--settings-card-border,#dedfe5);border-radius:17px;margin:18px 0;overflow:hidden;color:var(--settings-text,#202127)}
+.oddi-pref-row{min-height:69px;padding:15px 16px;display:flex;align-items:center;justify-content:space-between;gap:18px;border-bottom:1px solid var(--settings-card-border,#dedfe5);cursor:pointer;box-sizing:border-box}
+.oddi-pref-row:last-child{border-bottom:0}.oddi-pref-row span{display:grid;gap:4px;min-width:0}.oddi-pref-row strong,.oddi-pref-block>strong,.oddi-profile-card>strong,.oddi-lock-heading strong{font-size:14px;font-weight:700}.oddi-pref-row small,.oddi-pref-block small,.oddi-lock-card>small,.oddi-profile-card small{font-size:12px;line-height:1.4;color:var(--settings-muted,#737783)}
+.oddi-pref-row input[type=checkbox],.oddi-switch-wrap input{appearance:none;width:44px;height:24px;flex:0 0 44px;border:0;border-radius:999px;background:#d4d5dc;position:relative;cursor:pointer;transition:background .18s ease;margin:0}
+.oddi-pref-row input[type=checkbox]::after,.oddi-switch-wrap span::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:white;box-shadow:0 1px 3px #0003;transition:transform .18s ease}
+.oddi-pref-row input[type=checkbox]:checked,.oddi-switch-wrap input:checked+span{background:#7964f5}
+.oddi-pref-row input[type=checkbox]:checked::after,.oddi-switch-wrap input:checked+span::after{transform:translateX(20px)}
+.oddi-pref-block{padding:20px;display:grid;gap:8px}.oddi-pref-block label{display:grid;gap:5px}.oddi-pref-block select,.oddi-profile-fields input,.oddi-profile-bio textarea{width:100%;min-height:44px;box-sizing:border-box;border:1px solid var(--settings-card-border,#dedfe5);border-radius:12px;padding:10px 13px;background:var(--settings-input-bg,#fff);color:var(--settings-text,#202127);font:inherit}.oddi-pref-block input[type=range]{accent-color:#7964f5;width:100%;margin:8px 0}.oddi-range-ends{display:flex;justify-content:space-between;color:var(--settings-muted,#737783);font-size:12px}.oddi-pref-note{color:var(--settings-muted,#737783);font-size:11px!important}.oddi-danger-zone{border-color:#e2505b!important}.oddi-danger-zone>strong{color:#dc424b!important}.oddi-danger-zone .oddi-pref-action{color:#dc424b!important;border-color:#dc424b!important}.oddi-pref-action,.oddi-pref-primary,.oddi-link-button{font:inherit;font-weight:650;cursor:pointer}.oddi-pref-action{justify-self:start;min-height:40px;margin-top:9px;padding:0 15px;border:1px solid var(--settings-card-border,#dedfe5);border-radius:12px;background:transparent;color:var(--settings-text,#202127)}.oddi-pref-primary{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:0 18px;border:0;border-radius:999px;background:#7964f5;color:white}.oddi-profile-card{padding:20px;display:grid;gap:16px}.oddi-profile-avatar-row{display:flex;align-items:center;gap:14px;margin-top:2px}.oddi-profile-avatar-row>button{width:64px;height:64px;border:2px solid var(--settings-card-border,#dedfe5);border-radius:50%;background:transparent;color:#7964f5;font-size:22px;font-weight:750;overflow:hidden;cursor:pointer}.oddi-profile-avatar-row img{width:100%;height:100%;object-fit:cover}.oddi-profile-avatar-row>div{display:grid;gap:4px}.oddi-link-button{border:0;background:transparent;color:#7964f5;padding:0;text-align:left}.oddi-profile-fields{display:grid;grid-template-columns:1fr 1fr;gap:14px}.oddi-profile-fields label,.oddi-profile-bio{display:grid;gap:7px;font-size:13px;font-weight:650}.oddi-profile-fields input[readonly]{opacity:.78}.oddi-profile-bio small{font-weight:400}.oddi-profile-bio textarea{resize:vertical;min-height:82px}.oddi-lock-card{padding:18px;display:grid;gap:12px}.oddi-lock-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}.oddi-switch-wrap{position:relative;display:block;width:44px;height:24px;flex:0 0 44px}.oddi-switch-wrap input{position:absolute;inset:0;opacity:0;width:44px;height:24px;z-index:1}.oddi-switch-wrap span{position:absolute;inset:0;background:#d4d5dc;border-radius:99px;transition:background .18s ease}.oddi-switch-wrap span::after{top:3px;left:3px;width:18px;height:18px}.oddi-lock-card .app-lock-settings-card{margin:4px 0 0;padding:0;border:0;background:transparent}.oddi-lock-card .app-lock-setting-head{display:none}.oddi-lock-card .app-lock-change-card{margin:0;padding-top:12px}.oddi-lock-card .app-lock-now-btn{max-width:240px}.oddi-lock-card .app-password-note{margin:0}.oddi-lock-card #oddiAppLockMount:empty{display:none}
+body.dark-mode .oddi-pref-card{--settings-card-bg:#171820;--settings-card-border:#292c3a;--settings-text:#e4e5ec;--settings-muted:#85899b;--settings-input-bg:#1b1d27;background:var(--settings-card-bg);border-color:var(--settings-card-border);color:var(--settings-text)}
+body:not(.dark-mode) .oddi-pref-card{--settings-card-bg:#fff;--settings-card-border:#e4e5eb;--settings-text:#242630;--settings-muted:#747887;--settings-input-bg:#fff}
+#oddiProfileStatus{font-size:12px;color:var(--settings-muted,#737783);min-height:16px}#oddiProfileStatus.is-error{color:#d64045}#oddiProfileStatus.is-success{color:#17884a}
+.odd-chat-meta{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 0;font-size:11px;color:#85899b}.odd-chat-meta span{padding:2px 7px;border:1px solid #85899b44;border-radius:99px}
+@media(max-width:768px){.oddi-settings-page-body{display:flex!important;flex-direction:column!important;min-height:0!important}.oddi-settings-nav{width:100%!important;max-height:100px!important;min-height:0!important;display:flex!important;flex-direction:row!important;overflow-x:auto!important;overflow-y:hidden!important;gap:5px!important;padding:7px!important;box-sizing:border-box!important}.oddi-settings-nav-item{flex:0 0 auto!important;white-space:nowrap!important;min-height:38px!important;padding:0 11px!important}.oddi-settings-page-content{min-width:0!important;width:100%!important;overflow-y:auto!important;padding:12px!important;box-sizing:border-box!important}.oddi-pref-panel{max-width:none!important}.oddi-pref-row{padding:13px 12px;gap:10px}.oddi-pref-row small{font-size:11px}.oddi-profile-fields{grid-template-columns:1fr}.oddi-profile-card,.oddi-pref-block{padding:15px}.oddi-settings-page{height:calc(100dvh - 16px)!important;max-height:calc(100dvh - 16px)!important}}
+/* Use one Settings card system across every tab in both color modes. */
+#settingsModal{--settings-card-bg:#fff;--settings-card-border:#e4e5eb;--settings-text:#242630;--settings-muted:#747887;--settings-input-bg:#fff}
+body.dark-mode #settingsModal{--settings-card-bg:#171820;--settings-card-border:#292c3a;--settings-text:#e4e5ec;--settings-muted:#85899b;--settings-input-bg:#1b1d27}
+#settingsModal .oddi-settings-group,#settingsModal .oddi-pref-card,#settingsModal .oddi-theme-choice{background:var(--settings-card-bg)!important;border-color:var(--settings-card-border)!important;color:var(--settings-text)!important}
+#settingsModal .oddi-settings-label,#settingsModal .oddi-settings-content-heading h4,#settingsModal .oddi-setting-copy strong,#settingsModal .oddi-settings-group{color:var(--settings-text)}
+#settingsModal .oddi-settings-content-heading p,#settingsModal .oddi-setting-copy small,#settingsModal .oddi-setting-row small{color:var(--settings-muted)}
+#settingsModal .oddi-setting-row{border-color:var(--settings-card-border)!important;color:var(--settings-text)!important}
+#settingsModal .oddi-setting-icon{background:var(--settings-input-bg)!important;border-color:var(--settings-card-border)!important;color:var(--settings-text)!important}
+#settingsModal .oddi-theme-choice.is-active{border-color:#7964f5!important;color:#7964f5!important;box-shadow:0 0 0 1px #7964f5!important}
+#settingsModal .oddi-voice-panel,#settingsModal .oddi-voice-panel .voice-option{background:var(--settings-input-bg)!important;border-color:var(--settings-card-border)!important;color:var(--settings-text)!important}
+#settingsModal .oddi-appearance-extra{padding:20px!important;display:grid;gap:12px!important}
+.oddi-font-size-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.oddi-font-size-grid button{min-height:44px;border:1px solid var(--settings-card-border);border-radius:999px;background:transparent;color:var(--settings-muted);cursor:pointer}
+.oddi-font-size-grid button.is-active{border-color:#7964f5;color:#7964f5;box-shadow:0 0 0 1px #7964f5}
+.oddi-font-preview{margin:8px 4px 0;font-size:var(--oddi-chat-font-size,15px);color:var(--settings-text)}
+#settingsModal .oddi-appearance-compact{margin:18px 0!important}
+.oddi-memory-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}
+.oddi-memory-stats .oddi-pref-card{margin:0;padding:17px;display:grid;justify-items:center;gap:6px}
+.oddi-memory-stats span{font-size:21px}.oddi-memory-stats strong{font-size:22px}.oddi-memory-stats small{color:var(--settings-muted)}
+.oddi-memory-list-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:22px 0 10px;color:var(--settings-text)}
+.oddi-memory-list-head h5{margin:0;font-size:15px}.oddi-memory-danger,.oddi-memory-item-meta button,.oddi-memory-item>button{border:0;background:transparent;color:#e5484d;cursor:pointer;font:inherit}
+.oddi-memory-filters{display:flex;gap:8px;overflow:auto;padding:2px 0 12px}.oddi-memory-filters button{white-space:nowrap;border:1px solid var(--settings-card-border);border-radius:999px;padding:6px 12px;background:transparent;color:var(--settings-muted);cursor:pointer}.oddi-memory-filters button.is-active{border-color:#7964f5;color:#7964f5}
+.oddi-memory-list{display:grid;gap:10px}.oddi-memory-item{margin:0;padding:16px}.oddi-memory-item-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.oddi-memory-item-meta span{border:1px solid #7964f555;border-radius:999px;color:#7964f5;padding:3px 9px;font-size:12px}.oddi-memory-item-meta code{color:var(--settings-muted);font-size:12px}.oddi-memory-item-meta button{margin-left:auto}.oddi-memory-item p{margin:12px 0;color:var(--settings-text);overflow-wrap:anywhere}.oddi-memory-item>button{color:#7964f5;padding:0}
+.oddi-memory-empty{padding:24px;border:1px dashed var(--settings-card-border);border-radius:14px;color:var(--settings-muted);text-align:center;line-height:1.5}
+.oddi-memory-add{padding:18px;display:grid;gap:14px}.oddi-memory-add>div{display:grid;grid-template-columns:minmax(110px,.7fr) minmax(0,2fr) auto;gap:9px}.oddi-memory-add input{min-width:0;height:42px;padding:0 12px;border:1px solid var(--settings-card-border);border-radius:11px;background:var(--settings-input-bg);color:var(--settings-text);font:inherit}
+html.oddi-compact-messages .user-message,html.oddi-compact-messages .bot-message{margin-block:5px!important;padding-block:9px!important}
+html[data-oddi-font-size="small"] .user-message,html[data-oddi-font-size="small"] .bot-message{font-size:13px!important}html[data-oddi-font-size="default"] .user-message,html[data-oddi-font-size="default"] .bot-message{font-size:15px!important}html[data-oddi-font-size="large"] .user-message,html[data-oddi-font-size="large"] .bot-message{font-size:17px!important}
+@media(max-width:768px){.oddi-memory-stats{gap:7px}.oddi-memory-stats .oddi-pref-card{padding:12px 5px}.oddi-memory-stats strong{font-size:18px}.oddi-memory-add>div{grid-template-columns:1fr}.oddi-memory-list-head{align-items:flex-start}.oddi-memory-list-head h5{font-size:14px}}
+</style>
+<script id="oddi-account-preferences-functional-v1">
+(()=>{
+  const defaults={privacy:{analytics:true,training:false,request_logging:true,crash_reporting:true,retention_days:"90"},chat_preferences:{enter_to_send:true,stream_responses:true,show_token_count:true,show_latency:true,show_provider:true,context_window:20},profile:{bio:"",avatar:""},memory:{enabled:true,auto_extract:true}};
+  let state=structuredClone(defaults), identity=null;
+  const $=(selector,root=document)=>root.querySelector(selector);
+  const show=(message,error=false)=>{if(window.showOddiToast)window.showOddiToast(message,error?"error":"success");else console.info(message)};
+  async function getJSON(url){const r=await fetch(url,{credentials:"same-origin"});if(!r.ok)throw new Error(await r.text()||`Request failed (${r.status})`);return r.json()}
+  async function saveState(){delete state.chat_preferences.default_provider;const r=await fetch('/api/settings',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({settings:state})});if(!r.ok)throw new Error(await r.text()||'Settings could not be saved');const data=await r.json();state=data.settings||state;window.__oddiChatPreferences=state.chat_preferences;}
+  function updateAvatar(data){const img=$('#oddiProfileAvatar'),initial=$('#oddiAvatarInitial');if(!img||!initial)return;if(data){img.src=data;img.hidden=false;initial.hidden=true}else{img.removeAttribute('src');img.hidden=true;initial.hidden=false}}
+  function syncAppLock(){const toggle=$('#toggleAppLockOptBtn'),proxy=$('#oddiAccountLockProxy');if(toggle&&proxy){proxy.checked=toggle.getAttribute('aria-pressed')==='true';proxy.disabled=false}}
+  function fill(){document.querySelectorAll('[data-privacy-pref]').forEach(el=>el.checked=!!state.privacy[el.dataset.privacyPref]);$('#oddiRetention').value=String(state.privacy.retention_days||'90');document.querySelectorAll('[data-chat-pref]').forEach(el=>el.checked=state.chat_preferences[el.dataset.chatPref]!==false);const range=$('#oddiContextWindow');range.value=String(state.chat_preferences.context_window||20);$('#oddiContextValue').value=`${range.value} msgs`;$('#oddiContextValue').textContent=`${range.value} msgs`;$('#oddiProfileName').value=identity?.name||'';$('#oddiProfileEmail').value=identity?.email||'';$('#oddiProfileBio').value=state.profile.bio||'';updateAvatar(state.profile.avatar||'');const name=identity?.name||'';$('#oddiAvatarInitial').textContent=name.trim().charAt(0).toUpperCase()||'?';$('#oddiMemoryEnabled').checked=state.memory.enabled!==false;$('#oddiMemoryAutoExtract').checked=state.memory.auto_extract!==false;window.__oddiMemorySettings=state.memory;syncAppLock();}
+  async function boot(){
+    try{const auth=await getJSON('/api/auth/me');identity=auth.user||null;const data=await getJSON('/api/settings');state={...defaults,...(data.settings||{})};state.privacy={...defaults.privacy,...state.privacy};state.chat_preferences={...defaults.chat_preferences,...state.chat_preferences};state.profile={...defaults.profile,...state.profile};state.memory={...defaults.memory,...state.memory};if(!data.settings?.memory){state.memory.enabled=localStorage.getItem('oddi_memory_enabled')!=='false';state.memory.auto_extract=state.memory.enabled;}}catch(_){identity=null;try{const saved=JSON.parse(localStorage.getItem('oddi_settings_fallback')||'{}');state={...defaults,...saved};state.privacy={...defaults.privacy,...state.privacy};state.chat_preferences={...defaults.chat_preferences,...state.chat_preferences};state.profile={...defaults.profile,...state.profile};state.memory={...defaults.memory,...state.memory};if(!saved.memory){state.memory.enabled=localStorage.getItem('oddi_memory_enabled')!=='false';state.memory.auto_extract=state.memory.enabled;}}catch(__){}}
+    window.__oddiChatPreferences=state.chat_preferences;fill();
+    // Reuse the existing local PIN controller and its actual toggle, PIN form, and lock overlay.
+    const lockCard=$('#accountSettingsModal .app-lock-settings-card');if(lockCard&&$('#oddiAppLockMount')&&!$('#oddiAppLockMount').contains(lockCard))$('#oddiAppLockMount').append(lockCard);
+    syncAppLock();$('#toggleAppLockOptBtn')?.addEventListener('click',()=>setTimeout(syncAppLock,0));$('#oddiAccountLockProxy')?.addEventListener('change',e=>{const actual=$('#toggleAppLockOptBtn');const current=actual?.getAttribute('aria-pressed')==='true';if(e.target.checked!==current)actual?.click();setTimeout(syncAppLock,0)});
+    const ua=navigator.userAgent||'';const device=/iphone|android|mobile/i.test(ua)?'Mobile device':/macintosh|mac os/i.test(ua)?'Mac':/windows/i.test(ua)?'Windows PC':'Current browser';$('#oddiCurrentSession').textContent=`${device} - ${navigator.language||'browser locale'} - this signed-in session`;
+  }
+  document.addEventListener('DOMContentLoaded',boot,{once:true});
+  $('#oddiContextWindow')?.addEventListener('input',e=>{const out=$('#oddiContextValue');out.value=`${e.target.value} msgs`;out.textContent=`${e.target.value} msgs`;});
+  $('#oddiSavePrivacy')?.addEventListener('click',async()=>{try{document.querySelectorAll('[data-privacy-pref]').forEach(el=>state.privacy[el.dataset.privacyPref]=el.checked);state.privacy.retention_days=$('#oddiRetention').value;await saveState();try{localStorage.setItem('oddi_settings_fallback',JSON.stringify(state))}catch(_){}show('Privacy preferences saved. Analytics, training and crash reporting remain inactive until those services are configured.');}catch(e){show(e.message,true)}});
+  $('#oddiSaveChatPrefs')?.addEventListener('click',async()=>{try{document.querySelectorAll('[data-chat-pref]').forEach(el=>state.chat_preferences[el.dataset.chatPref]=el.checked);state.chat_preferences.context_window=Number($('#oddiContextWindow').value);await saveState();try{localStorage.setItem('oddi_settings_fallback',JSON.stringify(state))}catch(_){}show('Chat preferences saved');}catch(e){show(e.message,true)}});
+  $('#oddiSaveProfile')?.addEventListener('click',async()=>{const status=$('#oddiProfileStatus');try{if(!identity)throw new Error('Sign in to edit your account profile.');const r=await fetch('/api/account/profile',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('#oddiProfileName').value,bio:$('#oddiProfileBio').value,avatar:state.profile.avatar||''})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Profile could not be saved');identity=data.user;state.profile=data.profile||state.profile;status.className='is-success';status.textContent='Profile saved';$('#oddiProfileName').value=identity.name;const name=identity.name||'';$('#oddiAvatarInitial').textContent=name.trim().charAt(0).toUpperCase()||'?';}catch(e){status.className='is-error';status.textContent=e.message}});
+  const choose=()=>$('#oddiAvatarFile')?.click();$('#oddiChooseAvatar')?.addEventListener('click',choose);$('#oddiAvatarButton')?.addEventListener('click',choose);
+  $('#oddiAvatarFile')?.addEventListener('change',e=>{const file=e.target.files?.[0];if(!file)return;if(file.size>2*1024*1024){show('Choose an image smaller than 2 MB.',true);e.target.value='';return}const reader=new FileReader();reader.onload=()=>{state.profile.avatar=String(reader.result||'');updateAvatar(state.profile.avatar)};reader.readAsDataURL(file)});
+  $('#oddiExportData')?.addEventListener('click',async()=>{try{const r=await fetch('/api/account/export',{credentials:'same-origin'});if(!r.ok)throw new Error('Sign in to export account data.');const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='oddi-data-export.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);show('Your data export has been downloaded.')}catch(e){show(e.message,true)}});
+  $('#oddiLogoutCurrent')?.addEventListener('click',()=>$('#logoutBtn')?.click()||$('#accountLogoutBtn')?.click()||location.assign('/logout'));
+  $('#oddiDeleteAccount')?.addEventListener('click',async()=>{if(!identity?.email){show('Sign in to delete an account.',true);return}if(!confirm('This permanently deletes your ODDI account and its stored data. Continue?'))return;const typed=prompt(`Type ${identity.email} to confirm account deletion:`);if(typed===null)return;if(typed.trim().toLowerCase()!==identity.email.trim().toLowerCase()){show('The email did not match. Account was not deleted.',true);return}try{const r=await fetch('/api/account',{method:'DELETE',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:typed})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Account deletion failed');location.assign(data.redirect||'/login')}catch(e){show(e.message,true)}});
+
+  // Dedicated settings memory manager, backed by the same per-user API as chat memory.
+  let memoryItems=[], memoryFilter='all';
+  const memList=$('#oddiMemoryList'), memFilters=$('#oddiMemoryFilters');
+  const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function memoryRequest(method,body){const r=await fetch('/api/memory',{method,credentials:'same-origin',headers:{'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{})});const data=await r.json().catch(()=>({}));if(!r.ok)throw new Error(data.error||'Memory request failed');return data;}
+  const memoryCategory=item=>String(item.key||'').includes('::')?String(item.key).split('::')[0]:(item.category||item.key||'Memory');
+  function renderMemories(){
+    if(!memList)return;
+    const categories=[...new Set(memoryItems.map(memoryCategory).filter(Boolean))];
+    $('#oddiMemoryCount').textContent=`(${memoryItems.length})`;
+    const chars=memoryItems.reduce((n,x)=>n+String(x.memory||'').length,0);
+    $('#oddiMemoryStats').innerHTML=`<div class="oddi-pref-card"><span>🧠</span><strong>${memoryItems.length}</strong><small>Total memories</small></div><div class="oddi-pref-card"><span>▤</span><strong>${chars.toLocaleString()}</strong><small>Stored characters</small></div><div class="oddi-pref-card"><span>◆</span><strong>${categories.length}</strong><small>Categories</small></div>`;
+    memFilters.innerHTML=['all',...categories].map(c=>`<button type="button" data-memory-filter="${esc(c)}" class="${memoryFilter===c?'is-active':''}">${c==='all'?'All':esc(c)}${c==='all'?` (${memoryItems.length})`:''}</button>`).join('');
+    const shown=memoryFilter==='all'?memoryItems:memoryItems.filter(x=>memoryCategory(x)===memoryFilter);
+    if(!shown.length){memList.innerHTML=`<div class="oddi-memory-empty">${memoryItems.length?'No memories in this category yet.':'No stored memories yet. Add one above, or enable auto-extract to save useful facts from conversations.'}</div>`;return;}
+    memList.innerHTML=shown.map(item=>`<article class="oddi-pref-card oddi-memory-item"><div class="oddi-memory-item-meta"><span>${esc(memoryCategory(item))}</span><code>${esc(item.key||'')}</code><button type="button" data-memory-delete="${encodeURIComponent(item.key||'')}" aria-label="Delete memory">Delete</button></div><p>${esc(item.memory||'')}</p><button type="button" data-memory-edit="${encodeURIComponent(item.key||'')}">Edit</button></article>`).join('');
+  }
+  async function loadMemories(){if(!memList)return;memList.innerHTML='<div class="oddi-memory-empty">Loading memories…</div>';try{const data=await memoryRequest('GET');memoryItems=Array.isArray(data.memories)?data.memories:[];renderMemories()}catch(e){memList.innerHTML=`<div class="oddi-memory-empty">Could not load memories. ${esc(e.message)}</div>`}}
+  memFilters?.addEventListener('click',e=>{const b=e.target.closest('[data-memory-filter]');if(!b)return;memoryFilter=b.dataset.memoryFilter;renderMemories()});
+  memList?.addEventListener('click',async e=>{const del=e.target.closest('[data-memory-delete]'), edit=e.target.closest('[data-memory-edit]');try{if(del){const item=memoryItems.find(x=>x.key===decodeURIComponent(del.dataset.memoryDelete));if(!item||!confirm('Delete this saved memory?'))return;await memoryRequest('DELETE',{key:item.key});await loadMemories();show('Memory deleted.')}else if(edit){const item=memoryItems.find(x=>x.key===decodeURIComponent(edit.dataset.memoryEdit));if(!item)return;const value=prompt('Edit this memory',item.memory||'');if(value===null||!value.trim())return;await memoryRequest('PUT',{key:item.key,memory:value.trim()});await loadMemories();show('Memory updated.')}}catch(err){show(err.message,true)}});
+  $('#oddiMemoryAddBtn')?.addEventListener('click',async()=>{const category=$('#oddiMemoryNewCategory').value.trim().replace(/::/g,' ').slice(0,40), value=$('#oddiMemoryNewValue').value.trim();if(!category||!value){show('Enter both a category and a memory.',true);return}try{await memoryRequest('PUT',{key:`${category}::${Date.now()}`,memory:value});$('#oddiMemoryNewValue').value='';await loadMemories();show('Memory saved.')}catch(e){show(e.message,true)}});
+  $('#oddiMemoryClearAll')?.addEventListener('click',async()=>{if(!memoryItems.length)return;if(!confirm(`Delete all ${memoryItems.length} saved memories?`))return;try{for(const item of [...memoryItems])await memoryRequest('DELETE',{key:item.key});await loadMemories();show('All memories deleted.')}catch(e){show(e.message,true);await loadMemories()}});
+  async function saveMemoryPrefs(){state.memory={enabled:$('#oddiMemoryEnabled').checked,auto_extract:$('#oddiMemoryAutoExtract').checked};window.__oddiMemorySettings=state.memory;try{localStorage.setItem('oddi_memory_enabled',String(state.memory.enabled));localStorage.setItem('oddi_settings_fallback',JSON.stringify(state));}catch(_){}window.__oddiSetMemoryEnabled?.(state.memory.enabled);await saveState();window.dispatchEvent(new CustomEvent('oddi:memory-setting-changed',{detail:state.memory}));}
+  $('#oddiMemoryEnabled')?.addEventListener('change',async()=>{try{await saveMemoryPrefs();show('Memory setting updated.')}catch(e){show(e.message,true)}});
+  $('#oddiMemoryAutoExtract')?.addEventListener('change',async()=>{try{await saveMemoryPrefs();show('Memory setting updated.')}catch(e){show(e.message,true)}});
+  document.querySelector('[data-settings-tab="memory"]')?.addEventListener('click',()=>{if(!memList.dataset.loaded){memList.dataset.loaded='1';loadMemories()}});
+  window.addEventListener('oddi:memory-setting-changed',e=>{if(!e.detail||!$('#oddiMemoryEnabled'))return;const enabled=e.detail.enabled!==false;$('#oddiMemoryEnabled').checked=enabled;if(state.memory.enabled!==enabled){state.memory.enabled=enabled;window.__oddiMemorySettings=state.memory;saveState().catch(err=>show(err.message,true));}});
+  loadMemories();
+
+  // Appearance options apply immediately and persist on this device.
+  const fontKey='oddi_font_size_v1', compactKey='oddi_compact_messages_v1';
+  function applyFontSize(size){if(!['small','default','large'].includes(size))size='default';document.documentElement.dataset.oddiFontSize=size;document.querySelectorAll('[data-font-size]').forEach(b=>b.classList.toggle('is-active',b.dataset.fontSize===size));document.documentElement.style.setProperty('--oddi-chat-font-size',({small:'13px',default:'15px',large:'17px'}[size]));}
+  let currentFont='default';try{currentFont=localStorage.getItem(fontKey)||'default'}catch(_){}applyFontSize(currentFont);
+  document.querySelectorAll('[data-font-size]').forEach(b=>b.addEventListener('click',()=>{currentFont=b.dataset.fontSize;applyFontSize(currentFont);try{localStorage.setItem(fontKey,currentFont)}catch(_){}}));
+  const compact=$('#oddiCompactMessages');let compactOn=false;try{compactOn=localStorage.getItem(compactKey)==='true'}catch(_){}if(compact){compact.checked=compactOn;document.documentElement.classList.toggle('oddi-compact-messages',compactOn);compact.addEventListener('change',()=>{document.documentElement.classList.toggle('oddi-compact-messages',compact.checked);try{localStorage.setItem(compactKey,String(compact.checked))}catch(_){}})}
+})();
+</script>
+
+<style id="oddi-settings-clipping-and-neutral-dark-fix">
+/* Let Settings flex items shrink to the available pane instead of clipping headings. */
+#settingsModal.oddi-settings-page-modal .oddi-settings-label {
+    padding-inline:6px !important;
+    box-sizing:border-box !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-settings-page-body,
+#settingsModal.oddi-settings-page-modal .oddi-settings-page-content,
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab,
+#settingsModal.oddi-settings-page-modal .oddi-settings-group,
+#settingsModal.oddi-settings-page-modal .oddi-pref-card {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-settings-page-content {
+  flex: 1 1 0% !important;
+  width: 0 !important;
+  overflow-x: hidden !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-settings-content-heading,
+#settingsModal.oddi-settings-page-modal .oddi-settings-content-heading h4,
+#settingsModal.oddi-settings-page-modal .oddi-settings-content-heading p {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-theme-grid {
+  width: 100% !important;
+  min-width: 0 !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-theme-choice { min-width: 0 !important; }
+@media (max-width: 768px) {
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-content { width: 100% !important; }
+}
+/* Small Settings view: use the full row for the active tab instead of squeezing
+   it beside the wide desktop category rail. */
+@media (max-width: 700px) {
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-body {
+    display: flex !important; flex-direction: column !important; width: 100% !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-nav {
+    display: flex !important; flex: 0 0 48px !important; flex-direction: row !important;
+    width: 100% !important; min-width: 0 !important; height: 48px !important;
+    padding: 5px 8px !important; gap: 5px !important; overflow-x: auto !important; overflow-y: hidden !important;
+    border-right: 0 !important; border-bottom: 1px solid #292929 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item {
+    flex: 0 0 auto !important; width: auto !important; min-width: max-content !important;
+    min-height: 36px !important; height: 36px !important; padding: 0 11px !important;
+    white-space: nowrap !important; font-size: 11px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-content {
+    flex: 1 1 0% !important; width: 100% !important; min-height: 0 !important;
+    padding: 16px 12px max(24px, env(safe-area-inset-bottom)) !important;
+  }
+}
+body.dark-mode #settingsModal .oddi-pref-primary,
+body.dark-mode #settingsModal .oddi-pref-primary:hover {
+  color: #fff !important; background: #080808 !important; border: 1px solid #454545 !important; box-shadow: none !important;
+}
+body.dark-mode #settingsModal .oddi-pref-row input[type="checkbox"]:checked,
+body.dark-mode #settingsModal .oddi-switch-wrap input:checked + span { background: #f2f2f2 !important; }
+body.dark-mode #settingsModal .oddi-theme-choice.is-active,
+body.dark-mode #settingsModal .oddi-font-size-grid button.is-active,
+body.dark-mode #settingsModal .oddi-memory-filters button.is-active {
+  color: #fff !important; border-color: #bcbcbc !important; box-shadow: 0 0 0 1px #777 !important;
+}
+body.dark-mode #settingsModal .oddi-link-button,
+body.dark-mode #settingsModal .oddi-memory-item > button,
+body.dark-mode #settingsModal .oddi-memory-item-meta span,
+body.dark-mode #settingsModal .oddi-lock-heading strong,
+body.dark-mode #settingsModal .oddi-profile-avatar-row > button { color: #eee !important; }
+body.dark-mode #settingsModal .oddi-memory-item-meta span { border-color: #555 !important; }
+body.dark-mode #settingsModal .oddi-pref-block input[type="range"] { accent-color: #d8d8d8 !important; }
+body.dark-mode #settingsModal .oddi-pref-row input[type="checkbox"]:checked::after { background: #111 !important; }
+body.dark-mode #settingsModal .oddi-settings-nav-item.is-active,
+body.dark-mode #settingsModal .oddi-settings-nav-item.is-active span { color: #fff !important; }
+body.dark-mode #settingsModal #voiceOptions .voice-option.selected {
+  color: #fff !important; background: #171717 !important; border-color: #777 !important;
+  box-shadow: inset 3px 0 0 #aaa !important;
+}
+
+body.dark-mode #settingsModal {
+    --settings-card-bg:#000;
+    --settings-card-border:#262626;
+    --settings-text:#f2f2f2;
+    --settings-muted:#929292;
+    --settings-input-bg:#050505;
+}
+body.dark-mode #settingsModal.oddi-settings-page-modal,
+body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-page,
+body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-page-header,
+body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-page-body,
+body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-page-content,
+body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-nav {
+    background:#000 !important;
+    color:#f2f2f2 !important;
+}
+body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item.is-active,
+body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item:hover {
+    background:#111 !important;
+    color:#fff !important;
+}
+body.dark-mode #settingsModal .oddi-settings-group,
+body.dark-mode #settingsModal .oddi-pref-card,
+body.dark-mode #settingsModal .oddi-theme-choice,
+body.dark-mode #settingsModal .oddi-voice-panel,
+body.dark-mode #settingsModal .oddi-voice-panel .voice-option,
+body.dark-mode #settingsModal .oddi-setting-select,
+body.dark-mode #settingsModal .oddi-pref-block select,
+body.dark-mode #settingsModal .oddi-profile-fields input,
+body.dark-mode #settingsModal .oddi-profile-bio textarea,
+body.dark-mode #settingsModal .oddi-memory-item,
+body.dark-mode #settingsModal .oddi-font-size-grid button,
+body.dark-mode #settingsModal .oddi-memory-filters button {
+    background:#000 !important;
+    color:#e8e8e8 !important;
+    border-color:#262626 !important;
+}
+body.dark-mode #settingsModal #languageSetting,
+body.dark-mode #settingsModal #oddiRetention {
+    background-color:#000 !important;
+    color:#e8e8e8 !important;
+}
+body.dark-mode #settingsModal .oddi-setting-row,
+body.dark-mode #settingsModal .oddi-danger-action,
+body.dark-mode #settingsModal .oddi-logout-action,
+body.dark-mode #settingsModal .oddi-account-route {
+    background:#000 !important;
+    border-color:#262626 !important;
+}
+body.dark-mode #settingsModal .oddi-setting-icon,
+body.dark-mode #settingsModal .oddi-account-avatar,
+body.dark-mode #settingsModal .oddi-profile-avatar-row > button {
+    background:#050505 !important;
+    color:#d0d0d0 !important;
+    border-color:#303030 !important;
+}
+body.dark-mode #settingsModal .oddi-theme-choice.is-active,
+body.dark-mode #settingsModal .oddi-font-size-grid button.is-active,
+body.dark-mode #settingsModal .oddi-memory-filters button.is-active,
+body.dark-mode #settingsModal .oddi-voice-panel .voice-option.selected {
+    background:#111 !important;
+    color:#fff !important;
+    border-color:#888 !important;
+    box-shadow:0 0 0 1px #555 !important;
+}
+body.dark-mode #settingsModal .oddi-pref-primary,
+body.dark-mode #settingsModal .oddi-pref-primary:hover,
+body.dark-mode #settingsModal .oddi-pref-row input[type="checkbox"]:checked,
+body.dark-mode #settingsModal .oddi-switch-wrap input:checked + span {
+    background:#f0f0f0 !important;
+    border-color:#f0f0f0 !important;
+    color:#050505 !important;
+}
+body.dark-mode #settingsModal .oddi-pref-block input[type="range"] { accent-color:#bdbdbd !important; }
+body.dark-mode #settingsModal .oddi-memory-item-meta span {
+    color:#d0d0d0 !important;
+    border-color:#555 !important;
+}
 </style>
