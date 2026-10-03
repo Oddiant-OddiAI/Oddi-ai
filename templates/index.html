@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,6 +33,8 @@
 
 <style id="install-button-fix">.install-btn{display:none;width:calc(100% - 20px);min-height:48px;margin:auto 10px 8px;padding:0 16px;border:none;border-radius:12px;background:#20c76b;color:#fff;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(32,199,107,.22);transition:transform .18s ease,background .18s ease,box-shadow .18s ease;}.install-btn:hover{background:#19b85f;transform:translateY(-1px);box-shadow:0 10px 24px rgba(32,199,107,.28);}.install-btn:active{transform:scale(.98);}body.dark-mode .install-btn{background:#20c76b;color:#fff;}
 </style>
+
+
 
 
 
@@ -2832,7 +2834,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261003-home-action-6">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -4661,8 +4663,10 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
 .oddi-say-hello{position:fixed;left:50%;bottom:91px;transform:translateX(-50%);z-index:599;border:1px solid rgba(32,199,107,.3);border-radius:999px;padding:8px 14px;background:rgba(32,199,107,.08);color:#16884a;font:600 13px/1.2 inherit;cursor:pointer;transition:background .16s ease,transform .16s ease,border-color .16s ease;}
 .oddi-say-hello:hover{background:rgba(32,199,107,.15);border-color:rgba(32,199,107,.55);transform:translateX(-50%) translateY(-1px)}
 body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);border-color:rgba(32,199,107,.28)}
+#chatbox:has(#welcomeContainer) ~ #oddiSayHello{display:block}
 @media(max-width:768px) and (pointer:coarse){.oddi-say-hello{bottom:65px;padding:7px 12px;font-size:12px}}
-.app.chat-started .oddi-say-hello{display:none}
+.oddi-say-hello{display:none}
+#chatbox:has(#welcomeContainer) ~ #oddiSayHello{display:block}
 </style>
 <script id="oddi-say-hello-handler">
 (()=>{
@@ -7018,6 +7022,13 @@ if (SpeechRecognition) {
 
 let conversations = [];
 Object.defineProperty(window, "oddiConversations", { configurable: true, get: () => conversations });
+window.__oddiConversationDataReady = false;
+window.__oddiConversationLoadStarted = false;
+
+function publishConversationDataReady() {
+    window.__oddiConversationDataReady = true;
+    window.dispatchEvent(new CustomEvent("oddi:conversations-loaded", { detail: { conversations } }));
+}
 
 const historyContainer = document.createElement("div");
 
@@ -7140,7 +7151,8 @@ function mergeConversationFromServer(localConversation, serverConversation) {
 }
 
 async function loadConversations() {
-    if (!isLoggedIn) { conversations = []; currentConversation = null; return; }
+    window.__oddiConversationLoadStarted = true;
+    if (!isLoggedIn) { conversations = []; currentConversation = null; renderHistory(); publishConversationDataReady(); return; }
     try {
         const response = await fetch("/api/conversations", { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) throw new Error(`Load conversations failed (${response.status})`);
@@ -7148,6 +7160,9 @@ async function loadConversations() {
         const serverConversations = Array.isArray(loadedConversations) ? loadedConversations.map(normalizeConversationObject) : [];
         const serverById = new Map(serverConversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => [String(c.id), c]));
         conversations = serverConversations.slice();
+        // Publish server chats immediately so the React sidebar can show and
+        // open them without waiting for recovery or legacy metadata migration.
+        publishConversationDataReady();
 
         for (const backup of getOddiLocalChatBackups()) {
             const id = String(backup.id);
@@ -7170,11 +7185,14 @@ async function loadConversations() {
             }
         }
 
+        renderHistory();
+        publishConversationDataReady();
         await migrateLegacyConversationState();
         clearCompletedPendingGeneration(conversations);
         notifyUnseenBackgroundResponses(conversations);
         currentConversation = null;
         renderHistory();
+        publishConversationDataReady();
         restoreLastOpenConversation();
         startConversationSync();
     } catch (error) {
@@ -7186,7 +7204,13 @@ async function loadConversations() {
             notifyUnseenBackgroundResponses(conversations);
             currentConversation = null;
             renderHistory();
+            publishConversationDataReady();
             restoreLastOpenConversation();
+        } else {
+            conversations = [];
+            currentConversation = null;
+            renderHistory();
+            publishConversationDataReady();
         }
     }
 }
@@ -7376,7 +7400,10 @@ async function syncConversationsFromServer(options = {}) {
         }
         if (clearCompletedPendingGeneration(conversations)) listChanged = true;
         notifyUnseenBackgroundResponses(conversations);
-        if (listChanged) renderHistory();
+        if (listChanged) {
+            renderHistory();
+            publishConversationDataReady();
+        }
         if (openConversationChanged && options.refreshOpen !== false && !generationActive && currentConversation !== null) openConversation(currentConversation);
         await retryDirtyConversationRecoveries();
     } catch (error) {
@@ -9863,9 +9890,16 @@ function showOddiToast(message, type) {
     window.clearTimeout(toast.__oddiHideTimer);
     toast.className = "oddi-action-toast" + (type === "error" ? " is-error" : "");
     toast.textContent = String(message || "Done");
+    window.__oddiShowToast = (text) => showOddiToast(text, 'success');
+    toast.style.left = "auto";
+    toast.style.right = "20px";
+    toast.style.top = "18px";
+    toast.style.bottom = "auto";
+    toast.style.left = "auto"; toast.style.right = "20px"; toast.style.top = "18px"; toast.style.bottom = "auto";
     requestAnimationFrame(() => toast.classList.add("is-visible"));
     toast.__oddiHideTimer = window.setTimeout(() => toast.classList.remove("is-visible"), 2600);
 }
+window.__oddiShowToast = (text) => showOddiToast(text, 'success');
 
 async function copyTextToClipboard(value) {
     const text = String(value || "");
@@ -12494,9 +12528,12 @@ function renderPinnedMessagesSection() {
     }
 }
 
-async function openConversation(
-    index
-) {
+async function openConversation(index) {
+    window.__oddiReturnToHome = false;
+    window.__oddiKeepSidebarOnFreshHome = false;
+    // Explicit history selection clears the fresh-chat navigation guard.
+    window.__oddiFreshChatActive = false;
+    window.__oddiFreshChatLockUntil = 0;
 
     /* New Chat is a real empty workspace. Any stale/programmatic
        openConversation call must not immediately put the previous chat back
@@ -12737,6 +12774,9 @@ window.__oddiWelcomeTemplate = window.__oddiWelcomeTemplate || (() => {
 
 async function newChat() {
 
+    const preserveDesktopSidebar = window.__oddiKeepSidebarOnFreshHome === true &&
+        !window.matchMedia("(max-width: 768px)").matches;
+
     /* Invalidate any in-flight conversation restoration and mark this
        workspace as a fresh chat. This prevents stale sidebar/sync callbacks
        from immediately reopening the previous conversation. */
@@ -12745,15 +12785,19 @@ async function newChat() {
     try { sessionStorage.setItem(ODDI_LAST_OPEN_CONVERSATION_KEY, ODDI_FRESH_CHAT_MARKER); } catch (_) {}
     window.dispatchEvent(new CustomEvent("oddi:conversation-opened", { detail: { id: null } }));
 
-    /* Close every sidebar presentation layer so New Chat always returns to the main workspace. */
-    try {
-        document.body.classList.remove("oddi-react-sidebar-open", "oddi-react-sidebar-collapsed");
-        const sidebarRoot = document.getElementById("oddi-react-sidebar-root");
-        sidebarRoot?.classList.remove("is-open", "is-collapsed");
-        sidebarRoot?.classList.add("is-closed");
-        window.dispatchEvent(new CustomEvent("oddi:sidebar-close"));
-        window.dispatchEvent(new CustomEvent("oddi:keep-sidebar-rail-visible"));
-    } catch (e) {}
+    /* Normal New Chat closes the sidebar. The collapsed desktop Home button
+       returns to the welcome screen without closing its sidebar or showing
+       the legacy fallback hamburger. */
+    if (!preserveDesktopSidebar) {
+        try {
+            document.body.classList.remove("oddi-react-sidebar-open", "oddi-react-sidebar-collapsed");
+            const sidebarRoot = document.getElementById("oddi-react-sidebar-root");
+            sidebarRoot?.classList.remove("is-open", "is-collapsed");
+            sidebarRoot?.classList.add("is-closed");
+            window.dispatchEvent(new CustomEvent("oddi:sidebar-close"));
+            window.dispatchEvent(new CustomEvent("oddi:keep-sidebar-rail-visible"));
+        } catch (e) {}
+    }
 
     /* Keep the existing welcome UI (including quick actions) as the template. */
     const existingWelcome = document.getElementById("welcomeContainer");
@@ -12816,7 +12860,10 @@ async function newChat() {
         /* New Chat changes ONLY the main greeting. Subtitle, cards, continue card,
            background, composer and the rest of the homepage remain untouched. */
         if (welcomeHeading) {
-            welcomeHeading.innerHTML = `<span class="welcome-line">${nextHeading}</span>`;
+            const originalHeading = window.__oddiReturnToHome
+                ? window.__oddiWelcomeTemplate?.querySelector(".welcome-message h2")?.innerHTML
+                : null;
+            welcomeHeading.innerHTML = originalHeading || `<span class="welcome-line">${nextHeading}</span>`;
         }
 
         chat.appendChild(welcome);
@@ -12937,19 +12984,17 @@ function applyOddiTheme(theme) {
     const preference = theme === "system" ? "system" : (theme === "dark" ? "dark" : "light");
     const isDark = preference === "dark" || (preference === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
 
-    document.body.classList.toggle(
-        "dark-mode",
-        isDark
-    );
+    document.body.classList.toggle("dark-mode", isDark);
+    document.body.classList.toggle("oddi-system-theme", preference === "system");
 
     if (isDark) {
-        themeBtn.innerHTML = "☀️";
-        themeBtn.title = "Switch to Light Mode";
+        themeBtn.innerHTML = preference === "system" ? "◐" : (isDark ? "☀️" : "🌙");
+        themeBtn.title = preference === "system" ? "System Mode" : "Switch to Light Mode";
         logo.src =
             "/static/logo-dark.png";
     } else {
-        themeBtn.innerHTML = "🌙";
-        themeBtn.title = "Switch to Dark Mode";
+        themeBtn.innerHTML = preference === "system" ? "◐" : (isDark ? "☀️" : "🌙");
+        themeBtn.title = preference === "system" ? "System Mode" : "Switch to Dark Mode";
         logo.src =
             "/static/logo.png";
     }
@@ -12966,15 +13011,14 @@ window.matchMedia?.("(prefers-color-scheme: dark)").addEventListener?.("change",
 });
 
 themeBtn.onclick = () => {
-    const nextTheme =
-        document.body.classList.contains("dark-mode")
-            ? "light"
-            : "dark";
-
+    const currentTheme = localStorage.getItem(ODDI_THEME_KEY) || "light";
+    const nextTheme = currentTheme === "light" ? "dark" : currentTheme === "dark" ? "system" : "light";
     localStorage.setItem(ODDI_THEME_KEY, nextTheme);
-
     applyOddiTheme(nextTheme);
+    window.dispatchEvent(new CustomEvent("oddi:theme-changed", { detail: { theme: nextTheme } }));
+    window.__oddiShowToast?.(`Appearance: ${nextTheme === "system" ? "System" : nextTheme === "dark" ? "Dark" : "Light"} mode`);
 };
+
 
 /* 
    PWA INSTALL / ADD TO HOME SCREEN
@@ -18369,7 +18413,7 @@ body.dark-mode .history-item.chat-selected.active-chat{background:#151515 !impor
 
 /* 6. Subtle AI identity, no avatar/robot. */
 .welcome-message::before{
-    content:"✦ Career AI";
+    content:"✦ ODDI-AI";
     display:block !important;
     width:max-content !important;
     margin:0 auto 9px !important;
@@ -18971,7 +19015,7 @@ body.dark-mode .input-area{background:#111 !important;border-color:#2a2a2a !impo
 
 /* 3. More recognizable Career AI identity. */
 .welcome-message::before{
-    content:"✦ CAREER AI" !important;
+    content:"✦ ODDI-AI" !important;
     color:var(--oddi-accent) !important;
     font-size:10px !important;
     font-weight:800 !important;
@@ -19915,7 +19959,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261003-home-action-6"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -20458,6 +20502,8 @@ body.dark-mode .home-goal-chip:focus-visible {
   body.oddi-react-sidebar-open #oddi-hard-sidebar-launcher{display:none !important;}
   @media (max-width:768px){
     #oddi-hard-sidebar-launcher{left:10px !important;top:12px !important;}
+    #menuBtn.menu-btn,#oddi-hard-sidebar-launcher{display:none !important;}
+    #oddi-react-sidebar-root .oddi-rs-rail.is-sidebar-open{display:none !important;}
   }
 </style>
 <style id="oddi-sidebar-backdrop-state-fix">
@@ -20518,12 +20564,14 @@ body.dark-mode #exportChatMenu.export-chat-menu.show{background:#111 !important;
   var btn=document.getElementById("oddi-hard-sidebar-launcher");
   if(!btn) return;
   function syncHardLauncher(){
-    var blocked = !!(
+    var reactRailPresent = !!document.querySelector("#oddi-react-sidebar-root .oddi-rs-rail");
+    var blocked = reactRailPresent || !!(
       document.body.classList.contains("oddi-splash-active") ||
       document.body.classList.contains("oddi-react-sidebar-open") ||
       document.body.classList.contains("oddi-memory-workspace-open") ||
       document.querySelector("#memoryModal.show,#settingsModal.show,#oddiShareModal.show,#exportChatMenu.show,#headerMoreOverlay.show,#accountSettingsModal.show,.utility-modal.show,#binModal.show,#appLockOverlay[aria-hidden=\"false\"]")
     );
+    btn.style.display = blocked ? "none" : "flex";
     btn.style.visibility = blocked ? "hidden" : "visible";
     btn.style.opacity = blocked ? "0" : "1";
     btn.style.pointerEvents = blocked ? "none" : "auto";
@@ -20538,14 +20586,14 @@ body.dark-mode #exportChatMenu.export-chat-menu.show{background:#111 !important;
     }
   }
   btn.addEventListener("click",openSidebarHard);
-  window.addEventListener("oddi:sidebar-close",function(){btn.style.display="flex";});
+  window.addEventListener("oddi:sidebar-close",syncHardLauncher);
   window.addEventListener("oddi:sidebar-open",function(){btn.style.display="none"; syncHardLauncher();});
-  window.addEventListener("oddi:keep-sidebar-rail-visible",function(){btn.style.display="flex"; syncHardLauncher();});
+  window.addEventListener("oddi:keep-sidebar-rail-visible",syncHardLauncher);
   new MutationObserver(syncHardLauncher).observe(document.body,{attributes:true,attributeFilter:["class"],childList:true,subtree:true});
   syncHardLauncher();
 })();
 </script>
-<script src="/static/oddi-sidebar/oddi-sidebar.js"></script>
+<script src="/static/oddi-sidebar/oddi-sidebar.js?v=20261003-home-action-6"></script>
 <style id="oddi-spark-mobile-final-fix">
 /* FINAL: circuit signals remain visible on mobile; reduced-motion still wins. */
 @media (max-width: 768px) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {
@@ -24244,6 +24292,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
   }
 
   function keepClosedRailState() {
+    if (window.__oddiKeepSidebarOnFreshHome === true) return;
     if (document.body.classList.contains("oddi-react-sidebar-open")) return;
     if (document.body.classList.contains("oddi-memory-workspace-open")) return;
 
@@ -24425,7 +24474,10 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
     } catch(e) {
       index = Math.floor(Math.random() * greetings.length);
     }
-    if (heading) heading.innerHTML = '<span class="welcome-line">' + greetings[index] + '</span>';
+        var originalHeading = window.__oddiReturnToHome && template.querySelector(".welcome-message h2");
+        if (heading) heading.innerHTML = originalHeading
+            ? originalHeading.innerHTML
+            : '<span class="welcome-line">' + greetings[index] + '</span>';
 
     chat.classList.remove("ui-scrolled");
     document.querySelector(".app")?.classList.remove("chat-started");
@@ -24444,6 +24496,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
       if (!isFresh() || Date.now() - started > 1800 || Date.now() > freshRepairUntil) {
         clearInterval(freshRepairTimer);
         freshRepairTimer = null;
+                window.__oddiReturnToHome = false;
         return;
       }
       buildFreshView();
@@ -24794,15 +24847,12 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
   }
 
   /* System theme should follow the OS and remain usable after reopening Settings. */
-  function applySystemTheme(){
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const isDark = document.body.classList.contains('dark-mode');
-    if (prefersDark !== isDark) document.getElementById('themeBtn')?.click();
-  }
   const systemChoice = settings.querySelector('[data-theme-choice="system"]');
   systemChoice?.addEventListener('click', function(){
-    try { localStorage.setItem('oddiTheme','system'); } catch(_) {}
-    applySystemTheme();
+    try { localStorage.setItem('oddi_theme_v1','system'); } catch(_) {}
+    window.__oddiApplyTheme?.('system');
+    window.dispatchEvent(new CustomEvent('oddi:theme-changed', { detail: { theme: 'system' } }));
+    window.__oddiShowToast?.('Appearance: System mode');
   }, true);
 
   /* Account is a normal Settings workspace tab, never the legacy centered dialog. */
@@ -24885,6 +24935,8 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
         const choice = button.getAttribute("data-theme-choice") || "light";
         try { localStorage.setItem("oddi_theme_v1", choice); } catch (_) {}
         window.__oddiApplyTheme?.(choice);
+        window.dispatchEvent(new CustomEvent("oddi:theme-changed", { detail: { theme: choice } }));
+        window.__oddiShowToast?.(`Appearance: ${choice === "system" ? "System" : choice === "dark" ? "Dark" : "Light"} mode`);
         settings.querySelectorAll("[data-theme-choice]").forEach(function (item) {
           item.classList.toggle("is-active", item === button);
         });
@@ -25330,8 +25382,7 @@ body.dark-mode #oddiLastMessageCard .oddi-last-message-title{color:#e5e7e5 !impo
 }
 </style>
 
-</body>
-</html>
+
 
 <style id="oddi-settings-touch-sidebar-and-bottom-v1">
 /* Settings workspace sits flush against the real expanded sidebar and viewport bottom. */
@@ -26099,8 +26150,10 @@ body[data-theme="dark"] #oddiLastMessageCard .oddi-last-message-arrow { color: #
 <style id="oddi-action-toast-style">
 #oddiActionToast {
   position: fixed !important;
-  left: 50% !important;
-  bottom: 26px !important;
+  left: auto !important;
+  right: 20px !important;
+  top: 18px !important;
+  bottom: auto !important;
   z-index: 2147483647 !important;
   display: flex !important;
   align-items: center !important;
@@ -26120,7 +26173,7 @@ body[data-theme="dark"] #oddiLastMessageCard .oddi-last-message-arrow { color: #
   line-height: 1.35 !important;
   opacity: 0 !important;
   visibility: hidden !important;
-  transform: translate(-50%, 8px) !important;
+  transform: translateY(8px) !important;
   transition: opacity .18s ease, transform .18s ease, visibility .18s ease !important;
   pointer-events: none !important;
 }
@@ -26137,11 +26190,11 @@ body[data-theme="dark"] #oddiLastMessageCard .oddi-last-message-arrow { color: #
   font-size: 13px;
   font-weight: 800;
 }
-#oddiActionToast.is-visible { opacity: 1 !important; visibility: visible !important; transform: translate(-50%, 0) !important; }
+#oddiActionToast.is-visible { opacity: 1 !important; visibility: visible !important; transform: translateY(0) !important; }
 #oddiActionToast.is-error { border-color: rgba(255, 100, 100, .34) !important; box-shadow: 0 12px 34px rgba(0,0,0,.34), 0 0 16px rgba(255,80,80,.09) !important; }
 #oddiActionToast.is-error::before { content: "!"; background: rgba(255,90,90,.15); color: #ff9a9a; }
 @media (max-width: 768px) and (pointer: coarse) {
-  #oddiActionToast { bottom: calc(76px + env(safe-area-inset-bottom)) !important; padding: 11px 15px !important; }
+  #oddiActionToast { right: 12px !important; top: calc(12px + env(safe-area-inset-top)) !important; padding: 11px 15px !important; }
 }
 </style>
 
@@ -26421,3 +26474,66 @@ body.dark-mode #settingsModal .oddi-memory-item-meta span {
     border-color:#555 !important;
 }
 </style>
+<style id="oddi-wide-home-canvas">
+@media (min-width: 769px) {
+    #oddiSuggestionCards {
+        width: min(704px, calc(100% - 48px)) !important;
+        margin-top: 18px !important;
+        gap: 9px !important;
+    }
+    #oddiSuggestionCards .oddi-suggestion-card {
+        min-height: 66px !important;
+        padding: 10px 13px !important;
+    }
+    #oddiSuggestionCards .oddi-suggestion-copy strong { font-size: 13.5px !important; }
+    #oddiSuggestionCards .oddi-suggestion-copy small { font-size: 11px !important; }
+    #oddiLastMessageCard {
+        width: min(348px, calc(100% - 48px)) !important;
+        min-height: 58px !important;
+        margin-top: 11px !important;
+    }
+    .input-area {
+        width: min(990px, calc(100% - 48px)) !important;
+        height: 68px !important;
+        min-height: 68px !important;
+    }
+}
+</style>
+<style id="oddi-system-theme-surfaces">
+/* Quiet Sage: a dedicated sage palette for the System appearance. */
+body.oddi-system-theme { --os-canvas:#E7ECE8; --os-sidebar:#DCE5DE; --os-surface:#F5F7F4; --os-text:#24352B; --os-muted:#607067; --os-accent:#668B72; --os-border:#C9D5CC; --os-shadow:rgba(36,53,43,.10); }
+body.oddi-system-theme.dark-mode { --os-canvas:#19221C; --os-sidebar:#202B23; --os-surface:#222E25; --os-text:#E7EEE8; --os-muted:#A4B3A7; --os-accent:#91B39A; --os-border:#3A4A3E; --os-shadow:rgba(0,0,0,.28); }
+body.oddi-system-theme, body.oddi-system-theme .app { background:var(--os-canvas) !important; color:var(--os-text) !important; }
+body.oddi-system-theme .header { background:color-mix(in srgb,var(--os-canvas) 94%,transparent) !important; border-bottom-color:var(--os-border) !important; color:var(--os-text) !important; }
+body.oddi-system-theme .chatbox { background:linear-gradient(var(--os-canvas),var(--os-canvas)) !important; color:var(--os-text) !important; }
+body.oddi-system-theme .chatbox::before { opacity:.16 !important; filter:saturate(.55) sepia(.12) !important; }
+body.oddi-system-theme .welcome-message h2 { color:var(--os-text) !important; }
+body.oddi-system-theme .welcome-message > p { color:var(--os-muted) !important; }
+body.oddi-system-theme .welcome-message::before { color:var(--os-accent) !important; }
+body.oddi-system-theme .action-card,
+body.oddi-system-theme .oddi-suggestion-card,
+body.oddi-system-theme .oddi-last-message-card,
+body.oddi-system-theme .home-next-move,
+body.oddi-system-theme .home-learning-card,
+body.oddi-system-theme .bot-message { background:var(--os-surface) !important; border-color:var(--os-border) !important; color:var(--os-text) !important; box-shadow:0 8px 24px var(--os-shadow) !important; }
+body.oddi-system-theme .action-card:hover,
+body.oddi-system-theme .oddi-suggestion-card:hover { background:color-mix(in srgb,var(--os-surface),var(--os-accent) 8%) !important; border-color:var(--os-accent) !important; }
+body.oddi-system-theme .input-area { background:var(--os-surface) !important; border-color:var(--os-border) !important; color:var(--os-text) !important; box-shadow:0 12px 34px var(--os-shadow) !important; }
+body.oddi-system-theme .input-area textarea { color:var(--os-text) !important; }
+body.oddi-system-theme .input-area textarea::placeholder { color:var(--os-muted) !important; }
+body.oddi-system-theme .attach-btn,
+body.oddi-system-theme .dictation-btn,
+body.oddi-system-theme .voice-btn { background:color-mix(in srgb,var(--os-sidebar),var(--os-surface) 45%) !important; color:var(--os-text) !important; }
+body.oddi-system-theme .send-btn { background:#36533F !important; color:#F5F7F4 !important; }
+body.oddi-system-theme.dark-mode .send-btn { background:#DCE8DE !important; color:#19221C !important; }
+body.oddi-system-theme #themeBtn,
+body.oddi-system-theme .header-more-btn { background:var(--os-surface) !important; border-color:var(--os-border) !important; color:var(--os-text) !important; }
+body.oddi-system-theme #sidebar.sidebar { background:var(--os-sidebar) !important; color:var(--os-text) !important; border-color:var(--os-border) !important; }
+body.oddi-system-theme .oddi-rs-sidebar { background:var(--os-sidebar) !important; color:var(--os-text) !important; border-color:var(--os-border) !important; box-shadow:8px 0 28px var(--os-shadow) !important; }
+body.oddi-system-theme .oddi-rs-sidebar .oddi-rs-chat.active,
+body.oddi-system-theme .oddi-rs-sidebar .oddi-rs-chat:hover,
+body.oddi-system-theme .oddi-rs-sidebar .oddi-rs-mini-chat.active,
+body.oddi-system-theme .oddi-rs-sidebar .oddi-rs-mini-chat:hover { background:color-mix(in srgb,var(--os-sidebar),var(--os-accent) 18%) !important; color:var(--os-text) !important; }
+</style>
+</body>
+</html>

@@ -23,7 +23,33 @@ body.dark-mode #oddi-react-sidebar-root {
   --rs-dim: #555555;
 }
 
+/* A system-selected appearance gets its own soft slate/green surface. */
+body.oddi-system-theme #oddi-react-sidebar-root {
+  --rs-bg: #DCE5DE;
+  --rs-surface: #F5F7F4;
+  --rs-hover: #D3DED5;
+  --rs-active: #CBD8CE;
+  --rs-border: #C9D5CC;
+  --rs-text: #24352B;
+  --rs-muted: #607067;
+  --rs-dim: #829087;
+}
+body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
+  --rs-bg: #202B23;
+  --rs-surface: #222E25;
+  --rs-hover: #2C3A30;
+  --rs-active: #35483A;
+  --rs-border: #3A4A3E;
+  --rs-text: #E7EEE8;
+  --rs-muted: #A4B3A7;
+  --rs-dim: #829087;
+}
+
 #oddi-react-sidebar-root * { box-sizing: border-box; }
+
+/* The legacy page hamburger is a separate control from the React sidebar.
+   The React rail owns the mobile opener; desktop keeps its existing sidebar. */
+#menuBtn.menu-btn { display: none !important; }
 
 .oddi-rs-sidebar {
   position: fixed;
@@ -128,6 +154,28 @@ body.dark-mode #oddi-react-sidebar-root {
   background: var(--rs-hover);
   color: var(--rs-text);
 }
+
+.oddi-rs-home {
+  width: 38px;
+  height: 36px;
+  flex: 0 0 36px;
+  align-self: center;
+  margin-bottom: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--rs-text) !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.oddi-rs-home:hover { opacity: .82; }
+.oddi-rs-home:focus-visible,
+.oddi-rs-new:focus-visible { outline: 2px solid rgba(255,255,255,.7); outline-offset: 2px; }
+.oddi-rs-home svg,
+.oddi-rs-new svg { flex: 0 0 auto; }
 
 .oddi-rs-search {
   height: 33px;
@@ -453,9 +501,36 @@ body.dark-mode #oddi-react-sidebar-root {
   width: 31px !important;
 }
 
-.oddi-rs-sidebar.collapsed .oddi-rs-main { padding: 9px 6px; }
-.oddi-rs-sidebar.collapsed .oddi-rs-new { width: 38px; padding: 0; }
+.oddi-rs-sidebar.collapsed .oddi-rs-main { padding: 9px 0; align-items: center; }
+.oddi-rs-sidebar.collapsed .oddi-rs-new,
+.oddi-rs-sidebar.collapsed .oddi-rs-home {
+  width: 38px;
+  min-width: 38px;
+  align-self: center !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+.oddi-rs-sidebar.collapsed .oddi-rs-new { padding: 0; }
+.oddi-rs-sidebar.collapsed .oddi-rs-new {
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent;
+  color: var(--rs-text) !important;
+  box-shadow: none;
+  filter: none;
+}
+.oddi-rs-sidebar.collapsed .oddi-rs-new:hover { background: transparent !important; color: var(--rs-text); }
+.oddi-rs-sidebar.collapsed .oddi-rs-home,
+.oddi-rs-sidebar.collapsed .oddi-rs-new { background: transparent !important; }
+.oddi-rs-sidebar.collapsed .oddi-rs-home { color: var(--rs-text) !important; border: 0 !important; border-radius: 0; }
+.oddi-rs-sidebar.collapsed .oddi-rs-home { margin-bottom: 4px; }
 .oddi-rs-sidebar.collapsed .oddi-rs-search { display: none; }
+.oddi-rs-sidebar.collapsed .oddi-rs-header { justify-content: flex-start; padding: 0 6px; }
+.oddi-rs-sidebar.collapsed .oddi-rs-brand { flex: 0 0 38px; width: 38px; height: 38px; margin: 0; justify-content: center; }
+.oddi-rs-sidebar.collapsed .oddi-rs-brand img { filter: drop-shadow(0 0 5px rgba(255,255,255,.42)); }
+body:not(.dark-mode) .oddi-rs-sidebar.collapsed .oddi-rs-brand img { filter: drop-shadow(0 0 5px rgba(10,70,35,.48)); }
+body.oddi-system-theme .oddi-rs-sidebar.collapsed .oddi-rs-home,
+body.oddi-system-theme .oddi-rs-sidebar.collapsed .oddi-rs-new { background: var(--rs-active) !important; }
 
 .oddi-rs-rail {
   position: fixed;
@@ -522,6 +597,25 @@ body.dark-mode #oddi-react-sidebar-root {
 .oddi-rs-mini-chat.active,
 .oddi-rs-mini-chat:hover { background: var(--rs-active); color: var(--rs-text); }
 
+.oddi-rs-sidebar.collapsed .oddi-rs-history {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1px 0 7px;
+  scrollbar-width: none;
+}
+.oddi-rs-sidebar.collapsed .oddi-rs-history::-webkit-scrollbar { display: none; }
+.oddi-rs-sidebar.collapsed .oddi-rs-mini-chat {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  margin: 0;
+  padding: 0;
+}
+.oddi-rs-sidebar.collapsed .oddi-rs-history { width: 100%; align-items: center; }
+.oddi-rs-sidebar.collapsed .oddi-rs-mini-chat { align-self: center; }
+
 .oddi-rs-backdrop { display: none; }
 
 @media (max-width: 768px) {
@@ -536,6 +630,14 @@ body.dark-mode #oddi-react-sidebar-root {
     background: rgba(0,0,0,.35);
   }
   .oddi-rs-sidebar { width: min(208px, 88vw); }
+}
+
+/* Final mobile opener ownership: only the React rail is allowed to show. */
+@media (max-width: 768px) and (pointer: coarse) {
+  #menuBtn.menu-btn,
+  #oddi-hard-sidebar-launcher { display: none !important; }
+  #oddi-react-sidebar-root .oddi-rs-rail.is-sidebar-open { visibility: hidden !important; opacity: 0 !important; pointer-events: none !important; }
+  #oddi-react-sidebar-root .oddi-rs-rail.is-sidebar-closed { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
 }
 
 

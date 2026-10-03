@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
-  LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search,
-  Settings, Sun, X, Pencil, Trash2, Menu
+  Home, LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search,
+  Settings, Sun, X, Pencil, Trash2, Menu, Monitor
 } from 'lucide-react';
 
 type Conversation = {
@@ -21,6 +21,17 @@ type OddiWindow = Window & {
   oddiConversations?: Conversation[];
   __oddiOpenConversation?: (index: number) => void;
   __oddiOpenSidebar?: () => void;
+  newChat?: () => Promise<unknown>;
+  __oddiWelcomeTemplate?: HTMLElement | null;
+  __oddiReturnToHome?: boolean;
+  __oddiApplyTheme?: (theme: string) => void;
+  __oddiShowToast?: (message: string) => void;
+  showOddiToast?: (message: string, type?: string) => void;
+  __oddiFreshChatActive?: boolean;
+  __oddiFreshChatLockUntil?: number;
+  __oddiKeepSidebarOnFreshHome?: boolean;
+  __oddiConversationDataReady?: boolean;
+  __oddiConversationLoadStarted?: boolean;
   togglePinConversation?: (conversation: Conversation) => Promise<unknown>;
   toggleArchiveConversation?: (conversation: Conversation) => Promise<unknown>;
   updateConversationMetadata?: (conversation: Conversation, patch: Record<string, unknown>) => Promise<boolean>;
@@ -109,16 +120,36 @@ async function saveRenamedConversation(c: Conversation, title: string) {
   return true;
 }
 
-function openConversationInLegacyApp(c: Conversation, fallbackIndex: number) {
+function openConversationInLegacyApp(c: Conversation) {
   const key = String(c.id);
   const row = document.querySelector<HTMLElement>(`.history-item[data-conversation-id="${CSS.escape(key)}"]`);
   if (row) { row.click(); return; }
 
-  const list = Array.isArray(WIN().oddiConversations) ? WIN().oddiConversations! : [];
-  const index = list.findIndex(item => String(item?.id) === key);
-  const opener = WIN().__oddiOpenConversation;
-  if (opener && index >= 0) { opener(index); return; }
-  if (opener && fallbackIndex >= 0) opener(fallbackIndex);
+  const openById = () => {
+    const list = Array.isArray(WIN().oddiConversations) ? WIN().oddiConversations! : [];
+    const index = list.findIndex(item => String(item?.id) === key);
+    const opener = WIN().__oddiOpenConversation;
+    if (!opener || index < 0) return false;
+    void opener(index);
+    return true;
+  };
+
+  if (openById()) return;
+
+  // The React list can arrive before the legacy viewer finishes hydrating.
+  // Keep this selection by ID and resolve its real index when data is ready.
+  const onReady = () => {
+    if (!openById()) return;
+    window.removeEventListener('oddi:conversations-loaded', onReady);
+    window.removeEventListener('oddi:conversations-changed', onReady);
+    window.clearTimeout(timeout);
+  };
+  window.addEventListener('oddi:conversations-loaded', onReady);
+  window.addEventListener('oddi:conversations-changed', onReady);
+  const timeout = window.setTimeout(() => {
+    window.removeEventListener('oddi:conversations-loaded', onReady);
+    window.removeEventListener('oddi:conversations-changed', onReady);
+  }, 20000);
 }
 
 function openExistingModal(id: string) {
@@ -139,10 +170,18 @@ export default function Sidebar() {
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Conversation[]>([]);
   const [active, setActive] = useState<string | number | null>(null);
+  const [chatStarted, setChatStarted] = useState(() => !document.getElementById('welcomeContainer'));
   const [generatingConversationId, setGeneratingConversationId] = useState<string | null>(getPendingConversationId);
   const [menuId, setMenuId] = useState<string | number | null>(null);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>(document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
+    try {
+      const saved = localStorage.getItem('oddi_theme_v1');
+      if (saved === 'system' || saved === 'light' || saved === 'dark') return saved;
+    } catch {}
+    return document.body.classList.contains('dark-mode') ? 'dark' : 'light';
+  });
+  const [isDarkAppearance, setIsDarkAppearance] = useState(() => document.body.classList.contains('dark-mode'));
   const loggedIn = document.body.dataset.loggedIn === 'true';
   const username = document.body.dataset.username?.trim() || '';
   const email = document.body.dataset.email?.trim() || '';
@@ -170,6 +209,18 @@ export default function Sidebar() {
     return () => document.body.classList.remove('oddi-react-sidebar-open', 'oddi-react-sidebar-collapsed');
   }, [open, collapsed]);
 
+  useEffect(() => {
+    const app = document.querySelector('.app');
+    if (!app) return;
+    const syncChatView = () => setChatStarted(
+      app.classList.contains('chat-started') || !document.getElementById('welcomeContainer')
+    );
+    const observer = new MutationObserver(syncChatView);
+    observer.observe(app, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
+    syncChatView();
+    return () => observer.disconnect();
+  }, []);
+
   // Expose the React-owned open action to the legacy template hamburger and
   // gesture handler. They must never mutate sidebar DOM classes directly.
   useEffect(() => {
@@ -184,9 +235,22 @@ export default function Sidebar() {
   }, []);
 
   useEffect(() => {
-    const observer = new MutationObserver(() => setTheme(document.body.classList.contains('dark-mode') ? 'dark' : 'light'));
+    const sync = () => setIsDarkAppearance(document.body.classList.contains('dark-mode'));
+    const observer = new MutationObserver(sync);
     observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
+    const onSystemTheme = () => {
+      if (localStorage.getItem('oddi_theme_v1') === 'system') WIN().__oddiApplyTheme?.('system');
+      sync();
+    };
+    const onThemeChanged = (event: Event) => {
+      const next = (event as CustomEvent<{theme?: string}>).detail?.theme;
+      if (next === 'light' || next === 'dark' || next === 'system') setTheme(next);
+      sync();
+    };
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    media.addEventListener?.('change', onSystemTheme);
+    window.addEventListener('oddi:theme-changed', onThemeChanged);
+    return () => { observer.disconnect(); media.removeEventListener?.('change', onSystemTheme); window.removeEventListener('oddi:theme-changed', onThemeChanged); };
   }, []);
 
   useEffect(() => {
@@ -420,10 +484,28 @@ export default function Sidebar() {
   }
 
   useEffect(() => {
-    load();
+    const syncFromLegacy = (event?: Event) => {
+      const detail = (event as CustomEvent<{ conversations?: Conversation[] }> | undefined)?.detail;
+      const list = Array.isArray(detail?.conversations)
+        ? detail!.conversations!
+        : Array.isArray(WIN().oddiConversations) ? WIN().oddiConversations! : [];
+      setItems(list.slice());
+      const preferredId = getLastOpenConversationId();
+      const preferred = preferredId && list.find(c => String(c.id) === String(preferredId));
+      if (preferredId === FRESH_CHAT_MARKER) setActive(null);
+      else if (preferred) setActive(preferred.id);
+      else if (list[0]) setActive(current => current ?? list[0].id);
+    };
+    const onLoaded = (event: Event) => syncFromLegacy(event);
+    window.addEventListener('oddi:conversations-loaded', onLoaded);
+    if (WIN().__oddiConversationDataReady) syncFromLegacy();
+    else if (!WIN().__oddiConversationLoadStarted) load();
     const refresh = () => load();
     window.addEventListener('oddi:conversations-changed', refresh);
-    return () => window.removeEventListener('oddi:conversations-changed', refresh);
+    return () => {
+      window.removeEventListener('oddi:conversations-loaded', onLoaded);
+      window.removeEventListener('oddi:conversations-changed', refresh);
+    };
   }, []);
 
   const visible = useMemo(() => {
@@ -440,16 +522,29 @@ export default function Sidebar() {
   }, [items, query]);
 
   function newChat() {
-    const button = document.getElementById('newChatBtn');
-    if (button) button.click();
-    else WIN().__oddiOpenConversation?.(-1);
+    const startNewChat = WIN().newChat;
+    if (startNewChat) {
+      void startNewChat().catch(error => console.error('ODDI New Chat failed:', error));
+      return;
+    }
+    document.querySelector<HTMLButtonElement>('.new-chat-btn, .sidebar-new-chat-utility-btn')?.click();
+  }
+
+  function goHome() {
+    WIN().__oddiReturnToHome = true;
+    // On desktop, return to Home inside the collapsed sidebar. Closing it
+    // makes the legacy fallback hamburger appear over the welcome screen.
+    WIN().__oddiKeepSidebarOnFreshHome = !isPhone;
+    newChat();
   }
 
   function select(c: Conversation) {
-    const fallbackIndex = items.findIndex(item => String(item.id) === String(c.id));
+    WIN().__oddiKeepSidebarOnFreshHome = false;
+    WIN().__oddiFreshChatActive = false;
+    WIN().__oddiFreshChatLockUntil = 0;
     setActive(c.id);
     setMenuId(null);
-    openConversationInLegacyApp(c, fallbackIndex);
+    openConversationInLegacyApp(c);
   }
 
   async function pin(c: Conversation) {
@@ -594,9 +689,14 @@ export default function Sidebar() {
   }
 
   function syncThemeViaLegacyApp() {
-    const button = document.getElementById('themeBtn');
-    if (button) button.click();
-    else document.body.classList.toggle('dark-mode');
+    const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
+    setTheme(next);
+    WIN().__oddiApplyTheme?.(next);
+    window.dispatchEvent(new CustomEvent('oddi:theme-changed', { detail: { theme: next } }));
+    const label = `${next === 'system' ? 'System' : next === 'dark' ? 'Dark' : 'Light'} mode`;
+    if (WIN().showOddiToast) WIN().showOddiToast!(`Appearance: ${label}`);
+    else if (WIN().__oddiShowToast) WIN().__oddiShowToast(`Appearance: ${label}`);
+    else window.dispatchEvent(new CustomEvent('oddi:toast', { detail: { message: `Appearance: ${label}` } }));
   }
 
   async function installOddi() {
@@ -631,12 +731,12 @@ export default function Sidebar() {
       <header className="oddi-rs-header">
         <button className="oddi-rs-brand" onClick={() => collapsed && setCollapsed(false)} aria-label="ODDI AI">
           <img
-            src={theme === 'dark' ? '/static/symbol-dark.png' : '/static/symbol.png'}
+            src={isDarkAppearance ? '/static/symbol-dark.png' : '/static/symbol.png'}
             alt="ODDI"
             style={{
-              background: theme === 'dark' ? '#fff' : 'transparent',
+              background: isDarkAppearance ? '#fff' : 'transparent',
               borderRadius: 5,
-              padding: theme === 'dark' ? 2 : 0,
+              padding: isDarkAppearance ? 2 : 0,
               display: 'block',
             }}
           />
@@ -649,7 +749,8 @@ export default function Sidebar() {
       </header>
 
       <main className="oddi-rs-main">
-        <button className="oddi-rs-new" onClick={newChat}><Plus size={15} />{!collapsed && <span>New Chat</span>}</button>
+        {chatStarted && collapsed && <button className="oddi-rs-home" onClick={goHome} aria-label="Go to home" title="Home"><Home size={19} strokeWidth={3} /></button>}
+        <button className="oddi-rs-new" onClick={newChat}><Plus size={19} strokeWidth={3} />{!collapsed && <span>New Chat</span>}</button>
 
         {!collapsed && <div className="oddi-rs-search">
           <Search size={13} />
@@ -761,9 +862,9 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        <button className="oddi-rs-theme" onClick={syncThemeViaLegacyApp}>
-          {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}
-          {!collapsed && <span>{theme === 'dark' ? 'Dark Mode' : 'Bright Mode'}</span>}
+        <button className="oddi-rs-theme" onClick={syncThemeViaLegacyApp} title={`Switch appearance (current: ${theme})`}>
+          {theme === 'dark' ? <Moon size={14} /> : theme === 'system' ? <Monitor size={14} /> : <Sun size={14} />}
+          {!collapsed && <span>{theme === 'dark' ? 'Dark Mode' : theme === 'system' ? 'System Mode' : 'Bright Mode'}</span>}
         </button>
 
         {!collapsed && installReady && <button className="oddi-rs-install" onClick={installOddi}><Download size={13} />Install ODDI AI</button>}
