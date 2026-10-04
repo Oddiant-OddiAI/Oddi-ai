@@ -391,7 +391,13 @@ else:
 # Initialize the existing database exactly as before.
 create_tables()
 if not ODDI_RENDER_LAPTOP_REDIRECT:
-    purge_expired_deleted_conversations()
+    try:
+        purge_expired_deleted_conversations()
+    except DriveStorageError as exc:
+        # Keep Render booting if Drive credentials are temporarily malformed
+        # or unavailable. Storage API requests return the registered 503 error
+        # until the configuration is corrected.
+        logger.error("Initial Bin cleanup skipped because chat storage is unavailable: %s", exc)
 
 
 # =========================================================

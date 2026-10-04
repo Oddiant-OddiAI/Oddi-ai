@@ -97,13 +97,38 @@ def _service():
         from google.oauth2 import service_account
         from googleapiclient.discovery import build
 
-        private_key = os.getenv("GOOGLE_DRIVE_PRIVATE_KEY", "").strip()
-        if private_key.startswith('"') and private_key.endswith('"'):
+        private_key = os.getenv("GOOGLE_DRIVE_PRIVATE_KEY", "").strip().lstrip("\ufeff")
+        client_email = os.getenv("GOOGLE_DRIVE_CLIENT_EMAIL", "").strip().strip('"\'')
+        if private_key.startswith("{"):
+            try:
+                service_account_json = json.loads(private_key)
+            except json.JSONDecodeError:
+                service_account_json = None
+            if isinstance(service_account_json, dict):
+                private_key = str(service_account_json.get("private_key") or "")
+                client_email = str(service_account_json.get("client_email") or client_email)
+        elif private_key.startswith('"') and private_key.endswith('"'):
+            try:
+                private_key = json.loads(private_key)
+            except json.JSONDecodeError:
+                private_key = private_key[1:-1]
+        elif private_key.startswith("'") and private_key.endswith("'"):
             private_key = private_key[1:-1]
-        private_key = private_key.replace("\\n", "\n")
+
+        private_key = private_key.replace("\\\\n", "\n").replace("\\n", "\n")
+        private_key = private_key.replace("\r\n", "\n").replace("\r", "\n").strip()
+        begin_marker = "-----BEGIN PRIVATE KEY-----"
+        end_marker = "-----END PRIVATE KEY-----"
+        begin = private_key.find(begin_marker)
+        end = private_key.find(end_marker)
+        if begin < 0 or end < begin:
+            raise DriveStorageError(
+                "GOOGLE_DRIVE_PRIVATE_KEY must contain the complete BEGIN/END PRIVATE KEY block."
+            )
+        private_key = private_key[begin:end + len(end_marker)].strip() + "\n"
         info = {
             "type": "service_account",
-            "client_email": os.getenv("GOOGLE_DRIVE_CLIENT_EMAIL", "").strip().strip('"'),
+            "client_email": client_email,
             "private_key": private_key,
             "token_uri": "https://oauth2.googleapis.com/token",
         }
@@ -117,9 +142,13 @@ def _service():
         raise DriveStorageError(
             "Google Drive packages are missing. Install the Google Drive dependencies from requirements.txt."
         ) from exc
+    except DriveStorageError:
+        raise
     except Exception as exc:
         logger.exception("Could not initialize the Google Drive client")
-        raise DriveStorageError("Google Drive credentials could not be loaded.") from exc
+        raise DriveStorageError(
+            "Google Drive credentials could not be loaded. Check that GOOGLE_DRIVE_PRIVATE_KEY is the complete, unmodified PEM key and that GOOGLE_DRIVE_CLIENT_EMAIL matches its service account."
+        ) from exc
 
 
 def _api_call(request):
