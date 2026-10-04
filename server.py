@@ -10,7 +10,7 @@ import time
 import uuid
 from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
@@ -41,6 +41,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import (
     ODDI_LOCAL_ONLY_STORAGE,
     ODDI_BROWSER_LOCAL_CHATS,
+    ODDI_CHAT_FILES_STORAGE,
+    ODDI_RENDER_LAPTOP_REDIRECT,
     create_tables,
     create_user,
     get_user_by_email,
@@ -146,9 +148,55 @@ app = FastAPI(
 )
 
 
+_LAPTOP_ORIGIN_SETTING = os.getenv("ODDI_LAPTOP_ORIGIN", "").strip()
+_LAPTOP_ORIGIN = None
+if _LAPTOP_ORIGIN_SETTING:
+    _parsed_laptop_origin = urlsplit(_LAPTOP_ORIGIN_SETTING)
+    if (
+        _parsed_laptop_origin.scheme != "https"
+        or not _parsed_laptop_origin.hostname
+        or _parsed_laptop_origin.username
+        or _parsed_laptop_origin.password
+        or _parsed_laptop_origin.path not in {"", "/"}
+        or _parsed_laptop_origin.query
+        or _parsed_laptop_origin.fragment
+    ):
+        raise RuntimeError(
+            "ODDI_LAPTOP_ORIGIN must be an HTTPS origin only, such as "
+            "https://oddi.example.com."
+        )
+    _LAPTOP_ORIGIN = f"https://{_parsed_laptop_origin.netloc}"
+
+
 @app.middleware("http")
-async def keep_render_chat_history_browser_local(request: Request, call_next):
-    """Never accept or return server-side chat history in Render mode."""
+async def route_public_site_to_laptop(request: Request, call_next):
+    """Keep Render as a public entry URL while the laptop owns all app data."""
+    if ODDI_RENDER_LAPTOP_REDIRECT:
+        if request.url.path == "/healthz":
+            return JSONResponse({"status": "redirect-only"})
+        if not _LAPTOP_ORIGIN:
+            return PlainTextResponse(
+                "ODDI's laptop storage service is not connected. Set the Render "
+                "environment variable ODDI_LAPTOP_ORIGIN to the laptop's public "
+                "HTTPS tunnel address. No account or chat history is stored on Render.",
+                status_code=503,
+                headers={"Cache-Control": "no-store"},
+            )
+        if request.url.hostname == urlsplit(_LAPTOP_ORIGIN).hostname:
+            return PlainTextResponse(
+                "ODDI_LAPTOP_ORIGIN points back to this request host.",
+                status_code=508,
+                headers={"Cache-Control": "no-store"},
+            )
+        raw_path = request.scope.get("raw_path", request.url.path.encode("utf-8"))
+        target = f"{_LAPTOP_ORIGIN}{raw_path.decode('ascii', errors='replace')}"
+        if request.url.query:
+            target += f"?{request.url.query}"
+        status_code = 302 if request.method in {"GET", "HEAD"} else 307
+        response = RedirectResponse(url=target, status_code=status_code)
+        response.headers["Cache-Control"] = "no-store"
+        return response
+
     if ODDI_BROWSER_LOCAL_CHATS and request.url.path.startswith("/api/conversations"):
         if request.method == "GET":
             return JSONResponse([])
@@ -161,6 +209,9 @@ async def keep_render_chat_history_browser_local(request: Request, call_next):
 
 @app.on_event("startup")
 async def start_bin_retention_cleanup():
+    if ODDI_RENDER_LAPTOP_REDIRECT:
+        return
+
     async def cleanup_expired_bin_chats():
         while True:
             try:
@@ -202,11 +253,13 @@ _SESSION_SECRET = (
     or os.getenv("ODDI_SESSION_SECRET", "").strip()
     or os.getenv("SECRET_KEY", "").strip()
 )
-if _SECURE_SESSION_COOKIES and ODDI_BROWSER_LOCAL_CHATS and len(_SESSION_SECRET) < 32:
-    # Browser-local Render mode has no persistent account sessions. Use a
-    # cryptographically random process key when none is configured; chats stay
-    # in browser storage across server restarts, while the temporary guest
-    # session can safely be recreated.
+if _SECURE_SESSION_COOKIES and ODDI_RENDER_LAPTOP_REDIRECT and len(_SESSION_SECRET) < 32:
+    # Render never handles an account session in laptop-storage mode.
+    _SESSION_SECRET = secrets.token_urlsafe(48)
+elif _SECURE_SESSION_COOKIES and ODDI_BROWSER_LOCAL_CHATS and len(_SESSION_SECRET) < 32:
+    # Browser-local mode has no persistent account sessions. Use a
+    # cryptographically random process key when none is configured; the
+    # temporary guest session can safely be recreated.
     _SESSION_SECRET = secrets.token_urlsafe(48)
 elif _SECURE_SESSION_COOKIES and len(_SESSION_SECRET) < 32:
     # Render needs a stable signing key across restarts so account cookies keep
@@ -321,7 +374,8 @@ else:
 
 # Initialize the existing database exactly as before.
 create_tables()
-purge_expired_deleted_conversations()
+if not ODDI_RENDER_LAPTOP_REDIRECT:
+    purge_expired_deleted_conversations()
 
 
 # =========================================================
@@ -1929,5 +1983,5 @@ if __name__ == "__main__":
         "server:app",
         host="127.0.0.1" if ODDI_LOCAL_ONLY_STORAGE else "0.0.0.0",
         port=int(os.getenv("PORT", "8000")),
-        reload=True,
+        reload=not ODDI_LOCAL_ONLY_STORAGE,
     )

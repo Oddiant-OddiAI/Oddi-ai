@@ -72,23 +72,23 @@ _IS_RENDER = (
     os.getenv("RENDER", "").strip().lower() in {"1", "true", "yes", "on"}
     or bool(os.getenv("RENDER_SERVICE_ID", "").strip())
 )
+ODDI_RENDER_LAPTOP_REDIRECT = _IS_RENDER
 _IS_PRODUCTION = (
     _ENVIRONMENT in {"production", "prod"}
     or _IS_RENDER
 )
 _BROWSER_LOCAL_SETTING = os.getenv("ODDI_BROWSER_LOCAL_CHATS", "").strip().lower()
-# Render serves the app, but chat history belongs in each visitor's browser
-# storage. This avoids writing conversations to a cloud database or Render's
-# filesystem. Outside Render, browser-local storage remains an explicit option.
-ODDI_BROWSER_LOCAL_CHATS = _IS_RENDER or (
+# Render is only an entry point for the laptop-hosted service. It must never
+# create temporary browser accounts or maintain a second chat history.
+ODDI_BROWSER_LOCAL_CHATS = not ODDI_RENDER_LAPTOP_REDIRECT and (
     not ODDI_LOCAL_ONLY_STORAGE
     and _BROWSER_LOCAL_SETTING in {"1", "true", "yes", "on"}
 )
 ODDI_CHAT_FILES_STORAGE = ODDI_LOCAL_ONLY_STORAGE and not ODDI_BROWSER_LOCAL_CHATS
 
-# Browser-only chat storage keeps conversations in IndexedDB on the visitor's
-# device. Laptop-only mode ignores all PostgreSQL URLs.
-if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS:
+# Render is a redirect-only service. The laptop owns the account database and
+# chat files, so ignore every cloud database URL and skip schema setup there.
+if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS or ODDI_RENDER_LAPTOP_REDIRECT:
     LEGACY_DATABASE_URL = ""
     RAW_CHAT_DATABASE_URL = ""
     RAW_FILES_DATABASE_URL = ""
@@ -104,7 +104,7 @@ if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS:
 # Production can use one shared DATABASE_URL, or require three physically
 # separate PostgreSQL databases by setting ODDI_REQUIRE_THREE_DATABASES=1.
 REQUIRE_THREE_DATABASES = (
-    False if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS else (
+    False if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS or ODDI_RENDER_LAPTOP_REDIRECT else (
         _REQUIRE_EXPLICIT or (
             _IS_PRODUCTION
             and not LEGACY_DATABASE_URL
@@ -147,7 +147,12 @@ if REQUIRE_THREE_DATABASES:
             + ", ".join(duplicates)
         )
 
-if _IS_PRODUCTION and not ODDI_LOCAL_ONLY_STORAGE and not ODDI_BROWSER_LOCAL_CHATS:
+if (
+    _IS_PRODUCTION
+    and not ODDI_LOCAL_ONLY_STORAGE
+    and not ODDI_BROWSER_LOCAL_CHATS
+    and not ODDI_RENDER_LAPTOP_REDIRECT
+):
     has_any_database_url = bool(
         LEGACY_DATABASE_URL
         or RAW_CHAT_DATABASE_URL
@@ -247,6 +252,9 @@ def _begin_write(conn, kind):
 # ---------------------------------------------------------------------------
 
 def create_tables():
+    if ODDI_RENDER_LAPTOP_REDIRECT:
+        logger.info("Render is redirect-only; account and chat storage stay on the laptop")
+        return
     _create_chat_tables()
     _create_archive_memory_tables()
     _create_files_tables()
@@ -296,6 +304,14 @@ def migrate_sqlite_chats_to_files():
         finally:
             conn.close()
     if moved:
+        # Clear the deleted message pages from SQLite after the JSON copies
+        # have been committed, so chat bodies do not linger in free pages/WAL.
+        conn = get_db("chat")
+        try:
+            conn.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            conn.execute("VACUUM")
+        finally:
+            conn.close()
         logger.info("Moved %s existing local conversations into account chat files", moved)
     return moved
 
