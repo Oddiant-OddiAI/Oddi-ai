@@ -7,6 +7,11 @@ __pycache__/
 # Environment variables
 .env
 
+# Local user data must never be included in a deploy or Git commit.
+users.db
+users.db-wal
+users.db-shm
+
 # Virtual environments
 venv/
 .venv/

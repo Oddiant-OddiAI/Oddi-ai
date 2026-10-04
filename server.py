@@ -40,6 +40,7 @@ from authlib.integrations.starlette_client import OAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import (
     ODDI_LOCAL_ONLY_STORAGE,
+    ODDI_BROWSER_LOCAL_CHATS,
     create_tables,
     create_user,
     get_user_by_email,
@@ -142,6 +143,19 @@ app = FastAPI(
     title="ODDI AI",
     version="1.0.0",
 )
+
+
+@app.middleware("http")
+async def keep_render_chat_history_browser_local(request: Request, call_next):
+    """Never accept or return server-side chat history in Render mode."""
+    if ODDI_BROWSER_LOCAL_CHATS and request.url.path.startswith("/api/conversations"):
+        if request.method == "GET":
+            return JSONResponse([])
+        return JSONResponse(
+            {"error": "Chat history is saved in this browser on your device."},
+            status_code=410,
+        )
+    return await call_next(request)
 
 
 @app.on_event("startup")
@@ -452,9 +466,21 @@ def response_from_engine(reply):
 
 @app.get("/", response_class=HTMLResponse, name="home")
 def home(request: Request):
-    # ODDI is a private authenticated application.
-    # A visitor with no valid session must sign in before the main app is
-    # rendered. Existing authenticated sessions continue straight to ODDI.
+    # A deployed browser-local instance uses a throwaway anonymous account for
+    # request authorization. Conversation history itself is held by the
+    # visitor's browser and never written to this account database.
+    if ODDI_BROWSER_LOCAL_CHATS and not _get_session_user(request):
+        local_email = f"browser-{uuid.uuid4().hex}@local.oddi.invalid"
+        create_user(
+            "Local user",
+            local_email,
+            generate_password_hash(secrets.token_urlsafe(32)),
+        )
+        local_user = get_user_by_email(local_email)
+        if local_user:
+            set_user_session(request, local_user, auth_provider="browser-local")
+
+    # ODDI is a private authenticated application outside browser-local mode.
     if not request.session.get("user_id"):
         return RedirectResponse(url="/login", status_code=303)
 
@@ -464,6 +490,7 @@ def home(request: Request):
         logged_in=True,
         username=request.session.get("username"),
         user_id=request.session.get("user_id"),
+        browser_local_chats=ODDI_BROWSER_LOCAL_CHATS,
     )
 
     # Preserve Flask's no-cache behavior for the live conversation-sync page.
@@ -1445,11 +1472,19 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         if auto_extract_value is not None
         else memory_enabled
     )
+    if ODDI_BROWSER_LOCAL_CHATS:
+        # A cloud process may generate a response, but it must not persist
+        # chat-derived memory alongside the browser-local conversation.
+        memory_enabled = False
+        memory_auto_extract = False
 
     raw_conversation_id = form.get("conversation_id")
     try:
         conversation_id = int(raw_conversation_id) if raw_conversation_id else None
     except (TypeError, ValueError):
+        conversation_id = None
+    if ODDI_BROWSER_LOCAL_CHATS:
+        # Client-generated IDs are intentionally not mapped to a server row.
         conversation_id = None
 
     # Starlette FormData supports multiple values for the same field name.
@@ -1504,7 +1539,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     file_record_ids = []
     stored_file_keys = []
 
-    if engine_files:
+    if engine_files and not ODDI_BROWSER_LOCAL_CHATS:
         file_payloads = []
 
         try:
@@ -1722,7 +1757,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         with _chat_generation_lock:
             _active_chat_generations.pop(generation_id, None)
 
-    if engine_files:
+    if engine_files and not ODDI_BROWSER_LOCAL_CHATS:
         _remember_chat_upload_retry_fingerprint(
             user_id,
             generation_id,
@@ -1758,7 +1793,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 user_id,
             )
 
-    if not ODDI_LOCAL_ONLY_STORAGE and memory_enabled and memory_auto_extract and memory_message:
+    if not ODDI_LOCAL_ONLY_STORAGE and not ODDI_BROWSER_LOCAL_CHATS and memory_enabled and memory_auto_extract and memory_message:
         background_tasks.add_task(
             update_user_memory_from_chat,
             str(user_id),

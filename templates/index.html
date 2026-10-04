@@ -4084,7 +4084,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
 </style>
 
 </head>
-<body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}">
+<body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}" data-browser-local-chats="{{ 'true' if browser_local_chats else 'false' }}">
 <!-- ODDI-AI Video Splash Screen -->
 <div id="oddi-video-splash" class="oddi-video-splash" aria-hidden="false">
     <video
@@ -5448,6 +5448,8 @@ chat?.addEventListener("pointerdown", event => {
 
 const isLoggedIn =
     document.body.dataset.loggedIn === "true";
+const browserLocalChatStorage =
+    document.body.dataset.browserLocalChats === "true";
 
 /* 
    GENERATION CONTROL
@@ -7085,6 +7087,97 @@ Object.defineProperty(window, "oddiConversations", { configurable: true, get: ()
 window.__oddiConversationDataReady = false;
 window.__oddiConversationLoadStarted = false;
 
+const ODDI_BROWSER_CHAT_DB = "oddi-browser-chat-history-v1";
+const ODDI_BROWSER_CHAT_STORE = "conversations";
+const ODDI_BROWSER_CHAT_FALLBACK_KEY = "oddi_browser_chat_history_v1";
+let oddiBrowserChatDbPromise = null;
+
+function openOddiBrowserChatDb() {
+    if (!window.indexedDB) return Promise.reject(new Error("IndexedDB is unavailable"));
+    if (!oddiBrowserChatDbPromise) {
+        oddiBrowserChatDbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(ODDI_BROWSER_CHAT_DB, 1);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(ODDI_BROWSER_CHAT_STORE)) {
+                    db.createObjectStore(ODDI_BROWSER_CHAT_STORE, { keyPath: "id" });
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error || new Error("Could not open local chat storage"));
+        });
+    }
+    return oddiBrowserChatDbPromise;
+}
+
+function readOddiBrowserChatFallback() {
+    try {
+        const value = JSON.parse(localStorage.getItem(ODDI_BROWSER_CHAT_FALLBACK_KEY) || "[]");
+        return Array.isArray(value) ? value : [];
+    } catch (_) { return []; }
+}
+
+async function getOddiBrowserChats() {
+    try {
+        const db = await openOddiBrowserChatDb();
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction(ODDI_BROWSER_CHAT_STORE, "readonly");
+            const request = tx.objectStore(ODDI_BROWSER_CHAT_STORE).getAll();
+            request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+            request.onerror = () => reject(request.error || new Error("Could not read local chats"));
+            tx.onabort = () => reject(tx.error || new Error("Local chat read was interrupted"));
+        });
+    } catch (error) {
+        console.warn("IndexedDB chat read failed; using browser storage fallback:", error);
+        return readOddiBrowserChatFallback();
+    }
+}
+
+async function putOddiBrowserChat(conversation) {
+    const value = JSON.parse(JSON.stringify(normalizeConversationObject(conversation)));
+    try {
+        const db = await openOddiBrowserChatDb();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(ODDI_BROWSER_CHAT_STORE, "readwrite");
+            tx.objectStore(ODDI_BROWSER_CHAT_STORE).put(value);
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error || new Error("Could not save local chat"));
+            tx.onabort = () => reject(tx.error || new Error("Local chat save was interrupted"));
+        });
+        return true;
+    } catch (error) {
+        const chats = readOddiBrowserChatFallback();
+        const index = chats.findIndex(item => String(item?.id) === String(value.id));
+        if (index >= 0) chats[index] = value;
+        else chats.push(value);
+        try {
+            localStorage.setItem(ODDI_BROWSER_CHAT_FALLBACK_KEY, JSON.stringify(chats));
+            return true;
+        } catch (fallbackError) {
+            console.error("Could not save chat on this device:", fallbackError);
+            return false;
+        }
+    }
+}
+
+async function deleteOddiBrowserChat(conversationId) {
+    try {
+        const db = await openOddiBrowserChatDb();
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(ODDI_BROWSER_CHAT_STORE, "readwrite");
+            tx.objectStore(ODDI_BROWSER_CHAT_STORE).delete(String(conversationId));
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error || new Error("Could not delete local chat"));
+            tx.onabort = () => reject(tx.error || new Error("Local chat deletion was interrupted"));
+        });
+    } catch (_) {
+        const chats = readOddiBrowserChatFallback().filter(item => String(item?.id) !== String(conversationId));
+        try { localStorage.setItem(ODDI_BROWSER_CHAT_FALLBACK_KEY, JSON.stringify(chats)); } catch (error) {
+            console.error("Could not delete local chat:", error);
+        }
+    }
+}
+
 function publishConversationDataReady() {
     window.__oddiConversationDataReady = true;
     window.dispatchEvent(new CustomEvent("oddi:conversations-loaded", { detail: { conversations } }));
@@ -7213,6 +7306,50 @@ function mergeConversationFromServer(localConversation, serverConversation) {
 async function loadConversations() {
     window.__oddiConversationLoadStarted = true;
     if (!isLoggedIn) { conversations = []; currentConversation = null; renderHistory(); publishConversationDataReady(); return; }
+    if (browserLocalChatStorage) {
+        try {
+            const byId = new Map();
+            for (const item of await getOddiBrowserChats()) {
+                if (item?.id !== null && item?.id !== undefined) {
+                    const normalized = normalizeConversationObject({ ...item, id: String(item.id) });
+                    byId.set(String(normalized.id), normalized);
+                }
+            }
+            // Recover earlier local-only backups into the device database.
+            for (const backup of getOddiLocalChatBackups()) {
+                const id = String(backup.id);
+                if (!byId.has(id)) byId.set(id, normalizeConversationObject({ ...backup, id }));
+            }
+            const retentionMs = 15 * 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            const allChats = [...byId.values()].filter(item => {
+                if (!item.deleted) return true;
+                const deletedAt = Date.parse(item.deleted_at || item.updated_at || item.created_at || "");
+                return !Number.isFinite(deletedAt) || now - deletedAt < retentionMs;
+            });
+            window.__oddiServerTrash = allChats.filter(item => !!item.deleted);
+            conversations = allChats.filter(item => !item.deleted);
+            for (const item of allChats) await putOddiBrowserChat(item);
+            for (const [id] of byId) {
+                if (!allChats.some(item => String(item.id) === id)) await deleteOddiBrowserChat(id);
+            }
+            clearCompletedPendingGeneration(conversations);
+            notifyUnseenBackgroundResponses(conversations);
+            currentConversation = null;
+            renderHistory();
+            publishConversationDataReady();
+            restoreLastOpenConversation();
+            renderBin();
+        } catch (error) {
+            console.error("Could not load chats from this device:", error);
+            conversations = [];
+            window.__oddiServerTrash = [];
+            currentConversation = null;
+            renderHistory();
+            publishConversationDataReady();
+        }
+        return;
+    }
     try {
         const response = await fetch("/api/conversations", { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) throw new Error(`Load conversations failed (${response.status})`);
@@ -7280,6 +7417,14 @@ async function saveConversation(conversation) {
     normalizeConversationObject(conversation);
     const conversationId = String(conversation.id);
     conversationDirtyLocal.add(conversationId);
+    if (browserLocalChatStorage) {
+        const saved = await putOddiBrowserChat(conversation);
+        if (!saved) backupOddiConversation(conversation);
+        else removeOddiConversationBackup(conversationId);
+        conversationDirtyLocal.delete(conversationId);
+        conversation.__recoveredLocally = !saved;
+        return saved;
+    }
     backupOddiConversation(conversation);
     conversationSaveInFlight.add(conversationId);
     let working = conversation;
@@ -7322,6 +7467,13 @@ async function appendConversationMessage(conversation, message) {
     if (!conversation?.id || !message) return false;
     normalizeConversationObject(conversation);
     if (!message.id) message.id = makeMessageId();
+    if (browserLocalChatStorage) {
+        if (!Array.isArray(conversation.messages)) conversation.messages = [];
+        const exists = conversation.messages.some(item => String(item?.id) === String(message.id));
+        if (!exists) conversation.messages.push(message);
+        touchConversation(conversation);
+        return saveConversation(conversation);
+    }
     const conversationId = String(conversation.id);
     conversationDirtyLocal.add(conversationId);
     backupOddiConversation(conversation);
@@ -7346,6 +7498,13 @@ async function appendConversationMessage(conversation, message) {
 
 async function updateConversationMessageRemote(conversation, messageId, patch) {
     if (!conversation?.id || !messageId) return false;
+    if (browserLocalChatStorage) {
+        const message = (conversation.messages || []).find(item => String(item?.id) === String(messageId));
+        if (!message) return false;
+        Object.assign(message, patch || {});
+        touchConversation(conversation);
+        return saveConversation(conversation);
+    }
     const conversationId = String(conversation.id);
     conversationDirtyLocal.add(conversationId);
     backupOddiConversation(conversation);
@@ -7370,6 +7529,11 @@ async function updateConversationMessageRemote(conversation, messageId, patch) {
 
 async function deleteConversationMessageRemote(conversation, messageId) {
     if (!conversation?.id || !messageId) return false;
+    if (browserLocalChatStorage) {
+        conversation.messages = (conversation.messages || []).filter(item => String(item?.id) !== String(messageId));
+        touchConversation(conversation);
+        return saveConversation(conversation);
+    }
     const conversationId = String(conversation.id);
     conversationDirtyLocal.add(conversationId);
     backupOddiConversation(conversation);
@@ -7389,6 +7553,20 @@ async function deleteConversationMessageRemote(conversation, messageId) {
 }
 
 async function createServerConversation(title = "New Chat") {
+    if (browserLocalChatStorage) {
+        const now = new Date().toISOString();
+        return normalizeConversationObject({
+            id: `local-${makeMessageId()}`,
+            title: title || "New Chat",
+            messages: [],
+            revision: 0,
+            pinned: false,
+            archived: false,
+            deleted: false,
+            created_at: now,
+            updated_at: now
+        });
+    }
     try {
         const response = await fetch("/api/conversations", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" }, body: JSON.stringify({ title }) });
         if (!response.ok) throw new Error(`Create conversation failed (${response.status})`);
@@ -7442,6 +7620,7 @@ function buildConversationTitle(value) {
 }
 
 async function retryDirtyConversationRecoveries() {
+    if (browserLocalChatStorage) return;
     if (!isLoggedIn) return;
     for (const backup of getOddiLocalChatBackups()) {
         const id = String(backup.id);
@@ -7451,6 +7630,7 @@ async function retryDirtyConversationRecoveries() {
 }
 
 async function syncConversationsFromServer(options = {}) {
+    if (browserLocalChatStorage) return;
     if (!isLoggedIn || conversationSyncInFlight) return;
     /* A New Chat creates a fresh UI state with no active conversation.
        Capture an epoch so a sync that was already in flight cannot restore
@@ -7514,6 +7694,7 @@ async function syncConversationsFromServer(options = {}) {
 }
 
 function startConversationSync() {
+    if (browserLocalChatStorage) return;
     if (!isLoggedIn) return;
     if (conversationSyncTimer) clearInterval(conversationSyncTimer);
     conversationSyncTimer = setInterval(() => syncConversationsFromServer(), 2500);
@@ -10835,6 +11016,7 @@ function speakAIMessage(button) {
 ----------------------------------------- */
 
 async function saveExplicitMemoryFromUserMessage(message) {
+    if (browserLocalChatStorage) return false;
     if (document.body?.dataset?.loggedIn !== "true") return false;
     if (localStorage.getItem("oddi_memory_enabled") === "false") return false;
 
@@ -11522,7 +11704,7 @@ async function sendMessage(
 
         // Handle explicit "remember ..." requests immediately. The server
         // separately checks normal chat for durable memories after replying.
-        await saveExplicitMemoryFromUserMessage(message);
+        if (!browserLocalChatStorage) await saveExplicitMemoryFromUserMessage(message);
     }
 
 
@@ -11641,8 +11823,8 @@ async function sendMessage(
     );
 
     const memorySettings = window.__oddiMemorySettings || {};
-    formData.append("memory_enabled", memorySettings.enabled === false ? "false" : "true");
-    formData.append("memory_auto_extract", memorySettings.auto_extract === false ? "false" : "true");
+    formData.append("memory_enabled", browserLocalChatStorage || memorySettings.enabled === false ? "false" : "true");
+    formData.append("memory_auto_extract", browserLocalChatStorage || memorySettings.auto_extract === false ? "false" : "true");
 
     formData.append(
         "history",
@@ -12745,6 +12927,28 @@ function savePinnedChatIds(ids) {
 
 async function updateConversationMetadata(conversation, patch = {}) {
     if (!conversation?.id) return false;
+    if (browserLocalChatStorage) {
+        const previousDeleted = !!conversation.deleted;
+        Object.assign(conversation, patch);
+        if (Object.prototype.hasOwnProperty.call(patch, "deleted")) {
+            conversation.deleted = !!patch.deleted;
+            conversation.deleted_at = conversation.deleted
+                ? (conversation.deleted_at || new Date().toISOString())
+                : null;
+            const trash = Array.isArray(window.__oddiServerTrash) ? window.__oddiServerTrash : [];
+            if (conversation.deleted) {
+                window.__oddiServerTrash = [...trash.filter(item => String(item.id) !== String(conversation.id)), conversation];
+            } else {
+                window.__oddiServerTrash = trash.filter(item => String(item.id) !== String(conversation.id));
+            }
+        }
+        conversation.updated_at = new Date().toISOString();
+        const saved = await saveConversation(conversation);
+        if (previousDeleted !== !!conversation.deleted || Object.prototype.hasOwnProperty.call(patch, "pinned")) {
+            renderHistory();
+        }
+        return saved;
+    }
     try {
         const response = await fetch(`/api/conversations/${conversation.id}/metadata`, {
             method: "PUT",
@@ -12763,6 +12967,7 @@ async function updateConversationMetadata(conversation, patch = {}) {
 }
 
 async function migrateLegacyConversationState() {
+    if (browserLocalChatStorage) return;
     if (!Array.isArray(conversations) || !conversations.length) return;
     const legacyPinned = (() => {
         try { return JSON.parse(localStorage.getItem(PINNED_CHATS_KEY) || "[]"); }
@@ -13094,8 +13299,8 @@ function renderHistory() {
 };
     makeSectionToggle('Pinned', 'pinned', pinnedSection);
     makeSectionToggle('Recents', 'recent', normalSection);
-    const pinnedMatches = orderedConversations.filter(c => isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
-    const normalMatches = orderedConversations.filter(c => !isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
+    const pinnedMatches = orderedConversations.filter(c => !c.deleted && isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
+    const normalMatches = orderedConversations.filter(c => !c.deleted && !isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
 
     if (pinnedMatches.length) {
         pinnedMatches.forEach(c => pinnedSection.appendChild(createHistoryItem(c, { searchQuery: query })));
@@ -13955,6 +14160,24 @@ function setTrash(items) {
 }
 
 async function loadTrashFromServer() {
+    if (browserLocalChatStorage) {
+        const now = Date.now();
+        const retentionMs = 15 * 24 * 60 * 60 * 1000;
+        const chats = await getOddiBrowserChats();
+        const trash = chats.map(item => normalizeConversationObject({ ...item, id: String(item.id) })).filter(item => {
+            if (!item.deleted) return false;
+            const deletedAt = Date.parse(item.deleted_at || item.updated_at || item.created_at || "");
+            return !Number.isFinite(deletedAt) || now - deletedAt < retentionMs;
+        });
+        const expired = chats.filter(item => {
+            if (!item.deleted) return false;
+            const deletedAt = Date.parse(item.deleted_at || item.updated_at || item.created_at || "");
+            return Number.isFinite(deletedAt) && now - deletedAt >= retentionMs;
+        });
+        window.__oddiServerTrash = trash;
+        for (const item of expired) await deleteOddiBrowserChat(item.id);
+        return trash;
+    }
     if (!isLoggedIn) { window.__oddiServerTrash = []; return []; }
     try {
         const response = await fetch("/api/conversations/bin", { credentials: "same-origin" });
@@ -13977,6 +14200,13 @@ async function permanentlyDeleteAllBinChats() {
         "Delete All", true
     );
     if (!confirmed) return;
+    if (browserLocalChatStorage) {
+        await Promise.all(trash.map(item => deleteOddiBrowserChat(item.id)));
+        window.__oddiServerTrash = [];
+        await loadConversations();
+        renderBin();
+        return;
+    }
     const results = await Promise.allSettled(trash.map(c =>
         fetch(`/api/conversations/${c.id}`, { method: "DELETE", credentials: "same-origin" })
     ));
@@ -14028,6 +14258,12 @@ async function renderBin() {
         row.querySelector(".permanent-delete").onclick = async () => {
             const ok = await showActionConfirmation("Delete Permanently?", "This chat will be permanently deleted and cannot be restored.", "Delete", true);
             if (!ok) return;
+            if (browserLocalChatStorage) {
+                await deleteOddiBrowserChat(conversation.id);
+                window.__oddiServerTrash = (window.__oddiServerTrash || []).filter(item => String(item.id) !== String(conversation.id));
+                renderBin();
+                return;
+            }
             const response = await fetch(`/api/conversations/${conversation.id}`, { method: "DELETE", credentials: "same-origin" });
             if (!response.ok) { alert("Could not permanently delete this chat. Please try again."); return; }
             window.__oddiServerTrash = (await loadTrashFromServer()).filter(c => String(c.id) !== String(conversation.id));
@@ -14050,6 +14286,7 @@ confirmDelete.onclick = async () => {
     currentConversation = null;
     if (chat) chat.innerHTML = "";
     renderHistory();
+    if (browserLocalChatStorage) renderBin();
 };
 
 closeSettings.onclick = () => {

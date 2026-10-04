@@ -70,21 +70,30 @@ RAW_ARCHIVE_MEMORY_DATABASE_URL = os.getenv("DATABASE_URL_ARCHIVE_MEMORY", "").s
 _REQUIRE_ENV = os.getenv("ODDI_REQUIRE_THREE_DATABASES", "").strip().lower()
 _REQUIRE_EXPLICIT = _REQUIRE_ENV in {"1", "true", "yes", "on"}
 _ENVIRONMENT = os.getenv("ENVIRONMENT", "").strip().lower()
-_IS_PRODUCTION = (
-    _ENVIRONMENT in {"production", "prod"}
-    or os.getenv("RENDER", "").strip().lower() in {"1", "true", "yes", "on"}
+_IS_RENDER = (
+    os.getenv("RENDER", "").strip().lower() in {"1", "true", "yes", "on"}
     or bool(os.getenv("RENDER_SERVICE_ID", "").strip())
 )
+_IS_PRODUCTION = (
+    _ENVIRONMENT in {"production", "prod"}
+    or _IS_RENDER
+)
+ODDI_BROWSER_LOCAL_CHATS = (
+    os.getenv("ODDI_BROWSER_LOCAL_CHATS", "").strip().lower() in {"1", "true", "yes", "on"}
+    or _IS_RENDER
+)
 
-if ODDI_LOCAL_ONLY_STORAGE and _IS_PRODUCTION:
+if ODDI_LOCAL_ONLY_STORAGE and _IS_PRODUCTION and not ODDI_BROWSER_LOCAL_CHATS:
     raise RuntimeError(
         "ODDI_LOCAL_ONLY_STORAGE is for a laptop-only server and cannot be "
         "enabled in a production/Render deployment."
     )
 
-# In laptop-only mode, ignore all PostgreSQL URLs, including stale Neon URLs
-# left in the process environment. All logical databases use local SQLite.
-if ODDI_LOCAL_ONLY_STORAGE:
+# Render serves the application, while chat history stays in each browser's
+# IndexedDB. Ignore hosted database URLs there so a stale Neon URL can never
+# prevent the app from starting or receive conversation data.
+# Laptop-only mode likewise ignores all PostgreSQL URLs.
+if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS:
     LEGACY_DATABASE_URL = ""
     RAW_CHAT_DATABASE_URL = ""
     RAW_FILES_DATABASE_URL = ""
@@ -100,7 +109,7 @@ if ODDI_LOCAL_ONLY_STORAGE:
 # If Render/production is detected, strict three-database separation is ON by
 # default. It can still be explicitly enabled in any environment.
 REQUIRE_THREE_DATABASES = (
-    False if ODDI_LOCAL_ONLY_STORAGE else _REQUIRE_EXPLICIT or _IS_PRODUCTION
+    False if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS else _REQUIRE_EXPLICIT or _IS_PRODUCTION
 )
 
 if REQUIRE_THREE_DATABASES:
