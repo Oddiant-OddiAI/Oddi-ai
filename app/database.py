@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger("oddi.persistence")
 
@@ -41,8 +41,7 @@ class _DBConnection:
 # ---------------------------------------------------------------------------
 # THREE-DATABASE STORAGE ARCHITECTURE
 # ---------------------------------------------------------------------------
-# Existing DATABASE_URL remains supported as a migration/development fallback.
-# Production should set all three dedicated URLs:
+# A single DATABASE_URL can serve every table. Separate stores can use:
 #   DATABASE_URL_CHAT
 #   DATABASE_URL_FILES
 #   DATABASE_URL_ARCHIVE_MEMORY
@@ -62,11 +61,8 @@ RAW_CHAT_DATABASE_URL = os.getenv("DATABASE_URL_CHAT", "").strip()
 RAW_FILES_DATABASE_URL = os.getenv("DATABASE_URL_FILES", "").strip()
 RAW_ARCHIVE_MEMORY_DATABASE_URL = os.getenv("DATABASE_URL_ARCHIVE_MEMORY", "").strip()
 
-# A single DATABASE_URL is kept only as a local/development migration fallback.
-# Production must use three physically separate PostgreSQL databases.
-#
-# This prevents the old 1.5 GB Neon database from silently becoming the chat,
-# files, and archive/memory database again.
+# A single DATABASE_URL supports a unified PostgreSQL database. The three
+# DATABASE_URL_* variables remain available when separate stores are desired.
 _REQUIRE_ENV = os.getenv("ODDI_REQUIRE_THREE_DATABASES", "").strip().lower()
 _REQUIRE_EXPLICIT = _REQUIRE_ENV in {"1", "true", "yes", "on"}
 _ENVIRONMENT = os.getenv("ENVIRONMENT", "").strip().lower()
@@ -80,19 +76,18 @@ _IS_PRODUCTION = (
 )
 ODDI_BROWSER_LOCAL_CHATS = (
     os.getenv("ODDI_BROWSER_LOCAL_CHATS", "").strip().lower() in {"1", "true", "yes", "on"}
-    or _IS_RENDER
+    and not _IS_RENDER
 )
 
-if ODDI_LOCAL_ONLY_STORAGE and _IS_PRODUCTION and not ODDI_BROWSER_LOCAL_CHATS:
+if ODDI_LOCAL_ONLY_STORAGE and _IS_PRODUCTION:
     raise RuntimeError(
         "ODDI_LOCAL_ONLY_STORAGE is for a laptop-only server and cannot be "
-        "enabled in a production/Render deployment."
+        "enabled in a production deployment."
     )
 
-# Render serves the application, while chat history stays in each browser's
-# IndexedDB. Ignore hosted database URLs there so a stale Neon URL can never
-# prevent the app from starting or receive conversation data.
-# Laptop-only mode likewise ignores all PostgreSQL URLs.
+# Browser-only chat storage is an explicit development option. Render uses
+# real accounts and a shared PostgreSQL database so chat history can sync
+# between devices. Laptop-only mode ignores all PostgreSQL URLs.
 if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS:
     LEGACY_DATABASE_URL = ""
     RAW_CHAT_DATABASE_URL = ""
@@ -106,10 +101,16 @@ if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS:
     ):
         os.environ.pop(_database_url_name, None)
 
-# If Render/production is detected, strict three-database separation is ON by
-# default. It can still be explicitly enabled in any environment.
+# Production can use one shared DATABASE_URL, or require three physically
+# separate PostgreSQL databases by setting ODDI_REQUIRE_THREE_DATABASES=1.
 REQUIRE_THREE_DATABASES = (
-    False if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS else _REQUIRE_EXPLICIT or _IS_PRODUCTION
+    False if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS else (
+        _REQUIRE_EXPLICIT or (
+            _IS_PRODUCTION
+            and not LEGACY_DATABASE_URL
+            and any((RAW_CHAT_DATABASE_URL, RAW_FILES_DATABASE_URL, RAW_ARCHIVE_MEMORY_DATABASE_URL))
+        )
+    )
 )
 
 if REQUIRE_THREE_DATABASES:
@@ -146,8 +147,23 @@ if REQUIRE_THREE_DATABASES:
             + ", ".join(duplicates)
         )
 
-# In strict production mode there is NO fallback to DATABASE_URL.
-# In local development, DATABASE_URL may still be used as a migration fallback.
+if _IS_PRODUCTION and not ODDI_LOCAL_ONLY_STORAGE and not ODDI_BROWSER_LOCAL_CHATS:
+    has_any_database_url = bool(
+        LEGACY_DATABASE_URL
+        or RAW_CHAT_DATABASE_URL
+        or RAW_FILES_DATABASE_URL
+        or RAW_ARCHIVE_MEMORY_DATABASE_URL
+    )
+    if not has_any_database_url:
+        raise RuntimeError(
+            "Cross-device chat sync requires a persistent PostgreSQL database. "
+            "Set DATABASE_URL, or set all three of DATABASE_URL_CHAT, "
+            "DATABASE_URL_FILES, and DATABASE_URL_ARCHIVE_MEMORY. "
+            "Render's local filesystem is not a persistent shared chat store."
+        )
+
+# Explicit three-database mode has no fallback to DATABASE_URL. Otherwise, a
+# configured DATABASE_URL supplies any logical store without its own URL.
 if REQUIRE_THREE_DATABASES:
     CHAT_DATABASE_URL = RAW_CHAT_DATABASE_URL
     FILES_DATABASE_URL = RAW_FILES_DATABASE_URL
@@ -376,6 +392,28 @@ def _create_chat_tables():
                 conn.execute("ALTER TABLE conversations ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
             if "deleted_at" not in columns:
                 conn.execute("ALTER TABLE conversations ADD COLUMN deleted_at TIMESTAMP NULL")
+        if _use_postgres("chat"):
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS local_conversation_imports (
+                    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    source_id TEXT NOT NULL,
+                    conversation_id BIGINT NOT NULL,
+                    imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, source_id),
+                    UNIQUE (conversation_id)
+                )
+            """)
+        else:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS local_conversation_imports (
+                    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    source_id TEXT NOT NULL,
+                    conversation_id INTEGER NOT NULL,
+                    imported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, source_id),
+                    UNIQUE (conversation_id)
+                )
+            """)
         conn.commit()
     finally:
         conn.close()
@@ -688,6 +726,95 @@ def create_conversation(user_id, title="New Chat"):
         os.getpid(), _backend_label("chat"), user_id, conversation_id,
     )
     return conversation_id
+
+
+def import_local_conversation(user_id, source_id, conversation):
+    """Import one browser-local chat once for this account."""
+    source_id = str(source_id or "").strip()
+    if not source_id.startswith("local-") or len(source_id) > 220:
+        raise ValueError("Invalid local conversation ID.")
+    if not isinstance(conversation, dict):
+        raise ValueError("Conversation data must be an object.")
+
+    messages = conversation.get("messages")
+    if not isinstance(messages, list):
+        messages = []
+    stored_messages = json.dumps(_normalize_messages_for_storage(messages, source_id))
+    title = str(conversation.get("title") or "New Chat").strip()[:500] or "New Chat"
+    pinned = int(bool(conversation.get("pinned")))
+
+    def timestamp(value):
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if parsed.tzinfo is not None:
+                parsed = parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            return parsed
+        except (TypeError, ValueError, OverflowError):
+            return datetime.now(timezone.utc).replace(tzinfo=None)
+
+    created_at = timestamp(conversation.get("created_at"))
+    updated_at = timestamp(conversation.get("updated_at"))
+    conn = get_db("chat")
+    try:
+        if _use_postgres("chat"):
+            user_row = _fetchone(conn, "SELECT id FROM users WHERE id = ? FOR UPDATE", (user_id,))
+            if not user_row:
+                raise ValueError("Account not found.")
+        else:
+            _begin_write(conn, "chat")
+
+        imported = _fetchone(
+            conn,
+            "SELECT conversation_id FROM local_conversation_imports WHERE user_id = ? AND source_id = ?",
+            (user_id, source_id),
+        )
+        if imported:
+            conversation_id = imported["conversation_id"]
+            conn.commit()
+        else:
+            if _use_postgres("chat"):
+                row = _fetchone(
+                    conn,
+                    """
+                    INSERT INTO conversations
+                        (user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at)
+                    VALUES (?, ?, ?, ?, ?, 0, ?, 0, NULL)
+                    RETURNING id
+                    """,
+                    (user_id, title, stored_messages, created_at, updated_at, pinned),
+                )
+                conversation_id = row["id"]
+            else:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO conversations
+                        (user_id, title, messages, created_at, updated_at, revision, pinned, archived, deleted_at)
+                    VALUES (?, ?, ?, ?, ?, 0, ?, 0, NULL)
+                    """,
+                    (user_id, title, stored_messages, created_at, updated_at, pinned),
+                )
+                conversation_id = cursor.lastrowid
+            conn.execute(
+                "INSERT INTO local_conversation_imports(user_id, source_id, conversation_id) VALUES (?, ?, ?)",
+                (user_id, source_id, conversation_id),
+            )
+            conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+    imported_conversation = get_conversation(conversation_id, user_id)
+    if not imported_conversation:
+        return None
+    if conversation.get("deleted"):
+        if not imported_conversation.get("deleted"):
+            update_conversation_metadata(conversation_id, user_id, deleted=True)
+    elif conversation.get("archived"):
+        if not imported_conversation.get("archived"):
+            update_conversation_metadata(conversation_id, user_id, archived=True)
+    return get_conversation(conversation_id, user_id)
 
 
 def get_conversations(user_id):

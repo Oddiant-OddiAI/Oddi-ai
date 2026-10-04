@@ -45,6 +45,7 @@ from app.database import (
     create_user,
     get_user_by_email,
     create_conversation,
+    import_local_conversation,
     get_conversations,
     get_conversation,
     update_conversation,
@@ -184,15 +185,33 @@ async def stop_bin_retention_cleanup():
 # Flask's signed session cookie is replaced by Starlette's signed session
 # middleware. The 30-day lifetime and the important cookie protections are
 # preserved from the old Flask server.
+_IS_RENDER_SERVER = (
+    os.getenv("RENDER", "").strip().lower() in {"1", "true", "yes", "on"}
+    or bool(os.getenv("RENDER_SERVICE_ID", "").strip())
+)
+_IS_PRODUCTION_SERVER = (
+    os.getenv("ENVIRONMENT", "").strip().lower() in {"production", "prod"}
+    or _IS_RENDER_SERVER
+)
+_SESSION_SECRET = (
+    os.getenv("FLASK_SECRET_KEY", "").strip()
+    or os.getenv("ODDI_SESSION_SECRET", "").strip()
+    or os.getenv("SECRET_KEY", "").strip()
+)
+if _IS_PRODUCTION_SERVER and len(_SESSION_SECRET) < 32:
+    raise RuntimeError(
+        "Set FLASK_SECRET_KEY to a persistent random value of at least 32 characters "
+        "in the production environment before enabling account chat sync."
+    )
+if not _SESSION_SECRET:
+    _SESSION_SECRET = "local-development-only-secret-change-before-deploy"
+
 app.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv(
-        "FLASK_SECRET_KEY",
-        "Oddi-AI_AI_2026_SuperSecretKey",
-    ),
+    secret_key=_SESSION_SECRET,
     max_age=int(timedelta(days=30).total_seconds()),
     same_site="lax",
-    https_only=False,
+    https_only=_IS_PRODUCTION_SERVER,
 )
 
 # Keep the existing static directory available under the same /static URL.
@@ -292,29 +311,35 @@ def set_user_session(request: Request, user, auth_provider=None):
 
 
 def _get_session_user(request: Request):
+    is_browser_local_identity = (
+        request.session.get("auth_provider") == "browser-local"
+        or str(request.session.get("email") or "").strip().casefold().endswith("@local.oddi.invalid")
+    )
+    if is_browser_local_identity and not ODDI_BROWSER_LOCAL_CHATS:
+        return None
     user_id = request.session.get("user_id")
     if not user_id:
         return None
 
     user = get_user_by_id(user_id)
-    if not ODDI_LOCAL_ONLY_STORAGE:
-        return user
-
-    # A cloud session's numeric ID can collide with a different local account.
-    # Match by email and rebind the cookie to the corresponding local ID.
     session_email = str(request.session.get("email") or "").strip()
     if not session_email:
         return None
+    user_email = str(user["email"] if user else "").strip()
+    if user and user_email.casefold() == session_email.casefold():
+        return user
+    if not ODDI_LOCAL_ONLY_STORAGE:
+        return None
 
-    local_email = str(user["email"] if user else "").strip()
-    if local_email.casefold() != session_email.casefold():
-        user = get_user_by_email(session_email)
-        if user:
-            set_user_session(
-                request,
-                user,
-                auth_provider=request.session.get("auth_provider"),
-            )
+    # A cloud session's numeric ID can collide with a different local account.
+    # Match by email and rebind the cookie to the corresponding local ID.
+    user = get_user_by_email(session_email)
+    if user:
+        set_user_session(
+            request,
+            user,
+            auth_provider=request.session.get("auth_provider"),
+        )
     return user
 
 
@@ -466,9 +491,8 @@ def response_from_engine(reply):
 
 @app.get("/", response_class=HTMLResponse, name="home")
 def home(request: Request):
-    # A deployed browser-local instance uses a throwaway anonymous account for
-    # request authorization. Conversation history itself is held by the
-    # visitor's browser and never written to this account database.
+    # Browser-local mode is available only outside Render. It uses a throwaway
+    # account solely for request authorization; history remains in that browser.
     if ODDI_BROWSER_LOCAL_CHATS and not _get_session_user(request):
         local_email = f"browser-{uuid.uuid4().hex}@local.oddi.invalid"
         create_user(
@@ -480,8 +504,10 @@ def home(request: Request):
         if local_user:
             set_user_session(request, local_user, auth_provider="browser-local")
 
-    # ODDI is a private authenticated application outside browser-local mode.
-    if not request.session.get("user_id"):
+    # ODDI uses real persisted accounts in sync mode. Discard anonymous
+    # browser-local cookies before they can be mistaken for a real account.
+    if not request.session.get("user_id") or not _get_session_user(request):
+        request.session.clear()
         return RedirectResponse(url="/login", status_code=303)
 
     response = render_template(
@@ -940,6 +966,34 @@ async def api_create_conversation(request: Request):
             ),
         }),
         status_code=201,
+    )
+
+
+@app.post("/api/conversations/import-local", name="api_import_local_conversation")
+async def api_import_local_conversation(request: Request):
+    user_id = require_user_id(request)
+    data = await safe_json(request)
+    source_id = str(data.get("source_id") or "").strip()
+    conversation = data.get("conversation")
+    if not isinstance(conversation, dict):
+        return JSONResponse({"error": "Conversation data is required."}, status_code=400)
+    if not isinstance(conversation.get("messages", []), list):
+        return JSONResponse({"error": "Conversation messages must be a list."}, status_code=400)
+    try:
+        payload_size = len(json.dumps(conversation, ensure_ascii=False).encode("utf-8"))
+    except (TypeError, ValueError):
+        return JSONResponse({"error": "Conversation data is not valid JSON."}, status_code=400)
+    if payload_size > 6 * 1024 * 1024:
+        return JSONResponse({"error": "This chat is too large to sync in one request."}, status_code=413)
+    try:
+        imported = import_local_conversation(user_id, source_id, conversation)
+    except ValueError as error:
+        return JSONResponse({"error": str(error)}, status_code=400)
+    if not imported:
+        return JSONResponse({"error": "The chat could not be imported."}, status_code=500)
+    return JSONResponse(
+        {"success": True, "conversation": jsonable_encoder(imported)},
+        status_code=200,
     )
 
 
