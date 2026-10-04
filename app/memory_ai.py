@@ -157,6 +157,11 @@ def _response_schema(categories):
 
 def extract_memory_updates(conversation_history, current_message, existing_memories):
     """Return validated full-category updates, or an empty list on failure."""
+    from app.database import ODDI_LOCAL_ONLY_STORAGE
+
+    if ODDI_LOCAL_ONLY_STORAGE:
+        return []
+
     api_key = os.getenv("gemini_memory_api_key", "").strip()
     if not api_key:
         logger.warning("Gemini memory extraction is disabled: API key is unavailable.")

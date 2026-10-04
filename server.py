@@ -1,4 +1,6 @@
 import io
+import asyncio
+import hashlib
 import json
 import logging
 import os
@@ -6,11 +8,18 @@ import secrets
 import threading
 import time
 import uuid
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
+
+# Load local configuration before importing app modules. app.database reads
+# DATABASE_URL_* at import time, so loading dotenv below those imports left it
+# using stale process-environment values (or the local fallback).
+load_dotenv()
+
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 from fastapi.responses import (
     FileResponse,
@@ -30,6 +39,7 @@ from authlib.integrations.starlette_client import OAuth
 
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import (
+    ODDI_LOCAL_ONLY_STORAGE,
     create_tables,
     create_user,
     get_user_by_email,
@@ -48,6 +58,10 @@ from app.database import (
     save_memory,
     delete_memory,
     register_file,
+    count_files,
+    FileLimitExceeded,
+    USER_FILE_LIMIT,
+    purge_expired_deleted_conversations,
     update_file_record,
     get_files,
     get_file,
@@ -73,10 +87,48 @@ from app.storage import (
 )
 
 
-load_dotenv()
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("oddi.persistence")
+
+# A browser Retry action resends the same generation ID and attachments. Keep
+# a bounded in-memory idempotency cache so those exact files are not stored in
+# the user's Library twice when the original request reached storage but its
+# response failed on the way back to the browser.
+_chat_upload_retry_lock = threading.Lock()
+_chat_upload_retry_cache = OrderedDict()
+_CHAT_UPLOAD_RETRY_CACHE_LIMIT = 512
+
+
+def _uploaded_batch_fingerprint(file_payloads):
+    digest = hashlib.sha256()
+    for uploaded_file, file_bytes in file_payloads:
+        for value in (
+            uploaded_file.filename or "unnamed-file",
+            uploaded_file.mimetype or "application/octet-stream",
+            str(len(file_bytes)),
+            hashlib.sha256(file_bytes).hexdigest(),
+        ):
+            digest.update(value.encode("utf-8", errors="replace"))
+            digest.update(b"\0")
+    return digest.hexdigest()
+
+
+def _get_chat_upload_retry_fingerprint(user_id, generation_id):
+    key = (str(user_id), str(generation_id))
+    with _chat_upload_retry_lock:
+        fingerprint = _chat_upload_retry_cache.get(key)
+        if fingerprint is not None:
+            _chat_upload_retry_cache.move_to_end(key)
+        return fingerprint
+
+
+def _remember_chat_upload_retry_fingerprint(user_id, generation_id, fingerprint):
+    key = (str(user_id), str(generation_id))
+    with _chat_upload_retry_lock:
+        _chat_upload_retry_cache[key] = fingerprint
+        _chat_upload_retry_cache.move_to_end(key)
+        while len(_chat_upload_retry_cache) > _CHAT_UPLOAD_RETRY_CACHE_LIMIT:
+            _chat_upload_retry_cache.popitem(last=False)
 
 _chat_generation_lock = threading.Lock()
 _active_chat_generations = {}
@@ -90,6 +142,30 @@ app = FastAPI(
     title="ODDI AI",
     version="1.0.0",
 )
+
+
+@app.on_event("startup")
+async def start_bin_retention_cleanup():
+    async def cleanup_expired_bin_chats():
+        while True:
+            try:
+                await run_in_threadpool(purge_expired_deleted_conversations)
+            except Exception:
+                logger.exception("Automatic Bin retention cleanup failed")
+            await asyncio.sleep(60 * 60)
+
+    app.state.bin_retention_task = asyncio.create_task(cleanup_expired_bin_chats())
+
+
+@app.on_event("shutdown")
+async def stop_bin_retention_cleanup():
+    task = getattr(app.state, "bin_retention_task", None)
+    if task:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
 
 # Flask's signed session cookie is replaced by Starlette's signed session
 # middleware. The 30-day lifetime and the important cookie protections are
@@ -175,6 +251,7 @@ else:
 
 # Initialize the existing database exactly as before.
 create_tables()
+purge_expired_deleted_conversations()
 
 
 # =========================================================
@@ -200,10 +277,42 @@ def set_user_session(request: Request, user, auth_provider=None):
         request.session["auth_provider"] = auth_provider
 
 
+def _get_session_user(request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        return None
+
+    user = get_user_by_id(user_id)
+    if not ODDI_LOCAL_ONLY_STORAGE:
+        return user
+
+    # A cloud session's numeric ID can collide with a different local account.
+    # Match by email and rebind the cookie to the corresponding local ID.
+    session_email = str(request.session.get("email") or "").strip()
+    if not session_email:
+        return None
+
+    local_email = str(user["email"] if user else "").strip()
+    if local_email.casefold() != session_email.casefold():
+        user = get_user_by_email(session_email)
+        if user:
+            set_user_session(
+                request,
+                user,
+                auth_provider=request.session.get("auth_provider"),
+            )
+    return user
+
+
 def _request_logging_enabled(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return True
+    if ODDI_LOCAL_ONLY_STORAGE:
+        user = _get_session_user(request)
+        if not user:
+            return False
+        user_id = user["id"]
     try:
         privacy = get_user_settings(user_id).get("privacy", {})
         return privacy.get("request_logging", True) is not False
@@ -215,10 +324,12 @@ def require_user_id(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Not logged in.")
-    if not get_user_by_id(user_id):
+
+    user = _get_session_user(request)
+    if not user:
         request.session.clear()
         raise HTTPException(status_code=401, detail="This account is no longer available. Sign in again.")
-    return user_id
+    return user["id"] if ODDI_LOCAL_ONLY_STORAGE else user_id
 
 
 def _uploaded_file_size(uploaded_file):
@@ -626,7 +737,7 @@ def api_auth_me(request: Request):
     if not user_id:
         return JSONResponse({"authenticated": False}, status_code=401)
 
-    user = get_user_by_id(user_id)
+    user = _get_session_user(request)
     if not user:
         request.session.clear()
         return JSONResponse({"authenticated": False}, status_code=401)
@@ -727,7 +838,7 @@ async def api_delete_account(request: Request):
         return JSONResponse({"error": "Enter the exact email address on your account to confirm deletion."}, status_code=400)
 
     # Remove the user's remote document index before erasing its identifier.
-    vector_store_id = get_vector_store_id(user_id)
+    vector_store_id = get_vector_store_id(user_id) if not ODDI_LOCAL_ONLY_STORAGE else None
     if vector_store_id:
         try:
             client.vector_stores.delete(vector_store_id)
@@ -1365,6 +1476,29 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         email=str(request.session.get("email", "")),
     )
 
+    # If the browser lost the successful response, its Retry action repeats
+    # this assistant message ID. Return the already-saved reply instead of
+    # generating a second answer for the same turn.
+    if conversation_id is not None:
+        existing_conversation = get_conversation(conversation_id, user_id)
+        existing_reply = next(
+            (
+                item for item in (existing_conversation or {}).get("messages", [])
+                if str(item.get("id") or "") == assistant_message_id
+                and item.get("role") == "assistant"
+            ),
+            None,
+        )
+        if existing_reply is not None:
+            response = response_from_engine(str(existing_reply.get("text") or existing_reply.get("content") or ""))
+            response.headers["X-Oddi-Assistant-Message-Id"] = assistant_message_id
+            response.headers["X-Oddi-Completed-At"] = str(existing_reply.get("completed_at") or datetime.now(timezone.utc).isoformat())
+            response_meta = existing_reply.get("response_meta") if isinstance(existing_reply.get("response_meta"), dict) else {}
+            response.headers["X-Oddi-Provider"] = str(response_meta.get("provider") or "Auto routing")
+            response.headers["X-Oddi-Latency-Ms"] = str(response_meta.get("latency_ms") or 0)
+            response.headers["X-Oddi-Token-Estimate"] = str(response_meta.get("token_estimate") or 0)
+            return response
+
     # Store the actual uploaded bytes through the Storage Router.
     # PostgreSQL keeps metadata/references only for new uploads.
     file_record_ids = []
@@ -1384,63 +1518,107 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 file_payloads.append((uploaded_file, file_bytes))
                 total_upload_bytes += len(file_bytes)
 
+            upload_fingerprint = _uploaded_batch_fingerprint(file_payloads)
+            previous_fingerprint = _get_chat_upload_retry_fingerprint(
+                user_id,
+                generation_id,
+            )
+            is_upload_retry = previous_fingerprint is not None
+            if is_upload_retry and previous_fingerprint != upload_fingerprint:
+                return JSONResponse(
+                    {"error": "This retry does not match the original attachments. Start a new message to upload different files."},
+                    status_code=409,
+                )
+
+            if not is_upload_retry:
+                current_file_count = count_files(user_id)
+                if current_file_count + len(engine_files) > USER_FILE_LIMIT:
+                    return JSONResponse(
+                        {
+                            "error": "Your Library is full (30 files). Delete an older file from Library before uploading more.",
+                            "file_limit": USER_FILE_LIMIT,
+                            "file_count": current_file_count,
+                        },
+                        status_code=413,
+                    )
+
             # Check the complete batch before writing anything so a request
             # cannot partially consume the user's quota.
-            quota = storage_router.get_file_quota(user_id)
-            remaining_bytes = int(quota.get("remaining_bytes", 0) or 0)
+            if not is_upload_retry:
+                quota = storage_router.get_file_quota(user_id)
+                remaining_bytes = int(quota.get("remaining_bytes", 0) or 0)
 
-            if total_upload_bytes > remaining_bytes:
-                return JSONResponse(
-                    {
-                        "error": "File storage quota exceeded.",
-                        "storage": quota,
-                    },
-                    status_code=413,
-                )
+                if total_upload_bytes > remaining_bytes:
+                    return JSONResponse(
+                        {
+                            "error": "File storage quota exceeded.",
+                            "storage": quota,
+                        },
+                        status_code=413,
+                    )
 
-            for uploaded_file, file_bytes in file_payloads:
-                stored = storage_router.save_file(
-                    user_id=user_id,
-                    data=file_bytes,
-                    original_filename=(
-                        uploaded_file.filename or "unnamed-file"
-                    ),
-                )
-
-                storage_key = stored["storage_key"]
-                stored_file_keys.append(storage_key)
-
-                try:
-                    file_record_id = register_file(
+                for uploaded_file, file_bytes in file_payloads:
+                    stored = storage_router.save_file(
                         user_id=user_id,
-                        filename=(
+                        data=file_bytes,
+                        original_filename=(
                             uploaded_file.filename or "unnamed-file"
                         ),
-                        mime_type=uploaded_file.mimetype,
-                        size_bytes=len(file_bytes),
-                        conversation_id=conversation_id,
-                        storage_backend="filesystem",
-                        storage_key=storage_key,
-                        external_file_id=None,
-                        file_data=None,
-                        status="received",
                     )
-                    file_record_ids.append(file_record_id)
+                    storage_key = stored["storage_key"]
+                    stored_file_keys.append(storage_key)
 
-                except Exception as file_db_error:
-                    logger.exception(
-                        "File metadata save failed for user %s: %s",
-                        user_id,
-                        file_db_error,
-                    )
-                    # Metadata failure is a transaction failure. Do not let
-                    # the engine process a file ODDI can no longer account for.
-                    raise
+                    try:
+                        file_record_id = register_file(
+                            user_id=user_id,
+                            filename=(
+                                uploaded_file.filename or "unnamed-file"
+                            ),
+                            mime_type=uploaded_file.mimetype,
+                            size_bytes=len(file_bytes),
+                            conversation_id=conversation_id,
+                            storage_backend="filesystem",
+                            storage_key=storage_key,
+                            external_file_id=None,
+                            file_data=None,
+                            status="received",
+                        )
+                        file_record_ids.append(file_record_id)
+
+                    except Exception as file_db_error:
+                        logger.exception(
+                            "File metadata save failed for user %s: %s",
+                            user_id,
+                            file_db_error,
+                        )
+                        # Metadata failure is a transaction failure. Do not let
+                        # the engine process a file ODDI can no longer account for.
+                        raise
 
             # Rewind every upload so the existing engine receives the same
             # file stream it received before the storage migration.
             for uploaded_file, _ in file_payloads:
                 uploaded_file.stream.seek(0)
+
+        except FileLimitExceeded as file_limit_error:
+            logger.info(
+                "File count limit reached for user %s: %s",
+                user_id,
+                file_limit_error,
+            )
+            rollback_stored_files(
+                user_id,
+                stored_file_keys,
+                file_record_ids,
+            )
+            return JSONResponse(
+                {
+                    "error": str(file_limit_error),
+                    "file_limit": USER_FILE_LIMIT,
+                    "file_count": count_files(user_id),
+                },
+                status_code=413,
+            )
 
         except StorageQuotaExceeded as quota_error:
             logger.warning(
@@ -1544,6 +1722,13 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         with _chat_generation_lock:
             _active_chat_generations.pop(generation_id, None)
 
+    if engine_files:
+        _remember_chat_upload_retry_fingerprint(
+            user_id,
+            generation_id,
+            upload_fingerprint,
+        )
+
     completed_at = datetime.now(timezone.utc).isoformat()
     latency_ms = max(0, int((time.perf_counter() - generation_started) * 1000))
     token_estimate = max(1, (len(str(reply)) + 3) // 4) if isinstance(reply, str) else 0
@@ -1573,7 +1758,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 user_id,
             )
 
-    if memory_enabled and memory_auto_extract and memory_message:
+    if not ODDI_LOCAL_ONLY_STORAGE and memory_enabled and memory_auto_extract and memory_message:
         background_tasks.add_task(
             update_user_memory_from_chat,
             str(user_id),
@@ -1613,7 +1798,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "server:app",
-        host="0.0.0.0",
+        host="127.0.0.1" if ODDI_LOCAL_ONLY_STORAGE else "0.0.0.0",
         port=int(os.getenv("PORT", "8000")),
         reload=True,
     )

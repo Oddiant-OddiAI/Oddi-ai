@@ -2,9 +2,15 @@ import json
 import logging
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 
 logger = logging.getLogger("oddi.persistence")
+
+USER_FILE_LIMIT = 30
+
+
+class FileLimitExceeded(Exception):
+    """Raised when a user has reached the Library upload limit."""
 
 
 class _DBConnection:
@@ -47,6 +53,10 @@ class _DBConnection:
 #   ARCHIVE_MEMORY  -> archived/bin chats + long-term memory + vector-store IDs
 # ---------------------------------------------------------------------------
 
+ODDI_LOCAL_ONLY_STORAGE = os.getenv("ODDI_LOCAL_ONLY_STORAGE", "").strip().lower() in {
+    "1", "true", "yes", "on",
+}
+
 LEGACY_DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 RAW_CHAT_DATABASE_URL = os.getenv("DATABASE_URL_CHAT", "").strip()
 RAW_FILES_DATABASE_URL = os.getenv("DATABASE_URL_FILES", "").strip()
@@ -66,9 +76,32 @@ _IS_PRODUCTION = (
     or bool(os.getenv("RENDER_SERVICE_ID", "").strip())
 )
 
+if ODDI_LOCAL_ONLY_STORAGE and _IS_PRODUCTION:
+    raise RuntimeError(
+        "ODDI_LOCAL_ONLY_STORAGE is for a laptop-only server and cannot be "
+        "enabled in a production/Render deployment."
+    )
+
+# In laptop-only mode, ignore all PostgreSQL URLs, including stale Neon URLs
+# left in the process environment. All logical databases use local SQLite.
+if ODDI_LOCAL_ONLY_STORAGE:
+    LEGACY_DATABASE_URL = ""
+    RAW_CHAT_DATABASE_URL = ""
+    RAW_FILES_DATABASE_URL = ""
+    RAW_ARCHIVE_MEMORY_DATABASE_URL = ""
+    for _database_url_name in (
+        "DATABASE_URL",
+        "DATABASE_URL_CHAT",
+        "DATABASE_URL_FILES",
+        "DATABASE_URL_ARCHIVE_MEMORY",
+    ):
+        os.environ.pop(_database_url_name, None)
+
 # If Render/production is detected, strict three-database separation is ON by
 # default. It can still be explicitly enabled in any environment.
-REQUIRE_THREE_DATABASES = _REQUIRE_EXPLICIT or _IS_PRODUCTION
+REQUIRE_THREE_DATABASES = (
+    False if ODDI_LOCAL_ONLY_STORAGE else _REQUIRE_EXPLICIT or _IS_PRODUCTION
+)
 
 if REQUIRE_THREE_DATABASES:
     missing = []
@@ -485,7 +518,7 @@ def create_user(username, email, password_hash):
 def get_user_by_email(email):
     conn = get_db("chat")
     try:
-        return _fetchone(conn, "SELECT * FROM users WHERE email = ?", (email,))
+        return _fetchone(conn, "SELECT * FROM users WHERE lower(email) = lower(?)", (email,))
     finally:
         conn.close()
 
@@ -649,6 +682,7 @@ def create_conversation(user_id, title="New Chat"):
 
 
 def get_conversations(user_id):
+    purge_expired_deleted_conversations()
     # The API continues to return one unified list so the existing frontend
     # does not need to know which physical database owns a conversation.
     chat_conn = get_db("chat")
@@ -683,6 +717,7 @@ def get_conversations(user_id):
 
 
 def get_deleted_conversations(user_id):
+    purge_expired_deleted_conversations()
     conn = get_db("archive_memory")
     try:
         rows = _fetchall(
@@ -691,6 +726,22 @@ def get_deleted_conversations(user_id):
             (user_id,),
         )
         return [_conversation_dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def purge_expired_deleted_conversations(now=None):
+    """Permanently remove Bin chats after 15 days while retaining archives."""
+    cutoff = (now or datetime.utcnow()) - timedelta(days=15)
+    conn = get_db("archive_memory")
+    try:
+        cursor = conn.execute(
+            "DELETE FROM archived_conversations "
+            "WHERE deleted_at IS NOT NULL AND deleted_at <= ?",
+            (cutoff,),
+        )
+        conn.commit()
+        return int(getattr(cursor, "rowcount", 0) or 0)
     finally:
         conn.close()
 
@@ -1230,6 +1281,23 @@ def register_file(
 
     conn = get_db("files")
     try:
+        # Serialize writes before checking the count so simultaneous uploads
+        # cannot push a user's Library past the 30-file limit.
+        if _use_postgres("files"):
+            conn.execute("SELECT pg_advisory_xact_lock(?)", (int(user_id),))
+        else:
+            _begin_write(conn, "files")
+        existing_count = _fetchone(
+            conn,
+            "SELECT COUNT(*) AS file_count FROM files WHERE user_id = ?",
+            (user_id,),
+        )
+        if int(_row_value(existing_count, "file_count", 0) or 0) >= USER_FILE_LIMIT:
+            conn.rollback()
+            raise FileLimitExceeded(
+                "Your Library is full (30 files). Delete an older file from Library before uploading more."
+            )
+
         if _use_postgres("files"):
             row = _fetchone(
                 conn,
@@ -1264,6 +1332,20 @@ def register_file(
             file_id = cursor.lastrowid
         conn.commit()
         return file_id
+    finally:
+        conn.close()
+
+
+def count_files(user_id):
+    """Return the number of Library file records owned by a user."""
+    conn = get_db("files")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT COUNT(*) AS file_count FROM files WHERE user_id = ?",
+            (user_id,),
+        )
+        return int(_row_value(row, "file_count", 0) or 0)
     finally:
         conn.close()
 

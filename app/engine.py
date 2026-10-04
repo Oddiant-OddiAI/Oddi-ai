@@ -21,6 +21,7 @@ import cv2
 from providers.registry import ProviderRegistry
 from app.config import client
 from app.database import (
+    ODDI_LOCAL_ONLY_STORAGE,
     get_vector_store_id,
     save_vector_store_id,
     save_memory,
@@ -173,7 +174,7 @@ KNOWLEDGE_BASE_EXTENSIONS = (
 
 def get_or_create_vector_store(user_id):
 
-    if not user_id:
+    if ODDI_LOCAL_ONLY_STORAGE or not user_id:
         return None
 
     vector_store_id = get_vector_store_id(user_id)
@@ -200,6 +201,9 @@ def get_or_create_vector_store(user_id):
 
 def get_knowledge_file_count(vector_store_id):
 
+    if ODDI_LOCAL_ONLY_STORAGE or not vector_store_id:
+        return 0
+
     files = client.vector_stores.files.list(
         vector_store_id=vector_store_id
     )
@@ -210,7 +214,7 @@ def add_file_to_knowledge_base(
     vector_store_id
 ):
 
-    if not vector_store_id:
+    if ODDI_LOCAL_ONLY_STORAGE or not vector_store_id:
         return None
 
     uploaded_file.stream.seek(0)
@@ -602,7 +606,7 @@ def process_message(
     # response layer, but do NOT automatically index normal chat
     # attachments here. Attachments must go through the local
     # extraction/vision pipeline below first.
-    if user_id is not None:
+    if user_id is not None and not ODDI_LOCAL_ONLY_STORAGE:
         # Read an existing vector-store ID only. Do not create an OpenAI
         # vector store during every chat request.
         vector_store_id = get_vector_store_id(user_id)
