@@ -198,7 +198,13 @@ _SESSION_SECRET = (
     or os.getenv("ODDI_SESSION_SECRET", "").strip()
     or os.getenv("SECRET_KEY", "").strip()
 )
-if _IS_PRODUCTION_SERVER and len(_SESSION_SECRET) < 32:
+if _IS_PRODUCTION_SERVER and ODDI_BROWSER_LOCAL_CHATS and len(_SESSION_SECRET) < 32:
+    # Browser-local Render mode has no persistent account sessions. Use a
+    # cryptographically random process key when none is configured; chats stay
+    # in browser storage across server restarts, while the temporary guest
+    # session can safely be recreated.
+    _SESSION_SECRET = secrets.token_urlsafe(48)
+elif _IS_PRODUCTION_SERVER and len(_SESSION_SECRET) < 32:
     # Render needs a stable signing key across restarts so account cookies keep
     # working. If the operator has not set a dedicated session key, derive one
     # from the already-required persistent database credentials. Never log or
@@ -513,8 +519,8 @@ def response_from_engine(reply):
 
 @app.get("/", response_class=HTMLResponse, name="home")
 def home(request: Request):
-    # Browser-local mode is available only outside Render. It uses a throwaway
-    # account solely for request authorization; history remains in that browser.
+    # Browser-local mode uses a throwaway account solely for request
+    # authorization; history remains in that browser.
     if ODDI_BROWSER_LOCAL_CHATS and not _get_session_user(request):
         local_email = f"browser-{uuid.uuid4().hex}@local.oddi.invalid"
         create_user(

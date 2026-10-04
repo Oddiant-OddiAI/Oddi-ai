@@ -74,10 +74,13 @@ _IS_PRODUCTION = (
     _ENVIRONMENT in {"production", "prod"}
     or _IS_RENDER
 )
-ODDI_BROWSER_LOCAL_CHATS = (
-    os.getenv("ODDI_BROWSER_LOCAL_CHATS", "").strip().lower() in {"1", "true", "yes", "on"}
-    and not _IS_RENDER
-)
+_BROWSER_LOCAL_SETTING = os.getenv("ODDI_BROWSER_LOCAL_CHATS", "").strip().lower()
+# Render serves the app, but chat history belongs in each visitor's browser
+# storage. This avoids writing conversations to a cloud database or Render's
+# filesystem. Outside Render, browser-local storage remains an explicit option.
+ODDI_BROWSER_LOCAL_CHATS = _IS_RENDER or _BROWSER_LOCAL_SETTING in {
+    "1", "true", "yes", "on",
+}
 
 if ODDI_LOCAL_ONLY_STORAGE and _IS_PRODUCTION:
     raise RuntimeError(
@@ -85,9 +88,8 @@ if ODDI_LOCAL_ONLY_STORAGE and _IS_PRODUCTION:
         "enabled in a production deployment."
     )
 
-# Browser-only chat storage is an explicit development option. Render uses
-# real accounts and a shared PostgreSQL database so chat history can sync
-# between devices. Laptop-only mode ignores all PostgreSQL URLs.
+# Browser-only chat storage keeps conversations in IndexedDB on the visitor's
+# device. Laptop-only mode ignores all PostgreSQL URLs.
 if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS:
     LEGACY_DATABASE_URL = ""
     RAW_CHAT_DATABASE_URL = ""
