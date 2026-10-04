@@ -175,12 +175,22 @@ async def route_public_site_to_laptop(request: Request, call_next):
         if request.url.path == "/healthz":
             return JSONResponse({"status": "redirect-only"})
         if not _LAPTOP_ORIGIN:
-            return PlainTextResponse(
-                "ODDI's laptop storage service is not connected. Set the Render "
-                "environment variable ODDI_LAPTOP_ORIGIN to the laptop's public "
-                "HTTPS tunnel address. No account or chat history is stored on Render.",
+            return HTMLResponse(
+                """<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ODDI connection is offline</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#090a0a;color:#f4f4f4;font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+main{width:min(520px,100%);padding:32px;border:1px solid #292b2b;border-radius:20px;background:#111313;box-shadow:0 24px 80px #0008}h1{margin:0 0 12px;font-size:24px;letter-spacing:-.03em}p{margin:10px 0;color:#b8bcbc}.badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:20px;padding:6px 10px;border:1px solid #6c4d20;border-radius:999px;color:#ffd38a;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:#efad4d}small{display:block;margin-top:24px;color:#858a8a}
+</style>
+<main><div class="badge"><span class="dot"></span> Laptop connection offline</div>
+<h1>ODDI can't reach its storage laptop</h1>
+<p>This public address needs the laptop-hosted ODDI service to load accounts and chat history.</p>
+<p>No new account or chat was created on Render. The site will reconnect when the laptop tunnel is configured and online.</p>
+<small>If you own this ODDI site, connect the laptop tunnel and set <code>ODDI_LAPTOP_ORIGIN</code> in Render.</small>
+</main></html>""",
                 status_code=503,
-                headers={"Cache-Control": "no-store"},
+                headers={"Cache-Control": "no-store", "Retry-After": "60"},
             )
         if request.url.hostname == urlsplit(_LAPTOP_ORIGIN).hostname:
             return PlainTextResponse(

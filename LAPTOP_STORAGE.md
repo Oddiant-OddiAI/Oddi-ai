@@ -33,17 +33,22 @@ device must use the same public hostname and sign in to the same account.
 
 ## Connect the public website
 
-Publish only `http://127.0.0.1:8000` through an HTTPS tunnel. Do not enable
-router port forwarding for port 8000. In Render, set:
+Use Tailscale Funnel to publish only `http://127.0.0.1:8000` at a stable HTTPS
+`*.ts.net` address. Funnel requires Tailscale installed and signed in, with
+MagicDNS, HTTPS, and Funnel enabled for the tailnet. Do not enable router port
+forwarding for port 8000. In an elevated PowerShell window, run:
 
-```text
-ODDI_LAPTOP_ORIGIN=https://your-public-tunnel-hostname
+```powershell
+tailscale funnel 8000
 ```
 
-Render then redirects the existing public URL to that HTTPS hostname. A
-temporary Cloudflare Quick Tunnel hostname changes when restarted; a stable
-public address needs a named tunnel and a domain. If the laptop service is off,
-the website cannot read or save chats.
+Tailscale prints the laptop's HTTPS hostname. In Render, set the environment
+variable `ODDI_LAPTOP_ORIGIN` to that exact origin, for example
+`https://laptop-name.tailnet-name.ts.net`. Render then redirects the existing
+public URL to it. If the laptop service is off, the website cannot read or save
+chats. Quick Tunnels are not suitable here: Cloudflare documents that they are
+for testing and do not support Server-Sent Events, which ODDI uses for live
+response streaming.
 
 If Google sign-in is enabled, add the tunnel hostname's
 `/auth/google/callback` URL to the Google OAuth allowed redirect URIs. Password
