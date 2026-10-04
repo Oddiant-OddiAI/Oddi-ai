@@ -10,7 +10,7 @@ import time
 import uuid
 from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
-from urllib.parse import quote, urlsplit
+from urllib.parse import quote
 
 from fastapi.encoders import jsonable_encoder
 from dotenv import load_dotenv
@@ -42,6 +42,7 @@ from app.database import (
     ODDI_LOCAL_ONLY_STORAGE,
     ODDI_BROWSER_LOCAL_CHATS,
     ODDI_CHAT_FILES_STORAGE,
+    ODDI_DRIVE_CHAT_STORAGE,
     ODDI_RENDER_LAPTOP_REDIRECT,
     create_tables,
     create_user,
@@ -78,6 +79,7 @@ from app.database import (
     clear_memory,
     get_vector_store_id,
 )
+from app.google_drive_storage import DriveStorageError
 
 from app.engine import process_message
 from app.config import client
@@ -148,64 +150,29 @@ app = FastAPI(
 )
 
 
-_LAPTOP_ORIGIN_SETTING = os.getenv("ODDI_LAPTOP_ORIGIN", "").strip()
-_LAPTOP_ORIGIN = None
-if _LAPTOP_ORIGIN_SETTING:
-    _parsed_laptop_origin = urlsplit(_LAPTOP_ORIGIN_SETTING)
-    if (
-        _parsed_laptop_origin.scheme != "https"
-        or not _parsed_laptop_origin.hostname
-        or _parsed_laptop_origin.username
-        or _parsed_laptop_origin.password
-        or _parsed_laptop_origin.path not in {"", "/"}
-        or _parsed_laptop_origin.query
-        or _parsed_laptop_origin.fragment
-    ):
-        raise RuntimeError(
-            "ODDI_LAPTOP_ORIGIN must be an HTTPS origin only, such as "
-            "https://oddi.example.com."
-        )
-    _LAPTOP_ORIGIN = f"https://{_parsed_laptop_origin.netloc}"
-
-
 @app.middleware("http")
-async def route_public_site_to_laptop(request: Request, call_next):
-    """Keep Render as a public entry URL while the laptop owns all app data."""
+async def require_drive_storage_configuration(request: Request, call_next):
+    """Do not accept public accounts or chats before persistent Drive is ready."""
     if ODDI_RENDER_LAPTOP_REDIRECT:
         if request.url.path == "/healthz":
-            return JSONResponse({"status": "redirect-only"})
-        if not _LAPTOP_ORIGIN:
-            return HTMLResponse(
-                """<!doctype html>
+            return JSONResponse({"status": "drive-storage-not-configured"})
+        return HTMLResponse(
+            """<!doctype html>
 <html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ODDI connection is offline</title>
+<title>ODDI storage is not configured</title>
 <style>
 *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;background:#090a0a;color:#f4f4f4;font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
 main{width:min(520px,100%);padding:32px;border:1px solid #292b2b;border-radius:20px;background:#111313;box-shadow:0 24px 80px #0008}h1{margin:0 0 12px;font-size:24px;letter-spacing:-.03em}p{margin:10px 0;color:#b8bcbc}.badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:20px;padding:6px 10px;border:1px solid #6c4d20;border-radius:999px;color:#ffd38a;font-size:12px}.dot{width:8px;height:8px;border-radius:50%;background:#efad4d}small{display:block;margin-top:24px;color:#858a8a}
 </style>
-<main><div class="badge"><span class="dot"></span> Laptop connection offline</div>
-<h1>ODDI can't reach its storage laptop</h1>
-<p>This public address needs the laptop-hosted ODDI service to load accounts and chat history.</p>
-<p>No new account or chat was created on Render. The site will reconnect when the laptop tunnel is configured and online.</p>
-<small>If you own this ODDI site, connect the laptop tunnel and set <code>ODDI_LAPTOP_ORIGIN</code> in Render.</small>
+<main><div class="badge"><span class="dot"></span> Drive storage is not connected</div>
+<h1>ODDI needs its shared chat storage</h1>
+<p>The public site uses Google Drive for account records and chat history while the laptop is offline.</p>
+<p>No account or chat was saved on Render. Configure Drive access in Render's Environment settings, then redeploy.</p>
+<small>Set <code>GOOGLE_DRIVE_CLIENT_EMAIL</code>, <code>GOOGLE_DRIVE_PRIVATE_KEY</code>, and <code>GOOGLE_DRIVE_FOLDER_ID</code>.</small>
 </main></html>""",
-                status_code=503,
-                headers={"Cache-Control": "no-store", "Retry-After": "60"},
-            )
-        if request.url.hostname == urlsplit(_LAPTOP_ORIGIN).hostname:
-            return PlainTextResponse(
-                "ODDI_LAPTOP_ORIGIN points back to this request host.",
-                status_code=508,
-                headers={"Cache-Control": "no-store"},
-            )
-        raw_path = request.scope.get("raw_path", request.url.path.encode("utf-8"))
-        target = f"{_LAPTOP_ORIGIN}{raw_path.decode('ascii', errors='replace')}"
-        if request.url.query:
-            target += f"?{request.url.query}"
-        status_code = 302 if request.method in {"GET", "HEAD"} else 307
-        response = RedirectResponse(url=target, status_code=status_code)
-        response.headers["Cache-Control"] = "no-store"
-        return response
+            status_code=503,
+            headers={"Cache-Control": "no-store", "Retry-After": "60"},
+        )
 
     if ODDI_BROWSER_LOCAL_CHATS and request.url.path.startswith("/api/conversations"):
         if request.method == "GET":
@@ -232,16 +199,31 @@ async def start_bin_retention_cleanup():
 
     app.state.bin_retention_task = asyncio.create_task(cleanup_expired_bin_chats())
 
+    if ODDI_LOCAL_ONLY_STORAGE:
+        from app import google_drive_storage
+        if google_drive_storage.is_configured():
+            async def sync_laptop_chats():
+                from app.drive_sync import sync_laptop_once
+                while True:
+                    try:
+                        await run_in_threadpool(sync_laptop_once)
+                    except Exception:
+                        logger.exception("Laptop to Google Drive chat sync failed; it will retry")
+                    await asyncio.sleep(30)
+
+            app.state.drive_sync_task = asyncio.create_task(sync_laptop_chats())
+
 
 @app.on_event("shutdown")
 async def stop_bin_retention_cleanup():
-    task = getattr(app.state, "bin_retention_task", None)
-    if task:
-        task.cancel()
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass
+    for task_name in ("bin_retention_task", "drive_sync_task"):
+        task = getattr(app.state, task_name, None)
+        if task:
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
 # Flask's signed session cookie is replaced by Starlette's signed session
 # middleware. The 30-day lifetime and the important cookie protections are
@@ -293,6 +275,12 @@ elif _SECURE_SESSION_COOKIES and len(_SESSION_SECRET) < 32:
             b"oddi-session-cookie-signing-v1\0"
             + _database_secret_material.encode("utf-8")
         ).hexdigest()
+    elif ODDI_DRIVE_CHAT_STORAGE:
+        _drive_secret_material = os.getenv("GOOGLE_DRIVE_PRIVATE_KEY", "").strip()
+        _SESSION_SECRET = hashlib.sha256(
+            b"oddi-drive-session-cookie-signing-v1\0"
+            + _drive_secret_material.encode("utf-8")
+        ).hexdigest()
     else:
         if ODDI_CHAT_FILES_STORAGE:
             raise RuntimeError(
@@ -313,6 +301,24 @@ app.add_middleware(
     same_site="lax",
     https_only=_SECURE_SESSION_COOKIES,
 )
+
+
+@app.exception_handler(DriveStorageError)
+async def drive_storage_error_handler(request: Request, exc: DriveStorageError):
+    message = str(exc)
+    if request.url.path.startswith("/api/"):
+        return JSONResponse({"success": False, "error": message}, status_code=503)
+    safe_message = message.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    return HTMLResponse(
+        "<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>ODDI storage setup</title>"
+        "<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#080909;color:#eee;"
+        "font:16px/1.6 system-ui;padding:24px}main{max-width:620px;padding:28px;border:1px solid #333;"
+        "border-radius:18px;background:#111}h1{font-size:23px}p{color:#bbb}</style>"
+        f"<main><h1>ODDI storage needs setup</h1><p>{safe_message}</p></main>",
+        status_code=503,
+        headers={"Cache-Control": "no-store"},
+    )
 
 # Keep the existing static directory available under the same /static URL.
 # This is important because the existing HTML references /static/... assets.
@@ -399,6 +405,20 @@ async def safe_json(request: Request):
     except Exception:
         return {}
     return data if isinstance(data, dict) else {}
+
+
+async def sync_laptop_accounts_from_drive():
+    """Load Drive-created accounts before local authentication/registration."""
+    if not ODDI_LOCAL_ONLY_STORAGE:
+        return
+    from app import google_drive_storage
+    if not google_drive_storage.is_configured():
+        return
+    try:
+        from app.drive_sync import sync_laptop_once
+        await run_in_threadpool(sync_laptop_once)
+    except Exception:
+        logger.exception("Could not refresh laptop accounts from Google Drive")
 
 
 def set_user_session(request: Request, user, auth_provider=None):
@@ -640,6 +660,9 @@ async def login(request: Request):
     password = str(form.get("password", ""))
 
     user = get_user_by_email(email)
+    if user is None:
+        await sync_laptop_accounts_from_drive()
+        user = get_user_by_email(email)
 
     if not user:
         return PlainTextResponse("Email not found.")
@@ -684,6 +707,8 @@ async def signup(request: Request):
     email = str(form.get("email", "")).strip()
     password = str(form.get("password", ""))
 
+    await sync_laptop_accounts_from_drive()
+
     if get_user_by_email(email):
         return PlainTextResponse("Email already exists.")
 
@@ -716,6 +741,9 @@ async def api_login(request: Request):
         )
 
     user = get_user_by_email(email)
+    if user is None:
+        await sync_laptop_accounts_from_drive()
+        user = get_user_by_email(email)
 
     if user is None:
         return JSONResponse(
@@ -750,6 +778,8 @@ async def api_register(request: Request):
     username = str(data.get("name", "")).strip()
     email = str(data.get("email", "")).strip()
     password = data.get("password", "")
+
+    await sync_laptop_accounts_from_drive()
 
     if not username or not email or not password:
         return JSONResponse(
@@ -865,6 +895,9 @@ async def google_callback(request: Request):
         name = email.split("@")[0]
 
     user = get_user_by_email(email)
+    if user is None:
+        await sync_laptop_accounts_from_drive()
+        user = get_user_by_email(email)
 
     if user is None:
         temporary_password = secrets.token_urlsafe(32)

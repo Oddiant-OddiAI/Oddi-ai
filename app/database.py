@@ -4,7 +4,7 @@ import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
-from app import local_chat_files
+from app import google_drive_storage, local_chat_files
 
 logger = logging.getLogger("oddi.persistence")
 
@@ -72,7 +72,11 @@ _IS_RENDER = (
     os.getenv("RENDER", "").strip().lower() in {"1", "true", "yes", "on"}
     or bool(os.getenv("RENDER_SERVICE_ID", "").strip())
 )
-ODDI_RENDER_LAPTOP_REDIRECT = _IS_RENDER
+# A stale local-only flag in Render must not turn the cloud mirror into an
+# ephemeral laptop-style store.
+ODDI_LOCAL_ONLY_STORAGE = ODDI_LOCAL_ONLY_STORAGE and not _IS_RENDER
+ODDI_DRIVE_CHAT_STORAGE = _IS_RENDER and google_drive_storage.is_configured()
+ODDI_RENDER_LAPTOP_REDIRECT = _IS_RENDER and not ODDI_DRIVE_CHAT_STORAGE
 _IS_PRODUCTION = (
     _ENVIRONMENT in {"production", "prod"}
     or _IS_RENDER
@@ -82,13 +86,24 @@ _BROWSER_LOCAL_SETTING = os.getenv("ODDI_BROWSER_LOCAL_CHATS", "").strip().lower
 # create temporary browser accounts or maintain a second chat history.
 ODDI_BROWSER_LOCAL_CHATS = not ODDI_RENDER_LAPTOP_REDIRECT and (
     not ODDI_LOCAL_ONLY_STORAGE
+    and not ODDI_DRIVE_CHAT_STORAGE
     and _BROWSER_LOCAL_SETTING in {"1", "true", "yes", "on"}
 )
 ODDI_CHAT_FILES_STORAGE = ODDI_LOCAL_ONLY_STORAGE and not ODDI_BROWSER_LOCAL_CHATS
+ODDI_CHAT_JSON_STORAGE = ODDI_CHAT_FILES_STORAGE or ODDI_DRIVE_CHAT_STORAGE
 
-# Render is a redirect-only service. The laptop owns the account database and
-# chat files, so ignore every cloud database URL and skip schema setup there.
-if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS or ODDI_RENDER_LAPTOP_REDIRECT:
+
+def _chat_file_store():
+    return google_drive_storage if ODDI_DRIVE_CHAT_STORAGE else local_chat_files
+
+# Local laptop mode stores chats as per-account files and mirrors them to Drive.
+# Render stores account/chat JSON in Drive and must ignore any stale Neon URLs.
+if (
+    ODDI_LOCAL_ONLY_STORAGE
+    or ODDI_BROWSER_LOCAL_CHATS
+    or ODDI_RENDER_LAPTOP_REDIRECT
+    or ODDI_DRIVE_CHAT_STORAGE
+):
     LEGACY_DATABASE_URL = ""
     RAW_CHAT_DATABASE_URL = ""
     RAW_FILES_DATABASE_URL = ""
@@ -104,7 +119,7 @@ if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS or ODDI_RENDER_LAPTOP_RED
 # Production can use one shared DATABASE_URL, or require three physically
 # separate PostgreSQL databases by setting ODDI_REQUIRE_THREE_DATABASES=1.
 REQUIRE_THREE_DATABASES = (
-    False if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS or ODDI_RENDER_LAPTOP_REDIRECT else (
+    False if ODDI_LOCAL_ONLY_STORAGE or ODDI_BROWSER_LOCAL_CHATS or ODDI_RENDER_LAPTOP_REDIRECT or ODDI_DRIVE_CHAT_STORAGE else (
         _REQUIRE_EXPLICIT or (
             _IS_PRODUCTION
             and not LEGACY_DATABASE_URL
@@ -152,6 +167,7 @@ if (
     and not ODDI_LOCAL_ONLY_STORAGE
     and not ODDI_BROWSER_LOCAL_CHATS
     and not ODDI_RENDER_LAPTOP_REDIRECT
+    and not ODDI_DRIVE_CHAT_STORAGE
 ):
     has_any_database_url = bool(
         LEGACY_DATABASE_URL
@@ -230,6 +246,8 @@ def get_db(kind="chat"):
 
 
 def _backend_label(kind):
+    if kind == "chat" and ODDI_DRIVE_CHAT_STORAGE:
+        return "Google Drive account files"
     url = _database_url(kind)
     return "postgres" if url else os.path.abspath(DATABASE)
 
@@ -261,11 +279,12 @@ def create_tables():
     _migrate_legacy_archived_conversations()
     if ODDI_CHAT_FILES_STORAGE:
         migrate_sqlite_chats_to_files()
-    if ODDI_CHAT_FILES_STORAGE:
+    if ODDI_CHAT_JSON_STORAGE:
+        backend = "Google Drive" if ODDI_DRIVE_CHAT_STORAGE else "local account files"
         logger.info(
-            "Local account chat files ready path=%s; account metadata=%s",
-            os.fspath(local_chat_files.ROOT),
-            _backend_label("chat"),
+            "%s chat storage ready account_metadata=%s",
+            backend,
+            "Google Drive" if ODDI_DRIVE_CHAT_STORAGE else _backend_label("chat"),
         )
     else:
         logger.info(
@@ -290,7 +309,7 @@ def migrate_sqlite_chats_to_files():
             rows = _fetchall(conn, select_sql + "ORDER BY " + id_column)
             for row in rows:
                 conversation = _conversation_dict(row)
-                local_chat_files.import_conversation(conversation["user_id"], conversation)
+                _chat_file_store().import_conversation(conversation["user_id"], conversation)
                 conn.execute(
                     f"DELETE FROM {table} WHERE {id_column} = ? AND user_id = ?",
                     (conversation["id"], conversation["user_id"]),
@@ -608,6 +627,8 @@ def _create_files_tables():
 # ---------------------------------------------------------------------------
 
 def create_user(username, email, password_hash):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return google_drive_storage.create_account(username, email, password_hash)
     conn = get_db("chat")
     try:
         conn.execute(
@@ -618,8 +639,18 @@ def create_user(username, email, password_hash):
     finally:
         conn.close()
 
+    if ODDI_CHAT_FILES_STORAGE and google_drive_storage.is_configured():
+        try:
+            user = get_user_by_email(email)
+            if user:
+                google_drive_storage.upsert_account_from_local(dict(user))
+        except Exception:
+            logger.exception("Could not mirror newly created laptop account to Google Drive")
+
 
 def get_user_by_email(email):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return google_drive_storage.get_account_by_email(email)
     conn = get_db("chat")
     try:
         return _fetchone(conn, "SELECT * FROM users WHERE lower(email) = lower(?)", (email,))
@@ -627,7 +658,86 @@ def get_user_by_email(email):
         conn.close()
 
 
+def get_users_for_drive_sync():
+    """Return local account rows for the laptop-to-Drive mirror worker."""
+    if not ODDI_LOCAL_ONLY_STORAGE:
+        return []
+    conn = get_db("chat")
+    try:
+        rows = _fetchall(
+            conn,
+            """
+            SELECT users.id, users.username, users.email, users.password_hash,
+                   users.created_at, user_settings.settings,
+                   user_settings.updated_at AS settings_updated_at
+            FROM users
+            LEFT JOIN user_settings ON user_settings.user_id = users.id
+            ORDER BY users.id
+            """,
+        )
+        users = []
+        for row in rows:
+            user = dict(row)
+            raw_settings = user.get("settings")
+            try:
+                user["settings"] = json.loads(raw_settings) if isinstance(raw_settings, str) else (raw_settings or {})
+            except (TypeError, json.JSONDecodeError):
+                user["settings"] = {}
+            if not isinstance(user["settings"], dict):
+                user["settings"] = {}
+            users.append(user)
+        return users
+    finally:
+        conn.close()
+
+
+def import_drive_account_to_local(account):
+    """Make a Drive-created account available to the local laptop server."""
+    if not ODDI_LOCAL_ONLY_STORAGE or not isinstance(account, dict):
+        return None
+    email = str(account.get("email") or "").strip().casefold()
+    if not email:
+        return None
+    existing = get_user_by_email(email)
+    if existing:
+        local_id = existing["id"]
+        username = str(account.get("username") or existing["username"] or "")
+        password_hash = str(account.get("password_hash") or "")
+        conn = get_db("chat")
+        try:
+            conn.execute(
+                "UPDATE users SET username = ?, password_hash = ? WHERE id = ?",
+                (username, password_hash or existing["password_hash"], local_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+        return local_id
+    create_user(
+        str(account.get("username") or email.split("@", 1)[0]),
+        email,
+        str(account.get("password_hash") or ""),
+    )
+    imported = get_user_by_email(email)
+    if not imported:
+        return None
+    settings = account.get("settings")
+    if isinstance(settings, dict):
+        save_user_settings(imported["id"], settings)
+    return imported["id"]
+
+
 def get_user_by_id(user_id):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        account = google_drive_storage.get_account_by_id(user_id)
+        if not account:
+            return None
+        return {
+            "id": account["id"],
+            "username": account.get("username", ""),
+            "email": account.get("email", ""),
+            "created_at": account.get("created_at"),
+        }
     conn = get_db("chat")
     try:
         return _fetchone(conn, "SELECT id, username, email, created_at FROM users WHERE id = ?", (user_id,))
@@ -636,6 +746,10 @@ def get_user_by_id(user_id):
 
 
 def get_user_settings(user_id):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        account = google_drive_storage.get_account_by_id(user_id)
+        settings = account.get("settings", {}) if account else {}
+        return settings if isinstance(settings, dict) else {}
     conn = get_db("chat")
     try:
         row = _fetchone(conn, "SELECT settings FROM user_settings WHERE user_id = ?", (user_id,))
@@ -649,6 +763,9 @@ def get_user_settings(user_id):
 
 
 def save_user_settings(user_id, settings):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        google_drive_storage.update_account_settings(user_id, settings)
+        return
     payload = json.dumps(settings if isinstance(settings, dict) else {}, ensure_ascii=False)
     conn = get_db("chat")
     try:
@@ -664,17 +781,47 @@ def save_user_settings(user_id, settings):
     finally:
         conn.close()
 
+    if ODDI_CHAT_FILES_STORAGE and google_drive_storage.is_configured():
+        try:
+            account = _mirror_local_account_to_drive(user_id)
+            if account:
+                google_drive_storage.update_account_settings(account["id"], settings)
+        except Exception:
+            logger.exception("Could not mirror laptop settings to Google Drive")
+
 
 def update_user_profile(user_id, username):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return google_drive_storage.update_account_profile(user_id, username)
     conn = get_db("chat")
     try:
         conn.execute("UPDATE users SET username = ? WHERE id = ?", (username, user_id))
         conn.commit()
     finally:
         conn.close()
+    if ODDI_CHAT_FILES_STORAGE and google_drive_storage.is_configured():
+        try:
+            user = get_user_by_id(user_id)
+            full_user = get_user_by_email(user["email"]) if user else None
+            if full_user:
+                google_drive_storage.upsert_account_from_local(dict(full_user))
+        except Exception:
+            logger.exception("Could not mirror local account profile to Google Drive")
 
 
 def delete_user_record(user_id):
+    local_user = None
+    if ODDI_LOCAL_ONLY_STORAGE:
+        conn = get_db("chat")
+        try:
+            local_user = _fetchone(conn, "SELECT id, email FROM users WHERE id = ?", (user_id,))
+        finally:
+            conn.close()
+
+    if ODDI_DRIVE_CHAT_STORAGE:
+        google_drive_storage.delete_account(user_id)
+        return
+
     conn = get_db("chat")
     try:
         conn.execute("DELETE FROM user_settings WHERE user_id = ?", (user_id,))
@@ -685,6 +832,13 @@ def delete_user_record(user_id):
 
     if ODDI_CHAT_FILES_STORAGE:
         local_chat_files.delete_account_chats(user_id)
+
+    if local_user and local_user["email"] and google_drive_storage.is_configured():
+        try:
+            remote_id = google_drive_storage.user_id_for_email(local_user["email"])
+            google_drive_storage.delete_account(remote_id)
+        except Exception:
+            logger.exception("Could not remove deleted local account from Google Drive")
 
     conn = get_db("archive_memory")
     try:
@@ -739,6 +893,44 @@ def _conversation_dict(row):
     }
 
 
+def _mirror_local_account_to_drive(user_id):
+    if not ODDI_CHAT_FILES_STORAGE or not google_drive_storage.is_configured():
+        return None
+    local_user = get_user_by_id(user_id)
+    email = _row_value(local_user, "email") if local_user else None
+    if not email:
+        return None
+    full_user = get_user_by_email(email)
+    if not full_user:
+        return None
+    return google_drive_storage.upsert_account_from_local(dict(full_user))
+
+
+def _mirror_local_conversation_to_drive(user_id, conversation):
+    if not conversation or not ODDI_CHAT_FILES_STORAGE or not google_drive_storage.is_configured():
+        return
+    try:
+        account = _mirror_local_account_to_drive(user_id)
+        if not account:
+            return
+        copy = dict(conversation)
+        copy["user_id"] = int(account["id"])
+        google_drive_storage.import_conversation(account["id"], copy)
+    except Exception:
+        logger.exception("Could not mirror local chat to Google Drive user=%s", user_id)
+
+
+def _mirror_local_chat_deletion_to_drive(user_id, conversation_id, deleted_at=None):
+    if not ODDI_CHAT_FILES_STORAGE or not google_drive_storage.is_configured():
+        return
+    try:
+        account = _mirror_local_account_to_drive(user_id)
+        if account:
+            google_drive_storage.apply_permanent_tombstone(account["id"], conversation_id, deleted_at)
+    except Exception:
+        logger.exception("Could not mirror local chat deletion to Google Drive user=%s", user_id)
+
+
 def _chat_conversation_select():
     return """
         SELECT id, user_id, title, messages, created_at, updated_at,
@@ -756,9 +948,14 @@ def _archive_conversation_select():
 
 
 def create_conversation(user_id, title="New Chat"):
-    if ODDI_CHAT_FILES_STORAGE:
-        conversation_id = local_chat_files.create_conversation(user_id, title)
-        logger.info("PERSIST CREATE COMMIT pid=%s backend=account-files user=%s conversation=%s", os.getpid(), user_id, conversation_id)
+    if ODDI_CHAT_JSON_STORAGE:
+        conversation_id = _chat_file_store().create_conversation(user_id, title)
+        _mirror_local_conversation_to_drive(
+            user_id,
+            _chat_file_store().get_conversation(conversation_id, user_id),
+        )
+        backend = "google-drive" if ODDI_DRIVE_CHAT_STORAGE else "account-files"
+        logger.info("PERSIST CREATE COMMIT pid=%s backend=%s user=%s conversation=%s", os.getpid(), backend, user_id, conversation_id)
         return conversation_id
     conn = get_db("chat")
     try:
@@ -799,8 +996,11 @@ def import_local_conversation(user_id, source_id, conversation):
         raise ValueError("Invalid local conversation ID.")
     if not isinstance(conversation, dict):
         raise ValueError("Conversation data must be an object.")
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.import_local_conversation(user_id, source_id, conversation)
+    if ODDI_CHAT_JSON_STORAGE:
+        imported = _chat_file_store().import_local_conversation(user_id, source_id, conversation)
+        imported_chat = imported if isinstance(imported, dict) else _chat_file_store().get_conversation(imported, user_id)
+        _mirror_local_conversation_to_drive(user_id, imported_chat)
+        return imported
 
     messages = conversation.get("messages")
     if not isinstance(messages, list):
@@ -884,8 +1084,8 @@ def import_local_conversation(user_id, source_id, conversation):
 
 
 def get_conversations(user_id):
-    if ODDI_CHAT_FILES_STORAGE:
-        result = local_chat_files.get_conversations(user_id)
+    if ODDI_CHAT_JSON_STORAGE:
+        result = _chat_file_store().get_conversations(user_id)
         logger.info("PERSIST GET user=%s chat_files=%s", user_id, len(result))
         return result
     purge_expired_deleted_conversations()
@@ -923,8 +1123,8 @@ def get_conversations(user_id):
 
 
 def get_deleted_conversations(user_id):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.get_deleted_conversations(user_id)
+    if ODDI_CHAT_JSON_STORAGE:
+        return _chat_file_store().get_deleted_conversations(user_id)
     purge_expired_deleted_conversations()
     conn = get_db("archive_memory")
     try:
@@ -940,8 +1140,8 @@ def get_deleted_conversations(user_id):
 
 def purge_expired_deleted_conversations(now=None):
     """Permanently remove Bin chats after 15 days while retaining archives."""
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.purge_expired_deleted_conversations(now)
+    if ODDI_CHAT_JSON_STORAGE:
+        return _chat_file_store().purge_expired_deleted_conversations(now)
     cutoff = (now or datetime.utcnow()) - timedelta(days=15)
     conn = get_db("archive_memory")
     try:
@@ -957,8 +1157,8 @@ def purge_expired_deleted_conversations(now=None):
 
 
 def _find_conversation(conversation_id, user_id, include_deleted=True):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.find_conversation(conversation_id, user_id, include_deleted)
+    if ODDI_CHAT_JSON_STORAGE:
+        return _chat_file_store().find_conversation(conversation_id, user_id, include_deleted)
     conn = get_db("chat")
     try:
         row = _fetchone(
@@ -985,8 +1185,8 @@ def _find_conversation(conversation_id, user_id, include_deleted=True):
 
 
 def get_conversation(conversation_id, user_id):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.get_conversation(conversation_id, user_id)
+    if ODDI_CHAT_JSON_STORAGE:
+        return _chat_file_store().get_conversation(conversation_id, user_id)
     _, conversation = _find_conversation(conversation_id, user_id, include_deleted=True)
     return conversation
 
@@ -1127,10 +1327,13 @@ def _move_archive_to_chat(conversation):
 
 
 def update_conversation(conversation_id, user_id, title, messages, expected_revision=None):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.update_conversation(
+    if ODDI_CHAT_JSON_STORAGE:
+        result = _chat_file_store().update_conversation(
             conversation_id, user_id, title, messages, expected_revision
         )
+        if result.get("ok"):
+            _mirror_local_conversation_to_drive(user_id, result.get("conversation"))
+        return result
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=False)
     if not conversation:
         return {"ok": False, "found": False, "conflict": False, "conversation": None}
@@ -1166,8 +1369,10 @@ def update_conversation(conversation_id, user_id, title, messages, expected_revi
 
 
 def append_conversation_message(conversation_id, user_id, message):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.append_conversation_message(conversation_id, user_id, message)
+    if ODDI_CHAT_JSON_STORAGE:
+        conversation = _chat_file_store().append_conversation_message(conversation_id, user_id, message)
+        _mirror_local_conversation_to_drive(user_id, conversation)
+        return conversation
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=False)
     if not conversation:
         return None
@@ -1190,10 +1395,12 @@ def append_conversation_message(conversation_id, user_id, message):
 
 
 def update_conversation_message(conversation_id, user_id, message_id, patch):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.update_conversation_message(
+    if ODDI_CHAT_JSON_STORAGE:
+        conversation = _chat_file_store().update_conversation_message(
             conversation_id, user_id, message_id, patch
         )
+        _mirror_local_conversation_to_drive(user_id, conversation)
+        return conversation
     conversation = get_conversation(conversation_id, user_id)
     if not conversation or conversation.get("deleted"):
         return None
@@ -1219,10 +1426,12 @@ def update_conversation_message(conversation_id, user_id, message_id, patch):
 
 
 def delete_conversation_message(conversation_id, user_id, message_id):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.delete_conversation_message(
+    if ODDI_CHAT_JSON_STORAGE:
+        conversation = _chat_file_store().delete_conversation_message(
             conversation_id, user_id, message_id
         )
+        _mirror_local_conversation_to_drive(user_id, conversation)
+        return conversation
     conversation = get_conversation(conversation_id, user_id)
     if not conversation or conversation.get("deleted"):
         return None
@@ -1243,10 +1452,12 @@ def delete_conversation_message(conversation_id, user_id, message_id):
 
 
 def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.update_conversation_metadata(
+    if ODDI_CHAT_JSON_STORAGE:
+        conversation = _chat_file_store().update_conversation_metadata(
             conversation_id, user_id, pinned=pinned, archived=archived, deleted=deleted
         )
+        _mirror_local_conversation_to_drive(user_id, conversation)
+        return conversation
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=True)
     if not conversation:
         return None
@@ -1316,8 +1527,11 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
 
 
 def delete_conversation(conversation_id, user_id):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.delete_conversation(conversation_id, user_id)
+    if ODDI_CHAT_JSON_STORAGE:
+        deleted = _chat_file_store().delete_conversation(conversation_id, user_id)
+        if deleted:
+            _mirror_local_chat_deletion_to_drive(user_id, conversation_id)
+        return deleted
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=True)
     if not conversation:
         return False
@@ -1336,8 +1550,12 @@ def delete_conversation(conversation_id, user_id):
 
 
 def delete_all_conversations(user_id):
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.delete_all_conversations(user_id)
+    if ODDI_CHAT_JSON_STORAGE:
+        chats = _chat_file_store().get_all_conversations(user_id)
+        deleted = _chat_file_store().delete_all_conversations(user_id)
+        for conversation in chats:
+            _mirror_local_chat_deletion_to_drive(user_id, conversation["id"])
+        return deleted
     # Clear active chats and archived/bin chats. Memory is intentionally not
     # touched; "clear chats" must not erase long-term user memory.
     chat_conn = get_db("chat")

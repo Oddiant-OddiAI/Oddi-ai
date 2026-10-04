@@ -1,23 +1,49 @@
-# Laptop hosted ODDI storage
+# Laptop SSD and Google Drive chat storage
 
-ODDI's account database and chat history are owned by the laptop-hosted app.
-Render is only an entry URL: it redirects visitors to the laptop's public HTTPS
-tunnel and does not create accounts or keep a second copy of chat history.
+ODDI keeps account-scoped chat JSON files on the laptop SSD and mirrors them to
+the configured Google Drive folder. Render reads and writes the Drive copy, so
+the public site can still load accounts and chats while the laptop is off. The
+laptop sync worker pulls Drive changes back to the SSD when it is online.
 
-## Where data is stored
+## Storage layout
 
-- Chat messages: `%LOCALAPPDATA%\OddiAI\ChatHistory\account-<id>\<chat-id>.json`
-- Session signing key: `%LOCALAPPDATA%\OddiAI\session.key`
-- Account/login records and non-chat metadata: the ignored `users.db` file in
-  this project folder
+- Laptop chats: `%LOCALAPPDATA%\OddiAI\ChatHistory\account-<local-id>\<chat-id>.json`
+- Drive chats: `accounts/account-<stable-account-id>/chat-<chat-id>.json`
+- Account login records on the laptop: ignored `users.db`
+- Account login records in Drive: the matching account's `account.json`
 
-On first local startup, existing active, archived, and Bin chats in `users.db`
-are moved to account-scoped JSON files, then removed from its chat tables. The
-SQLite file is checkpointed and compacted after the move so deleted message
-pages do not linger there. Account records remain so existing local accounts
-can still sign in. Keep `users.db` backed up privately; do not commit it.
+Account folders use a stable ID derived from the normalized account email on
+Drive. Sync maps that folder to the laptop's local account ID, so local numeric
+IDs may differ without mixing account histories. Existing laptop chat files
+are uploaded during sync; Drive-created accounts and conversations are copied
+to the laptop.
 
-## Run the laptop service
+The laptop app writes chats to its SSD first and mirrors changes to Drive.
+The public Render site writes to Drive so it can serve every device whether
+the laptop is on or off. When the laptop app is running, it pulls new Drive
+chats to the SSD in the background (about every 30 seconds) and before local
+login or registration. Drive is the shared sync source; the laptop keeps its
+own per-account copy.
+
+## Google Drive setup
+
+The current service-account configuration requires a folder inside a Google
+Workspace Shared Drive. Add the service account as a member with permission to
+create, edit, and delete files in that Shared Drive, then set these same
+variables in the laptop `.env` and Render's Environment settings:
+
+```dotenv
+GOOGLE_DRIVE_CLIENT_EMAIL="your-service-account-email@your-project.iam.gserviceaccount.com"
+GOOGLE_DRIVE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key-Here\n-----END PRIVATE KEY-----"
+GOOGLE_DRIVE_FOLDER_ID="your_google_drive_folder_id"
+```
+
+`GOOGLE_DRIVE_FOLDER_ID` must be a folder in that Shared Drive. Google's
+service accounts cannot own files in a consumer account's personal My Drive.
+The private key is a credential: keep it out of chat, Git, screenshots, and
+logs. The local `.env` is ignored by Git; set the values separately in Render.
+
+## Start ODDI on the laptop
 
 From PowerShell in this project folder:
 
@@ -26,36 +52,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\run_laptop_server.ps1
 ```
 
-The service binds to `127.0.0.1:8000`, keeps the session key under the current
-Windows profile, and stores chat files in that profile's LocalAppData folder.
-Keep the laptop awake and connected for the website to work. The browser on any
-device must use the same public hostname and sign in to the same account.
-
-## Connect the public website
-
-Use Tailscale Funnel to publish only `http://127.0.0.1:8000` at a stable HTTPS
-`*.ts.net` address. Funnel requires Tailscale installed and signed in, with
-MagicDNS, HTTPS, and Funnel enabled for the tailnet. Do not enable router port
-forwarding for port 8000. In an elevated PowerShell window, run:
-
-```powershell
-tailscale funnel 8000
-```
-
-Tailscale prints the laptop's HTTPS hostname. In Render, set the environment
-variable `ODDI_LAPTOP_ORIGIN` to that exact origin, for example
-`https://laptop-name.tailnet-name.ts.net`. Render then redirects the existing
-public URL to it. If the laptop service is off, the website cannot read or save
-chats. Quick Tunnels are not suitable here: Cloudflare documents that they are
-for testing and do not support Server-Sent Events, which ODDI uses for live
-response streaming.
-
-If Google sign-in is enabled, add the tunnel hostname's
-`/auth/google/callback` URL to the Google OAuth allowed redirect URIs. Password
-sign-in remains on the same account database on the laptop.
-
-The tunnel publishes the ODDI web service, not a Windows drive share. The app
-still runs with the permissions of its Windows account, so use a Windows
-account without administrator privileges for a public installation. Chat
-history files stay on the laptop, while prompts still have to reach the
-configured AI provider to generate answers.
+The laptop writes its local chat files under the current Windows profile's
+LocalAppData folder. Keep `users.db` and the chat folder private and backed up.
+The app starts even if Drive is temporarily unreachable; sync retries in the
+background. A successful sync requires the laptop to be online and the Drive
+credentials and folder permissions to be valid.

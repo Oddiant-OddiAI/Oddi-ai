@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import re
+import secrets
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -114,6 +115,7 @@ def _read_state(account_id):
     return {
         "next_id": next_id,
         "imports": imports if isinstance(imports, dict) else {},
+        "tombstones": value.get("tombstones", {}) if isinstance(value.get("tombstones"), dict) else {},
     }
 
 
@@ -206,12 +208,24 @@ def _all_conversations_locked(account_id):
 
 def _allocate_id_locked(account_id, state=None):
     state = state or _read_state(account_id)
-    directory = _account_dir(account_id)
-    largest = max(
-        (int(path.stem) for path in directory.glob("*.json") if _CHAT_ID_RE.fullmatch(path.stem)),
-        default=0,
-    )
-    chat_id = max(state["next_id"], largest + 1)
+    try:
+        from app.google_drive_storage import is_configured
+        drive_sync = is_configured()
+    except Exception:
+        drive_sync = False
+    if drive_sync:
+        # The laptop and Drive can create IDs independently while disconnected.
+        # Safe JavaScript integers keep those new IDs numeric and collision-safe.
+        chat_id = secrets.randbelow((1 << 52) - 1) + 1
+        while str(chat_id) in state["tombstones"] or _conversation_path(account_id, chat_id).exists():
+            chat_id = secrets.randbelow((1 << 52) - 1) + 1
+    else:
+        directory = _account_dir(account_id)
+        largest = max(
+            (int(path.stem) for path in directory.glob("*.json") if _CHAT_ID_RE.fullmatch(path.stem)),
+            default=0,
+        )
+        chat_id = max(state["next_id"], largest + 1)
     state["next_id"] = chat_id + 1
     return chat_id, state
 
@@ -253,7 +267,15 @@ def import_conversation(user_id, conversation):
         except (TypeError, ValueError):
             chat_id, state = _allocate_id_locked(account_id, state)
         existing = _read_conversation_locked(account_id, chat_id)
-        if existing and int(existing.get("revision", 0)) >= int(conversation.get("revision", 0) or 0):
+        if str(chat_id) in state["tombstones"]:
+            return int(chat_id)
+        if existing and (
+            int(existing.get("revision", 0)) > int(conversation.get("revision", 0) or 0)
+            or (
+                int(existing.get("revision", 0)) == int(conversation.get("revision", 0) or 0)
+                and str(existing.get("updated_at") or "") >= str(conversation.get("updated_at") or "")
+            )
+        ):
             return existing["id"]
         migrated = _normalize_conversation(conversation, account_id, chat_id)
         _atomic_write(_conversation_path(account_id, chat_id), migrated)
@@ -432,6 +454,9 @@ def delete_conversation(conversation_id, user_id):
         path = _conversation_path(account_id, chat_id)
         try:
             path.unlink()
+            state = _read_state(account_id)
+            state["tombstones"][chat_id] = _iso_timestamp(None)
+            _write_state(account_id, state)
             return True
         except FileNotFoundError:
             return False
@@ -441,11 +466,46 @@ def delete_all_conversations(user_id):
     account_id = _account_key(user_id)
     with _lock_for(account_id):
         directory = _account_dir(account_id)
+        state = _read_state(account_id)
         for path in directory.glob("*.json"):
             if _CHAT_ID_RE.fullmatch(path.stem):
                 path.unlink(missing_ok=True)
-        state = _read_state(account_id)
+                state["tombstones"][path.stem] = _iso_timestamp(None)
         state["imports"] = {}
+        _write_state(account_id, state)
+
+
+def get_all_conversations(user_id):
+    account_id = _account_key(user_id)
+    with _lock_for(account_id):
+        return _all_conversations_locked(account_id)
+
+
+def get_tombstones(user_id):
+    account_id = _account_key(user_id)
+    with _lock_for(account_id):
+        return dict(_read_state(account_id)["tombstones"])
+
+
+def apply_permanent_tombstone(user_id, conversation_id, deleted_at=None):
+    account_id = _account_key(user_id)
+    chat_id = _chat_key(conversation_id)
+    with _lock_for(account_id):
+        state = _read_state(account_id)
+        state["tombstones"][chat_id] = _iso_timestamp(deleted_at)
+        _write_state(account_id, state)
+        _conversation_path(account_id, chat_id).unlink(missing_ok=True)
+
+
+def clear_tombstones(user_id, conversation_ids=None):
+    account_id = _account_key(user_id)
+    with _lock_for(account_id):
+        state = _read_state(account_id)
+        if conversation_ids is None:
+            state["tombstones"] = {}
+        else:
+            for conversation_id in conversation_ids:
+                state["tombstones"].pop(_chat_key(conversation_id), None)
         _write_state(account_id, state)
 
 
@@ -488,6 +548,9 @@ def purge_expired_deleted_conversations(now=None):
                         deleted_at = deleted_at.replace(tzinfo=timezone.utc)
                     if deleted_at.astimezone(timezone.utc) <= cutoff:
                         path.unlink(missing_ok=True)
+                        state = _read_state(account_id)
+                        state["tombstones"][path.stem] = _iso_timestamp(deleted_at)
+                        _write_state(account_id, state)
                         removed += 1
                 except (TypeError, ValueError, OSError):
                     logger.exception("Could not purge expired chat file %s", path.name)

@@ -16,5 +16,7 @@ psycopg[binary]>=3.2,<4
 Authlib
 requests
 google-genai
+google-api-python-client>=2.120,<3
+google-auth>=2.29,<3
 mistralai
 Werkzeug
