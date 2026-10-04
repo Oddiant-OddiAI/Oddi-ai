@@ -4,6 +4,8 @@ import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
 
+from app import local_chat_files
+
 logger = logging.getLogger("oddi.persistence")
 
 USER_FILE_LIMIT = 30
@@ -78,15 +80,11 @@ _BROWSER_LOCAL_SETTING = os.getenv("ODDI_BROWSER_LOCAL_CHATS", "").strip().lower
 # Render serves the app, but chat history belongs in each visitor's browser
 # storage. This avoids writing conversations to a cloud database or Render's
 # filesystem. Outside Render, browser-local storage remains an explicit option.
-ODDI_BROWSER_LOCAL_CHATS = _IS_RENDER or _BROWSER_LOCAL_SETTING in {
-    "1", "true", "yes", "on",
-}
-
-if ODDI_LOCAL_ONLY_STORAGE and _IS_PRODUCTION:
-    raise RuntimeError(
-        "ODDI_LOCAL_ONLY_STORAGE is for a laptop-only server and cannot be "
-        "enabled in a production deployment."
-    )
+ODDI_BROWSER_LOCAL_CHATS = _IS_RENDER or (
+    not ODDI_LOCAL_ONLY_STORAGE
+    and _BROWSER_LOCAL_SETTING in {"1", "true", "yes", "on"}
+)
+ODDI_CHAT_FILES_STORAGE = ODDI_LOCAL_ONLY_STORAGE and not ODDI_BROWSER_LOCAL_CHATS
 
 # Browser-only chat storage keeps conversations in IndexedDB on the visitor's
 # device. Laptop-only mode ignores all PostgreSQL URLs.
@@ -253,12 +251,53 @@ def create_tables():
     _create_archive_memory_tables()
     _create_files_tables()
     _migrate_legacy_archived_conversations()
-    logger.info(
-        "Three-database schema ready chat=%s files=%s archive_memory=%s",
-        _backend_label("chat"),
-        _backend_label("files"),
-        _backend_label("archive_memory"),
-    )
+    if ODDI_CHAT_FILES_STORAGE:
+        migrate_sqlite_chats_to_files()
+    if ODDI_CHAT_FILES_STORAGE:
+        logger.info(
+            "Local account chat files ready path=%s; account metadata=%s",
+            os.fspath(local_chat_files.ROOT),
+            _backend_label("chat"),
+        )
+    else:
+        logger.info(
+            "Three-database schema ready chat=%s files=%s archive_memory=%s",
+            _backend_label("chat"),
+            _backend_label("files"),
+            _backend_label("archive_memory"),
+        )
+
+
+def migrate_sqlite_chats_to_files():
+    """Move old local active/archive chats into account-scoped JSON files."""
+    if not ODDI_CHAT_FILES_STORAGE or USE_POSTGRES:
+        return 0
+    moved = 0
+    for kind, table, id_column, select_sql in (
+        ("chat", "conversations", "id", _chat_conversation_select()),
+        ("archive_memory", "archived_conversations", "conversation_id", _archive_conversation_select()),
+    ):
+        conn = get_db(kind)
+        try:
+            rows = _fetchall(conn, select_sql + "ORDER BY " + id_column)
+            for row in rows:
+                conversation = _conversation_dict(row)
+                local_chat_files.import_conversation(conversation["user_id"], conversation)
+                conn.execute(
+                    f"DELETE FROM {table} WHERE {id_column} = ? AND user_id = ?",
+                    (conversation["id"], conversation["user_id"]),
+                )
+                moved += 1
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            logger.exception("Could not migrate local chats from %s into account files", kind)
+            raise
+        finally:
+            conn.close()
+    if moved:
+        logger.info("Moved %s existing local conversations into account chat files", moved)
+    return moved
 
 
 def _migrate_legacy_archived_conversations():
@@ -628,6 +667,9 @@ def delete_user_record(user_id):
     finally:
         conn.close()
 
+    if ODDI_CHAT_FILES_STORAGE:
+        local_chat_files.delete_account_chats(user_id)
+
     conn = get_db("archive_memory")
     try:
         conn.execute("DELETE FROM memories WHERE user_id = ?", (user_id,))
@@ -698,6 +740,10 @@ def _archive_conversation_select():
 
 
 def create_conversation(user_id, title="New Chat"):
+    if ODDI_CHAT_FILES_STORAGE:
+        conversation_id = local_chat_files.create_conversation(user_id, title)
+        logger.info("PERSIST CREATE COMMIT pid=%s backend=account-files user=%s conversation=%s", os.getpid(), user_id, conversation_id)
+        return conversation_id
     conn = get_db("chat")
     try:
         if _use_postgres("chat"):
@@ -737,6 +783,8 @@ def import_local_conversation(user_id, source_id, conversation):
         raise ValueError("Invalid local conversation ID.")
     if not isinstance(conversation, dict):
         raise ValueError("Conversation data must be an object.")
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.import_local_conversation(user_id, source_id, conversation)
 
     messages = conversation.get("messages")
     if not isinstance(messages, list):
@@ -820,6 +868,10 @@ def import_local_conversation(user_id, source_id, conversation):
 
 
 def get_conversations(user_id):
+    if ODDI_CHAT_FILES_STORAGE:
+        result = local_chat_files.get_conversations(user_id)
+        logger.info("PERSIST GET user=%s chat_files=%s", user_id, len(result))
+        return result
     purge_expired_deleted_conversations()
     # The API continues to return one unified list so the existing frontend
     # does not need to know which physical database owns a conversation.
@@ -855,6 +907,8 @@ def get_conversations(user_id):
 
 
 def get_deleted_conversations(user_id):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.get_deleted_conversations(user_id)
     purge_expired_deleted_conversations()
     conn = get_db("archive_memory")
     try:
@@ -870,6 +924,8 @@ def get_deleted_conversations(user_id):
 
 def purge_expired_deleted_conversations(now=None):
     """Permanently remove Bin chats after 15 days while retaining archives."""
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.purge_expired_deleted_conversations(now)
     cutoff = (now or datetime.utcnow()) - timedelta(days=15)
     conn = get_db("archive_memory")
     try:
@@ -885,6 +941,8 @@ def purge_expired_deleted_conversations(now=None):
 
 
 def _find_conversation(conversation_id, user_id, include_deleted=True):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.find_conversation(conversation_id, user_id, include_deleted)
     conn = get_db("chat")
     try:
         row = _fetchone(
@@ -911,6 +969,8 @@ def _find_conversation(conversation_id, user_id, include_deleted=True):
 
 
 def get_conversation(conversation_id, user_id):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.get_conversation(conversation_id, user_id)
     _, conversation = _find_conversation(conversation_id, user_id, include_deleted=True)
     return conversation
 
@@ -1051,6 +1111,10 @@ def _move_archive_to_chat(conversation):
 
 
 def update_conversation(conversation_id, user_id, title, messages, expected_revision=None):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.update_conversation(
+            conversation_id, user_id, title, messages, expected_revision
+        )
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=False)
     if not conversation:
         return {"ok": False, "found": False, "conflict": False, "conversation": None}
@@ -1086,6 +1150,8 @@ def update_conversation(conversation_id, user_id, title, messages, expected_revi
 
 
 def append_conversation_message(conversation_id, user_id, message):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.append_conversation_message(conversation_id, user_id, message)
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=False)
     if not conversation:
         return None
@@ -1108,6 +1174,10 @@ def append_conversation_message(conversation_id, user_id, message):
 
 
 def update_conversation_message(conversation_id, user_id, message_id, patch):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.update_conversation_message(
+            conversation_id, user_id, message_id, patch
+        )
     conversation = get_conversation(conversation_id, user_id)
     if not conversation or conversation.get("deleted"):
         return None
@@ -1133,6 +1203,10 @@ def update_conversation_message(conversation_id, user_id, message_id, patch):
 
 
 def delete_conversation_message(conversation_id, user_id, message_id):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.delete_conversation_message(
+            conversation_id, user_id, message_id
+        )
     conversation = get_conversation(conversation_id, user_id)
     if not conversation or conversation.get("deleted"):
         return None
@@ -1153,6 +1227,10 @@ def delete_conversation_message(conversation_id, user_id, message_id):
 
 
 def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.update_conversation_metadata(
+            conversation_id, user_id, pinned=pinned, archived=archived, deleted=deleted
+        )
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=True)
     if not conversation:
         return None
@@ -1222,6 +1300,8 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
 
 
 def delete_conversation(conversation_id, user_id):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.delete_conversation(conversation_id, user_id)
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=True)
     if not conversation:
         return False
@@ -1240,6 +1320,8 @@ def delete_conversation(conversation_id, user_id):
 
 
 def delete_all_conversations(user_id):
+    if ODDI_CHAT_FILES_STORAGE:
+        return local_chat_files.delete_all_conversations(user_id)
     # Clear active chats and archived/bin chats. Memory is intentionally not
     # touched; "clear chats" must not erase long-term user memory.
     chat_conn = get_db("chat")

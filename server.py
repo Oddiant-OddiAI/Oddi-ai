@@ -193,18 +193,22 @@ _IS_PRODUCTION_SERVER = (
     os.getenv("ENVIRONMENT", "").strip().lower() in {"production", "prod"}
     or _IS_RENDER_SERVER
 )
+_SECURE_SESSION_COOKIES = (
+    _IS_PRODUCTION_SERVER
+    or os.getenv("ODDI_SECURE_COOKIES", "").strip().lower() in {"1", "true", "yes", "on"}
+)
 _SESSION_SECRET = (
     os.getenv("FLASK_SECRET_KEY", "").strip()
     or os.getenv("ODDI_SESSION_SECRET", "").strip()
     or os.getenv("SECRET_KEY", "").strip()
 )
-if _IS_PRODUCTION_SERVER and ODDI_BROWSER_LOCAL_CHATS and len(_SESSION_SECRET) < 32:
+if _SECURE_SESSION_COOKIES and ODDI_BROWSER_LOCAL_CHATS and len(_SESSION_SECRET) < 32:
     # Browser-local Render mode has no persistent account sessions. Use a
     # cryptographically random process key when none is configured; chats stay
     # in browser storage across server restarts, while the temporary guest
     # session can safely be recreated.
     _SESSION_SECRET = secrets.token_urlsafe(48)
-elif _IS_PRODUCTION_SERVER and len(_SESSION_SECRET) < 32:
+elif _SECURE_SESSION_COOKIES and len(_SESSION_SECRET) < 32:
     # Render needs a stable signing key across restarts so account cookies keep
     # working. If the operator has not set a dedicated session key, derive one
     # from the already-required persistent database credentials. Never log or
@@ -227,6 +231,11 @@ elif _IS_PRODUCTION_SERVER and len(_SESSION_SECRET) < 32:
             + _database_secret_material.encode("utf-8")
         ).hexdigest()
     else:
+        if ODDI_CHAT_FILES_STORAGE:
+            raise RuntimeError(
+                "Set FLASK_SECRET_KEY to a persistent random value of at least 32 characters "
+                "before exposing the laptop-hosted ODDI service."
+            )
         raise RuntimeError(
             "Set FLASK_SECRET_KEY to a persistent random value of at least 32 characters, "
             "or configure a persistent PostgreSQL DATABASE_URL for production."
@@ -239,7 +248,7 @@ app.add_middleware(
     secret_key=_SESSION_SECRET,
     max_age=int(timedelta(days=30).total_seconds()),
     same_site="lax",
-    https_only=_IS_PRODUCTION_SERVER,
+    https_only=_SECURE_SESSION_COOKIES,
 )
 
 # Keep the existing static directory available under the same /static URL.
