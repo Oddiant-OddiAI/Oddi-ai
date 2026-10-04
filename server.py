@@ -199,10 +199,32 @@ _SESSION_SECRET = (
     or os.getenv("SECRET_KEY", "").strip()
 )
 if _IS_PRODUCTION_SERVER and len(_SESSION_SECRET) < 32:
-    raise RuntimeError(
-        "Set FLASK_SECRET_KEY to a persistent random value of at least 32 characters "
-        "in the production environment before enabling account chat sync."
+    # Render needs a stable signing key across restarts so account cookies keep
+    # working. If the operator has not set a dedicated session key, derive one
+    # from the already-required persistent database credentials. Never log or
+    # expose this material. Setting FLASK_SECRET_KEY remains the preferred
+    # option because rotating database credentials then won't invalidate login
+    # cookies.
+    _database_secret_material = "\0".join(
+        os.getenv(name, "").strip()
+        for name in (
+            "DATABASE_URL",
+            "DATABASE_URL_CHAT",
+            "DATABASE_URL_FILES",
+            "DATABASE_URL_ARCHIVE_MEMORY",
+        )
+        if os.getenv(name, "").strip()
     )
+    if _database_secret_material:
+        _SESSION_SECRET = hashlib.sha256(
+            b"oddi-session-cookie-signing-v1\0"
+            + _database_secret_material.encode("utf-8")
+        ).hexdigest()
+    else:
+        raise RuntimeError(
+            "Set FLASK_SECRET_KEY to a persistent random value of at least 32 characters, "
+            "or configure a persistent PostgreSQL DATABASE_URL for production."
+        )
 if not _SESSION_SECRET:
     _SESSION_SECRET = "local-development-only-secret-change-before-deploy"
 
