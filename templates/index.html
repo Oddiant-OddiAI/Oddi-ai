@@ -7118,9 +7118,10 @@ function readOddiBrowserChatFallback() {
 }
 
 async function getOddiBrowserChats() {
+    let indexedChats = [];
     try {
         const db = await openOddiBrowserChatDb();
-        return await new Promise((resolve, reject) => {
+        indexedChats = await new Promise((resolve, reject) => {
             const tx = db.transaction(ODDI_BROWSER_CHAT_STORE, "readonly");
             const request = tx.objectStore(ODDI_BROWSER_CHAT_STORE).getAll();
             request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
@@ -7131,6 +7132,15 @@ async function getOddiBrowserChats() {
         console.warn("IndexedDB chat read failed; using browser storage fallback:", error);
         return readOddiBrowserChatFallback();
     }
+    const byId = new Map(indexedChats.map(item => [String(item?.id), item]));
+    // Recover fallback-only chats if IndexedDB became available again after a
+    // previous device storage failure. IndexedDB wins when the ID already exists.
+    for (const item of readOddiBrowserChatFallback()) {
+        if (item?.id !== null && item?.id !== undefined && !byId.has(String(item.id))) {
+            byId.set(String(item.id), item);
+        }
+    }
+    return [...byId.values()];
 }
 
 async function putOddiBrowserChat(conversation) {
@@ -7144,6 +7154,8 @@ async function putOddiBrowserChat(conversation) {
             tx.onerror = () => reject(tx.error || new Error("Could not save local chat"));
             tx.onabort = () => reject(tx.error || new Error("Local chat save was interrupted"));
         });
+        const fallback = readOddiBrowserChatFallback().filter(item => String(item?.id) !== String(value.id));
+        try { localStorage.setItem(ODDI_BROWSER_CHAT_FALLBACK_KEY, JSON.stringify(fallback)); } catch (_) {}
         return true;
     } catch (error) {
         const chats = readOddiBrowserChatFallback();
@@ -7161,6 +7173,12 @@ async function putOddiBrowserChat(conversation) {
 }
 
 async function deleteOddiBrowserChat(conversationId) {
+    const removeFallback = () => {
+        const chats = readOddiBrowserChatFallback().filter(item => String(item?.id) !== String(conversationId));
+        try { localStorage.setItem(ODDI_BROWSER_CHAT_FALLBACK_KEY, JSON.stringify(chats)); } catch (error) {
+            console.error("Could not delete local chat fallback:", error);
+        }
+    };
     try {
         const db = await openOddiBrowserChatDb();
         await new Promise((resolve, reject) => {
@@ -7170,11 +7188,9 @@ async function deleteOddiBrowserChat(conversationId) {
             tx.onerror = () => reject(tx.error || new Error("Could not delete local chat"));
             tx.onabort = () => reject(tx.error || new Error("Local chat deletion was interrupted"));
         });
+        removeFallback();
     } catch (_) {
-        const chats = readOddiBrowserChatFallback().filter(item => String(item?.id) !== String(conversationId));
-        try { localStorage.setItem(ODDI_BROWSER_CHAT_FALLBACK_KEY, JSON.stringify(chats)); } catch (error) {
-            console.error("Could not delete local chat:", error);
-        }
+        removeFallback();
     }
 }
 
@@ -7305,7 +7321,7 @@ function mergeConversationFromServer(localConversation, serverConversation) {
 
 async function loadConversations() {
     window.__oddiConversationLoadStarted = true;
-    if (!isLoggedIn) { conversations = []; currentConversation = null; renderHistory(); publishConversationDataReady(); return; }
+    if (!isLoggedIn && !browserLocalChatStorage) { conversations = []; currentConversation = null; renderHistory(); publishConversationDataReady(); return; }
     if (browserLocalChatStorage) {
         try {
             const byId = new Map();
@@ -7423,6 +7439,10 @@ async function saveConversation(conversation) {
         else removeOddiConversationBackup(conversationId);
         conversationDirtyLocal.delete(conversationId);
         conversation.__recoveredLocally = !saved;
+        if (!saved && !window.__oddiLocalChatSaveWarningShown) {
+            window.__oddiLocalChatSaveWarningShown = true;
+            alert("This chat could not be saved in this browser. Check device storage space or browser privacy settings.");
+        }
         return saved;
     }
     backupOddiConversation(conversation);
@@ -20921,7 +20941,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261003-home-action-6"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261004-browser-local-chats-1"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -21555,7 +21575,7 @@ body.dark-mode #exportChatMenu.export-chat-menu.show{background:#111 !important;
   syncHardLauncher();
 })();
 </script>
-<script src="/static/oddi-sidebar/oddi-sidebar.js?v=20261003-home-action-6"></script>
+<script src="/static/oddi-sidebar/oddi-sidebar.js?v=20261004-browser-local-chats-1"></script>
 <style id="oddi-spark-mobile-final-fix">
 /* FINAL: circuit signals remain visible on mobile; reduced-motion still wins. */
 @media (max-width: 768px) and (pointer: coarse) and (prefers-reduced-motion: no-preference) {

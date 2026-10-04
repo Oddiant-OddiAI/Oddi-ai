@@ -913,7 +913,7 @@ def api_get_conversations(request: Request):
 
 @app.post("/api/conversations", name="api_create_conversation")
 async def api_create_conversation(request: Request):
-    if _request_logging_enabled(request):
+    if not ODDI_BROWSER_LOCAL_CHATS and _request_logging_enabled(request):
         logger.info(
             "HTTP POST /api/conversations pid=%s user=%s",
             os.getpid(),
@@ -1502,7 +1502,10 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     user_id = require_user_id(request)
     user_settings = get_user_settings(user_id)
     privacy_settings = user_settings.get("privacy", {}) if isinstance(user_settings, dict) else {}
-    request_logging_enabled = privacy_settings.get("request_logging", True) is not False
+    request_logging_enabled = (
+        not ODDI_BROWSER_LOCAL_CHATS
+        and privacy_settings.get("request_logging", True) is not False
+    )
 
     # Build the authoritative identity from the authenticated session.
     # The message itself must never be allowed to determine host/admin status.
