@@ -125,7 +125,12 @@ def _service():
             raise DriveStorageError(
                 "GOOGLE_DRIVE_PRIVATE_KEY must contain the complete BEGIN/END PRIVATE KEY block."
             )
-        private_key = private_key[begin:end + len(end_marker)].strip() + "\n"
+        # Backslashes cannot occur in PEM's base64 body. Some dotenv editors
+        # preserve copy-escaped backslashes inside the key, which makes an
+        # otherwise complete service-account key fail PEM decoding. Remove
+        # those invalid characters from the body while rebuilding clean PEM.
+        pem_body = private_key[begin + len(begin_marker):end].replace("\\", "").strip()
+        private_key = f"{begin_marker}\n{pem_body}\n{end_marker}\n"
         info = {
             "type": "service_account",
             "client_email": client_email,
@@ -145,7 +150,9 @@ def _service():
     except DriveStorageError:
         raise
     except Exception as exc:
-        logger.exception("Could not initialize the Google Drive client")
+        # Avoid writing key material or provider internals to the application
+        # logs while still leaving enough information to diagnose the class.
+        logger.error("Could not initialize the Google Drive client (error_type=%s)", type(exc).__name__)
         raise DriveStorageError(
             "Google Drive credentials could not be loaded. Check that GOOGLE_DRIVE_PRIVATE_KEY is the complete, unmodified PEM key and that GOOGLE_DRIVE_CLIENT_EMAIL matches its service account."
         ) from exc
