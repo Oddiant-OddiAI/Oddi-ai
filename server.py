@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 from fastapi.encoders import jsonable_encoder
+from fastapi.middleware.gzip import GZipMiddleware
 from dotenv import load_dotenv
 
 # Load local configuration before importing app modules. app.database reads
@@ -148,6 +149,7 @@ app = FastAPI(
     title="ODDI AI",
     version="1.0.0",
 )
+app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
 @app.middleware("http")
@@ -264,10 +266,7 @@ elif _SECURE_SESSION_COOKIES and ODDI_BROWSER_LOCAL_CHATS and len(_SESSION_SECRE
 elif _SECURE_SESSION_COOKIES and len(_SESSION_SECRET) < 32:
     # Render needs a stable signing key across restarts so account cookies keep
     # working. If the operator has not set a dedicated session key, derive one
-    # from the already-required persistent database credentials. Never log or
-    # expose this material. Setting FLASK_SECRET_KEY remains the preferred
-    # option because rotating database credentials then won't invalidate login
-    # cookies.
+    # from persistent storage credentials. Never log or expose this material.
     _database_secret_material = "\0".join(
         os.getenv(name, "").strip()
         for name in (
@@ -286,7 +285,10 @@ elif _SECURE_SESSION_COOKIES and len(_SESSION_SECRET) < 32:
     elif ODDI_DRIVE_CHAT_STORAGE:
         _drive_secret_material = "\0".join(
             os.getenv(name, "").strip()
-            for name in ("GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN")
+            # Refresh tokens can be replaced during Drive reauthorization.
+            # Keep existing sessions valid across that storage credential
+            # rotation; the OAuth client secret remains the stable key source.
+            for name in ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET")
             if os.getenv(name, "").strip()
         )
         _SESSION_SECRET = hashlib.sha256(
@@ -444,6 +446,28 @@ def set_user_session(request: Request, user, auth_provider=None):
         request.session["auth_provider"] = auth_provider
 
 
+def _trusted_drive_session_user(request: Request):
+    """Validate the signed account identity without a Drive round trip."""
+    if not ODDI_DRIVE_CHAT_STORAGE:
+        return None
+    email = str(request.session.get("email") or "").strip().casefold()
+    provider = str(request.session.get("auth_provider") or "").casefold()
+    if not email or email.endswith("@local.oddi.invalid") or provider == "browser-local":
+        return None
+    try:
+        session_id = int(request.session.get("user_id"))
+        expected_id = drive_user_id_for_email(email)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if session_id != expected_id:
+        return None
+    return {
+        "id": session_id,
+        "username": str(request.session.get("username") or email.split("@", 1)[0]),
+        "email": email,
+    }
+
+
 def _get_session_user(request: Request):
     is_browser_local_identity = (
         request.session.get("auth_provider") == "browser-local"
@@ -454,6 +478,13 @@ def _get_session_user(request: Request):
     user_id = request.session.get("user_id")
     if not user_id:
         return None
+
+    # The session cookie is signed, and the Drive account ID is a stable hash
+    # of its email. Rechecking Drive on every page/API request made regular
+    # navigation depend on several remote calls and caused repeated sign-ins.
+    trusted_drive_user = _trusted_drive_session_user(request)
+    if trusted_drive_user:
+        return trusted_drive_user
 
     user = get_user_by_id(user_id)
     session_email = str(request.session.get("email") or "").strip()
@@ -498,29 +529,9 @@ def require_user_id(request: Request):
     if not user_id:
         raise HTTPException(status_code=401, detail="Not logged in.")
 
-    # A Drive-backed chat can still be generated when Drive is temporarily
-    # unreachable. The signed Starlette session proves the user already logged
-    # in; matching its stable account ID to its email prevents using a local or
-    # unrelated identity. Avoid a slow Drive lookup on the critical send path.
-    if ODDI_DRIVE_CHAT_STORAGE and (
-        request.url.path == "/chat"
-        or request.url.path.startswith("/api/chat-generations/")
-    ):
-        email = str(request.session.get("email") or "").strip().casefold()
-        provider = str(request.session.get("auth_provider") or "").casefold()
-        try:
-            session_id = int(user_id)
-            expected_id = drive_user_id_for_email(email)
-        except (TypeError, ValueError, OverflowError):
-            session_id = None
-            expected_id = None
-        if (
-            provider != "browser-local"
-            and not email.endswith("@local.oddi.invalid")
-            and session_id is not None
-            and session_id == expected_id
-        ):
-            return session_id
+    trusted_drive_user = _trusted_drive_session_user(request)
+    if trusted_drive_user:
+        return trusted_drive_user["id"]
 
     try:
         user = _get_session_user(request)
@@ -729,10 +740,10 @@ async def login(request: Request):
     email = str(form.get("email", "")).strip()
     password = str(form.get("password", ""))
 
-    user = get_user_by_email(email)
+    user = await run_in_threadpool(get_user_by_email, email)
     if user is None:
         await sync_laptop_accounts_from_drive()
-        user = get_user_by_email(email)
+        user = await run_in_threadpool(get_user_by_email, email)
 
     if not user:
         return PlainTextResponse("Email not found.")
@@ -810,10 +821,10 @@ async def api_login(request: Request):
             status_code=400,
         )
 
-    user = get_user_by_email(email)
+    user = await run_in_threadpool(get_user_by_email, email)
     if user is None:
         await sync_laptop_accounts_from_drive()
-        user = get_user_by_email(email)
+        user = await run_in_threadpool(get_user_by_email, email)
 
     if user is None:
         return JSONResponse(

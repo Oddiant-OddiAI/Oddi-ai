@@ -9,6 +9,9 @@ import re
 import secrets
 import sqlite3
 import threading
+import time
+from copy import deepcopy
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger("oddi.drive_storage")
@@ -31,6 +34,8 @@ _ROOT_VALIDATED = False
 _ROOT_DRIVE_ID = None
 _FOLDER_CACHE_LOCK = threading.Lock()
 _FOLDER_CACHE = {}
+_ACCOUNT_CACHE_LOCK = threading.Lock()
+_ACCOUNT_CACHE = {}
 
 
 def _bounded_env_int(name, default, minimum, maximum):
@@ -48,6 +53,11 @@ _DRIVE_HTTP_TIMEOUT_SECONDS = _bounded_env_int(
     "ODDI_DRIVE_HTTP_TIMEOUT_SECONDS", 20, 5, 120
 )
 _DRIVE_API_RETRIES = _bounded_env_int("ODDI_DRIVE_API_RETRIES", 3, 0, 5)
+_DRIVE_READ_WORKERS = _bounded_env_int("ODDI_DRIVE_READ_WORKERS", 8, 2, 16)
+_DRIVE_READ_POOL = ThreadPoolExecutor(
+    max_workers=_DRIVE_READ_WORKERS,
+    thread_name_prefix="oddi-drive-read",
+)
 
 
 class DriveStorageError(RuntimeError):
@@ -337,7 +347,7 @@ def _read_json_file_meta(meta):
     except DriveStorageError:
         raise
     except Exception as exc:
-        logger.exception("Could not read Drive JSON file %s", name)
+        logger.exception("Could not read Drive JSON file %s", meta.get("name", "<unknown>"))
         raise DriveStorageError("A stored Google Drive data file could not be read.") from exc
     finally:
         if request is not None:
@@ -494,21 +504,37 @@ def _write_conversation(user_id, conversation):
     return normalized
 
 
+def _read_conversation_meta(user_id, meta):
+    match = _CHAT_NAME_RE.fullmatch(meta.get("name", ""))
+    if not match:
+        return None
+    # The directory listing already includes each Drive file ID. Read the JSON
+    # directly instead of issuing another name lookup per chat.
+    value = _read_json_file_meta(meta)
+    if isinstance(value, dict):
+        return _normalize_conversation(value, user_id, match.group(1))
+    return None
+
+
 def _all_conversations(user_id):
     folder_id = _chat_folder(user_id)
     if not folder_id:
         return []
-    result = []
-    for meta in _list_children(folder_id):
-        match = _CHAT_NAME_RE.fullmatch(meta.get("name", ""))
-        if not match:
-            continue
-        # The directory listing already includes each Drive file ID. Read the
-        # JSON directly instead of issuing another name lookup per chat.
-        value = _read_json_file_meta(meta)
-        if isinstance(value, dict):
-            result.append(_normalize_conversation(value, user_id, match.group(1)))
-    return result
+    chat_files = [
+        meta for meta in _list_children(folder_id)
+        if _CHAT_NAME_RE.fullmatch(meta.get("name", ""))
+    ]
+    if not chat_files:
+        return []
+    # Chat files are independent. Bounded parallel downloads avoid a
+    # many-minute serial wait for accounts with a large history.
+    return [
+        conversation
+        for conversation in _DRIVE_READ_POOL.map(
+            lambda meta: _read_conversation_meta(user_id, meta), chat_files
+        )
+        if conversation is not None
+    ]
 
 
 def _tombstone_name():
@@ -552,22 +578,48 @@ def clear_tombstones(user_id, conversation_ids=None):
 
 # ---- Account records -----------------------------------------------------
 
+def _invalidate_account_cache(user_id):
+    with _ACCOUNT_CACHE_LOCK:
+        _ACCOUNT_CACHE.pop(_account_key(user_id), None)
+
+
+def _read_account_meta(folder_id):
+    # One directory listing finds both the live account file and the deletion
+    # marker. A valid account.json means the marker is absent; account deletion
+    # removes account.json before writing its marker.
+    children = _list_children(folder_id)
+    return next(
+        (meta for meta in children if meta.get("name") == "account.json"),
+        None,
+    )
+
 def get_account_by_email(email):
     user_id = user_id_for_email(email)
     return get_account_by_id(user_id)
 
 
 def get_account_by_id(user_id):
-    folder_id = _account_folder(user_id)
-    if not folder_id:
-        return None
-    if _read_json_file(folder_id, _DELETED_ACCOUNT_FILE):
-        return None
-    account = _read_json_file(folder_id, "account.json")
+    account_id = _account_key(user_id)
+    now = time.monotonic()
+    with _ACCOUNT_CACHE_LOCK:
+        cached = _ACCOUNT_CACHE.get(account_id)
+        if cached and cached[0] > now:
+            return deepcopy(cached[1]) if cached[1] is not None else None
+
+    folder_id = _account_folder(account_id)
+    meta = _read_account_meta(folder_id) if folder_id else None
+    account = _read_json_file_meta(meta) if meta else None
     if not isinstance(account, dict):
-        return None
-    account["id"] = int(_account_key(user_id))
-    return account
+        account = None
+    else:
+        account["id"] = int(account_id)
+    # Avoid rereading the same password hash from Drive if a user signs out
+    # and back in shortly afterward. Account mutation routes invalidate this
+    # cache immediately; remote changes become visible within five minutes.
+    ttl = 300 if account is not None else 3
+    with _ACCOUNT_CACHE_LOCK:
+        _ACCOUNT_CACHE[account_id] = (now + ttl, deepcopy(account) if account is not None else None)
+    return deepcopy(account) if account is not None else None
 
 
 def create_account(username, email, password_hash):
@@ -591,6 +643,7 @@ def create_account(username, email, password_hash):
             "settings_updated_at": now,
         }
         _write_json_file(folder_id, "account.json", account)
+        _invalidate_account_cache(user_id)
         return account
 
 
@@ -603,9 +656,8 @@ def list_accounts():
         if not re.fullmatch(r"account-[1-9][0-9]*", meta.get("name", "")):
             continue
         account_id = meta["name"].split("-", 1)[1]
-        if _read_json_file(meta["id"], _DELETED_ACCOUNT_FILE):
-            continue
-        account = _read_json_file(meta["id"], "account.json")
+        account_meta = _read_account_meta(meta["id"])
+        account = _read_json_file_meta(account_meta) if account_meta else None
         if isinstance(account, dict) and account.get("email"):
             account["id"] = int(account_id)
             result.append(account)
@@ -654,6 +706,7 @@ def upsert_account_from_local(account):
                 "settings_updated_at": _iso_timestamp(account.get("settings_updated_at")) if account.get("settings_updated_at") else _iso_timestamp(),
             }
         _write_json_file(folder_id, "account.json", value)
+        _invalidate_account_cache(user_id)
         return value
 
 
@@ -667,6 +720,7 @@ def update_account_settings(user_id, settings):
     account["settings_updated_at"] = now
     folder_id = _account_folder(user_id, create=True)
     _write_json_file(folder_id, "account.json", account)
+    _invalidate_account_cache(user_id)
     return True
 
 
@@ -677,6 +731,7 @@ def update_account_profile(user_id, username):
     account["username"] = str(username or "").strip()[:200]
     account["updated_at"] = _iso_timestamp()
     _write_json_file(_account_folder(user_id, create=True), "account.json", account)
+    _invalidate_account_cache(user_id)
     return True
 
 
@@ -691,6 +746,7 @@ def delete_account(user_id):
                 _api_call(_service().files().delete(fileId=child["id"], supportsAllDrives=_supports_shared_drive()))
         _api_call(_service().files().delete(fileId=meta["id"], supportsAllDrives=_supports_shared_drive()))
     _write_json_file(folder_id, _DELETED_ACCOUNT_FILE, {"deleted_at": _iso_timestamp()})
+    _invalidate_account_cache(user_id)
     return True
 
 
