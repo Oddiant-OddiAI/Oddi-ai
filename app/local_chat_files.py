@@ -559,7 +559,7 @@ def delete_account_chats(user_id):
 
 
 def purge_expired_deleted_conversations(now=None, user_id=None):
-    cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=15)
+    cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=7)
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
     cutoff = cutoff.astimezone(timezone.utc)

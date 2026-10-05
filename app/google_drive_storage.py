@@ -50,9 +50,11 @@ def _bounded_env_int(name, default, minimum, maximum):
 # so a stalled Drive connection cannot hold a Render request forever, while
 # remaining configurable for deployments with slower outbound connections.
 _DRIVE_HTTP_TIMEOUT_SECONDS = _bounded_env_int(
-    "ODDI_DRIVE_HTTP_TIMEOUT_SECONDS", 20, 5, 120
+    "ODDI_DRIVE_HTTP_TIMEOUT_SECONDS", 45, 45, 120
 )
 _DRIVE_API_RETRIES = _bounded_env_int("ODDI_DRIVE_API_RETRIES", 3, 0, 5)
+_DRIVE_WRITE_RETRIES = 1
+_DRIVE_RESUMABLE_UPLOAD_THRESHOLD = 4 * 1024 * 1024
 _DRIVE_READ_WORKERS = _bounded_env_int("ODDI_DRIVE_READ_WORKERS", 8, 2, 16)
 _DRIVE_READ_POOL = ThreadPoolExecutor(
     max_workers=_DRIVE_READ_WORKERS,
@@ -192,10 +194,40 @@ def _api_call(request):
             raise DriveStorageError(
                 "The configured Google Drive folder was not found or the authorized Google account cannot access it."
             ) from exc
-        logger.exception("Google Drive API request failed (status=%s)", status)
+        if _is_retryable_drive_error(exc):
+            logger.warning(
+                "Google Drive request hit a transient transport error (status=%s, error_type=%s)",
+                status,
+                type(exc).__name__,
+            )
+            raise DriveStorageError(
+                "Google Drive is temporarily unavailable or the connection was interrupted. Please retry."
+            ) from exc
+        else:
+            logger.exception("Google Drive API request failed (status=%s)", status)
         raise DriveStorageError(f"Google Drive request failed (HTTP {status or 'unknown'}).") from exc
     finally:
         _close_request_transport(request)
+
+
+def _is_retryable_drive_error(error):
+    """Recognize transient network failures after googleapiclient exhausted retries."""
+    retryable_statuses = {408, 429, 500, 502, 503, 504}
+    seen = set()
+    current = error
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, (TimeoutError, ConnectionError)):
+            return True
+        if type(current).__name__ in {
+            "SSLError", "ServerNotFoundError", "RemoteDisconnected", "IncompleteRead"
+        }:
+            return True
+        status = getattr(getattr(current, "resp", None), "status", None)
+        if status in retryable_statuses:
+            return True
+        current = current.__cause__ or current.__context__
+    return False
 
 
 def _close_request_transport(request):
@@ -364,40 +396,64 @@ def _write_json_file(parent_id, name, value, app_properties=None):
         from googleapiclient.http import MediaIoBaseUpload
 
         payload = json.dumps(value, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode("utf-8")
-        media = MediaIoBaseUpload(
-            io.BytesIO(payload),
-            mimetype="application/json",
-            chunksize=1024 * 1024,
-            resumable=True,
-        )
-        meta = _find_child(parent_id, name)
         properties = {str(key): str(value) for key, value in (app_properties or {}).items()}
-        if meta:
-            update_args = {}
-            if app_properties is not None:
-                update_args["body"] = {"appProperties": properties}
-            return _api_call(
-                _service().files().update(
-                    fileId=meta["id"],
-                    media_body=media,
-                    fields="id,name,modifiedTime,appProperties",
-                    supportsAllDrives=_supports_shared_drive(),
-                    **update_args,
+        resumable = len(payload) > _DRIVE_RESUMABLE_UPLOAD_THRESHOLD
+        for attempt in range(_DRIVE_WRITE_RETRIES + 1):
+            meta = None
+            try:
+                # Small account/settings/chat JSON files do not benefit from a
+                # resumable session; multipart upload avoids an extra TLS round
+                # trip. Keep resumable transfer for larger chat histories.
+                media = MediaIoBaseUpload(
+                    io.BytesIO(payload),
+                    mimetype="application/json",
+                    chunksize=1024 * 1024 if resumable else -1,
+                    resumable=resumable,
                 )
-            )
-        return _api_call(
-            _service().files().create(
-                body={
-                    "name": name,
-                    "mimeType": "application/json",
-                    "parents": [parent_id],
-                    **({"appProperties": properties} if app_properties is not None else {}),
-                },
-                media_body=media,
-                fields="id,name,modifiedTime,appProperties",
-                supportsAllDrives=_supports_shared_drive(),
-            )
-        )
+                meta = _find_child(parent_id, name)
+                if meta:
+                    update_args = {}
+                    if app_properties is not None:
+                        update_args["body"] = {"appProperties": properties}
+                    request = _service().files().update(
+                        fileId=meta["id"],
+                        media_body=media,
+                        fields="id,name,modifiedTime,appProperties",
+                        supportsAllDrives=_supports_shared_drive(),
+                        **update_args,
+                    )
+                else:
+                    request = _service().files().create(
+                        body={
+                            "name": name,
+                            "mimeType": "application/json",
+                            "parents": [parent_id],
+                            **({"appProperties": properties} if app_properties is not None else {}),
+                        },
+                        media_body=media,
+                        fields="id,name,modifiedTime,appProperties",
+                        supportsAllDrives=_supports_shared_drive(),
+                    )
+                return _api_call(request)
+            except DriveStorageError as exc:
+                # A timed-out update may already have reached Drive. Re-read
+                # the child on the next pass and repeat the idempotent update.
+                # Avoid retrying creates, whose response may be lost after the
+                # new file was committed and could otherwise make duplicates.
+                if (
+                    meta
+                    and attempt < _DRIVE_WRITE_RETRIES
+                    and _is_retryable_drive_error(exc)
+                ):
+                    logger.warning(
+                        "Retrying transient Google Drive JSON update for %s (%s)",
+                        name,
+                        type(exc.__cause__).__name__ if exc.__cause__ else type(exc).__name__,
+                    )
+                    time.sleep(0.5 * (attempt + 1))
+                    continue
+                raise
+        raise DriveStorageError("Google Drive could not save the account or chat file.")
     except DriveStorageError:
         raise
     except Exception as exc:
@@ -1110,7 +1166,7 @@ def delete_account_chats(user_id):
 
 
 def purge_expired_deleted_conversations(now=None, user_id=None):
-    cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=15)
+    cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=7)
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
     cutoff = cutoff.astimezone(timezone.utc)

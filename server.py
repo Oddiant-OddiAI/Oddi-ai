@@ -157,6 +157,7 @@ app = FastAPI(
 
 _SUMMARY_BACKFILL_LOCK = threading.Lock()
 _SUMMARY_BACKFILL_USERS = set()
+_WORKSPACE_MUTATION_LOCK = threading.RLock()
 
 
 def _backfill_chat_summaries(user_id):
@@ -1055,19 +1056,163 @@ async def api_update_settings(request: Request):
     incoming = data.get("settings")
     if not isinstance(incoming, dict):
         return JSONResponse({"error": "Settings must be an object."}, status_code=400)
-    current = get_user_settings(user_id)
-    # Only settings used by the UI are accepted. Never store arbitrary payloads.
-    if isinstance(current.get("chat_preferences"), dict):
-        current["chat_preferences"].pop("default_provider", None)
-    allowed = {"privacy", "chat_preferences", "profile", "memory"}
-    for key in allowed:
-        value = incoming.get(key)
-        if isinstance(value, dict):
-            if key == "chat_preferences":
-                value = {name: item for name, item in value.items() if name != "default_provider"}
-            current[key] = value
-    save_user_settings(user_id, current)
+    with _WORKSPACE_MUTATION_LOCK:
+        current = get_user_settings(user_id)
+        # Only settings used by the UI are accepted. Never store arbitrary payloads.
+        if isinstance(current.get("chat_preferences"), dict):
+            current["chat_preferences"].pop("default_provider", None)
+        allowed = {"privacy", "chat_preferences", "profile", "memory"}
+        for key in allowed:
+            value = incoming.get(key)
+            if isinstance(value, dict):
+                if key == "chat_preferences":
+                    value = {name: item for name, item in value.items() if name != "default_provider"}
+                current[key] = value
+        save_user_settings(user_id, current)
     return JSONResponse({"success": True, "settings": current})
+
+
+def _workspace_operation_result(user_id, operation):
+    """Apply one idempotent workspace edit to the latest account settings."""
+    with _WORKSPACE_MUTATION_LOCK:
+        settings = get_user_settings(user_id)
+        if not isinstance(settings, dict):
+            settings = {}
+        workspace = settings.get("workspace")
+        if not isinstance(workspace, dict):
+            workspace = {"projects": [], "tasks": [], "prompts": [], "hiddenHomeCards": [], "responseStyle": ""}
+        workspace = json.loads(json.dumps(workspace, ensure_ascii=False))
+        for key in ("projects", "tasks", "prompts", "hiddenHomeCards"):
+            if not isinstance(workspace.get(key), list):
+                workspace[key] = []
+
+        op_id = str(operation.get("id") or "").strip()
+        if not op_id or len(op_id) > 128:
+            return None, "Workspace operation ID is invalid.", 400
+        applied_ids = settings.get("workspace_operation_ids")
+        if not isinstance(applied_ids, list):
+            applied_ids = []
+        if op_id in applied_ids:
+            return {"workspace": workspace, "revision": int(settings.get("workspace_revision") or 0)}, None, 200
+
+        kind = str(operation.get("type") or "")
+        item = operation.get("item") if isinstance(operation.get("item"), dict) else {}
+        item_id = str(operation.get("item_id") or item.get("id") or "").strip()
+
+        def upsert(collection, value):
+            value_id = str(value.get("id") or "").strip()
+            if not value_id or len(value_id) > 128:
+                raise ValueError("Workspace item ID is invalid.")
+            values = workspace[collection]
+            for index, existing in enumerate(values):
+                if isinstance(existing, dict) and str(existing.get("id")) == value_id:
+                    if collection == "projects" and isinstance(existing.get("conversationIds"), list) and not isinstance(value.get("conversationIds"), list):
+                        value["conversationIds"] = existing["conversationIds"]
+                    values[index] = value
+                    break
+            else:
+                if collection == "tasks":
+                    values.insert(0, value)
+                else:
+                    values.append(value)
+            if collection == "tasks":
+                del values[300:]
+            else:
+                del values[:-{"projects": 100, "prompts": 100}[collection]]
+
+        try:
+            if kind in {"project.upsert", "task.upsert", "prompt.upsert"}:
+                collection = kind.split(".", 1)[0] + "s"
+                limits = {"project": ("name", 80), "task": ("text", 240), "prompt": ("name", 60)}
+                field, maximum = limits[kind.split(".", 1)[0]]
+                value = {"id": str(item.get("id") or ""), field: str(item.get(field) or "").strip()[:maximum]}
+                if kind == "project.upsert":
+                    value["conversationIds"] = [str(x) for x in item.get("conversationIds", []) if x][:500] if isinstance(item.get("conversationIds", []), list) else []
+                elif kind == "task.upsert":
+                    value.update({"done": bool(item.get("done")), "chatTitle": str(item.get("chatTitle") or "")[:120]})
+                else:
+                    value["text"] = str(item.get("text") or "")[:1200]
+                if not value.get(field):
+                    return None, f"{field.capitalize()} cannot be empty.", 400
+                upsert(collection, value)
+            elif kind in {"project.delete", "task.delete", "prompt.delete"}:
+                collection = kind.split(".", 1)[0] + "s"
+                if not item_id:
+                    return None, "Workspace item ID is required.", 400
+                workspace[collection] = [x for x in workspace[collection] if not isinstance(x, dict) or str(x.get("id")) != item_id]
+            elif kind == "project.link":
+                chat_id = str(operation.get("conversation_id") or "").strip()
+                project = next((x for x in workspace["projects"] if isinstance(x, dict) and str(x.get("id")) == item_id), None)
+                if not project or not chat_id:
+                    return None, "Project or conversation could not be found.", 404
+                linked = project.get("conversationIds") if isinstance(project.get("conversationIds"), list) else []
+                project["conversationIds"] = list(dict.fromkeys([*map(str, linked), chat_id]))[-500:]
+            elif kind == "project.unlink":
+                chat_id = str(operation.get("conversation_id") or "").strip()
+                project = next((x for x in workspace["projects"] if isinstance(x, dict) and str(x.get("id")) == item_id), None)
+                if not project or not chat_id:
+                    return None, "Project or conversation could not be found.", 404
+                project["conversationIds"] = [str(x) for x in project.get("conversationIds", []) if str(x) != chat_id]
+            elif kind == "home.set_card":
+                card_id = str(operation.get("card_id") or "")
+                hidden = operation.get("hidden")
+                if not card_id.startswith("quick-") or len(card_id) > 80 or not isinstance(hidden, bool):
+                    return None, "Home card preferences are invalid.", 400
+                cards = list(dict.fromkeys(x for x in workspace["hiddenHomeCards"] if isinstance(x, str)))
+                if hidden and card_id not in cards:
+                    cards.append(card_id)
+                elif not hidden:
+                    cards = [x for x in cards if x != card_id]
+                workspace["hiddenHomeCards"] = cards[-20:]
+            elif kind == "style.set":
+                style = str(operation.get("style") or "")
+                if style not in {"", "concise", "step_by_step", "table", "detailed"}:
+                    return None, "Answer style is invalid.", 400
+                workspace["responseStyle"] = style
+            else:
+                return None, "Workspace operation is not supported.", 400
+        except (TypeError, ValueError) as exc:
+            return None, str(exc), 400
+
+        try:
+            size = len(json.dumps(workspace, ensure_ascii=False).encode("utf-8"))
+        except (TypeError, ValueError):
+            return None, "Workspace data must be valid JSON.", 400
+        if size > 256 * 1024:
+            return None, "Workspace data is too large. Remove old projects or prompts and try again.", 413
+
+        revision = int(settings.get("workspace_revision") or 0) + 1
+        settings["workspace"] = workspace
+        settings["workspace_revision"] = revision
+        settings["workspace_operation_ids"] = [*applied_ids, op_id][-1000:]
+        save_user_settings(user_id, settings)
+        return {"workspace": workspace, "revision": revision}, None, 200
+
+
+@app.get("/api/workspace", name="api_get_workspace")
+def api_get_workspace(request: Request):
+    user_id = require_user_id(request)
+    settings = get_user_settings(user_id)
+    settings = settings if isinstance(settings, dict) else {}
+    workspace = settings.get("workspace")
+    return JSONResponse({
+        "workspace": workspace if isinstance(workspace, dict) else {},
+        "revision": int(settings.get("workspace_revision") or 0),
+        "account_id": str(user_id),
+    })
+
+
+@app.post("/api/workspace/operations", name="api_apply_workspace_operation")
+async def api_apply_workspace_operation(request: Request):
+    user_id = await require_user_id_async(request)
+    data = await safe_json(request)
+    operation = data.get("operation")
+    if not isinstance(operation, dict):
+        return JSONResponse({"error": "Workspace operation is required."}, status_code=400)
+    result, error, status = await run_in_threadpool(_workspace_operation_result, user_id, operation)
+    if error:
+        return JSONResponse({"error": error}, status_code=status)
+    return JSONResponse({"success": True, **result})
 
 
 @app.put("/api/account/profile", name="api_update_profile")
@@ -1087,13 +1232,14 @@ async def api_update_profile(request: Request):
     )
     if avatar and (len(avatar) > 2_800_000 or not avatar.startswith(allowed_avatar_prefixes)):
         return JSONResponse({"error": "Choose an image smaller than 2 MB."}, status_code=400)
-    update_user_profile(user_id, name)
-    request.session["username"] = name
-    settings = get_user_settings(user_id)
-    profile = settings.get("profile", {})
-    profile.update({"bio": bio, "avatar": avatar})
-    settings["profile"] = profile
-    save_user_settings(user_id, settings)
+    with _WORKSPACE_MUTATION_LOCK:
+        update_user_profile(user_id, name)
+        request.session["username"] = name
+        settings = get_user_settings(user_id)
+        profile = settings.get("profile", {})
+        profile.update({"bio": bio, "avatar": avatar})
+        settings["profile"] = profile
+        save_user_settings(user_id, settings)
     return JSONResponse({"success": True, "user": {"name": name, "email": request.session.get("email", "")}, "profile": profile})
 
 
@@ -1799,6 +1945,13 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     if message is None:
         return JSONResponse({"error": "Message is required."}, status_code=400)
     message = str(message)
+    response_style = str(form.get("response_style") or "").strip().casefold()
+    response_style_instructions = {
+        "concise": "Answer concisely, prioritizing the most useful information.",
+        "step_by_step": "Explain the answer as clear, numbered steps.",
+        "table": "When comparing multiple items, use a compact Markdown table; otherwise answer normally.",
+        "detailed": "Give a thorough, well-structured explanation with useful examples.",
+    }
     memory_message = str(form.get("memory_message") or message).strip()
     assistant_message_id = str(form.get("assistant_message_id") or "").strip()
     if not assistant_message_id or len(assistant_message_id) > 128:
@@ -2090,9 +2243,13 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         if fast_reply is not None:
             reply = fast_reply
         else:
+            engine_message = message
+            style_instruction = response_style_instructions.get(response_style)
+            if style_instruction:
+                engine_message += f"\n\n[Response format guidance: {style_instruction}]"
             reply = await run_in_threadpool(
                 process_message,
-                message,
+                engine_message,
                 engine_files,
                 conversation_history,
                 user_id=user_id,

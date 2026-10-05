@@ -1336,3 +1336,30 @@ input:focus-visible {
         text-align: center !important;
     }
 }
+
+
+/* ODDI auth pages: resilient viewport sizing, safe areas, and touch-friendly forms. */
+.rocket-auth{min-height:100vh;min-height:100dvh;width:100%;max-width:100vw;overflow-x:hidden}
+.auth-form-panel,.auth-form-wrapper{min-width:0;box-sizing:border-box}
+.auth-form-wrapper{width:min(100%,520px)}
+.rocket-login-form input,.rocket-login-form button,.rocket-login-form select{box-sizing:border-box;max-width:100%}
+.rocket-login-form input{min-width:0}
+.rocket-login-form button,.auth-mode-switch a,.switch-auth-text a{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.rocket-login-form :where(input,button):focus-visible,.auth-form-panel a:focus-visible{outline:2px solid #31c779;outline-offset:2px}
+@media(max-width:900px){
+ .rocket-auth{min-height:100vh;min-height:100dvh}
+ .auth-form-panel{min-height:100vh;min-height:100dvh;padding-top:max(24px,env(safe-area-inset-top));padding-bottom:max(24px,env(safe-area-inset-bottom))}
+ .auth-form-wrapper{margin-inline:auto}
+}
+@media(max-width:600px){
+ .auth-form-panel{width:100%;padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right));justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
+ .auth-form-wrapper{width:100%;max-width:480px}
+ .rocket-login-form input{min-height:48px;font-size:16px}
+ .rocket-login-form button{min-height:48px}
+ .auth-mode-switch{position:sticky;top:0;z-index:2}
+}
+@media(max-height:620px) and (max-width:900px){
+ .auth-form-panel{justify-content:flex-start}
+ .auth-form-wrapper{margin-block:auto}
+}
+@media(prefers-reduced-motion:reduce){.rocket-auth *,.rocket-auth *::before,.rocket-auth *::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

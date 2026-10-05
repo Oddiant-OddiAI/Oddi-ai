@@ -764,7 +764,10 @@ def get_user_settings(user_id):
 
 def save_user_settings(user_id, settings):
     if ODDI_DRIVE_CHAT_STORAGE:
-        google_drive_storage.update_account_settings(user_id, settings)
+        if not google_drive_storage.update_account_settings(user_id, settings):
+            raise google_drive_storage.DriveStorageError(
+                "Account settings could not be saved to Google Drive."
+            )
         return
     payload = json.dumps(settings if isinstance(settings, dict) else {}, ensure_ascii=False)
     conn = get_db("chat")
@@ -1173,10 +1176,10 @@ def get_deleted_conversations(user_id):
 
 
 def purge_expired_deleted_conversations(now=None, user_id=None):
-    """Permanently remove Bin chats after 15 days while retaining archives."""
+    """Permanently remove Bin chats after 7 days while retaining archives."""
     if ODDI_CHAT_JSON_STORAGE:
         return _chat_file_store().purge_expired_deleted_conversations(now, user_id=user_id)
-    cutoff = (now or datetime.utcnow()) - timedelta(days=15)
+    cutoff = (now or datetime.utcnow()) - timedelta(days=7)
     conn = get_db("archive_memory")
     try:
         cursor = conn.execute(
