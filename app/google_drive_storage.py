@@ -254,7 +254,7 @@ def _list_children(parent_id, name=None, mime_type=None):
             "q": query,
             "pageSize": 1000,
             "pageToken": page_token,
-            "fields": "nextPageToken,files(id,name,mimeType,parents,driveId,modifiedTime)",
+            "fields": "nextPageToken,files(id,name,mimeType,parents,driveId,createdTime,modifiedTime,appProperties)",
         }
         if _ROOT_DRIVE_ID:
             list_args.update(
@@ -359,7 +359,7 @@ def _read_json_file(parent_id, name):
     return _read_json_file_meta(meta) if meta else None
 
 
-def _write_json_file(parent_id, name, value):
+def _write_json_file(parent_id, name, value, app_properties=None):
     try:
         from googleapiclient.http import MediaIoBaseUpload
 
@@ -371,20 +371,30 @@ def _write_json_file(parent_id, name, value):
             resumable=True,
         )
         meta = _find_child(parent_id, name)
+        properties = {str(key): str(value) for key, value in (app_properties or {}).items()}
         if meta:
+            update_args = {}
+            if app_properties is not None:
+                update_args["body"] = {"appProperties": properties}
             return _api_call(
                 _service().files().update(
                     fileId=meta["id"],
                     media_body=media,
-                    fields="id,name,modifiedTime",
+                    fields="id,name,modifiedTime,appProperties",
                     supportsAllDrives=_supports_shared_drive(),
+                    **update_args,
                 )
             )
         return _api_call(
             _service().files().create(
-                body={"name": name, "mimeType": "application/json", "parents": [parent_id]},
+                body={
+                    "name": name,
+                    "mimeType": "application/json",
+                    "parents": [parent_id],
+                    **({"appProperties": properties} if app_properties is not None else {}),
+                },
                 media_body=media,
-                fields="id,name,modifiedTime",
+                fields="id,name,modifiedTime,appProperties",
                 supportsAllDrives=_supports_shared_drive(),
             )
         )
@@ -500,8 +510,120 @@ def _write_conversation(user_id, conversation):
     account_id = _account_key(user_id)
     normalized = _normalize_conversation(conversation, account_id, conversation.get("id"))
     folder_id = _chat_folder(account_id, create=True)
-    _write_json_file(folder_id, _chat_name(normalized["id"]), normalized)
+    _write_json_file(
+        folder_id,
+        _chat_name(normalized["id"]),
+        normalized,
+        app_properties=_conversation_app_properties(normalized),
+    )
     return normalized
+
+
+def _short_drive_property(value, max_bytes=118):
+    """Keep Drive appProperties values within their 124-byte limit."""
+    encoded = str(value or "").encode("utf-8")[:max_bytes]
+    while encoded:
+        try:
+            return encoded.decode("utf-8")
+        except UnicodeDecodeError:
+            encoded = encoded[:-1]
+    return ""
+
+
+def _conversation_app_properties(conversation):
+    messages = conversation.get("messages") if isinstance(conversation.get("messages"), list) else []
+    preview = ""
+    for message in reversed(messages):
+        if not isinstance(message, dict):
+            continue
+        preview = " ".join(str(message.get("text") or message.get("content") or "").split())
+        if preview:
+            break
+    return {
+        "t": _short_drive_property(conversation.get("title") or "New Chat"),
+        "c": _short_drive_property(conversation.get("created_at")),
+        "u": _short_drive_property(conversation.get("updated_at")),
+        "r": str(max(0, int(conversation.get("revision", 0) or 0))),
+        "n": str(len(messages)),
+        "s": _short_drive_property(preview),
+        "p": "1" if conversation.get("pinned") else "0",
+        "a": "1" if conversation.get("archived") else "0",
+        "d": "1" if conversation.get("deleted") else "0",
+        "x": _short_drive_property(conversation.get("deleted_at")),
+    }
+
+
+def _conversation_summary_from_meta(meta):
+    match = _CHAT_NAME_RE.fullmatch(meta.get("name", ""))
+    if not match:
+        return None
+    props = meta.get("appProperties") or {}
+    try:
+        message_count = max(0, int(props.get("n", 0) or 0))
+        revision = max(0, int(props.get("r", 0) or 0))
+    except (TypeError, ValueError):
+        message_count, revision = 0, 0
+    return {
+        "id": int(match.group(1)),
+        "title": props.get("t") or f"Chat {match.group(1)}",
+        "created_at": props.get("c") or meta.get("createdTime"),
+        "updated_at": props.get("u") or meta.get("modifiedTime") or meta.get("createdTime"),
+        "revision": revision,
+        "message_count": message_count,
+        "preview": props.get("s", ""),
+        "pinned": props.get("p") == "1",
+        "archived": props.get("a") == "1",
+        "deleted": props.get("d") == "1",
+        "deleted_at": props.get("x") or None,
+        "__summary_only": True,
+        "__summary_missing": not bool(props.get("t")),
+    }
+
+
+def get_conversation_summaries(user_id):
+    """List account chat metadata without downloading chat bodies from Drive."""
+    folder_id = _chat_folder(user_id)
+    if not folder_id:
+        return []
+    summaries = [
+        summary for meta in _list_children(folder_id)
+        if (summary := _conversation_summary_from_meta(meta)) is not None
+    ]
+    summaries.sort(key=lambda item: str(item.get("updated_at") or ""), reverse=True)
+    return summaries
+
+
+def backfill_conversation_summaries(user_id, limit=40):
+    """Warm compact Drive metadata for old chat files after the list response."""
+    folder_id = _chat_folder(user_id)
+    if not folder_id:
+        return 0
+    missing = [
+        meta for meta in _list_children(folder_id)
+        if _CHAT_NAME_RE.fullmatch(meta.get("name", ""))
+        and not (meta.get("appProperties") or {}).get("t")
+    ][:max(0, int(limit))]
+    if not missing:
+        return 0
+
+    def backfill(meta):
+        conversation = _read_conversation_meta(user_id, meta)
+        if not conversation:
+            return False
+        fresh = _api_call(_service().files().get(
+            fileId=meta["id"], fields="id,modifiedTime", supportsAllDrives=_supports_shared_drive()
+        ))
+        if fresh.get("modifiedTime") != meta.get("modifiedTime"):
+            return False
+        _api_call(_service().files().update(
+            fileId=meta["id"],
+            body={"appProperties": _conversation_app_properties(conversation)},
+            fields="id,appProperties",
+            supportsAllDrives=_supports_shared_drive(),
+        ))
+        return True
+
+    return sum(bool(result) for result in _DRIVE_READ_POOL.map(backfill, missing))
 
 
 def _read_conversation_meta(user_id, meta):
@@ -807,7 +929,10 @@ def import_local_conversation(user_id, source_id, conversation):
             existing, conversation, account_id, imported_id
         )
         if changed:
-            _write_json_file(folder_id, _chat_name(imported_id), merged)
+            _write_json_file(
+                folder_id, _chat_name(imported_id), merged,
+                app_properties=_conversation_app_properties(merged),
+            )
         return merged
     # Import the local conversation with one ID and one chat write. Calling
     # create_conversation() here first wrote an empty file, then immediately
@@ -816,7 +941,10 @@ def import_local_conversation(user_id, source_id, conversation):
     normalized = _normalize_conversation(conversation, account_id, chat_id)
     normalized["id"] = chat_id
     normalized["user_id"] = int(account_id)
-    _write_json_file(folder_id, _chat_name(chat_id), normalized)
+    _write_json_file(
+        folder_id, _chat_name(chat_id), normalized,
+        app_properties=_conversation_app_properties(normalized),
+    )
     imports[source_id] = chat_id
     _write_json_file(folder_id, "_local-imports.json", imports)
     return normalized
@@ -830,6 +958,10 @@ def get_all_conversations(user_id):
 
 def get_conversations(user_id):
     return [conversation for conversation in get_all_conversations(user_id) if not conversation["deleted"]]
+
+
+def get_conversation_summaries_for_user(user_id):
+    return [summary for summary in get_conversation_summaries(user_id) if not summary["deleted"]]
 
 
 def get_deleted_conversations(user_id):

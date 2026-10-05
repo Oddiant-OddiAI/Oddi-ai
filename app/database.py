@@ -1121,6 +1121,38 @@ def get_conversations(user_id):
     return result
 
 
+def get_conversation_summaries(user_id):
+    """Return sidebar metadata without loading Drive chat message bodies."""
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return _chat_file_store().get_conversation_summaries_for_user(user_id)
+
+    # Local file and database modes are fast; derive the same public response
+    # shape while keeping message arrays out of the browser's history payload.
+    conversations = get_conversations(user_id)
+    summaries = []
+    for conversation in conversations:
+        messages = conversation.get("messages") if isinstance(conversation.get("messages"), list) else []
+        preview = ""
+        for message in reversed(messages):
+            if not isinstance(message, dict):
+                continue
+            preview = " ".join(str(message.get("text") or message.get("content") or "").split())
+            if preview:
+                break
+        summaries.append({
+            key: conversation.get(key)
+            for key in (
+                "id", "user_id", "title", "created_at", "updated_at", "revision",
+                "pinned", "archived", "deleted", "deleted_at",
+            )
+        } | {
+            "message_count": len(messages),
+            "preview": preview[:118],
+            "__summary_only": True,
+        })
+    return summaries
+
+
 def get_deleted_conversations(user_id):
     if ODDI_CHAT_JSON_STORAGE:
         # Expire only this account's Bin on demand. Scanning every Drive

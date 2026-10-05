@@ -51,6 +51,7 @@ from app.database import (
     create_conversation,
     import_local_conversation,
     get_conversations,
+    get_conversation_summaries,
     get_conversation,
     update_conversation,
     delete_conversation,
@@ -80,7 +81,11 @@ from app.database import (
     clear_memory,
     get_vector_store_id,
 )
-from app.google_drive_storage import DriveStorageError, user_id_for_email as drive_user_id_for_email
+from app.google_drive_storage import (
+    DriveStorageError,
+    backfill_conversation_summaries,
+    user_id_for_email as drive_user_id_for_email,
+)
 
 from app.engine import process_message
 from app.config import client
@@ -149,6 +154,19 @@ app = FastAPI(
     title="ODDI AI",
     version="1.0.0",
 )
+
+_SUMMARY_BACKFILL_LOCK = threading.Lock()
+_SUMMARY_BACKFILL_USERS = set()
+
+
+def _backfill_chat_summaries(user_id):
+    try:
+        backfill_conversation_summaries(user_id, 40)
+    except Exception:
+        logger.exception("Could not update legacy chat summary metadata for account %s", user_id)
+    finally:
+        with _SUMMARY_BACKFILL_LOCK:
+            _SUMMARY_BACKFILL_USERS.discard(str(user_id))
 app.add_middleware(GZipMiddleware, minimum_size=1024)
 
 
@@ -1152,6 +1170,27 @@ def api_get_conversations(request: Request):
         )
     user_id = require_user_id(request)
     return JSONResponse(content=jsonable_encoder(get_conversations(user_id)))
+
+
+@app.get("/api/conversations/index", name="api_get_conversation_index")
+def api_get_conversation_index(request: Request, background_tasks: BackgroundTasks):
+    """Load the chat sidebar without downloading every chat's full history."""
+    user_id = require_user_id(request)
+    summaries = get_conversation_summaries(user_id)
+    needs_backfill = ODDI_DRIVE_CHAT_STORAGE and any(item.get("__summary_missing") for item in summaries)
+    schedule_backfill = False
+    if needs_backfill:
+        with _SUMMARY_BACKFILL_LOCK:
+            key = str(user_id)
+            if key not in _SUMMARY_BACKFILL_USERS:
+                _SUMMARY_BACKFILL_USERS.add(key)
+                schedule_backfill = True
+    if schedule_backfill:
+        # Existing Drive files predate the compact metadata index. Resolve up
+        # to 40 titles after sending the fast response; new writes carry these
+        # properties immediately. Remaining files are picked up on next visit.
+        background_tasks.add_task(_backfill_chat_summaries, user_id)
+    return JSONResponse(content=jsonable_encoder(summaries))
 
 
 @app.post("/api/conversations", name="api_create_conversation")

@@ -7232,6 +7232,14 @@ function normalizeConversationObject(conversation) {
     return conversation;
 }
 
+async function fetchConversationHistory(conversationId) {
+    const response = await fetch(`/api/conversations/${encodeURIComponent(conversationId)}`, {
+        credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" }
+    });
+    if (!response.ok) throw new Error(`Load chat failed (${response.status})`);
+    return normalizeConversationObject(await response.json());
+}
+
 function getOddiChatRecoveryScopePrefix() {
     const userId = String(document.body?.dataset?.userId || "").trim();
     const username = String(document.body?.dataset?.username || "").trim().toLowerCase();
@@ -7487,10 +7495,10 @@ async function loadConversations() {
                 showOddiToast("Some chats are still saved only in this browser. They are safe here and will retry syncing later.", "error");
             }
         });
-        const response = await fetch("/api/conversations", { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+        const response = await fetch("/api/conversations/index", { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) throw new Error(`Load conversations failed (${response.status})`);
         const loadedConversations = await response.json();
-        const serverConversations = Array.isArray(loadedConversations) ? loadedConversations.map(normalizeConversationObject) : [];
+        const serverConversations = Array.isArray(loadedConversations) ? loadedConversations.map(item => normalizeConversationObject({ ...item, messages: [], __summaryOnly: true })) : [];
         const serverById = new Map(serverConversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => [String(c.id), c]));
         conversations = serverConversations.slice();
         try {
@@ -7869,7 +7877,7 @@ async function syncConversationsFromServer(options = {}) {
         // Retry local pending chats before reading cloud history. A failed
         // history GET must not prevent a later Drive upload attempt.
         await retryDirtyConversationRecoveries();
-        const response = await fetch("/api/conversations", { method: "GET", credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+        const response = await fetch("/api/conversations/index", { method: "GET", credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) return;
         const loaded = await response.json();
         if (!Array.isArray(loaded)) return;
@@ -7877,12 +7885,12 @@ async function syncConversationsFromServer(options = {}) {
            is stale for the currently visible workspace. Do not restore or
            reopen the old conversation from this response. */
         if (newChatEpochAtStart !== Number(window.__oddiNewChatEpoch || 0)) return;
-        const serverConversations = loaded.map(normalizeConversationObject);
+        const serverConversations = loaded.map(item => normalizeConversationObject({ ...item, messages: [], __summaryOnly: true }));
         const serverIds = new Set(serverConversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => String(c.id)));
         const currentId = currentConversation !== null && conversations[currentConversation]?.id !== null && conversations[currentConversation]?.id !== undefined ? String(conversations[currentConversation].id) : null;
         const localById = new Map(conversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => [String(c.id), c]));
         let listChanged = false;
-        let openConversationChanged = false;
+        let openConversationRevision = null;
 
         for (const serverConversation of serverConversations) {
             const id = String(serverConversation.id);
@@ -7891,11 +7899,23 @@ async function syncConversationsFromServer(options = {}) {
             if (conversationDirtyLocal.has(id) || conversationSaveInFlight.has(id)) continue;
             const localRevision = Number(localConversation.revision || 0);
             const serverRevision = Number(serverConversation.revision || 0);
-            if (serverRevision > localRevision || (serverRevision === localRevision && !conversationDataIsSame(localConversation, serverConversation))) {
-                if (mergeConversationFromServer(localConversation, serverConversation)) {
+            if (localConversation.__summaryOnly) {
+                if (serverRevision !== localRevision || serverConversation.title !== localConversation.title || serverConversation.updated_at !== localConversation.updated_at) {
+                    Object.assign(localConversation, serverConversation);
                     listChanged = true;
-                    if (currentId === id) openConversationChanged = true;
                 }
+            } else {
+                // Keep loaded message bodies in memory, but only fetch a newer
+                // revision when that chat is currently open.
+                let metadataChanged = false;
+                for (const key of ["title", "updated_at", "created_at", "revision", "pinned", "archived", "deleted", "deleted_at", "message_count", "preview"]) {
+                    if (serverConversation[key] !== undefined && localConversation[key] !== serverConversation[key]) {
+                        localConversation[key] = serverConversation[key];
+                        metadataChanged = true;
+                    }
+                }
+                if (metadataChanged) listChanged = true;
+                if (currentId === id && serverRevision > localRevision) openConversationRevision = id;
             }
         }
 
@@ -7917,7 +7937,18 @@ async function syncConversationsFromServer(options = {}) {
             renderHistory();
             publishConversationDataReady();
         }
-        if (openConversationChanged && options.refreshOpen !== false && !generationActive && currentConversation !== null) openConversation(currentConversation);
+        if (openConversationRevision && options.refreshOpen !== false && !generationActive && currentConversation !== null) {
+            const openIndex = conversations.findIndex(item => String(item?.id) === openConversationRevision);
+            const openChat = openIndex >= 0 ? conversations[openIndex] : null;
+            if (openChat && !conversationDirtyLocal.has(openConversationRevision)) {
+                const fresh = await fetchConversationHistory(openConversationRevision);
+                if (String(conversations[currentConversation]?.id) === openConversationRevision && Number(fresh.revision || 0) >= Number(openChat.revision || 0)) {
+                    Object.assign(openChat, fresh);
+                    delete openChat.__summaryOnly;
+                    openConversation(conversations.indexOf(openChat));
+                }
+            }
+        }
     } catch (error) {
         console.debug("Conversation sync skipped:", error);
     } finally { conversationSyncInFlight = false; }
@@ -13235,6 +13266,7 @@ async function migrateLegacyConversationState() {
     const migratedArchive = new Set();
 
     for (const conversation of conversations) {
+        if (conversation?.__summaryOnly) continue;
         const key = getConversationKey(conversation);
         if (!key) continue;
         if (!conversation.pinned && pinnedSet.has(key)) {
@@ -13256,6 +13288,7 @@ async function migrateLegacyConversationState() {
     try { legacyArchive = JSON.parse(localStorage.getItem("oddi_archived_chats_v1") || "[]"); } catch { legacyArchive = []; }
     const archiveSet = new Set((Array.isArray(legacyArchive) ? legacyArchive : []).map(String));
     for (const conversation of conversations) {
+        if (conversation?.__summaryOnly) continue;
         const key = getConversationKey(conversation);
         if (key && archiveSet.has(key) && !conversation.archived) {
             jobs.push(updateConversationMetadata(conversation, { archived: true }).then(ok => { if (ok) migratedArchive.add(key); }));
@@ -13339,11 +13372,16 @@ function getConversationPreview(conversation) {
         let text = String(msg.text || msg.content || '').replace(/\s+/g, ' ').trim();
         if (text) return text;
     }
+    if (conversation?.__summaryOnly && conversation?.preview) return String(conversation.preview);
+    if (conversation?.__summaryOnly && Number(conversation?.message_count || 0) > 0) return 'Open to load messages';
+    if (conversation?.__summaryOnly) return 'No messages yet';
     return messages.length ? 'Conversation' : 'No messages yet';
 }
 
 function getConversationMeta(conversation, timestamp) {
-    const count = Array.isArray(conversation?.messages) ? conversation.messages.length : 0;
+    const count = conversation?.__summaryOnly
+        ? Number(conversation?.message_count || 0)
+        : (Array.isArray(conversation?.messages) ? conversation.messages.length : 0);
     const time = formatChatTime(timestamp);
     return `${count} ${count === 1 ? 'message' : 'messages'}${time ? ` · ${time}` : ''}`;
 }
@@ -13360,6 +13398,7 @@ function conversationMatchesQuery(conversation, query) {
     if (!query) return true;
     const title = String(conversation?.title || '');
     if (title.toLowerCase().includes(query)) return true;
+    if (String(conversation?.preview || '').toLowerCase().includes(query)) return true;
     const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
     return messages.some(msg => {
         const text = String(msg?.text || msg?.content || '');
@@ -13671,10 +13710,34 @@ async function openConversation(index) {
         return false;
     }
 
+    const openRequestId = Number(window.__oddiOpenConversationRequestId || 0) + 1;
+    window.__oddiOpenConversationRequestId = openRequestId;
+    const openingConversationId = String(conversation.id);
+
     setArchivedPreviewState(isConversationArchived(conversation));
 
     currentConversation = parsedIndex;
     persistLastOpenConversation(conversation);
+
+    if (conversation.__summaryOnly && !browserLocalChatStorage) {
+        chat.innerHTML = '<div class="oddi-history-loading" role="status">Loading chat…</div>';
+        try {
+            const fullConversation = await fetchConversationHistory(conversation.id);
+            if (window.__oddiOpenConversationRequestId !== openRequestId || String(conversations[currentConversation]?.id) !== openingConversationId) return false;
+            const latestIndex = conversations.findIndex(item => String(item?.id) === openingConversationId);
+            if (latestIndex < 0) return false;
+            Object.assign(conversation, fullConversation);
+            delete conversation.__summaryOnly;
+            delete conversation.__summaryMissing;
+            currentConversation = latestIndex;
+            renderHistory();
+        } catch (error) {
+            if (window.__oddiOpenConversationRequestId !== openRequestId || String(conversations[currentConversation]?.id) !== openingConversationId) return false;
+            console.error("Could not load selected chat:", error);
+            chat.innerHTML = '<div class="oddi-history-loading" role="alert">This chat could not be loaded. Select it again to retry.</div>';
+            return false;
+        }
+    }
 
     if (!Array.isArray(conversation.messages)) {
         conversation.messages = [];
