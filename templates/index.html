@@ -14574,26 +14574,39 @@ async function loadTrashFromServer() {
             const deletedAt = Date.parse(item.deleted_at || item.updated_at || item.created_at || "");
             return Number.isFinite(deletedAt) && now - deletedAt >= retentionMs;
         });
-            window.__oddiServerTrash = trash;
-            for (const item of expired) await deleteOddiBrowserChat(item.id);
-            expired.forEach(item => removeAllOddiConversationBackups(item.id));
-            return trash;
+        window.__oddiServerTrash = trash;
+        for (const item of expired) await deleteOddiBrowserChat(item.id);
+        expired.forEach(item => removeAllOddiConversationBackups(item.id));
+        return trash;
     }
     if (!isLoggedIn) { window.__oddiServerTrash = []; return []; }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
     try {
-        const response = await fetch("/api/conversations/bin", { credentials: "same-origin" });
+        const response = await fetch("/api/conversations/bin", {
+            credentials: "same-origin",
+            signal: controller.signal,
+            headers: { "Accept": "application/json" }
+        });
         if (!response.ok) throw new Error(`Load Bin failed (${response.status})`);
         const trash = await response.json();
-        window.__oddiServerTrash = Array.isArray(trash) ? trash : [];
-        return window.__oddiServerTrash;
+        if (!Array.isArray(trash)) throw new Error("The Bin response was not a chat list.");
+        window.__oddiServerTrash = trash;
+        return trash;
     } catch (error) {
         console.error("Load Bin error:", error);
-        return getTrash();
+        if (error?.name === "AbortError") throw new Error("Loading the Bin timed out. Check your connection and retry.");
+        throw new Error("Could not reach chat storage. Check your connection and retry.", { cause: error });
+    } finally {
+        clearTimeout(timeoutId);
     }
 }
 
 async function permanentlyDeleteAllBinChats() {
-    const trash = await loadTrashFromServer();
+    let trash;
+    try { trash = await loadTrashFromServer(); }
+    catch (error) { await renderBin(); return; }
     if (!trash.length) { renderBin(); return; }
     const confirmed = await showActionConfirmation(
         "Delete All Chats Permanently?",
@@ -14619,13 +14632,44 @@ async function permanentlyDeleteAllBinChats() {
     renderBin();
 }
 
+let binRenderGeneration = 0;
+
+function showBinLoadState(list, message, isError = false) {
+    const state = document.createElement("div");
+    state.className = `bin-load-state${isError ? " is-error" : ""}`;
+    state.setAttribute("role", isError ? "alert" : "status");
+    const text = document.createElement("span");
+    text.textContent = message;
+    state.appendChild(text);
+    if (isError) {
+        const retry = document.createElement("button");
+        retry.type = "button";
+        retry.className = "bin-retry-btn";
+        retry.textContent = "Retry";
+        retry.addEventListener("click", () => renderBin());
+        state.appendChild(retry);
+    }
+    list.replaceChildren(state);
+}
+
 async function renderBin() {
     const list = document.getElementById("binList");
     if (!list) return;
-    const trash = await loadTrashFromServer();
-    list.innerHTML = "";
+    const renderId = ++binRenderGeneration;
+    showBinLoadState(list, "Loading deleted chats\u2026");
+    let trash;
+    try {
+        trash = await loadTrashFromServer();
+    } catch (error) {
+        if (renderId !== binRenderGeneration) return;
+        console.error("Could not load deleted chats:", error);
+        showBinLoadState(list, error?.message || "Could not load deleted chats. Check your connection and retry.", true);
+        return;
+    }
+    if (renderId !== binRenderGeneration) return;
+    list.replaceChildren();
     if (!trash.length) {
-        list.innerHTML = '<div class="utility-empty">🗑️ Bin is empty</div>';
+        list.innerHTML = '<div class="utility-empty">&#x1F5D1;&#xFE0F; Bin is empty</div>';
         return;
     }
     trash.slice().reverse().forEach((conversation, reverseIndex) => {
@@ -22728,6 +22772,12 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
     chatPicker.querySelector(".oddi-chat-picker-close").addEventListener("click",closeAllChatsPicker);
     chatPicker.addEventListener("click",function(event){
       if(event.target===chatPicker){closeAllChatsPicker();return;}
+      if(event.target.closest("[data-chat-picker-home]")){
+        closeAllChatsPicker();
+        window.__oddiReturnToHome=true;
+        if(typeof window.newChat==="function") window.newChat();
+        return;
+      }
       const row=event.target.closest("[data-chat-picker-id]");
       if(!row)return;
       const conversation=getChats().find(item=>String(item.id)===row.dataset.chatPickerId);
@@ -22746,7 +22796,7 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
     counter=document.createElement("span");
     counter.className="oddi-chat-arc-count";
     label.appendChild(counter);
-    nav.append(curve,cancelControl,homeButton,lockButton,label);
+    nav.append(curve,cancelControl,lockButton,label);
     document.body.appendChild(nav);
   }
 
@@ -22756,6 +22806,14 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
     const list=chatPicker.querySelector(".oddi-chat-picker-list");
     if(!list)return;
     list.replaceChildren();
+    if(!query){
+      const home=document.createElement("button");
+      home.type="button";
+      home.className="oddi-chat-picker-row oddi-chat-picker-home";
+      home.dataset.chatPickerHome="true";
+      home.innerHTML='<span class="oddi-chat-picker-home-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m3.5 10.5 8.5-7 8.5 7v9a1.5 1.5 0 0 1-1.5 1.5h-14A1.5 1.5 0 0 1 3.5 19.5z"/><path d="M9 21v-7h6v7"/></svg></span><strong>Home</strong><small>Start a new chat</small>';
+      list.appendChild(home);
+    }
     const chats=getChats().filter(item=>!query||String(item.title||"New Chat").toLocaleLowerCase().includes(query));
     if(!chats.length){const empty=document.createElement("div");empty.className="oddi-chat-picker-empty";empty.textContent=query?"No matching chats.":"No chats yet.";list.appendChild(empty);return;}
     chats.forEach(conversation=>{
@@ -22770,7 +22828,7 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
     ensureUI();finishChatGesture(false);renderAllChatsPicker();
     chatPicker.classList.add("show");chatPicker.setAttribute("aria-hidden","false");
     document.body.classList.add("oddi-chat-picker-open");
-    requestAnimationFrame(()=>chatPicker.querySelector(".oddi-chat-picker-search")?.focus({preventScroll:true}));
+    if(!isCoarsePhone()) requestAnimationFrame(()=>chatPicker.querySelector(".oddi-chat-picker-search")?.focus({preventScroll:true}));
   }
 
   function closeAllChatsPicker(){
@@ -29949,5 +30007,56 @@ body.dark-mode #binModal .bin-retention-footer{border-color:#303030;background:#
   },true);
 })();
 </script>
+
+<style id="oddi-mobile-sidebar-bin-and-picker-fixes">
+@media (max-width:768px) and (pointer:coarse) {
+  #oddi-react-sidebar-root .oddi-rs-header{height:60px!important;min-height:60px!important;flex-basis:60px!important;padding:0 10px!important;}
+  #oddi-react-sidebar-root .oddi-rs-brand{gap:9px!important;min-height:46px!important;color:var(--rs-text)!important;}
+  #oddi-react-sidebar-root .oddi-rs-brand img{width:36px!important;height:36px!important;flex:0 0 36px!important;object-fit:contain!important;border-radius:8px!important;filter:drop-shadow(0 2px 5px rgba(0,0,0,.28))!important;}
+  #oddi-react-sidebar-root .oddi-rs-brand span{font-size:15px!important;font-weight:750!important;letter-spacing:-.2px!important;}
+
+  /* Raise the phone controls above the dim page layer. */
+  #oddi-react-sidebar-root{z-index:2147483598!important;}
+  #oddi-react-sidebar-root .oddi-rs-rail{z-index:2147483599!important;}
+  .header{z-index:2147483602!important;isolation:isolate!important;}
+  .header-controls{z-index:2147483604!important;}
+  .header-controls .header-more-btn,.header-controls #themeBtn{border:1px solid rgba(128,128,128,.30)!important;background:rgba(128,128,128,.10)!important;box-shadow:0 2px 12px rgba(0,0,0,.16)!important;backdrop-filter:blur(8px)!important;-webkit-backdrop-filter:blur(8px)!important;}
+  .header-controls .header-more-btn svg,.header-controls #themeBtn svg{filter:drop-shadow(0 1px 3px rgba(0,0,0,.55))!important;}
+  .header-controls .header-more-btn{font-weight:800!important;text-shadow:0 1px 5px rgba(0,0,0,.55)!important;}
+  body.oddi-react-sidebar-open .header-controls{visibility:hidden!important;pointer-events:none!important;}
+
+  /* The compact all-chats sheet is left aligned; Home is row one in its scroll. */
+  #oddiGestureChatPicker{justify-content:flex-start!important;padding-left:max(10px,env(safe-area-inset-left))!important;padding-right:10px!important;}
+  #oddiGestureChatPicker .oddi-chat-picker-card{width:min(310px,calc(100vw - 36px))!important;max-width:310px!important;min-height:min(48dvh,340px)!important;max-height:min(78dvh,680px)!important;border-radius:18px!important;}
+  #oddiGestureChatPicker .oddi-chat-picker-list{touch-action:pan-y!important;overscroll-behavior-y:contain!important;}
+  #oddiGestureChatPicker .oddi-chat-picker-home{display:grid!important;grid-template-columns:28px minmax(0,1fr)!important;grid-template-rows:auto auto!important;column-gap:9px!important;align-items:center!important;border:1px solid rgba(32,199,107,.22)!important;background:rgba(32,199,107,.07)!important;}
+  #oddiGestureChatPicker .oddi-chat-picker-home strong{grid-column:2;grid-row:1;font-size:14px!important;}
+  #oddiGestureChatPicker .oddi-chat-picker-home small{grid-column:2;grid-row:2;}
+  .oddi-chat-picker-home-icon{grid-column:1;grid-row:1 / span 2;width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:rgba(32,199,107,.14);color:#178346}
+  .oddi-chat-picker-home-icon svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  body.dark-mode #oddiGestureChatPicker .oddi-chat-picker-home{border-color:rgba(68,220,130,.23)!important;background:rgba(32,199,107,.10)!important;}
+  body.dark-mode .oddi-chat-picker-home-icon{color:#66dc96}
+
+  #binModal{padding:max(10px,var(--oddi-safe-top)) 10px max(10px,var(--oddi-safe-bottom))!important;}
+  #binModal .utility-box{width:calc(100vw - 20px)!important;max-width:560px!important;max-height:calc(100dvh - 20px - var(--oddi-safe-top) - var(--oddi-safe-bottom))!important;min-height:min(300px,70dvh)!important;padding:16px 15px 0!important;border-radius:18px!important;}
+  #binModal .utility-header{margin-bottom:7px!important;}
+  #binModal .utility-header h3{font-size:17px!important;}
+  #binModal .bin-intro{font-size:13px!important;line-height:1.42!important;margin-bottom:8px!important;}
+  #binModal #binList{min-height:90px!important;gap:7px!important;padding:2px 1px 9px!important;}
+  #binModal .bin-item{gap:8px!important;padding:10px!important;}
+  #binModal .bin-item-title{font-size:13px!important;line-height:1.35!important;}
+  #binModal .bin-item-meta{font-size:11px!important;line-height:1.35!important;}
+  #binModal .bin-actions{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;}
+  #binModal .bin-actions button{min-width:0!important;min-height:36px!important;padding:5px 3px!important;font-size:11px!important;white-space:nowrap!important;}
+  #binModal .bin-retention-footer{font-size:11px!important;padding:10px 15px max(10px,var(--oddi-safe-bottom))!important;margin:8px -15px 0!important;}
+}
+.bin-load-state{min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:18px;text-align:center;color:var(--oddi-muted,#737373);font-size:13px;line-height:1.5}
+.bin-load-state.is-error{color:#9b3b32}
+.bin-retry-btn{min-height:36px;padding:0 16px;border:1px solid rgba(32,150,85,.38);border-radius:10px;background:rgba(32,199,107,.10);color:#176d3d;font:inherit;font-weight:650;cursor:pointer}
+body.dark-mode .bin-load-state{color:#b8c0bb}
+body.dark-mode .bin-load-state.is-error{color:#ffaca4}
+body.dark-mode .bin-retry-btn{background:rgba(32,199,107,.14);color:#8ae3ab;border-color:rgba(91,220,135,.38)}
+</style>
+
 </body>
 </html>
