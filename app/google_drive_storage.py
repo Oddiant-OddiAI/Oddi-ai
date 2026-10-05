@@ -25,10 +25,27 @@ _CHAT_NAME_RE = re.compile(r"^chat-([1-9][0-9]*)\.json$")
 _DELETED_ACCOUNT_FILE = "_deleted-account.json"
 _LOCK_GUARD = threading.Lock()
 _ACCOUNT_LOCKS = {}
-_SERVICE = None
-_SERVICE_LOCK = threading.Lock()
+_SERVICE_LOCAL = threading.local()
+_ROOT_VALIDATION_LOCK = threading.Lock()
 _ROOT_VALIDATED = False
 _ROOT_DRIVE_ID = None
+
+
+def _bounded_env_int(name, default, minimum, maximum):
+    try:
+        value = int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        value = default
+    return max(minimum, min(maximum, value))
+
+
+# httplib2's default socket timeout is unlimited. These settings are bounded
+# so a stalled Drive connection cannot hold a Render request forever, while
+# remaining configurable for deployments with slower outbound connections.
+_DRIVE_HTTP_TIMEOUT_SECONDS = _bounded_env_int(
+    "ODDI_DRIVE_HTTP_TIMEOUT_SECONDS", 20, 5, 120
+)
+_DRIVE_API_RETRIES = _bounded_env_int("ODDI_DRIVE_API_RETRIES", 3, 0, 5)
 
 
 class DriveStorageError(RuntimeError):
@@ -84,9 +101,9 @@ def _chat_key(conversation_id):
 
 
 def _service():
-    global _SERVICE
-    if _SERVICE is not None:
-        return _SERVICE
+    service = getattr(_SERVICE_LOCAL, "service", None)
+    if service is not None:
+        return service
     if not is_configured():
         raise DriveStorageError(
             "Google Drive OAuth is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "
@@ -94,7 +111,10 @@ def _service():
         )
     try:
         from googleapiclient.discovery import build
+        from googleapiclient.http import HttpRequest
+        from google_auth_httplib2 import AuthorizedHttp
         from google.oauth2.credentials import Credentials
+        import httplib2
 
         credentials = Credentials(
             token=None,
@@ -104,8 +124,27 @@ def _service():
             client_secret=_clean_env("GOOGLE_CLIENT_SECRET"),
             scopes=[_DRIVE_SCOPE],
         )
-        _SERVICE = build("drive", "v3", credentials=credentials, cache_discovery=False)
-        return _SERVICE
+
+        def build_request(_default_http, *args, **kwargs):
+            # httplib2.Http is not thread-safe. Give every API request a fresh
+            # authenticated transport so concurrent Render requests cannot
+            # corrupt or race a shared TLS connection. A fresh connection per
+            # request also avoids reusing stale keep-alive sockets.
+            transport = AuthorizedHttp(
+                credentials,
+                http=httplib2.Http(timeout=_DRIVE_HTTP_TIMEOUT_SECONDS),
+            )
+            return HttpRequest(transport, *args, **kwargs)
+
+        service = build(
+            "drive",
+            "v3",
+            credentials=credentials,
+            cache_discovery=False,
+            requestBuilder=build_request,
+        )
+        _SERVICE_LOCAL.service = service
+        return service
     except ImportError as exc:
         raise DriveStorageError(
             "Google Drive packages are missing. Install the Google Drive dependencies from requirements.txt."
@@ -124,7 +163,9 @@ def _service():
 
 def _api_call(request):
     try:
-        return request.execute(num_retries=3)
+        # googleapiclient retries SSL, socket timeout, dropped connection, and
+        # retryable HTTP failures using exponential backoff.
+        return request.execute(num_retries=_DRIVE_API_RETRIES)
     except Exception as exc:
         if type(exc).__name__ == "RefreshError":
             raise DriveStorageError(
@@ -141,24 +182,41 @@ def _api_call(request):
             ) from exc
         logger.exception("Google Drive API request failed (status=%s)", status)
         raise DriveStorageError(f"Google Drive request failed (HTTP {status or 'unknown'}).") from exc
+    finally:
+        _close_request_transport(request)
+
+
+def _close_request_transport(request):
+    """Close the one-request httplib2 connection, including on failures."""
+    transport = getattr(request, "http", None)
+    underlying = getattr(transport, "http", transport)
+    close = getattr(underlying, "close", None)
+    if callable(close):
+        try:
+            close()
+        except Exception:
+            logger.debug("Could not close a completed Google Drive transport", exc_info=True)
 
 
 def _validate_root():
     global _ROOT_VALIDATED, _ROOT_DRIVE_ID
     if _ROOT_VALIDATED:
         return
-    folder_id = os.getenv("GOOGLE_DRIVE_FOLDER_ID", "").strip().strip('"')
-    meta = _api_call(
-        _service().files().get(
-            fileId=folder_id,
-            fields="id,name,mimeType,driveId",
-            supportsAllDrives=True,
+    with _ROOT_VALIDATION_LOCK:
+        if _ROOT_VALIDATED:
+            return
+        folder_id = os.getenv("GOOGLE_DRIVE_FOLDER_ID", "").strip().strip('"')
+        meta = _api_call(
+            _service().files().get(
+                fileId=folder_id,
+                fields="id,name,mimeType,driveId",
+                supportsAllDrives=True,
+            )
         )
-    )
-    if meta.get("mimeType") != _FOLDER_MIME:
-        raise DriveStorageError("GOOGLE_DRIVE_FOLDER_ID must point to a folder.")
-    _ROOT_DRIVE_ID = meta.get("driveId")
-    _ROOT_VALIDATED = True
+        if meta.get("mimeType") != _FOLDER_MIME:
+            raise DriveStorageError("GOOGLE_DRIVE_FOLDER_ID must point to a folder.")
+        _ROOT_DRIVE_ID = meta.get("driveId")
+        _ROOT_VALIDATED = True
 
 
 def _escape_query(value):
@@ -246,6 +304,7 @@ def _read_json_file(parent_id, name):
     meta = _find_child(parent_id, name)
     if not meta:
         return None
+    request = None
     try:
         from googleapiclient.http import MediaIoBaseDownload
 
@@ -254,13 +313,16 @@ def _read_json_file(parent_id, name):
         downloader = MediaIoBaseDownload(output, request)
         done = False
         while not done:
-            _, done = downloader.next_chunk(num_retries=3)
+            _, done = downloader.next_chunk(num_retries=_DRIVE_API_RETRIES)
         return json.loads(output.getvalue().decode("utf-8"))
     except DriveStorageError:
         raise
     except Exception as exc:
         logger.exception("Could not read Drive JSON file %s", name)
         raise DriveStorageError("A stored Google Drive data file could not be read.") from exc
+    finally:
+        if request is not None:
+            _close_request_transport(request)
 
 
 def _write_json_file(parent_id, name, value):
@@ -580,10 +642,10 @@ def delete_account(user_id):
 def create_conversation(user_id, title="New Chat"):
     account_id = _account_key(user_id)
     with _lock_for(account_id):
-        while True:
-            chat_id = secrets.randbelow((1 << 52) - 1) + 1
-            if not _read_conversation(account_id, chat_id):
-                break
+        # A 52-bit random ID has a negligible collision chance. Checking Drive
+        # before every create adds a network round trip to the send path and
+        # can make the request exceed the hosting gateway timeout.
+        chat_id = secrets.randbelow((1 << 52) - 1) + 1
         now = _iso_timestamp()
         conversation = {
             "id": chat_id,
@@ -627,7 +689,10 @@ def import_local_conversation(user_id, source_id, conversation):
     imported_id = imports.get(source_id)
     if imported_id and _read_conversation(account_id, imported_id):
         return _read_conversation(account_id, imported_id)
-    chat_id = create_conversation(account_id, conversation.get("title") or "New Chat")
+    # Import the local conversation with one ID and one chat write. Calling
+    # create_conversation() here first wrote an empty file, then immediately
+    # read and replaced it, creating avoidable Drive API requests.
+    chat_id = secrets.randbelow((1 << 52) - 1) + 1
     normalized = _normalize_conversation(conversation, account_id, chat_id)
     normalized["id"] = chat_id
     normalized["user_id"] = int(account_id)

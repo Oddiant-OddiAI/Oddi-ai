@@ -497,6 +497,15 @@ def require_user_id(request: Request):
     return user["id"] if ODDI_LOCAL_ONLY_STORAGE else user_id
 
 
+async def require_user_id_async(request: Request):
+    """Resolve Drive-backed account records without blocking Uvicorn's loop."""
+    return await run_in_threadpool(require_user_id, request)
+
+
+async def request_logging_enabled_async(request: Request):
+    return await run_in_threadpool(_request_logging_enabled, request)
+
+
 def _uploaded_file_size(uploaded_file):
     """Return upload size without consuming the upload stream."""
     try:
@@ -1078,18 +1087,31 @@ def api_get_conversations(request: Request):
 
 @app.post("/api/conversations", name="api_create_conversation")
 async def api_create_conversation(request: Request):
-    if not ODDI_BROWSER_LOCAL_CHATS and _request_logging_enabled(request):
+    if not ODDI_BROWSER_LOCAL_CHATS and await request_logging_enabled_async(request):
         logger.info(
             "HTTP POST /api/conversations pid=%s user=%s",
             os.getpid(),
             request.session.get("user_id"),
         )
-    user_id = require_user_id(request)
+    user_id = await require_user_id_async(request)
     data = await safe_json(request)
     title = data.get("title", "New Chat")
 
-    conversation_id = create_conversation(user_id, title)
-    conversation = get_conversation(conversation_id, user_id)
+    conversation_id = await run_in_threadpool(create_conversation, user_id, title)
+    if ODDI_DRIVE_CHAT_STORAGE:
+        # The newly written chat is already known to be empty. Reading it back
+        # from Drive adds extra list/download requests to the send request.
+        created_at = datetime.now(timezone.utc).isoformat()
+        conversation = {
+            "id": conversation_id,
+            "title": str(title or "New Chat").strip()[:500] or "New Chat",
+            "messages": [],
+            "revision": 0,
+            "created_at": created_at,
+            "updated_at": created_at,
+        }
+    else:
+        conversation = await run_in_threadpool(get_conversation, conversation_id, user_id)
 
     return JSONResponse(
         content=jsonable_encoder({
@@ -1110,7 +1132,7 @@ async def api_create_conversation(request: Request):
 
 @app.post("/api/conversations/import-local", name="api_import_local_conversation")
 async def api_import_local_conversation(request: Request):
-    user_id = require_user_id(request)
+    user_id = await require_user_id_async(request)
     data = await safe_json(request)
     source_id = str(data.get("source_id") or "").strip()
     conversation = data.get("conversation")
@@ -1125,7 +1147,9 @@ async def api_import_local_conversation(request: Request):
     if payload_size > 6 * 1024 * 1024:
         return JSONResponse({"error": "This chat is too large to sync in one request."}, status_code=413)
     try:
-        imported = import_local_conversation(user_id, source_id, conversation)
+        imported = await run_in_threadpool(
+            import_local_conversation, user_id, source_id, conversation
+        )
     except ValueError as error:
         return JSONResponse({"error": str(error)}, status_code=400)
     if not imported:
@@ -1144,14 +1168,14 @@ def api_get_deleted_conversations(request: Request):
 
 @app.put("/api/conversations/{conversation_id}/metadata", name="api_update_conversation_metadata")
 async def api_update_conversation_metadata(request: Request, conversation_id: int):
-    if _request_logging_enabled(request):
+    if await request_logging_enabled_async(request):
         logger.info(
             "HTTP PUT /api/conversations/%s/metadata pid=%s user=%s",
             conversation_id,
             os.getpid(),
             request.session.get("user_id"),
         )
-    user_id = require_user_id(request)
+    user_id = await require_user_id_async(request)
     data = await safe_json(request)
 
     allowed = {"pinned", "archived", "deleted"}
@@ -1163,7 +1187,8 @@ async def api_update_conversation_metadata(request: Request, conversation_id: in
             status_code=400,
         )
 
-    updated = update_conversation_metadata(
+    updated = await run_in_threadpool(
+        update_conversation_metadata,
         conversation_id,
         user_id,
         pinned=patch.get("pinned"),
@@ -1190,21 +1215,22 @@ def api_get_conversation(request: Request, conversation_id: int):
 
 @app.put("/api/conversations/{conversation_id}", name="api_update_conversation")
 async def api_update_conversation(request: Request, conversation_id: int):
-    if _request_logging_enabled(request):
+    if await request_logging_enabled_async(request):
         logger.info(
             "HTTP PUT /api/conversations/%s pid=%s user=%s",
             conversation_id,
             os.getpid(),
             request.session.get("user_id"),
         )
-    user_id = require_user_id(request)
+    user_id = await require_user_id_async(request)
     data = await safe_json(request)
 
     title = data.get("title", "New Chat")
     messages = data.get("messages", [])
     expected_revision = data.get("expected_revision")
 
-    result = update_conversation(
+    result = await run_in_threadpool(
+        update_conversation,
         conversation_id,
         user_id,
         title,
@@ -1235,14 +1261,14 @@ async def api_update_conversation(request: Request, conversation_id: int):
 
 @app.post("/api/conversations/{conversation_id}/messages", name="api_append_conversation_message")
 async def api_append_conversation_message(request: Request, conversation_id: int):
-    if _request_logging_enabled(request):
+    if await request_logging_enabled_async(request):
         logger.info(
             "HTTP POST /api/conversations/%s/messages pid=%s user=%s",
             conversation_id,
             os.getpid(),
             request.session.get("user_id"),
         )
-    user_id = require_user_id(request)
+    user_id = await require_user_id_async(request)
     data = await safe_json(request)
     message = data.get("message")
 
@@ -1252,7 +1278,8 @@ async def api_append_conversation_message(request: Request, conversation_id: int
             status_code=400,
         )
 
-    conversation = append_conversation_message(
+    conversation = await run_in_threadpool(
+        append_conversation_message,
         conversation_id,
         user_id,
         message,
@@ -1270,7 +1297,7 @@ async def api_update_conversation_message(
     conversation_id: int,
     message_id: str,
 ):
-    if _request_logging_enabled(request):
+    if await request_logging_enabled_async(request):
         logger.info(
             "HTTP PUT /api/conversations/%s/messages/%s pid=%s user=%s",
             conversation_id,
@@ -1278,7 +1305,7 @@ async def api_update_conversation_message(
             os.getpid(),
             request.session.get("user_id"),
         )
-    user_id = require_user_id(request)
+    user_id = await require_user_id_async(request)
     data = await safe_json(request)
     patch = data.get("patch", data)
 
@@ -1288,7 +1315,8 @@ async def api_update_conversation_message(
             status_code=400,
         )
 
-    conversation = update_conversation_message(
+    conversation = await run_in_threadpool(
+        update_conversation_message,
         conversation_id,
         user_id,
         message_id,
@@ -1692,8 +1720,8 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     engine_files = adapt_uploaded_files(uploaded_files)
 
     # Chat is private. Authenticate before storing uploaded files.
-    user_id = require_user_id(request)
-    user_settings = get_user_settings(user_id)
+    user_id = await require_user_id_async(request)
+    user_settings = await run_in_threadpool(get_user_settings, user_id)
     privacy_settings = user_settings.get("privacy", {}) if isinstance(user_settings, dict) else {}
     request_logging_enabled = (
         not ODDI_BROWSER_LOCAL_CHATS
@@ -1711,7 +1739,9 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     # this assistant message ID. Return the already-saved reply instead of
     # generating a second answer for the same turn.
     if conversation_id is not None:
-        existing_conversation = get_conversation(conversation_id, user_id)
+        existing_conversation = await run_in_threadpool(
+            get_conversation, conversation_id, user_id
+        )
         existing_reply = next(
             (
                 item for item in (existing_conversation or {}).get("messages", [])
@@ -1901,10 +1931,6 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         else:
             logger.info("No files uploaded")
 
-    # Chat is also private: do not allow unauthenticated access to the
-    # underlying AI engine even if someone calls /chat directly.
-    user_id = require_user_id(request)
-
     cancel_event = threading.Event()
     with _chat_generation_lock:
         _active_chat_generations[generation_id] = {
@@ -1964,7 +1990,8 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     latency_ms = max(0, int((time.perf_counter() - generation_started) * 1000))
     token_estimate = max(1, (len(str(reply)) + 3) // 4) if isinstance(reply, str) else 0
     if conversation_id is not None and isinstance(reply, str):
-        saved_conversation = append_conversation_message(
+        saved_conversation = await run_in_threadpool(
+            append_conversation_message,
             conversation_id,
             user_id,
             {

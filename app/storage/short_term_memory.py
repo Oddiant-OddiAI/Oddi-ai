@@ -13,12 +13,11 @@ class ShortTermMemoryStorage:
     ODDI internal temporary storage.
     This storage is NOT user-accessible.
 
-    Physical structure:
-        C:\ODDI_STORAGE\
-        └── short_term_memory\
-            ├── user_1\
-            ├── user_2\
-            └── ...
+    Physical structure (root is configurable with ODDI_STORAGE_ROOT):
+        storage-root/
+          short_term_memory/
+            user_1/
+            user_2/
 
     Every memory has a TTL.
     """

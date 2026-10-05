@@ -7205,6 +7205,7 @@ const ODDI_CHAT_RECOVERY_PREFIX = "oddi_chat_recovery_v4";
 let conversationSyncInFlight = false;
 let conversationSyncTimer = null;
 let conversationSyncStarted = false;
+let lastPendingLocalImportRetryAt = 0;
 const conversationSaveInFlight = new Set();
 const conversationDirtyLocal = new Set();
 
@@ -7353,6 +7354,7 @@ async function importBrowserLocalChatToAccount(conversation) {
     const result = await response.json();
     if (!result?.conversation?.id) throw new Error("Chat sync returned no account conversation.");
     Object.assign(conversation, normalizeConversationObject(result.conversation));
+    conversationDirtyLocal.delete(sourceId);
     conversation.__localMigrationPending = false;
     conversation.__recoveredLocally = false;
     await deleteOddiBrowserChat(sourceId);
@@ -7540,6 +7542,15 @@ async function loadConversations() {
 async function saveConversation(conversation) {
     if (!conversation?.id) return false;
     normalizeConversationObject(conversation);
+    if (isLoggedIn && String(conversation.id).startsWith("local-")) {
+        const conversationId = String(conversation.id);
+        conversation.__localMigrationPending = true;
+        conversationDirtyLocal.add(conversationId);
+        backupOddiConversation(conversation);
+        const saved = await putOddiBrowserChat(conversation);
+        conversation.__recoveredLocally = !saved;
+        return saved;
+    }
     if (!await ensureAccountConversationId(conversation)) return false;
     const conversationId = String(conversation.id);
     conversationDirtyLocal.add(conversationId);
@@ -7596,6 +7607,14 @@ async function saveConversation(conversation) {
 async function appendConversationMessage(conversation, message) {
     if (!conversation?.id || !message) return false;
     normalizeConversationObject(conversation);
+    if (isLoggedIn && String(conversation.id).startsWith("local-")) {
+        if (!Array.isArray(conversation.messages)) conversation.messages = [];
+        if (!conversation.messages.some(item => String(item?.id) === String(message.id))) {
+            conversation.messages.push(message);
+        }
+        touchConversation(conversation);
+        return saveConversation(conversation);
+    }
     if (!await ensureAccountConversationId(conversation)) return false;
     if (!message.id) message.id = makeMessageId();
     if (browserLocalChatStorage) {
@@ -7629,8 +7648,9 @@ async function appendConversationMessage(conversation, message) {
 
 async function updateConversationMessageRemote(conversation, messageId, patch) {
     if (!conversation?.id || !messageId) return false;
-    if (!await ensureAccountConversationId(conversation)) return false;
-    if (browserLocalChatStorage) {
+    const pendingLocal = isLoggedIn && String(conversation.id).startsWith("local-");
+    if (!pendingLocal && !await ensureAccountConversationId(conversation)) return false;
+    if (browserLocalChatStorage || pendingLocal) {
         const message = (conversation.messages || []).find(item => String(item?.id) === String(messageId));
         if (!message) return false;
         Object.assign(message, patch || {});
@@ -7661,8 +7681,9 @@ async function updateConversationMessageRemote(conversation, messageId, patch) {
 
 async function deleteConversationMessageRemote(conversation, messageId) {
     if (!conversation?.id || !messageId) return false;
-    if (!await ensureAccountConversationId(conversation)) return false;
-    if (browserLocalChatStorage) {
+    const pendingLocal = isLoggedIn && String(conversation.id).startsWith("local-");
+    if (!pendingLocal && !await ensureAccountConversationId(conversation)) return false;
+    if (browserLocalChatStorage || pendingLocal) {
         conversation.messages = (conversation.messages || []).filter(item => String(item?.id) !== String(messageId));
         touchConversation(conversation);
         return saveConversation(conversation);
@@ -7686,27 +7707,35 @@ async function deleteConversationMessageRemote(conversation, messageId) {
 }
 
 async function createServerConversation(title = "New Chat") {
-    if (browserLocalChatStorage) {
+    const makeLocalConversation = async () => {
         const now = new Date().toISOString();
-        return normalizeConversationObject({
-            id: `local-${makeMessageId()}`,
-            title: title || "New Chat",
-            messages: [],
-            revision: 0,
-            pinned: false,
-            archived: false,
-            deleted: false,
-            created_at: now,
-            updated_at: now
+        const conversation = normalizeConversationObject({
+            id: `local-${makeMessageId()}`, title: title || "New Chat", messages: [],
+            revision: 0, pinned: false, archived: false, deleted: false,
+            created_at: now, updated_at: now,
+            __localMigrationPending: isLoggedIn && !browserLocalChatStorage
         });
-    }
+        if (isLoggedIn && !browserLocalChatStorage) {
+            conversationDirtyLocal.add(String(conversation.id));
+            backupOddiConversation(conversation);
+            const saved = await putOddiBrowserChat(conversation);
+            if (!saved && !window.__oddiLocalChatSaveWarningShown) {
+                window.__oddiLocalChatSaveWarningShown = true;
+                alert("Cloud chat storage is unavailable, and this browser could not save a local copy. Check browser storage settings before continuing.");
+            }
+        }
+        return conversation;
+    };
+    if (browserLocalChatStorage) return makeLocalConversation();
     try {
         const response = await fetch("/api/conversations", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" }, body: JSON.stringify({ title }) });
         if (!response.ok) throw new Error(`Create conversation failed (${response.status})`);
         return normalizeConversationObject(await response.json());
     } catch (error) {
         console.error("Create conversation error:", error);
-        return null;
+        // Keep the user moving if cloud storage is temporarily unavailable.
+        // The chat is backed up in this browser and migration retries later.
+        return makeLocalConversation();
     }
 }
 
@@ -7755,6 +7784,19 @@ function buildConversationTitle(value) {
 async function retryDirtyConversationRecoveries() {
     if (browserLocalChatStorage) return;
     if (!isLoggedIn) return;
+    const now = Date.now();
+    if (now - lastPendingLocalImportRetryAt >= 20000) {
+        lastPendingLocalImportRetryAt = now;
+        for (const conversation of conversations) {
+            if (!String(conversation?.id || "").startsWith("local-")) continue;
+            try {
+                await importBrowserLocalChatToAccount(conversation);
+            } catch (error) {
+                // Preserve this device copy and retry after a short backoff.
+                console.debug("Pending chat sync will retry later:", error?.status || error?.message || error);
+            }
+        }
+    }
     for (const backup of getOddiLocalChatBackups()) {
         const id = String(backup.id);
         if (!conversationDirtyLocal.has(id) || conversationSaveInFlight.has(id)) continue;
