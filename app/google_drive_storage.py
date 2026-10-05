@@ -1,10 +1,4 @@
-"""Account-scoped chat and account storage in an operator-owned Google Drive.
-
-This adapter uses a Google service account and therefore requires the target
-folder to be inside a Google Workspace Shared Drive. Google service accounts
-cannot own files in a consumer My Drive. Keep data separated by a stable,
-non-reversible account key; never accept a folder ID from a web request.
-"""
+"""Account-scoped chat and account storage in the owner's personal Google Drive."""
 
 import hashlib
 import io
@@ -22,8 +16,9 @@ logger = logging.getLogger("oddi.drive_storage")
 _DRIVE_SCOPE = "https://www.googleapis.com/auth/drive"
 _FOLDER_MIME = "application/vnd.google-apps.folder"
 _CONFIG_KEYS = (
-    "GOOGLE_DRIVE_CLIENT_EMAIL",
-    "GOOGLE_DRIVE_PRIVATE_KEY",
+    "GOOGLE_CLIENT_ID",
+    "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_REFRESH_TOKEN",
     "GOOGLE_DRIVE_FOLDER_ID",
 )
 _CHAT_NAME_RE = re.compile(r"^chat-([1-9][0-9]*)\.json$")
@@ -40,13 +35,17 @@ class DriveStorageError(RuntimeError):
     """A safe-to-log Drive configuration or API error."""
 
 
+def _clean_env(name):
+    return str(os.getenv(name) or "").strip().strip("\"'")
+
+
 def is_configured():
-    """True only after the user replaces all sample values with real values."""
-    values = {key: os.getenv(key, "").strip() for key in _CONFIG_KEYS}
-    if not all(values.values()):
+    """True once the Google user OAuth credentials and destination folder exist."""
+    values = [_clean_env(key) for key in _CONFIG_KEYS]
+    if not all(values):
         return False
-    lowered = " ".join(values.values()).casefold()
-    return not any(marker in lowered for marker in ("your-project", "your_google", "your-private-key"))
+    lowered = " ".join(values).casefold()
+    return not any(marker in lowered for marker in ("your-project", "your_google", "your-private-key", "replace-me"))
 
 
 def _lock_for(account_id):
@@ -90,55 +89,19 @@ def _service():
         return _SERVICE
     if not is_configured():
         raise DriveStorageError(
-            "Google Drive storage is not configured. Replace the sample values for "
-            "GOOGLE_DRIVE_CLIENT_EMAIL, GOOGLE_DRIVE_PRIVATE_KEY, and GOOGLE_DRIVE_FOLDER_ID."
+            "Google Drive OAuth is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, "
+            "GOOGLE_REFRESH_TOKEN, and GOOGLE_DRIVE_FOLDER_ID."
         )
     try:
-        from google.oauth2 import service_account
         from googleapiclient.discovery import build
+        from google.oauth2.credentials import Credentials
 
-        private_key = os.getenv("GOOGLE_DRIVE_PRIVATE_KEY", "").strip().lstrip("\ufeff")
-        client_email = os.getenv("GOOGLE_DRIVE_CLIENT_EMAIL", "").strip().strip('"\'')
-        if private_key.startswith("{"):
-            try:
-                service_account_json = json.loads(private_key)
-            except json.JSONDecodeError:
-                service_account_json = None
-            if isinstance(service_account_json, dict):
-                private_key = str(service_account_json.get("private_key") or "")
-                client_email = str(service_account_json.get("client_email") or client_email)
-        elif private_key.startswith('"') and private_key.endswith('"'):
-            try:
-                private_key = json.loads(private_key)
-            except json.JSONDecodeError:
-                private_key = private_key[1:-1]
-        elif private_key.startswith("'") and private_key.endswith("'"):
-            private_key = private_key[1:-1]
-
-        private_key = private_key.replace("\\\\n", "\n").replace("\\n", "\n")
-        private_key = private_key.replace("\r\n", "\n").replace("\r", "\n").strip()
-        begin_marker = "-----BEGIN PRIVATE KEY-----"
-        end_marker = "-----END PRIVATE KEY-----"
-        begin = private_key.find(begin_marker)
-        end = private_key.find(end_marker)
-        if begin < 0 or end < begin:
-            raise DriveStorageError(
-                "GOOGLE_DRIVE_PRIVATE_KEY must contain the complete BEGIN/END PRIVATE KEY block."
-            )
-        # Backslashes cannot occur in PEM's base64 body. Some dotenv editors
-        # preserve copy-escaped backslashes inside the key, which makes an
-        # otherwise complete service-account key fail PEM decoding. Remove
-        # those invalid characters from the body while rebuilding clean PEM.
-        pem_body = private_key[begin + len(begin_marker):end].replace("\\", "").strip()
-        private_key = f"{begin_marker}\n{pem_body}\n{end_marker}\n"
-        info = {
-            "type": "service_account",
-            "client_email": client_email,
-            "private_key": private_key,
-            "token_uri": "https://oauth2.googleapis.com/token",
-        }
-        credentials = service_account.Credentials.from_service_account_info(
-            info,
+        credentials = Credentials(
+            token=None,
+            refresh_token=_clean_env("GOOGLE_REFRESH_TOKEN"),
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=_clean_env("GOOGLE_CLIENT_ID"),
+            client_secret=_clean_env("GOOGLE_CLIENT_SECRET"),
             scopes=[_DRIVE_SCOPE],
         )
         _SERVICE = build("drive", "v3", credentials=credentials, cache_discovery=False)
@@ -154,7 +117,8 @@ def _service():
         # logs while still leaving enough information to diagnose the class.
         logger.error("Could not initialize the Google Drive client (error_type=%s)", type(exc).__name__)
         raise DriveStorageError(
-            "Google Drive credentials could not be loaded. Check that GOOGLE_DRIVE_PRIVATE_KEY is the complete, unmodified PEM key and that GOOGLE_DRIVE_CLIENT_EMAIL matches its service account."
+            "Google Drive OAuth credentials could not be loaded. Check GOOGLE_CLIENT_ID, "
+            "GOOGLE_CLIENT_SECRET, and GOOGLE_REFRESH_TOKEN."
         ) from exc
 
 
@@ -162,14 +126,18 @@ def _api_call(request):
     try:
         return request.execute(num_retries=3)
     except Exception as exc:
+        if type(exc).__name__ == "RefreshError":
+            raise DriveStorageError(
+                "Google Drive rejected the OAuth refresh token. Reauthorize the Drive account and update GOOGLE_REFRESH_TOKEN."
+            ) from exc
         status = getattr(getattr(exc, "resp", None), "status", None)
         if status in {401, 403}:
             raise DriveStorageError(
-                "Google Drive rejected the service account. Check its credentials and access to the configured Shared Drive folder."
+                "Google Drive rejected the OAuth grant or folder access. Ensure GOOGLE_REFRESH_TOKEN was authorized with the full Drive scope and the Google account can access the configured folder."
             ) from exc
         if status == 404:
             raise DriveStorageError(
-                "The configured Google Drive folder was not found or is not shared with the service account."
+                "The configured Google Drive folder was not found or the authorized Google account cannot access it."
             ) from exc
         logger.exception("Google Drive API request failed (status=%s)", status)
         raise DriveStorageError(f"Google Drive request failed (HTTP {status or 'unknown'}).") from exc
@@ -189,17 +157,16 @@ def _validate_root():
     )
     if meta.get("mimeType") != _FOLDER_MIME:
         raise DriveStorageError("GOOGLE_DRIVE_FOLDER_ID must point to a folder.")
-    if not meta.get("driveId"):
-        raise DriveStorageError(
-            "This folder is in personal My Drive. Service accounts cannot create or own files there; "
-            "use a Workspace Shared Drive folder or configure Google user OAuth instead."
-        )
-    _ROOT_DRIVE_ID = meta["driveId"]
+    _ROOT_DRIVE_ID = meta.get("driveId")
     _ROOT_VALIDATED = True
 
 
 def _escape_query(value):
     return str(value).replace("\\", "\\\\").replace("'", "\\'")
+
+
+def _supports_shared_drive():
+    return _ROOT_DRIVE_ID is not None
 
 
 def _list_children(parent_id, name=None, mime_type=None):
@@ -213,18 +180,22 @@ def _list_children(parent_id, name=None, mime_type=None):
     page_token = None
     items = []
     while True:
-        result = _api_call(
-            _service().files().list(
-                q=query,
-                pageSize=1000,
-                pageToken=page_token,
-                fields="nextPageToken,files(id,name,mimeType,parents,driveId,modifiedTime)",
+        list_args = {
+            "q": query,
+            "pageSize": 1000,
+            "pageToken": page_token,
+            "fields": "nextPageToken,files(id,name,mimeType,parents,driveId,modifiedTime)",
+        }
+        if _ROOT_DRIVE_ID:
+            list_args.update(
                 corpora="drive",
                 driveId=_ROOT_DRIVE_ID,
                 supportsAllDrives=True,
                 includeItemsFromAllDrives=True,
             )
-        )
+        else:
+            list_args["corpora"] = "user"
+        result = _api_call(_service().files().list(**list_args))
         items.extend(result.get("files", []))
         page_token = result.get("nextPageToken")
         if not page_token:
@@ -237,11 +208,12 @@ def _find_child(parent_id, name, mime_type=None):
 
 
 def _create_folder(parent_id, name):
+    drive_params = {"supportsAllDrives": True} if _ROOT_DRIVE_ID else {}
     return _api_call(
         _service().files().create(
             body={"name": name, "mimeType": _FOLDER_MIME, "parents": [parent_id]},
             fields="id,name,mimeType,driveId",
-            supportsAllDrives=True,
+            **drive_params,
         )
     )
 
@@ -277,7 +249,7 @@ def _read_json_file(parent_id, name):
     try:
         from googleapiclient.http import MediaIoBaseDownload
 
-        request = _service().files().get_media(fileId=meta["id"], supportsAllDrives=True)
+        request = _service().files().get_media(fileId=meta["id"], supportsAllDrives=_supports_shared_drive())
         output = io.BytesIO()
         downloader = MediaIoBaseDownload(output, request)
         done = False
@@ -309,7 +281,7 @@ def _write_json_file(parent_id, name, value):
                     fileId=meta["id"],
                     media_body=media,
                     fields="id,name,modifiedTime",
-                    supportsAllDrives=True,
+                    supportsAllDrives=_supports_shared_drive(),
                 )
             )
         return _api_call(
@@ -317,7 +289,7 @@ def _write_json_file(parent_id, name, value):
                 body={"name": name, "mimeType": "application/json", "parents": [parent_id]},
                 media_body=media,
                 fields="id,name,modifiedTime",
-                supportsAllDrives=True,
+                supportsAllDrives=_supports_shared_drive(),
             )
         )
     except DriveStorageError:
@@ -331,7 +303,7 @@ def _delete_child(parent_id, name):
     meta = _find_child(parent_id, name)
     if not meta:
         return False
-    _api_call(_service().files().delete(fileId=meta["id"], supportsAllDrives=True))
+    _api_call(_service().files().delete(fileId=meta["id"], supportsAllDrives=_supports_shared_drive()))
     return True
 
 
@@ -597,8 +569,8 @@ def delete_account(user_id):
     for meta in _list_children(folder_id):
         if meta.get("mimeType") == _FOLDER_MIME:
             for child in _list_children(meta["id"]):
-                _api_call(_service().files().delete(fileId=child["id"], supportsAllDrives=True))
-        _api_call(_service().files().delete(fileId=meta["id"], supportsAllDrives=True))
+                _api_call(_service().files().delete(fileId=child["id"], supportsAllDrives=_supports_shared_drive()))
+        _api_call(_service().files().delete(fileId=meta["id"], supportsAllDrives=_supports_shared_drive()))
     _write_json_file(folder_id, _DELETED_ACCOUNT_FILE, {"deleted_at": _iso_timestamp()})
     return True
 

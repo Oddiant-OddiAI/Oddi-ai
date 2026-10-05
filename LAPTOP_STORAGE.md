@@ -27,21 +27,26 @@ own per-account copy.
 
 ## Google Drive setup
 
-The current service-account configuration requires a folder inside a Google
-Workspace Shared Drive. Add the service account as a member with permission to
-create, edit, and delete files in that Shared Drive, then set these same
-variables in the laptop `.env` and Render's Environment settings:
+ODDI authenticates to the owner's personal My Drive using Google OAuth user
+credentials. Set these values in the laptop `.env` and Render Environment:
 
 ```dotenv
-GOOGLE_DRIVE_CLIENT_EMAIL="your-service-account-email@your-project.iam.gserviceaccount.com"
-GOOGLE_DRIVE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYour-Private-Key-Here\n-----END PRIVATE KEY-----"
-GOOGLE_DRIVE_FOLDER_ID="your_google_drive_folder_id"
+GOOGLE_CLIENT_ID="..."
+GOOGLE_CLIENT_SECRET="..."
+GOOGLE_REFRESH_TOKEN="..."
+GOOGLE_DRIVE_FOLDER_ID="1bzGLXgYppJd5Sr0TCP_sA92alXMTd_6R"
 ```
 
-`GOOGLE_DRIVE_FOLDER_ID` must be a folder in that Shared Drive. Google's
-service accounts cannot own files in a consumer account's personal My Drive.
-The private key is a credential: keep it out of chat, Git, screenshots, and
-logs. The local `.env` is ignored by Git; set the values separately in Render.
+`GOOGLE_REFRESH_TOKEN` must be authorized for the full Drive scope
+`https://www.googleapis.com/auth/drive`, because the destination folder already
+exists in personal My Drive. The Google Drive API must be enabled for the OAuth
+client's Cloud project. Google OAuth testing-mode refresh tokens expire after
+seven days, so the consent app needs production publishing for ongoing sync.
+
+The service-account private key previously pasted into chat is exposed. Revoke
+that key in Google Cloud IAM and remove the old `GOOGLE_DRIVE_PRIVATE_KEY` and
+`GOOGLE_DRIVE_CLIENT_EMAIL` variables from Render. Never share the refresh
+token, client secret, or `.env`.
 
 ## Start ODDI on the laptop
 

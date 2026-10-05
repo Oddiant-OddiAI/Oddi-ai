@@ -168,7 +168,7 @@ main{width:min(520px,100%);padding:32px;border:1px solid #292b2b;border-radius:2
 <h1>ODDI needs its shared chat storage</h1>
 <p>The public site uses Google Drive for account records and chat history while the laptop is offline.</p>
 <p>No account or chat was saved on Render. Configure Drive access in Render's Environment settings, then redeploy.</p>
-<small>Set <code>GOOGLE_DRIVE_CLIENT_EMAIL</code>, <code>GOOGLE_DRIVE_PRIVATE_KEY</code>, and <code>GOOGLE_DRIVE_FOLDER_ID</code>.</small>
+<small>Set <code>GOOGLE_CLIENT_ID</code>, <code>GOOGLE_CLIENT_SECRET</code>, <code>GOOGLE_REFRESH_TOKEN</code>, and <code>GOOGLE_DRIVE_FOLDER_ID</code> in the laptop and Render environments.</small>
 </main></html>""",
             status_code=503,
             headers={"Cache-Control": "no-store", "Retry-After": "60"},
@@ -276,7 +276,11 @@ elif _SECURE_SESSION_COOKIES and len(_SESSION_SECRET) < 32:
             + _database_secret_material.encode("utf-8")
         ).hexdigest()
     elif ODDI_DRIVE_CHAT_STORAGE:
-        _drive_secret_material = os.getenv("GOOGLE_DRIVE_PRIVATE_KEY", "").strip()
+        _drive_secret_material = "\0".join(
+            os.getenv(name, "").strip()
+            for name in ("GOOGLE_CLIENT_SECRET", "GOOGLE_REFRESH_TOKEN")
+            if os.getenv(name, "").strip()
+        )
         _SESSION_SECRET = hashlib.sha256(
             b"oddi-drive-session-cookie-signing-v1\0"
             + _drive_secret_material.encode("utf-8")
