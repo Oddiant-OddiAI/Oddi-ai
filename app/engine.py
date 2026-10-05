@@ -609,7 +609,12 @@ def process_message(
     if user_id is not None and not ODDI_LOCAL_ONLY_STORAGE:
         # Read an existing vector-store ID only. Do not create an OpenAI
         # vector store during every chat request.
-        vector_store_id = get_vector_store_id(user_id)
+        try:
+            vector_store_id = get_vector_store_id(user_id)
+        except Exception as vector_store_lookup_error:
+            # Vector-store context is optional; storage outages must not stop
+            # normal chat generation.
+            print("Could not load the user's vector store; continuing without it:", vector_store_lookup_error)
 
     if uploaded_files:
         uploaded_file = uploaded_files[0]

@@ -7454,7 +7454,7 @@ async function loadConversations() {
             console.error("Could not sync local chats to this account:", migrationError);
             if (!window.__oddiLocalChatSyncWarningShown) {
                 window.__oddiLocalChatSyncWarningShown = true;
-                alert("Some chats are still saved only in this browser. They were kept here; sign in again later to retry syncing.");
+                showOddiToast("Some chats are still saved only in this browser. They are safe here and will retry syncing later.", "error");
             }
         }
         const response = await fetch("/api/conversations", { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
@@ -7707,7 +7707,7 @@ async function deleteConversationMessageRemote(conversation, messageId) {
 }
 
 async function createServerConversation(title = "New Chat") {
-    const makeLocalConversation = async () => {
+    const makeLocalConversation = () => {
         const now = new Date().toISOString();
         const conversation = normalizeConversationObject({
             id: `local-${makeMessageId()}`, title: title || "New Chat", messages: [],
@@ -7718,25 +7718,18 @@ async function createServerConversation(title = "New Chat") {
         if (isLoggedIn && !browserLocalChatStorage) {
             conversationDirtyLocal.add(String(conversation.id));
             backupOddiConversation(conversation);
-            const saved = await putOddiBrowserChat(conversation);
-            if (!saved && !window.__oddiLocalChatSaveWarningShown) {
-                window.__oddiLocalChatSaveWarningShown = true;
-                alert("Cloud chat storage is unavailable, and this browser could not save a local copy. Check browser storage settings before continuing.");
-            }
+            putOddiBrowserChat(conversation).then(saved => {
+                if (!saved && !window.__oddiLocalChatSaveWarningShown) {
+                    window.__oddiLocalChatSaveWarningShown = true;
+                    showOddiToast("This browser could not save a local chat copy. Check its storage space or privacy settings.", "error");
+                }
+            }).catch(error => console.warn("Could not save the new chat locally yet:", error));
         }
         return conversation;
     };
-    if (browserLocalChatStorage) return makeLocalConversation();
-    try {
-        const response = await fetch("/api/conversations", { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" }, body: JSON.stringify({ title }) });
-        if (!response.ok) throw new Error(`Create conversation failed (${response.status})`);
-        return normalizeConversationObject(await response.json());
-    } catch (error) {
-        console.error("Create conversation error:", error);
-        // Keep the user moving if cloud storage is temporarily unavailable.
-        // The chat is backed up in this browser and migration retries later.
-        return makeLocalConversation();
-    }
+    // Start with a local draft so a Drive outage or slow cloud request never
+    // blocks the actual /chat generation request. Background sync migrates it.
+    return makeLocalConversation();
 }
 
 function buildConversationTitle(value) {
@@ -11407,6 +11400,14 @@ function oddiLibraryScoreFile(file, message, history) {
 }
 
 async function oddiFindRelevantLibraryFile(message, history) {
+    const currentMessage = String(message || "");
+    const recentHistory = Array.isArray(history) ? history.slice(-8) : [];
+    const asksAboutAFile = /\b(resume|cv|curriculum vitae|file|document|attachment|library|pdf|docx|spreadsheet|image|upload|my skills|my experience|my education|projects)\b/i.test(currentMessage);
+    const refersToARecentFile = /\b(it|that|this|these|those|from it|from that file)\b/i.test(currentMessage)
+        && recentHistory.some(item => /\b(resume|cv|curriculum vitae|file|document|attachment|library|pdf|docx|spreadsheet|image|upload)\b/i.test(String(item?.text || "")));
+    // Do not make every ordinary chat message wait on the cloud Library.
+    if (!asksAboutAFile && !refersToARecentFile) return null;
+
     const files = await oddiFetchLibraryRecallFiles();
 
     if (!files.length) {
@@ -11866,20 +11867,25 @@ async function sendMessage(
 
         if (targetConversation.__newConversationSave) {
             // New conversations use the same full-conversation persistence
-            // path as the established conversation saver.
-            await saveConversation(targetConversation);
+            // path as the established conversation saver, without delaying AI.
+            void saveConversation(targetConversation).catch(error => console.warn("Could not save the outgoing message locally yet:", error));
         } else {
-            await appendConversationMessage(
+            // A slow or unavailable Drive write must not prevent the request
+            // from reaching /chat. This path creates a browser recovery copy
+            // before its remote request.
+            void appendConversationMessage(
                 targetConversation,
                 newUserMessage
-            );
+            ).catch(error => console.warn("Could not persist the outgoing message yet:", error));
         }
 
         renderHistory();
 
         // Handle explicit "remember ..." requests immediately. The server
         // separately checks normal chat for durable memories after replying.
-        if (!browserLocalChatStorage) await saveExplicitMemoryFromUserMessage(message);
+        if (!browserLocalChatStorage) {
+            void saveExplicitMemoryFromUserMessage(message).catch(error => console.warn("Could not save the explicit memory request:", error));
+        }
     }
 
 

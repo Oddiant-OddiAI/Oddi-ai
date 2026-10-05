@@ -79,7 +79,7 @@ from app.database import (
     clear_memory,
     get_vector_store_id,
 )
-from app.google_drive_storage import DriveStorageError
+from app.google_drive_storage import DriveStorageError, user_id_for_email as drive_user_id_for_email
 
 from app.engine import process_message
 from app.config import client
@@ -490,7 +490,55 @@ def require_user_id(request: Request):
     if not user_id:
         raise HTTPException(status_code=401, detail="Not logged in.")
 
-    user = _get_session_user(request)
+    # A Drive-backed chat can still be generated when Drive is temporarily
+    # unreachable. The signed Starlette session proves the user already logged
+    # in; matching its stable account ID to its email prevents using a local or
+    # unrelated identity. Avoid a slow Drive lookup on the critical send path.
+    if ODDI_DRIVE_CHAT_STORAGE and (
+        request.url.path == "/chat"
+        or request.url.path.startswith("/api/chat-generations/")
+    ):
+        email = str(request.session.get("email") or "").strip().casefold()
+        provider = str(request.session.get("auth_provider") or "").casefold()
+        try:
+            session_id = int(user_id)
+            expected_id = drive_user_id_for_email(email)
+        except (TypeError, ValueError, OverflowError):
+            session_id = None
+            expected_id = None
+        if (
+            provider != "browser-local"
+            and not email.endswith("@local.oddi.invalid")
+            and session_id is not None
+            and session_id == expected_id
+        ):
+            return session_id
+
+    try:
+        user = _get_session_user(request)
+    except DriveStorageError:
+        # The session cookie is signed by this app and the Drive-backed account
+        # ID is derived from its email. If Drive is temporarily unreachable,
+        # allow an already-authenticated account to keep chatting; its pending
+        # conversation remains browser-local until Drive recovers.
+        email = str(request.session.get("email") or "").strip().casefold()
+        provider = str(request.session.get("auth_provider") or "").casefold()
+        try:
+            session_id = int(user_id)
+            expected_id = drive_user_id_for_email(email)
+        except (TypeError, ValueError, OverflowError):
+            session_id = None
+            expected_id = None
+        if (
+            ODDI_DRIVE_CHAT_STORAGE
+            and provider != "browser-local"
+            and not email.endswith("@local.oddi.invalid")
+            and session_id is not None
+            and session_id == expected_id
+        ):
+            logger.warning("Google Drive account lookup failed; continuing with the signed-in session.")
+            return session_id
+        raise
     if not user:
         request.session.clear()
         raise HTTPException(status_code=401, detail="This account is no longer available. Sign in again.")
@@ -1654,6 +1702,23 @@ def api_delete_file(request: Request, file_id: int):
 # CHAT / FILE UPLOAD
 # =========================================================
 
+def _persist_completed_chat_message(conversation_id, user_id, message):
+    """Best-effort Drive persistence after a generated answer was returned."""
+    try:
+        saved = append_conversation_message(conversation_id, user_id, message)
+        if not saved:
+            logger.warning(
+                "Completed chat response could not be saved conversation=%s user=%s",
+                conversation_id,
+                user_id,
+            )
+    except Exception:
+        logger.exception(
+            "Background save failed for completed chat conversation=%s user=%s",
+            conversation_id,
+            user_id,
+        )
+
 @app.post("/api/chat-generations/{generation_id}/cancel", name="cancel_chat_generation")
 async def cancel_chat_generation(request: Request, generation_id: str):
     user_id = str(require_user_id(request))
@@ -1721,7 +1786,17 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = await require_user_id_async(request)
-    user_settings = await run_in_threadpool(get_user_settings, user_id)
+    if ODDI_DRIVE_CHAT_STORAGE:
+        # Chat generation does not need a Drive round-trip for optional user
+        # preferences. Keep the send path available during Drive outages and
+        # do not log uploaded filenames without loading its privacy preference.
+        user_settings = {}
+    else:
+        try:
+            user_settings = await run_in_threadpool(get_user_settings, user_id)
+        except DriveStorageError:
+            logger.warning("Google Drive settings lookup failed; using default chat settings.")
+            user_settings = {}
     privacy_settings = user_settings.get("privacy", {}) if isinstance(user_settings, dict) else {}
     request_logging_enabled = (
         not ODDI_BROWSER_LOCAL_CHATS
@@ -1738,10 +1813,14 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     # If the browser lost the successful response, its Retry action repeats
     # this assistant message ID. Return the already-saved reply instead of
     # generating a second answer for the same turn.
-    if conversation_id is not None:
-        existing_conversation = await run_in_threadpool(
-            get_conversation, conversation_id, user_id
-        )
+    if conversation_id is not None and not ODDI_DRIVE_CHAT_STORAGE:
+        try:
+            existing_conversation = await run_in_threadpool(
+                get_conversation, conversation_id, user_id
+            )
+        except DriveStorageError:
+            logger.warning("Google Drive chat lookup failed; generating without server-side deduplication.")
+            existing_conversation = None
         existing_reply = next(
             (
                 item for item in (existing_conversation or {}).get("messages", [])
@@ -1990,31 +2069,46 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     latency_ms = max(0, int((time.perf_counter() - generation_started) * 1000))
     token_estimate = max(1, (len(str(reply)) + 3) // 4) if isinstance(reply, str) else 0
     if conversation_id is not None and isinstance(reply, str):
-        saved_conversation = await run_in_threadpool(
-            append_conversation_message,
-            conversation_id,
-            user_id,
-            {
-                "id": assistant_message_id,
-                "role": "assistant",
-                "text": reply,
-                "pinned": False,
-                "feedback": None,
-                "background_completion": True,
-                "completed_at": completed_at,
-                "response_meta": {
-                    "latency_ms": latency_ms,
-                    "token_estimate": token_estimate,
-                    "provider": "Auto routing",
-                },
+        assistant_message = {
+            "id": assistant_message_id,
+            "role": "assistant",
+            "text": reply,
+            "pinned": False,
+            "feedback": None,
+            "background_completion": True,
+            "completed_at": completed_at,
+            "response_meta": {
+                "latency_ms": latency_ms,
+                "token_estimate": token_estimate,
+                "provider": "Auto routing",
             },
-        )
-        if not saved_conversation:
-            logger.warning(
-                "Completed chat response could not be saved conversation=%s user=%s",
+        }
+        if ODDI_DRIVE_CHAT_STORAGE:
+            # Return the answer immediately. The browser keeps a local recovery
+            # copy and this best-effort Drive write runs after the HTTP reply.
+            background_tasks.add_task(
+                _persist_completed_chat_message,
                 conversation_id,
                 user_id,
+                assistant_message,
             )
+        else:
+            try:
+                saved_conversation = await run_in_threadpool(
+                    append_conversation_message,
+                    conversation_id,
+                    user_id,
+                    assistant_message,
+                )
+            except DriveStorageError:
+                logger.warning("Google Drive save failed after reply generation; returning the reply for local recovery.")
+                saved_conversation = None
+            if not saved_conversation:
+                logger.warning(
+                    "Completed chat response could not be saved conversation=%s user=%s",
+                    conversation_id,
+                    user_id,
+                )
 
     if not ODDI_LOCAL_ONLY_STORAGE and not ODDI_BROWSER_LOCAL_CHATS and memory_enabled and memory_auto_extract and memory_message:
         background_tasks.add_task(
