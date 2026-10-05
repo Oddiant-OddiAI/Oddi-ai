@@ -190,12 +190,20 @@ async def start_bin_retention_cleanup():
         return
 
     async def cleanup_expired_bin_chats():
+        # Do not compete with the first account/history requests when Render
+        # starts. Drive-backed cleanup is user-scoped when the Bin is opened;
+        # the all-account sweep only needs to run once per day.
+        if ODDI_DRIVE_CHAT_STORAGE:
+            await asyncio.sleep(5 * 60)
+            cleanup_interval = 24 * 60 * 60
+        else:
+            cleanup_interval = 60 * 60
         while True:
             try:
                 await run_in_threadpool(purge_expired_deleted_conversations)
             except Exception:
                 logger.exception("Automatic Bin retention cleanup failed")
-            await asyncio.sleep(60 * 60)
+            await asyncio.sleep(cleanup_interval)
 
     app.state.bin_retention_task = asyncio.create_task(cleanup_expired_bin_chats())
 
@@ -1123,7 +1131,9 @@ def api_logout(request: Request):
 
 @app.get("/api/conversations", name="api_get_conversations")
 def api_get_conversations(request: Request):
-    if _request_logging_enabled(request):
+    # Looking up a Drive-backed privacy setting for each periodic history
+    # refresh adds several extra Drive round trips. Keep those refreshes quiet.
+    if not ODDI_DRIVE_CHAT_STORAGE and _request_logging_enabled(request):
         logger.info(
             "HTTP GET /api/conversations pid=%s user=%s",
             os.getpid(),

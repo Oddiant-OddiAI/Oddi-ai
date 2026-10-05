@@ -7206,6 +7206,7 @@ let conversationSyncInFlight = false;
 let conversationSyncTimer = null;
 let conversationSyncStarted = false;
 let lastPendingLocalImportRetryAt = 0;
+const localChatImportInFlight = new Map();
 const conversationSaveInFlight = new Set();
 const conversationDirtyLocal = new Set();
 
@@ -7351,20 +7352,33 @@ function mergeConversationFromServer(localConversation, serverConversation) {
 async function importBrowserLocalChatToAccount(conversation) {
     const sourceId = String(conversation?.id || "");
     if (!sourceId.startsWith("local-")) return true;
-    const response = await fetch("/api/conversations/import-local", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
-        body: JSON.stringify({ source_id: sourceId, conversation })
-    });
-    if (!response.ok) {
-        const error = new Error(`Could not sync a device chat (${response.status})`);
-        error.status = response.status;
-        throw error;
+    let pendingImport = localChatImportInFlight.get(sourceId);
+    if (!pendingImport) {
+        pendingImport = (async () => {
+            const response = await fetch("/api/conversations/import-local", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json", "Cache-Control": "no-cache" },
+                body: JSON.stringify({ source_id: sourceId, conversation })
+            });
+            if (!response.ok) {
+                const error = new Error(`Could not sync a device chat (${response.status})`);
+                error.status = response.status;
+                throw error;
+            }
+            const result = await response.json();
+            if (!result?.conversation?.id) throw new Error("Chat sync returned no account conversation.");
+            return result.conversation;
+        })();
+        localChatImportInFlight.set(sourceId, pendingImport);
     }
-    const result = await response.json();
-    if (!result?.conversation?.id) throw new Error("Chat sync returned no account conversation.");
-    Object.assign(conversation, normalizeConversationObject(result.conversation));
+    let importedConversation;
+    try {
+        importedConversation = await pendingImport;
+    } finally {
+        if (localChatImportInFlight.get(sourceId) === pendingImport) localChatImportInFlight.delete(sourceId);
+    }
+    Object.assign(conversation, normalizeConversationObject(importedConversation));
     conversationDirtyLocal.delete(sourceId);
     conversation.__localMigrationPending = false;
     conversation.__recoveredLocally = false;
@@ -7464,44 +7478,40 @@ async function loadConversations() {
         return;
     }
     try {
-        let localChatMigrationFailed = false;
-        try {
-            await migrateBrowserLocalChatsToAccount();
-        } catch (migrationError) {
-            localChatMigrationFailed = true;
+        // Fetch the account history first so Drive migration of older browser
+        // chats cannot hold the whole chat list behind a sequence of uploads.
+        const localChatMigration = migrateBrowserLocalChatsToAccount().catch(migrationError => {
             console.error("Could not sync local chats to this account:", migrationError);
             if (!window.__oddiLocalChatSyncWarningShown) {
                 window.__oddiLocalChatSyncWarningShown = true;
                 showOddiToast("Some chats are still saved only in this browser. They are safe here and will retry syncing later.", "error");
             }
-        }
+        });
         const response = await fetch("/api/conversations", { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) throw new Error(`Load conversations failed (${response.status})`);
         const loadedConversations = await response.json();
         const serverConversations = Array.isArray(loadedConversations) ? loadedConversations.map(normalizeConversationObject) : [];
         const serverById = new Map(serverConversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => [String(c.id), c]));
         conversations = serverConversations.slice();
-        if (localChatMigrationFailed) {
-            try {
-                const pendingLocalChats = new Map();
-                const scopedBackups = getOddiLocalChatBackups();
-                const scopedBackupIds = new Set(scopedBackups.map(item => String(item?.id || "")));
-                for (const item of await getOddiBrowserChats()) {
-                    const id = String(item?.id || "");
-                    if (id.startsWith("local-") && oddiLocalChatBelongsToCurrentAccount(item, scopedBackupIds)) pendingLocalChats.set(id, item);
-                }
-                for (const item of scopedBackups) {
-                    const id = String(item?.id || "");
-                    if (id.startsWith("local-") && !pendingLocalChats.has(id)) pendingLocalChats.set(id, item);
-                }
-                for (const [id, item] of pendingLocalChats) {
-                    if (!serverById.has(id)) {
-                        conversations.push({ ...normalizeConversationObject(item), id, __localMigrationPending: true, __recoveredLocally: true });
-                    }
-                }
-            } catch (localReadError) {
-                console.error("Could not restore unsynced device chats:", localReadError);
+        try {
+            const pendingLocalChats = new Map();
+            const scopedBackups = getOddiLocalChatBackups();
+            const scopedBackupIds = new Set(scopedBackups.map(item => String(item?.id || "")));
+            for (const item of await getOddiBrowserChats()) {
+                const id = String(item?.id || "");
+                if (id.startsWith("local-") && oddiLocalChatBelongsToCurrentAccount(item, scopedBackupIds)) pendingLocalChats.set(id, item);
             }
+            for (const item of scopedBackups) {
+                const id = String(item?.id || "");
+                if (id.startsWith("local-") && !pendingLocalChats.has(id)) pendingLocalChats.set(id, item);
+            }
+            for (const [id, item] of pendingLocalChats) {
+                if (!serverById.has(id) && !conversations.some(chat => String(chat?.id) === id)) {
+                    conversations.push({ ...normalizeConversationObject(item), id, __localMigrationPending: true, __recoveredLocally: true });
+                }
+            }
+        } catch (localReadError) {
+            console.error("Could not restore unsynced device chats:", localReadError);
         }
         // Publish server chats immediately so the React sidebar can show and
         // open them without waiting for recovery or legacy metadata migration.
@@ -7539,6 +7549,9 @@ async function loadConversations() {
         publishConversationDataReady();
         restoreLastOpenConversation();
         startConversationSync();
+        localChatMigration.then(() => {
+            if (conversationSyncStarted) syncConversationsFromServer({ refreshOpen: false });
+        });
     } catch (error) {
         console.error("Load conversations error:", error);
         const localById = new Map();
@@ -7825,7 +7838,7 @@ async function retryDirtyConversationRecoveries() {
     if (browserLocalChatStorage) return;
     if (!isLoggedIn) return;
     const now = Date.now();
-    if (now - lastPendingLocalImportRetryAt >= 20000) {
+    if (now - lastPendingLocalImportRetryAt >= 10000) {
         lastPendingLocalImportRetryAt = now;
         for (const conversation of conversations) {
             if (!String(conversation?.id || "").startsWith("local-")) continue;
@@ -7914,7 +7927,10 @@ function startConversationSync() {
     if (browserLocalChatStorage) return;
     if (!isLoggedIn) return;
     if (conversationSyncTimer) clearInterval(conversationSyncTimer);
-    conversationSyncTimer = setInterval(() => syncConversationsFromServer(), 2500);
+    // Drive-backed history reads fetch the chat list and message files. A
+    // short polling loop repeatedly downloaded every chat and slowed both
+    // devices; focus/visibility/online events still trigger immediate sync.
+    conversationSyncTimer = setInterval(() => syncConversationsFromServer(), 10000);
     if (!conversationSyncStarted) {
         conversationSyncStarted = true;
         document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") syncConversationsFromServer(); });

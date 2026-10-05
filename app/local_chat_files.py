@@ -169,6 +169,41 @@ def _normalize_conversation(value, account_id, conversation_id=None):
     }
 
 
+def _merge_retried_local_import(existing, incoming, account_id, conversation_id):
+    """Keep a retried browser import from returning an older partial chat."""
+    current = _normalize_conversation(existing, account_id, conversation_id)
+    candidate = _normalize_conversation(incoming, account_id, conversation_id)
+    candidate_is_newer = (
+        str(candidate.get("updated_at") or ""), int(candidate.get("revision", 0))
+    ) >= (
+        str(current.get("updated_at") or ""), int(current.get("revision", 0))
+    )
+    messages = [dict(item) for item in current["messages"]]
+    positions = {str(item.get("id")): index for index, item in enumerate(messages) if item.get("id")}
+    changed = False
+    for item in candidate["messages"]:
+        message_id = str(item.get("id") or "")
+        if not message_id or message_id not in positions:
+            messages.append(dict(item))
+            if message_id:
+                positions[message_id] = len(messages) - 1
+            changed = True
+        elif candidate_is_newer and messages[positions[message_id]] != item:
+            messages[positions[message_id]] = dict(item)
+            changed = True
+
+    merged = dict(current)
+    if candidate_is_newer:
+        if merged["title"] != candidate["title"] or merged["updated_at"] != candidate["updated_at"]:
+            changed = True
+        merged["title"] = candidate["title"]
+        merged["updated_at"] = candidate["updated_at"]
+    merged["messages"] = messages
+    if changed:
+        merged["revision"] = max(current["revision"], candidate["revision"]) + 1
+    return _normalize_conversation(merged, account_id, conversation_id)
+
+
 def _read_conversation_locked(account_id, conversation_id):
     path = _conversation_path(account_id, conversation_id)
     try:
@@ -297,7 +332,10 @@ def import_local_conversation(user_id, source_id, conversation):
         if imported_id:
             existing = _read_conversation_locked(account_id, imported_id)
             if existing:
-                return existing
+                migrated = _merge_retried_local_import(existing, conversation, account_id, imported_id)
+                if migrated != existing:
+                    _atomic_write(_conversation_path(account_id, imported_id), migrated)
+                return migrated
         chat_id, state = _allocate_id_locked(account_id, state)
         migrated = _normalize_conversation(conversation, account_id, chat_id)
         _atomic_write(_conversation_path(account_id, chat_id), migrated)
@@ -307,7 +345,6 @@ def import_local_conversation(user_id, source_id, conversation):
 
 
 def get_conversations(user_id):
-    purge_expired_deleted_conversations()
     account_id = _account_key(user_id)
     with _lock_for(account_id):
         result = [
@@ -319,7 +356,6 @@ def get_conversations(user_id):
 
 
 def get_deleted_conversations(user_id):
-    purge_expired_deleted_conversations()
     account_id = _account_key(user_id)
     with _lock_for(account_id):
         result = [chat for chat in _all_conversations_locked(account_id) if chat["deleted"]]
@@ -522,7 +558,7 @@ def delete_account_chats(user_id):
             logger.warning("Account chat folder still contains files after deletion: %s", account_id)
 
 
-def purge_expired_deleted_conversations(now=None):
+def purge_expired_deleted_conversations(now=None, user_id=None):
     cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=15)
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
@@ -530,7 +566,11 @@ def purge_expired_deleted_conversations(now=None):
     if not ROOT.exists():
         return 0
     removed = 0
-    for directory in ROOT.glob("account-*"):
+    if user_id is None:
+        directories = ROOT.glob("account-*")
+    else:
+        directories = [ROOT / f"account-{_account_key(user_id)}"]
+    for directory in directories:
         match = re.fullmatch(r"account-([1-9][0-9]*)", directory.name)
         if not match or not directory.is_dir():
             continue

@@ -1088,7 +1088,6 @@ def get_conversations(user_id):
         result = _chat_file_store().get_conversations(user_id)
         logger.info("PERSIST GET user=%s chat_files=%s", user_id, len(result))
         return result
-    purge_expired_deleted_conversations()
     # The API continues to return one unified list so the existing frontend
     # does not need to know which physical database owns a conversation.
     chat_conn = get_db("chat")
@@ -1124,6 +1123,9 @@ def get_conversations(user_id):
 
 def get_deleted_conversations(user_id):
     if ODDI_CHAT_JSON_STORAGE:
+        # Expire only this account's Bin on demand. Scanning every Drive
+        # account while opening one user's history made normal chat loads slow.
+        purge_expired_deleted_conversations(user_id=user_id)
         return _chat_file_store().get_deleted_conversations(user_id)
     purge_expired_deleted_conversations()
     conn = get_db("archive_memory")
@@ -1138,10 +1140,10 @@ def get_deleted_conversations(user_id):
         conn.close()
 
 
-def purge_expired_deleted_conversations(now=None):
+def purge_expired_deleted_conversations(now=None, user_id=None):
     """Permanently remove Bin chats after 15 days while retaining archives."""
     if ODDI_CHAT_JSON_STORAGE:
-        return _chat_file_store().purge_expired_deleted_conversations(now)
+        return _chat_file_store().purge_expired_deleted_conversations(now, user_id=user_id)
     cutoff = (now or datetime.utcnow()) - timedelta(days=15)
     conn = get_db("archive_memory")
     try:

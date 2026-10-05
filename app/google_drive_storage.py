@@ -29,6 +29,8 @@ _SERVICE_LOCAL = threading.local()
 _ROOT_VALIDATION_LOCK = threading.Lock()
 _ROOT_VALIDATED = False
 _ROOT_DRIVE_ID = None
+_FOLDER_CACHE_LOCK = threading.Lock()
+_FOLDER_CACHE = {}
 
 
 def _bounded_env_int(name, default, minimum, maximum):
@@ -283,26 +285,43 @@ def _root_folder_id():
 
 def _accounts_folder(create=False):
     root_id = _root_folder_id()
+    cache_key = (root_id, "accounts")
+    with _FOLDER_CACHE_LOCK:
+        cached_id = _FOLDER_CACHE.get(cache_key)
+    if cached_id:
+        return cached_id
     folder = _find_child(root_id, "accounts", _FOLDER_MIME)
-    if folder or not create:
-        return folder["id"] if folder else None
-    return _create_folder(root_id, "accounts")["id"]
+    if not folder and create:
+        folder = _create_folder(root_id, "accounts")
+    if folder:
+        with _FOLDER_CACHE_LOCK:
+            _FOLDER_CACHE[cache_key] = folder["id"]
+        return folder["id"]
+    return None
 
 
 def _account_folder(user_id, create=False):
     account_id = _account_key(user_id)
+    cache_key = (os.getenv("GOOGLE_DRIVE_FOLDER_ID", "").strip().strip('"'), f"account-{account_id}")
+    with _FOLDER_CACHE_LOCK:
+        cached_id = _FOLDER_CACHE.get(cache_key)
+    if cached_id:
+        return cached_id
     accounts_id = _accounts_folder(create=create)
     if not accounts_id:
         return None
     folder = _find_child(accounts_id, f"account-{account_id}", _FOLDER_MIME)
-    if folder or not create:
-        return folder["id"] if folder else None
-    return _create_folder(accounts_id, f"account-{account_id}")["id"]
+    if not folder and create:
+        folder = _create_folder(accounts_id, f"account-{account_id}")
+    if folder:
+        with _FOLDER_CACHE_LOCK:
+            _FOLDER_CACHE[cache_key] = folder["id"]
+        return folder["id"]
+    return None
 
 
-def _read_json_file(parent_id, name):
-    meta = _find_child(parent_id, name)
-    if not meta:
+def _read_json_file_meta(meta):
+    if not meta or not meta.get("id"):
         return None
     request = None
     try:
@@ -323,6 +342,11 @@ def _read_json_file(parent_id, name):
     finally:
         if request is not None:
             _close_request_transport(request)
+
+
+def _read_json_file(parent_id, name):
+    meta = _find_child(parent_id, name)
+    return _read_json_file_meta(meta) if meta else None
 
 
 def _write_json_file(parent_id, name, value):
@@ -414,6 +438,37 @@ def _stamp_key(value):
     return parsed, int(value.get("revision", 0) or 0)
 
 
+def _merge_retried_local_import(existing, incoming, account_id, conversation_id):
+    """Merge a retry of a browser chat import without dropping newer messages."""
+    current = _normalize_conversation(existing, account_id, conversation_id)
+    candidate = _normalize_conversation(incoming, account_id, conversation_id)
+    candidate_is_newer = _stamp_key(candidate) >= _stamp_key(current)
+    messages = [dict(item) for item in current["messages"]]
+    positions = {str(item.get("id")): index for index, item in enumerate(messages) if item.get("id")}
+    changed = False
+    for item in candidate["messages"]:
+        message_id = str(item.get("id") or "")
+        if not message_id or message_id not in positions:
+            messages.append(dict(item))
+            if message_id:
+                positions[message_id] = len(messages) - 1
+            changed = True
+        elif candidate_is_newer and messages[positions[message_id]] != item:
+            messages[positions[message_id]] = dict(item)
+            changed = True
+
+    merged = dict(current)
+    if candidate_is_newer:
+        if merged["title"] != candidate["title"] or merged["updated_at"] != candidate["updated_at"]:
+            changed = True
+        merged["title"] = candidate["title"]
+        merged["updated_at"] = candidate["updated_at"]
+    merged["messages"] = messages
+    if changed:
+        merged["revision"] = max(current["revision"], candidate["revision"]) + 1
+    return _normalize_conversation(merged, account_id, conversation_id), changed
+
+
 def _chat_folder(user_id, create=False):
     return _account_folder(user_id, create=create)
 
@@ -448,7 +503,9 @@ def _all_conversations(user_id):
         match = _CHAT_NAME_RE.fullmatch(meta.get("name", ""))
         if not match:
             continue
-        value = _read_json_file(folder_id, meta["name"])
+        # The directory listing already includes each Drive file ID. Read the
+        # JSON directly instead of issuing another name lookup per chat.
+        value = _read_json_file_meta(meta)
         if isinstance(value, dict):
             result.append(_normalize_conversation(value, user_id, match.group(1)))
     return result
@@ -687,8 +744,15 @@ def import_local_conversation(user_id, source_id, conversation):
     folder_id = _chat_folder(account_id, create=True)
     imports = _read_json_file(folder_id, "_local-imports.json") or {}
     imported_id = imports.get(source_id)
-    if imported_id and _read_conversation(account_id, imported_id):
-        return _read_conversation(account_id, imported_id)
+    existing_value = _read_json_file(folder_id, _chat_name(imported_id)) if imported_id else None
+    if imported_id and isinstance(existing_value, dict):
+        existing = _normalize_conversation(existing_value, account_id, imported_id)
+        merged, changed = _merge_retried_local_import(
+            existing, conversation, account_id, imported_id
+        )
+        if changed:
+            _write_json_file(folder_id, _chat_name(imported_id), merged)
+        return merged
     # Import the local conversation with one ID and one chat write. Calling
     # create_conversation() here first wrote an empty file, then immediately
     # read and replaced it, creating avoidable Drive API requests.
@@ -696,7 +760,7 @@ def import_local_conversation(user_id, source_id, conversation):
     normalized = _normalize_conversation(conversation, account_id, chat_id)
     normalized["id"] = chat_id
     normalized["user_id"] = int(account_id)
-    _write_conversation(account_id, normalized)
+    _write_json_file(folder_id, _chat_name(chat_id), normalized)
     imports[source_id] = chat_id
     _write_json_file(folder_id, "_local-imports.json", imports)
     return normalized
@@ -709,12 +773,10 @@ def get_all_conversations(user_id):
 
 
 def get_conversations(user_id):
-    purge_expired_deleted_conversations()
     return [conversation for conversation in get_all_conversations(user_id) if not conversation["deleted"]]
 
 
 def get_deleted_conversations(user_id):
-    purge_expired_deleted_conversations()
     result = [conversation for conversation in get_all_conversations(user_id) if conversation["deleted"]]
     result.sort(key=lambda item: (str(item.get("deleted_at") or ""), int(item["id"])), reverse=True)
     return result
@@ -859,13 +921,14 @@ def delete_account_chats(user_id):
         apply_tombstone(user_id, conversation["id"])
 
 
-def purge_expired_deleted_conversations(now=None):
+def purge_expired_deleted_conversations(now=None, user_id=None):
     cutoff = (now or datetime.now(timezone.utc)) - timedelta(days=15)
     if cutoff.tzinfo is None:
         cutoff = cutoff.replace(tzinfo=timezone.utc)
     cutoff = cutoff.astimezone(timezone.utc)
     removed = 0
-    for account in list_accounts():
+    accounts = ([{"id": int(_account_key(user_id))}] if user_id is not None else list_accounts())
+    for account in accounts:
         for conversation in _all_conversations(account["id"]):
             if not conversation.get("deleted_at"):
                 continue
