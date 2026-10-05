@@ -7231,11 +7231,15 @@ function normalizeConversationObject(conversation) {
     return conversation;
 }
 
-function getOddiChatRecoveryKey(conversationId) {
+function getOddiChatRecoveryScopePrefix() {
     const userId = String(document.body?.dataset?.userId || "").trim();
     const username = String(document.body?.dataset?.username || "").trim().toLowerCase();
     const userPart = isLoggedIn && userId ? `user-${userId}` : (isLoggedIn && username ? `name-${username}` : "guest");
-    return `${ODDI_CHAT_RECOVERY_PREFIX}:${userPart}:${String(conversationId)}`;
+    return `${ODDI_CHAT_RECOVERY_PREFIX}:${userPart}:`;
+}
+
+function getOddiChatRecoveryKey(conversationId) {
+    return `${getOddiChatRecoveryScopePrefix()}${String(conversationId)}`;
 }
 
 function backupOddiConversation(conversation) {
@@ -7261,7 +7265,7 @@ function removeOddiConversationBackup(conversationId) {
 function removeAllOddiConversationBackups(conversationId) {
     if (conversationId === null || conversationId === undefined) return;
     try {
-        const prefix = `${ODDI_CHAT_RECOVERY_PREFIX}:`;
+        const prefix = getOddiChatRecoveryScopePrefix();
         const keys = [];
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
@@ -7278,7 +7282,7 @@ function removeAllOddiConversationBackups(conversationId) {
 function getOddiLocalChatBackups() {
     const backups = [];
     try {
-        const prefix = `${ODDI_CHAT_RECOVERY_PREFIX}:`;
+        const prefix = getOddiChatRecoveryScopePrefix();
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
             if (!key || !key.startsWith(prefix)) continue;
@@ -7291,6 +7295,13 @@ function getOddiLocalChatBackups() {
         console.warn("Could not read local chat recovery copies:", error);
     }
     return backups;
+}
+
+function oddiLocalChatBelongsToCurrentAccount(conversation, scopedBackupIds) {
+    const ownerId = String(conversation?.__ownerUserId || "").trim();
+    const currentUserId = String(document.body?.dataset?.userId || "").trim();
+    if (ownerId) return isLoggedIn && ownerId === currentUserId;
+    return scopedBackupIds.has(String(conversation?.id ?? ""));
 }
 
 function conversationDataIsSame(a, b) {
@@ -7377,11 +7388,16 @@ async function ensureAccountConversationId(conversation) {
 async function migrateBrowserLocalChatsToAccount() {
     if (browserLocalChatStorage || !isLoggedIn) return;
     const chatsById = new Map();
+    const accountId = String(document.body?.dataset?.userId || "").trim();
+    const scopedBackups = new Map(getOddiLocalChatBackups().map(chat => [String(chat?.id || ""), chat]));
     for (const chat of await getOddiBrowserChats()) {
         const id = String(chat?.id || "");
-        if (id.startsWith("local-")) chatsById.set(id, chat);
+        const ownerId = String(chat?.__ownerUserId || "");
+        if (id.startsWith("local-") && ((ownerId && ownerId === accountId) || scopedBackups.has(id))) {
+            chatsById.set(id, scopedBackups.get(id) || chat);
+        }
     }
-    for (const chat of getOddiLocalChatBackups()) {
+    for (const chat of scopedBackups.values()) {
         const id = String(chat?.id || "");
         if (id.startsWith("local-") && !chatsById.has(id)) chatsById.set(id, chat);
     }
@@ -7404,14 +7420,16 @@ async function loadConversations() {
     if (browserLocalChatStorage) {
         try {
             const byId = new Map();
+            const scopedBackups = getOddiLocalChatBackups();
+            const scopedBackupIds = new Set(scopedBackups.map(item => String(item?.id || "")));
             for (const item of await getOddiBrowserChats()) {
-                if (item?.id !== null && item?.id !== undefined) {
+                if (item?.id !== null && item?.id !== undefined && oddiLocalChatBelongsToCurrentAccount(item, scopedBackupIds)) {
                     const normalized = normalizeConversationObject({ ...item, id: String(item.id) });
                     byId.set(String(normalized.id), normalized);
                 }
             }
             // Recover earlier local-only backups into the device database.
-            for (const backup of getOddiLocalChatBackups()) {
+            for (const backup of scopedBackups) {
                 const id = String(backup.id);
                 if (!byId.has(id)) byId.set(id, normalizeConversationObject({ ...backup, id }));
             }
@@ -7466,11 +7484,13 @@ async function loadConversations() {
         if (localChatMigrationFailed) {
             try {
                 const pendingLocalChats = new Map();
+                const scopedBackups = getOddiLocalChatBackups();
+                const scopedBackupIds = new Set(scopedBackups.map(item => String(item?.id || "")));
                 for (const item of await getOddiBrowserChats()) {
                     const id = String(item?.id || "");
-                    if (id.startsWith("local-")) pendingLocalChats.set(id, item);
+                    if (id.startsWith("local-") && oddiLocalChatBelongsToCurrentAccount(item, scopedBackupIds)) pendingLocalChats.set(id, item);
                 }
-                for (const item of getOddiLocalChatBackups()) {
+                for (const item of scopedBackups) {
                     const id = String(item?.id || "");
                     if (id.startsWith("local-") && !pendingLocalChats.has(id)) pendingLocalChats.set(id, item);
                 }
@@ -7521,9 +7541,31 @@ async function loadConversations() {
         startConversationSync();
     } catch (error) {
         console.error("Load conversations error:", error);
-        const backups = getOddiLocalChatBackups();
-        if (backups.length) {
-            conversations = backups.map(backup => ({ ...normalizeConversationObject(backup), __recoveredLocally: true }));
+        const localById = new Map();
+        try {
+            const accountId = String(document.body?.dataset?.userId || "").trim();
+            const scopedBackups = new Map(getOddiLocalChatBackups().map(chat => [String(chat?.id || ""), chat]));
+            for (const item of await getOddiBrowserChats()) {
+                const ownerId = String(item?.__ownerUserId || "");
+                const id = String(item?.id ?? "");
+                if (id && ((ownerId && ownerId === accountId) || scopedBackups.has(id))) {
+                    localById.set(String(item.id), normalizeConversationObject({ ...item, id: String(item.id) }));
+                }
+            }
+        } catch (localReadError) {
+            console.error("Could not recover chats from this browser:", localReadError);
+        }
+        for (const backup of getOddiLocalChatBackups()) {
+            const id = String(backup?.id || "");
+            if (!id) continue;
+            const existing = localById.get(id);
+            const backupAt = Number(backup.__recoverySavedAt || 0);
+            const existingAt = Date.parse(existing?.updated_at || existing?.created_at || "") || 0;
+            if (!existing || backupAt >= existingAt) localById.set(id, normalizeConversationObject(backup));
+        }
+        const recoveredChats = [...localById.values()].filter(item => !item.deleted);
+        if (recoveredChats.length) {
+            conversations = recoveredChats.sort((a, b) => (Date.parse(b.updated_at || b.created_at || "") || 0) - (Date.parse(a.updated_at || a.created_at || "") || 0));
             clearCompletedPendingGeneration(conversations);
             notifyUnseenBackgroundResponses(conversations);
             currentConversation = null;
@@ -7536,6 +7578,10 @@ async function loadConversations() {
             renderHistory();
             publishConversationDataReady();
         }
+        // Keep retrying local-to-Drive migration even when the first history
+        // request failed during startup. Otherwise those chats stay stranded
+        // in this browser until a full page reload after Drive recovers.
+        startConversationSync();
     }
 }
 
@@ -7713,7 +7759,8 @@ async function createServerConversation(title = "New Chat") {
             id: `local-${makeMessageId()}`, title: title || "New Chat", messages: [],
             revision: 0, pinned: false, archived: false, deleted: false,
             created_at: now, updated_at: now,
-            __localMigrationPending: isLoggedIn && !browserLocalChatStorage
+            __localMigrationPending: isLoggedIn && !browserLocalChatStorage,
+            __ownerUserId: String(document.body?.dataset?.userId || "")
         });
         if (isLoggedIn && !browserLocalChatStorage) {
             conversationDirtyLocal.add(String(conversation.id));
@@ -7806,6 +7853,9 @@ async function syncConversationsFromServer(options = {}) {
     const newChatEpochAtStart = Number(window.__oddiNewChatEpoch || 0);
     conversationSyncInFlight = true;
     try {
+        // Retry local pending chats before reading cloud history. A failed
+        // history GET must not prevent a later Drive upload attempt.
+        await retryDirtyConversationRecoveries();
         const response = await fetch("/api/conversations", { method: "GET", credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) return;
         const loaded = await response.json();
@@ -7855,7 +7905,6 @@ async function syncConversationsFromServer(options = {}) {
             publishConversationDataReady();
         }
         if (openConversationChanged && options.refreshOpen !== false && !generationActive && currentConversation !== null) openConversation(currentConversation);
-        await retryDirtyConversationRecoveries();
     } catch (error) {
         console.debug("Conversation sync skipped:", error);
     } finally { conversationSyncInFlight = false; }
@@ -11709,6 +11758,7 @@ async function sendMessage(
             touchConversation(conversations[0]);
 
             renderHistory();
+            publishConversationDataReady();
 
         } else {
 
@@ -12674,6 +12724,7 @@ async function finishAIMessage(
     }
 
     renderHistory();
+    publishConversationDataReady();
 
     if (conversations[currentConversation] === conversation) {
         window.__oddiAnnounce?.("ODDI-AI finished responding.");
