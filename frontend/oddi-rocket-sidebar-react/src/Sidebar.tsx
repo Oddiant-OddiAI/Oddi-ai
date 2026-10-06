@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
   Home, LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search,
-  Settings, Sun, X, Pencil, Trash2, Menu, Monitor
+  Settings, Sun, X, Pencil, Trash2, Menu, Monitor, Share2
 } from 'lucide-react';
 
 type Conversation = {
@@ -27,16 +27,20 @@ type OddiWindow = Window & {
   __oddiApplyTheme?: (theme: string) => void;
   __oddiShowToast?: (message: string) => void;
   showOddiToast?: (message: string, type?: string) => void;
+  __oddiOpenExportShare?: (ids: Array<string | number>, intent?: 'share' | 'download') => boolean;
   __oddiFreshChatActive?: boolean;
   __oddiFreshChatLockUntil?: number;
   __oddiKeepSidebarOnFreshHome?: boolean;
   __oddiConversationDataReady?: boolean;
   __oddiConversationLoadStarted?: boolean;
-  togglePinConversation?: (conversation: Conversation) => Promise<unknown>;
-  toggleArchiveConversation?: (conversation: Conversation) => Promise<unknown>;
-  updateConversationMetadata?: (conversation: Conversation, patch: Record<string, unknown>) => Promise<boolean>;
+  setArchivedPreviewState?: (value: boolean) => void;
+  togglePinConversation?: (conversation: Conversation, options?: { deferRender?: boolean }) => Promise<unknown>;
+  toggleArchiveConversation?: (conversation: Conversation, options?: { deferRender?: boolean }) => Promise<unknown>;
+  updateConversationMetadata?: (conversation: Conversation, patch: Record<string, unknown>, options?: { deferRender?: boolean }) => Promise<boolean>;
   saveConversation?: (conversation: Conversation) => Promise<boolean>;
   __oddiInstallPrompt?: { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
+  showActionConfirmation?: (title: string, message: string, confirmLabel: string, danger?: boolean) => Promise<boolean>;
+  renderBin?: () => Promise<void>;
 };
 
 const WIN = () => window as OddiWindow;
@@ -89,9 +93,9 @@ function refreshLegacySidebar() {
   window.dispatchEvent(new CustomEvent('oddi:conversations-changed'));
 }
 
-async function updateMetadata(c: Conversation, patch: Record<string, unknown>) {
+  async function updateMetadata(c: Conversation, patch: Record<string, unknown>, options = { deferRender: true }) {
   const legacy = WIN().updateConversationMetadata;
-  if (legacy) return legacy(c, patch);
+  if (legacy) return legacy(c, patch, options);
   const r = await fetch(`/api/conversations/${encodeURIComponent(String(c.id))}/metadata`, {
     method: 'PUT', credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -100,23 +104,6 @@ async function updateMetadata(c: Conversation, patch: Record<string, unknown>) {
   if (!r.ok) throw new Error(`Metadata update failed (${r.status})`);
   const data = await r.json();
   Object.assign(c, data?.conversation || {});
-  return true;
-}
-
-async function saveRenamedConversation(c: Conversation, title: string) {
-  const legacy = WIN().saveConversation;
-  if (legacy) {
-    c.title = title;
-    return legacy(c);
-  }
-  const r = await fetch(`/api/conversations/${encodeURIComponent(String(c.id))}`, {
-    method: 'PUT', credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ title, messages: Array.isArray(c.messages) ? c.messages : [], expected_revision: Number(c.revision || 0) }),
-  });
-  if (!r.ok) throw new Error(`Rename failed (${r.status})`);
-  const data = await r.json();
-  Object.assign(c, data?.conversation || {}, { title });
   return true;
 }
 
@@ -173,6 +160,14 @@ export default function Sidebar() {
   const [chatStarted, setChatStarted] = useState(() => !document.getElementById('welcomeContainer'));
   const [generatingConversationId, setGeneratingConversationId] = useState<string | null>(getPendingConversationId);
   const [menuId, setMenuId] = useState<string | number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [busyConversationIds, setBusyConversationIds] = useState<Set<string>>(() => new Set());
+  const pendingActionsRef = useRef<Set<string>>(new Set());
+  const bulkBusyRef = useRef(false);
+  const pressTimerRef = useRef<number | null>(null);
+  const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
+  const longPressHandledRef = useRef(false);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     try {
@@ -476,7 +471,7 @@ export default function Sidebar() {
       const list = Array.isArray(data) ? data : (Array.isArray(data?.conversations) ? data.conversations : []);
       setItems(list);
       const preferredId = getLastOpenConversationId();
-      const preferred = preferredId && list.find(c => String(c.id) === String(preferredId));
+      const preferred = preferredId && list.find((c: Conversation) => String(c.id) === String(preferredId));
       if (preferredId === FRESH_CHAT_MARKER) setActive(null);
       else if (preferred) setActive(preferred.id);
       else if (active === null && list[0]) setActive(list[0].id);
@@ -547,30 +542,184 @@ export default function Sidebar() {
     openConversationInLegacyApp(c);
   }
 
+  function toggleSelected(c: Conversation) {
+    const id = String(c.id);
+    setSelectedIds(previous => {
+      const next = new Set(previous);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function onChatPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if ((event.pointerType === 'mouse' && event.button !== 0) || (event.target as HTMLElement).closest('button, a, input')) return;
+    if (pressTimerRef.current !== null) window.clearTimeout(pressTimerRef.current);
+    longPressHandledRef.current = false;
+    pressOriginRef.current = { x: event.clientX, y: event.clientY };
+    const row = event.currentTarget;
+    pressTimerRef.current = window.setTimeout(() => {
+      pressTimerRef.current = null;
+      longPressHandledRef.current = true;
+      const id = String(row.dataset.conversationId || '');
+      const conversation = items.find(item => String(item.id) === id);
+      if (conversation) toggleSelected(conversation);
+    }, 480);
+  }
+
+  function onChatPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const origin = pressOriginRef.current;
+    if (origin && (Math.abs(event.clientX - origin.x) > 12 || Math.abs(event.clientY - origin.y) > 12) && pressTimerRef.current !== null) {
+      window.clearTimeout(pressTimerRef.current);
+      pressTimerRef.current = null;
+    }
+  }
+
+  function onChatPointerEnd() {
+    if (pressTimerRef.current !== null) window.clearTimeout(pressTimerRef.current);
+    pressTimerRef.current = null;
+    pressOriginRef.current = null;
+    // Pointer-up is followed by click. Keep the long-press marker until that
+    // click is consumed, then clear it in case the browser suppresses click.
+    window.setTimeout(() => { longPressHandledRef.current = false; }, 700);
+  }
+
+  function onChatClick(c: Conversation, event: ReactMouseEvent<HTMLDivElement>) {
+    if (longPressHandledRef.current) {
+      longPressHandledRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+    if (selectedIds.size) {
+      event.preventDefault();
+      toggleSelected(c);
+      return;
+    }
+    select(c);
+  }
+
+  function setConversationBusy(id: string, busy: boolean) {
+    setBusyConversationIds(previous => {
+      const next = new Set(previous);
+      if (busy) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
+
+  async function shareSelectedChats() {
+    if (!selectedIds.size) return;
+    const ids = [...selectedIds];
+    const openExport = WIN().__oddiOpenExportShare;
+    if (openExport) openExport(ids, 'share');
+    else window.dispatchEvent(new CustomEvent('oddi:open-export-share', { detail: { ids, intent: 'share' } }));
+  }
+
+  async function downloadSelectedChats() {
+    if (!selectedIds.size) return;
+    const ids = [...selectedIds];
+    const openExport = WIN().__oddiOpenExportShare;
+    if (openExport) openExport(ids, 'download');
+    else window.dispatchEvent(new CustomEvent('oddi:open-export-share', { detail: { ids, intent: 'download' } }));
+  }
+
+  function notifyBulkBinResult(message: string, type: 'success' | 'error' = 'success') {
+    WIN().showOddiToast?.(message, type);
+    if (type === 'success' && document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+      try { new Notification('ODDI-AI', { body: message }); }
+      catch (error) { console.debug('Background Bin notification was unavailable:', error); }
+    }
+  }
+
+  async function moveSelectedChatsToBin() {
+    if (!selectedIds.size || bulkBusyRef.current) return;
+    bulkBusyRef.current = true;
+    setBulkBusy(true);
+    const selected = items.filter(item => selectedIds.has(String(item.id)));
+    const confirmAction = WIN().showActionConfirmation;
+    try {
+      const confirmed = confirmAction
+        ? await confirmAction('Move Selected Chats to Bin?', `${selected.length} ${selected.length === 1 ? 'chat' : 'chats'} will be moved to the Bin.`, 'Move to Bin', true)
+        : window.confirm(`Move ${selected.length} chats to the Bin?`);
+      if (!confirmed) return;
+      const movedIds = new Set(selected.map(item => String(item.id)));
+      setItems(previous => previous.filter(item => !movedIds.has(String(item.id))));
+      setSelectedIds(new Set());
+      const selectedActive = active !== null && movedIds.has(String(active));
+      if (selectedActive) {
+        setActive(null);
+        const startFresh = WIN().newChat;
+        if (startFresh) void startFresh().catch(error => console.error('Could not start a new chat:', error));
+      }
+      WIN().showOddiToast?.(`Moving ${selected.length} ${selected.length === 1 ? 'chat' : 'chats'} to Bin…`);
+      const results = await Promise.allSettled(selected.map(item => updateMetadata(item, { deleted: true, pinned: false, archived: false })));
+      const failed = results.flatMap((result, index) => result.status === 'fulfilled' && result.value !== false ? [] : [selected[index]]);
+      if (failed.length) {
+        const failedIds = new Set(failed.map(item => String(item.id)));
+        setItems(previous => [...failed.filter(item => !previous.some(existing => String(existing.id) === String(item.id))), ...previous]);
+        setSelectedIds(failedIds);
+        throw new Error(`${failed.length} ${failed.length === 1 ? 'chat could' : 'chats could'} not be moved and ${failed.length === 1 ? 'was' : 'were'} restored.`);
+      }
+      if (document.getElementById('binModal')?.classList.contains('show')) void WIN().renderBin?.();
+      notifyBulkBinResult(`${selected.length} ${selected.length === 1 ? 'chat' : 'chats'} moved to Bin`);
+    } catch (error) {
+      console.error('Bulk move to Bin failed:', error);
+      notifyBulkBinResult(error instanceof Error ? error.message : 'Could not move the selected chats to the Bin.', 'error');
+    } finally {
+      bulkBusyRef.current = false;
+      setBulkBusy(false);
+    }
+  }
+
   async function pin(c: Conversation) {
     setMenuId(null);
+    const id = String(c.id);
+    if (pendingActionsRef.current.has(id)) return;
+    pendingActionsRef.current.add(id);
+    setConversationBusy(id, true);
+    const previous = !!c.pinned;
+    setItems(items => items.map(item => String(item.id) === id ? { ...item, pinned: !previous } : item));
     try {
-      if (WIN().togglePinConversation) await WIN().togglePinConversation!(c);
-      else await updateMetadata(c, { pinned: !c.pinned });
-      setItems(prev => prev.map(x => String(x.id) === String(c.id) ? { ...x, pinned: !c.pinned } : x));
-      refreshLegacySidebar();
-    } catch (error) { console.error('Pin failed:', error); }
+      const saved = await updateMetadata(c, { pinned: !previous }, { deferRender: true });
+      if (saved === false) throw new Error('Pin state was not saved.');
+      c.pinned = !previous;
+    } catch (error) {
+      setItems(items => items.map(item => String(item.id) === id ? { ...item, pinned: previous } : item));
+      console.error('Pin failed:', error);
+      WIN().showOddiToast?.('Could not save the pin. Please try again.');
+    }
+    finally { pendingActionsRef.current.delete(id); setConversationBusy(id, false); }
   }
 
   async function archive(c: Conversation) {
     setMenuId(null);
-    try {
-      if (WIN().toggleArchiveConversation) {
-        await WIN().toggleArchiveConversation!(c);
-      } else {
-        await updateMetadata(c, { archived: !c.archived, deleted: false });
-      }
-      if (String(active) === String(c.id) && !c.archived) setActive(null);
-      await load();
-      refreshLegacySidebar();
-    } catch (error) {
-      console.error('Archive failed:', error);
+    const id = String(c.id);
+    if (pendingActionsRef.current.has(id)) return;
+    pendingActionsRef.current.add(id);
+    setConversationBusy(id, true);
+    const previous = !!c.archived;
+    const next = !previous;
+    const wasActive = String(active) === id;
+    setItems(items => items.map(item => String(item.id) === id ? { ...item, archived: next, deleted: false } : item));
+    if (wasActive && next) {
+      setActive(null);
+      WIN().setArchivedPreviewState?.(true);
     }
+    try {
+      const saved = await updateMetadata(c, { archived: next, deleted: false }, { deferRender: true });
+      if (saved === false) throw new Error('Archive state was not saved.');
+      c.archived = next;
+      c.deleted = false;
+    } catch (error) {
+      setItems(items => items.map(item => String(item.id) === id ? { ...item, archived: previous } : item));
+      if (wasActive && next) {
+        setActive(c.id);
+        WIN().setArchivedPreviewState?.(false);
+      }
+      console.error('Archive failed:', error);
+      WIN().showOddiToast?.('Could not archive this chat. Please try again.');
+    } finally { pendingActionsRef.current.delete(id); setConversationBusy(id, false); }
   }
 
   function rename(c: Conversation) {
@@ -593,19 +742,30 @@ export default function Sidebar() {
         modal.setAttribute('aria-hidden', 'true');
         return;
       }
+      const id = String(c.id);
+      if (pendingActionsRef.current.has(id)) return;
+      pendingActionsRef.current.add(id);
       save.setAttribute('disabled', 'true');
+      const previousTitle = c.title;
+      setConversationBusy(id, true);
+      c.title = next;
+      setItems(previous => previous.map(item => String(item.id) === id ? { ...item, title: next } : item));
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      WIN().showOddiToast?.('Saving chat name…');
       try {
-        await saveRenamedConversation(c, next);
-        c.title = next;
-        await load();
-        refreshLegacySidebar();
-        modal.classList.remove('show');
-        modal.setAttribute('aria-hidden', 'true');
+        const saved = await updateMetadata(c, { title: next }, { deferRender: true });
+        if (saved === false) throw new Error('Rename was not saved.');
+        WIN().showOddiToast?.('Chat renamed');
       } catch (error) {
+        c.title = previousTitle;
+        setItems(previous => previous.map(item => String(item.id) === id ? { ...item, title: previousTitle } : item));
         console.error('Rename failed:', error);
-        alert('Could not rename this chat. Please try again.');
+        WIN().showOddiToast?.('Could not rename this chat. Please try again.');
       } finally {
         save.removeAttribute('disabled');
+        pendingActionsRef.current.delete(id);
+        setConversationBusy(id, false);
       }
     };
 
@@ -626,19 +786,31 @@ export default function Sidebar() {
     modal.setAttribute('aria-hidden', 'false');
 
     confirm.onclick = async () => {
+      const id = String(c.id);
+      if (pendingActionsRef.current.has(id)) return;
+      pendingActionsRef.current.add(id);
       confirm.setAttribute('disabled', 'true');
+      setConversationBusy(id, true);
+      const wasActive = String(active) === id;
+      setItems(previous => previous.filter(item => String(item.id) !== id));
+      if (wasActive) setActive(null);
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      WIN().showOddiToast?.('Moving chat to Bin…');
+      if (wasActive && WIN().newChat) void WIN().newChat!().catch(error => console.error('Could not open a new chat:', error));
       try {
-        await updateMetadata(c, { deleted: true, pinned: false, archived: false });
-        if (String(active) === String(c.id)) setActive(null);
-        modal.classList.remove('show');
-        modal.setAttribute('aria-hidden', 'true');
-        await load();
-        refreshLegacySidebar();
+        const saved = await updateMetadata(c, { deleted: true, pinned: false, archived: false }, { deferRender: true });
+        if (saved === false) throw new Error('Move to Bin was not saved.');
+        if (document.getElementById('binModal')?.classList.contains('show')) void WIN().renderBin?.();
+        WIN().showOddiToast?.('Chat moved to Bin');
       } catch (error) {
+        setItems(previous => previous.some(item => String(item.id) === id) ? previous : [c, ...previous]);
         console.error('Move to Bin failed:', error);
-        alert('Could not move this chat to the Bin. Please try again.');
+        WIN().showOddiToast?.('Could not move this chat to the Bin. The chat was restored.');
       } finally {
         confirm.removeAttribute('disabled');
+        pendingActionsRef.current.delete(id);
+        setConversationBusy(id, false);
       }
     };
 
@@ -695,7 +867,7 @@ export default function Sidebar() {
     window.dispatchEvent(new CustomEvent('oddi:theme-changed', { detail: { theme: next } }));
     const label = `${next === 'system' ? 'System' : next === 'dark' ? 'Dark' : 'Light'} mode`;
     if (WIN().showOddiToast) WIN().showOddiToast!(`Appearance: ${label}`);
-    else if (WIN().__oddiShowToast) WIN().__oddiShowToast(`Appearance: ${label}`);
+    else if (WIN().__oddiShowToast) WIN().__oddiShowToast!(`Appearance: ${label}`);
     else window.dispatchEvent(new CustomEvent('oddi:toast', { detail: { message: `Appearance: ${label}` } }));
   }
 
@@ -773,6 +945,15 @@ export default function Sidebar() {
         )}
 
         <div className="oddi-rs-history">
+          {selectedIds.size > 0 && !collapsed && <div className="oddi-rs-selection-toolbar" role="toolbar" aria-label="Selected chat actions">
+            <div className="oddi-rs-selection-count">{bulkBusy ? 'Preparing selected chats…' : `${selectedIds.size} selected`}</div>
+            <div className="oddi-rs-selection-actions">
+              <button type="button" onClick={() => void shareSelectedChats()} disabled={bulkBusy} title="Share selected chats" aria-label="Share selected chats"><Share2 size={14} /></button>
+              <button type="button" onClick={() => void downloadSelectedChats()} disabled={bulkBusy} title="Download selected chats" aria-label="Download selected chats"><Download size={14} /></button>
+              <button type="button" className="danger" onClick={() => void moveSelectedChatsToBin()} disabled={bulkBusy} title="Move selected chats to Bin" aria-label="Move selected chats to Bin"><Trash2 size={14} /></button>
+              <button type="button" className="clear" onClick={() => setSelectedIds(new Set())} disabled={bulkBusy} title="Clear selection" aria-label="Clear selection"><X size={13} /></button>
+            </div>
+          </div>}
           {collapsed
               ? [...pinnedItems, ...visible.flatMap(g => g.items).filter(c => !c.pinned)].slice(0, 8).map(c =>
               <button key={c.id} className={`oddi-rs-mini-chat ${active === c.id ? 'active' : ''}`} onClick={() => { setCollapsed(false); select(c); }} title={`${generatingConversationId === String(c.id) ? 'Generating response · ' : ''}${c.title || 'New Chat'}`}>
@@ -782,9 +963,10 @@ export default function Sidebar() {
             : <>
                 {pinnedItems.length > 0 && <section className="oddi-rs-pinned-group" aria-label="Pinned chats">
                   <div className="oddi-rs-label"><Pin size={11} /> <span>Pinned</span></div>
-                  {pinnedItems.map(c => <div key={`pinned-${c.id}`} className={`oddi-rs-chat pinned ${active === c.id ? 'active' : ''}`} onClick={() => select(c)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && select(c)}>
+                  {pinnedItems.map(c => <div key={`pinned-${c.id}`} data-conversation-id={String(c.id)} className={`oddi-rs-chat pinned ${active === c.id ? 'active' : ''} ${selectedIds.has(String(c.id)) ? 'selected' : ''} ${selectedIds.size ? 'selecting' : ''} ${busyConversationIds.has(String(c.id)) ? 'busy' : ''}`} onPointerDown={onChatPointerDown} onPointerMove={onChatPointerMove} onPointerUp={onChatPointerEnd} onPointerCancel={onChatPointerEnd} onContextMenu={e => e.preventDefault()} onClick={e => onChatClick(c, e)} role="button" aria-pressed={selectedIds.has(String(c.id))} tabIndex={0} onKeyDown={e => e.key === 'Enter' && (selectedIds.size ? toggleSelected(c) : select(c))}>
+                    <span className="oddi-rs-select-check" aria-hidden="true">{selectedIds.has(String(c.id)) ? '✓' : ''}</span>
                     <Pin size={11} />
-                    <span>{c.title || 'New Chat'}</span>
+                    <span className="oddi-rs-title-glass"><span>{c.title || 'New Chat'}</span></span>
                     {generatingConversationId === String(c.id) && <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" />}
                     <div className="oddi-rs-actions">
                       <button onClick={e => { e.stopPropagation(); pin(c); }} title="Unpin chat" aria-label="Unpin chat"><Pin size={11} /></button>
@@ -802,9 +984,9 @@ export default function Sidebar() {
                 {visible.filter(g => g.items.some(c => !c.pinned)).map(g =>
                   <section className="oddi-rs-group" key={g.label}>
                     <div className="oddi-rs-label">{g.label}</div>
-                    {g.items.filter(c => !c.pinned).map(c => <div key={c.id} className={`oddi-rs-chat ${active === c.id ? 'active' : ''}`} onClick={() => select(c)} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && select(c)}>
+                    {g.items.filter(c => !c.pinned).map(c => <div key={c.id} data-conversation-id={String(c.id)} className={`oddi-rs-chat ${active === c.id ? 'active' : ''} ${selectedIds.has(String(c.id)) ? 'selected' : ''} ${selectedIds.size ? 'selecting' : ''} ${busyConversationIds.has(String(c.id)) ? 'busy' : ''}`} onPointerDown={onChatPointerDown} onPointerMove={onChatPointerMove} onPointerUp={onChatPointerEnd} onPointerCancel={onChatPointerEnd} onContextMenu={e => e.preventDefault()} onClick={e => onChatClick(c, e)} role="button" aria-pressed={selectedIds.has(String(c.id))} tabIndex={0} onKeyDown={e => e.key === 'Enter' && (selectedIds.size ? toggleSelected(c) : select(c))}>
                       {generatingConversationId === String(c.id) ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" /> : <MessageSquare size={11} />}
-                      <span>{c.title || 'New Chat'}</span>
+                      <span className="oddi-rs-title-glass"><span>{c.title || 'New Chat'}</span></span>
                       <div className="oddi-rs-actions">
                         <button onClick={e => { e.stopPropagation(); pin(c); }} title="Pin chat" aria-label="Pin chat"><Pin size={11} /></button>
                         <div className="oddi-rs-chat-menu">

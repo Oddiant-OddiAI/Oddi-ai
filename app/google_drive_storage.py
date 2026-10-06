@@ -286,7 +286,7 @@ def _list_children(parent_id, name=None, mime_type=None):
             "q": query,
             "pageSize": 1000,
             "pageToken": page_token,
-            "fields": "nextPageToken,files(id,name,mimeType,parents,driveId,createdTime,modifiedTime,appProperties)",
+            "fields": "nextPageToken,files(id,name,mimeType,parents,driveId,createdTime,modifiedTime,size,appProperties)",
         }
         if _ROOT_DRIVE_ID:
             list_args.update(
@@ -558,8 +558,8 @@ def _read_conversation(user_id, conversation_id):
     folder_id = _chat_folder(account_id)
     if not folder_id:
         return None
-    value = _read_json_file(folder_id, _chat_name(conversation_id))
-    return _normalize_conversation(value, account_id, conversation_id) if value else None
+    meta = _find_child(folder_id, _chat_name(conversation_id))
+    return _read_conversation_meta(account_id, meta) if meta else None
 
 
 def _write_conversation(user_id, conversation):
@@ -619,6 +619,10 @@ def _conversation_summary_from_meta(meta):
         revision = max(0, int(props.get("r", 0) or 0))
     except (TypeError, ValueError):
         message_count, revision = 0, 0
+    try:
+        size_bytes = max(0, int(meta.get("size", 0) or 0))
+    except (TypeError, ValueError):
+        size_bytes = 0
     return {
         "id": int(match.group(1)),
         "title": props.get("t") or f"Chat {match.group(1)}",
@@ -626,6 +630,7 @@ def _conversation_summary_from_meta(meta):
         "updated_at": props.get("u") or meta.get("modifiedTime") or meta.get("createdTime"),
         "revision": revision,
         "message_count": message_count,
+        "size_bytes": size_bytes,
         "preview": props.get("s", ""),
         "pinned": props.get("p") == "1",
         "archived": props.get("a") == "1",
@@ -690,7 +695,34 @@ def _read_conversation_meta(user_id, meta):
     # directly instead of issuing another name lookup per chat.
     value = _read_json_file_meta(meta)
     if isinstance(value, dict):
-        return _normalize_conversation(value, user_id, match.group(1))
+        conversation = _normalize_conversation(value, user_id, match.group(1))
+        properties = meta.get("appProperties") or {}
+        try:
+            metadata_revision = max(0, int(properties.get("r", 0) or 0))
+        except (TypeError, ValueError):
+            metadata_revision = 0
+        # Metadata-only actions update Drive appProperties without transferring
+        # the chat body. Overlay those newer fields whenever the Drive metadata
+        # revision has advanced beyond the JSON body's revision.
+        if metadata_revision > conversation["revision"]:
+            metadata_title = str(properties.get("t") or conversation["title"])
+            body_title = str(conversation.get("title") or "")
+            title_was_truncated = (
+                bool(properties.get("t"))
+                and properties.get("f") != "1"
+                and len(body_title.encode("utf-8", errors="replace")) > 118
+                and body_title.startswith(metadata_title)
+            )
+            conversation.update({
+                "title": body_title if title_was_truncated or not properties.get("t") else metadata_title,
+                "updated_at": _iso_timestamp(properties.get("u"), conversation["updated_at"]),
+                "revision": metadata_revision,
+                "pinned": properties.get("p") == "1",
+                "archived": properties.get("a") == "1",
+                "deleted": properties.get("d") == "1",
+                "deleted_at": _iso_timestamp(properties.get("x")) if properties.get("x") else None,
+            })
+        return conversation
     return None
 
 
@@ -1020,6 +1052,13 @@ def get_conversation_summaries_for_user(user_id):
     return [summary for summary in get_conversation_summaries(user_id) if not summary["deleted"]]
 
 
+def get_deleted_conversation_summaries(user_id):
+    """List Bin entries from Drive metadata without downloading chat bodies."""
+    result = [summary for summary in get_conversation_summaries(user_id) if summary["deleted"]]
+    result.sort(key=lambda item: (str(item.get("deleted_at") or ""), int(item["id"])), reverse=True)
+    return result
+
+
 def get_deleted_conversations(user_id):
     result = [conversation for conversation in get_all_conversations(user_id) if conversation["deleted"]]
     result.sort(key=lambda item: (str(item.get("deleted_at") or ""), int(item["id"])), reverse=True)
@@ -1116,25 +1155,118 @@ def delete_conversation_message(conversation_id, user_id, message_id):
     return result.get("conversation") if result.get("ok") else None
 
 
-def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None):
+def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None, title=None):
     account_id = _account_key(user_id)
     with _lock_for(account_id):
-        conversation = _read_conversation(account_id, conversation_id)
-        if not conversation:
+        folder_id = _chat_folder(account_id)
+        if not folder_id:
             return None
-        next_deleted = conversation["deleted"] if deleted is None else bool(deleted)
-        next_archived = conversation["archived"] if archived is None else bool(archived)
-        next_pinned = conversation["pinned"] if pinned is None else bool(pinned)
+
+        file_meta = _find_child(folder_id, _chat_name(conversation_id))
+        if not file_meta:
+            return None
+        properties = {
+            str(key): str(value)
+            for key, value in (file_meta.get("appProperties") or {}).items()
+        }
+
+        # Long titles exceed Drive's per-property value limit, so preserve
+        # those in the canonical chat JSON. Legacy files without an appProperties
+        # index can initialize that index directly without downloading and
+        # rewriting their entire message history.
+        title_too_long_for_drive_property = (
+            title is not None
+            and len(str(title).strip().encode("utf-8", errors="replace")) > 118
+        )
+        if title_too_long_for_drive_property:
+            conversation = _read_conversation_meta(account_id, file_meta)
+            if not conversation:
+                return None
+            next_deleted = conversation["deleted"] if deleted is None else bool(deleted)
+            next_archived = conversation["archived"] if archived is None else bool(archived)
+            next_pinned = conversation["pinned"] if pinned is None else bool(pinned)
+            next_title = conversation.get("title") or "New Chat"
+            if title is not None:
+                next_title = str(title).strip()[:500] or "New Chat"
+            if next_deleted:
+                next_archived = False
+                next_pinned = False
+                deleted_at = conversation.get("deleted_at") or _iso_timestamp()
+            else:
+                deleted_at = None
+            updated = _store_updated(
+                account_id, conversation, pinned=next_pinned, archived=next_archived,
+                deleted=next_deleted, deleted_at=deleted_at, title=next_title,
+            )
+            return _conversation_metadata_summary(updated)
+
+        current_deleted = properties.get("d") == "1"
+        next_deleted = current_deleted if deleted is None else bool(deleted)
+        next_archived = (properties.get("a") == "1") if archived is None else bool(archived)
+        next_pinned = (properties.get("p") == "1") if pinned is None else bool(pinned)
+        next_title = properties.get("t") or "New Chat"
+        if title is not None:
+            next_title = str(title).strip()[:500] or "New Chat"
         if next_deleted:
             next_archived = False
             next_pinned = False
-            deleted_at = conversation.get("deleted_at") or _iso_timestamp()
+            deleted_at = properties.get("x") or _iso_timestamp()
         else:
             deleted_at = None
-        return _store_updated(
-            account_id, conversation, pinned=next_pinned, archived=next_archived,
-            deleted=next_deleted, deleted_at=deleted_at,
+
+        updated_at = _iso_timestamp()
+        try:
+            current_revision = max(0, int(properties.get("r", "0") or 0))
+        except (TypeError, ValueError):
+            current_revision = 0
+        # Millisecond time ensures the new metadata revision is newer than
+        # legacy JSON message revisions without reading the chat body first.
+        revision = max(current_revision + 1, int(time.time() * 1000))
+        properties.update({
+            "u": _short_drive_property(updated_at),
+            "r": str(revision),
+            "p": "1" if next_pinned else "0",
+            "a": "1" if next_archived else "0",
+            "d": "1" if next_deleted else "0",
+            "x": _short_drive_property(deleted_at),
+        })
+        if title is not None:
+            properties["t"] = _short_drive_property(next_title)
+            # Force a short metadata title to replace an older long body title
+            # that happens to share the same prefix. Full chat writes clear it.
+            properties["f"] = "1"
+        updated_meta = _api_call(_service().files().update(
+            fileId=file_meta["id"],
+            body={"appProperties": properties},
+            fields="id,name,modifiedTime,appProperties",
+            supportsAllDrives=_supports_shared_drive(),
+        ))
+        updated = _conversation_summary_from_meta({
+            **file_meta,
+            **updated_meta,
+            "modifiedTime": updated_meta.get("modifiedTime") or updated_at,
+            "appProperties": properties,
+        })
+        # A legacy item without a title property still has its canonical title
+        # in the JSON body. Omit title from this metadata-only response so the
+        # client keeps the title it already knows rather than replacing it with
+        # the list fallback label ("Chat N").
+        if title is None and not properties.get("t") and updated:
+            updated.pop("title", None)
+        return updated
+
+
+def _conversation_metadata_summary(conversation):
+    """Return only fields needed by sidebar metadata actions, never chat bodies."""
+    if not conversation:
+        return None
+    return {
+        key: conversation.get(key)
+        for key in (
+            "id", "user_id", "title", "created_at", "updated_at", "revision",
+            "pinned", "archived", "deleted", "deleted_at",
         )
+    }
 
 
 def delete_conversation(conversation_id, user_id):
@@ -1173,8 +1305,8 @@ def purge_expired_deleted_conversations(now=None, user_id=None):
     removed = 0
     accounts = ([{"id": int(_account_key(user_id))}] if user_id is not None else list_accounts())
     for account in accounts:
-        for conversation in _all_conversations(account["id"]):
-            if not conversation.get("deleted_at"):
+        for conversation in get_conversation_summaries(account["id"]):
+            if not conversation.get("deleted") or not conversation.get("deleted_at"):
                 continue
             try:
                 deleted_at = datetime.fromisoformat(str(conversation["deleted_at"]).replace("Z", "+00:00"))

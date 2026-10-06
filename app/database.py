@@ -1,4 +1,5 @@
 import json
+import json
 import logging
 import os
 import sqlite3
@@ -1142,6 +1143,10 @@ def get_conversation_summaries(user_id):
             preview = " ".join(str(message.get("text") or message.get("content") or "").split())
             if preview:
                 break
+        try:
+            size_bytes = len(json.dumps(conversation, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+        except (TypeError, ValueError):
+            size_bytes = 0
         summaries.append({
             key: conversation.get(key)
             for key in (
@@ -1151,6 +1156,7 @@ def get_conversation_summaries(user_id):
         } | {
             "message_count": len(messages),
             "preview": preview[:118],
+            "size_bytes": size_bytes,
             "__summary_only": True,
         })
     return summaries
@@ -1173,6 +1179,39 @@ def get_deleted_conversations(user_id):
         return [_conversation_dict(row) for row in rows]
     finally:
         conn.close()
+
+
+def get_deleted_conversation_summaries(user_id):
+    """Return Bin metadata quickly; message bodies load only when a chat opens."""
+    if ODDI_DRIVE_CHAT_STORAGE:
+        purge_expired_deleted_conversations(user_id=user_id)
+        return google_drive_storage.get_deleted_conversation_summaries(user_id)
+
+    # Local JSON and SQL stores do not make network reads, so derive the same
+    # compact response from their existing Bin query.
+    conversations = get_deleted_conversations(user_id)
+    summaries = []
+    for conversation in conversations:
+        messages = conversation.get("messages") if isinstance(conversation.get("messages"), list) else []
+        preview = ""
+        for message in reversed(messages):
+            if not isinstance(message, dict):
+                continue
+            preview = " ".join(str(message.get("text") or message.get("content") or "").split())
+            if preview:
+                break
+        summaries.append({
+            key: conversation.get(key)
+            for key in (
+                "id", "user_id", "title", "created_at", "updated_at", "revision",
+                "pinned", "archived", "deleted", "deleted_at",
+            )
+        } | {
+            "message_count": len(messages),
+            "preview": preview[:118],
+            "__summary_only": True,
+        })
+    return summaries
 
 
 def purge_expired_deleted_conversations(now=None, user_id=None):
@@ -1488,10 +1527,10 @@ def delete_conversation_message(conversation_id, user_id, message_id):
     return result.get("conversation") if result.get("ok") else None
 
 
-def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None):
+def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None, title=None):
     if ODDI_CHAT_JSON_STORAGE:
         conversation = _chat_file_store().update_conversation_metadata(
-            conversation_id, user_id, pinned=pinned, archived=archived, deleted=deleted
+            conversation_id, user_id, pinned=pinned, archived=archived, deleted=deleted, title=title
         )
         _mirror_local_conversation_to_drive(user_id, conversation)
         return conversation
@@ -1502,6 +1541,10 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
     current_pinned = bool(conversation.get("pinned"))
     current_archived = bool(conversation.get("archived"))
     current_deleted = bool(conversation.get("deleted"))
+    next_title = conversation.get("title") or "New Chat"
+    if title is not None:
+        next_title = str(title).strip()[:500] or "New Chat"
+        conversation["title"] = next_title
 
     next_pinned = current_pinned if pinned is None else bool(pinned)
     next_archived = current_archived if archived is None else bool(archived)
@@ -1517,11 +1560,11 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
                 conn.execute(
                     """
                     UPDATE archived_conversations
-                    SET deleted_at = CURRENT_TIMESTAMP, pinned = 0, archived = 0,
+                    SET title = ?, deleted_at = CURRENT_TIMESTAMP, pinned = 0, archived = 0,
                         updated_at = CURRENT_TIMESTAMP, revision = revision + 1
                     WHERE conversation_id = ? AND user_id = ?
                     """,
-                    (conversation_id, user_id),
+                    (next_title, conversation_id, user_id),
                 )
                 conn.commit()
             finally:
@@ -1552,10 +1595,10 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
         conn.execute(
             f"""
             UPDATE {table}
-            SET pinned = ?, archived = ?, updated_at = CURRENT_TIMESTAMP, revision = revision + 1
+            SET title = ?, pinned = ?, archived = ?, updated_at = CURRENT_TIMESTAMP, revision = revision + 1
             WHERE {id_col} = ? AND user_id = ?
             """,
-            (int(next_pinned), int(next_archived), conversation_id, user_id),
+            (next_title, int(next_pinned), int(next_archived), conversation_id, user_id),
         )
         conn.commit()
     finally:

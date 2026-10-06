@@ -57,6 +57,7 @@ from app.database import (
     delete_conversation,
     delete_all_conversations,
     get_deleted_conversations,
+    get_deleted_conversation_summaries,
     update_conversation_metadata,
     append_conversation_message,
     update_conversation_message,
@@ -1417,7 +1418,7 @@ async def api_import_local_conversation(request: Request):
 @app.get("/api/conversations/bin", name="api_get_deleted_conversations")
 def api_get_deleted_conversations(request: Request):
     user_id = require_user_id(request)
-    return JSONResponse(content=jsonable_encoder(get_deleted_conversations(user_id)))
+    return JSONResponse(content=jsonable_encoder(get_deleted_conversation_summaries(user_id)))
 
 
 @app.put("/api/conversations/{conversation_id}/metadata", name="api_update_conversation_metadata")
@@ -1432,7 +1433,7 @@ async def api_update_conversation_metadata(request: Request, conversation_id: in
     user_id = await require_user_id_async(request)
     data = await safe_json(request)
 
-    allowed = {"pinned", "archived", "deleted"}
+    allowed = {"pinned", "archived", "deleted", "title"}
     patch = {key: data[key] for key in allowed if key in data}
 
     if not patch:
@@ -1448,12 +1449,18 @@ async def api_update_conversation_metadata(request: Request, conversation_id: in
         pinned=patch.get("pinned"),
         archived=patch.get("archived"),
         deleted=patch.get("deleted"),
+        title=patch.get("title"),
     )
 
     if not updated:
         return JSONResponse({"error": "Conversation not found."}, status_code=404)
 
-    return JSONResponse(content=jsonable_encoder({"success": True, "conversation": updated}))
+    metadata_fields = (
+        "id", "user_id", "title", "created_at", "updated_at", "revision",
+        "pinned", "archived", "deleted", "deleted_at",
+    )
+    metadata = {key: updated[key] for key in metadata_fields if key in updated}
+    return JSONResponse(content=jsonable_encoder({"success": True, "conversation": metadata}))
 
 
 @app.get("/api/conversations/{conversation_id}", name="api_get_conversation")

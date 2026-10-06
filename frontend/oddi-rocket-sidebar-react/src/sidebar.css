@@ -227,6 +227,7 @@ body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
 
 .oddi-rs-chat {
   min-height: 34px;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
@@ -237,6 +238,9 @@ body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
   color: var(--rs-muted);
   font-size: 10.5px;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-y;
 }
 
 .oddi-rs-chat:hover { background: var(--rs-hover); color: var(--rs-text); }
@@ -255,6 +259,99 @@ body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+.oddi-rs-title-glass {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 5px;
+  isolation: isolate;
+}
+
+.oddi-rs-title-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: rgba(255,255,255,.025);
+  backdrop-filter: blur(.6px);
+  -webkit-backdrop-filter: blur(.6px);
+  pointer-events: none;
+}
+
+.oddi-rs-title-glass > span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.oddi-rs-select-check {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--rs-border);
+  border-radius: 5px;
+  color: white;
+  font-size: 10px;
+  line-height: 1;
+  opacity: 0;
+}
+
+.oddi-rs-chat.selecting .oddi-rs-select-check { opacity: .75; }
+.oddi-rs-chat.selected .oddi-rs-select-check { opacity: 1; background: #198754; border-color: #198754; }
+.oddi-rs-chat.selected { background: var(--rs-active); border-color: #198754; box-shadow: inset 2px 0 #198754; color: var(--rs-text); }
+.oddi-rs-chat.busy { opacity: .72; pointer-events: none; }
+.oddi-rs-chat.selecting .oddi-rs-actions { opacity: 0 !important; pointer-events: none !important; }
+
+.oddi-rs-selection-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: 1px 0 7px;
+  padding: 7px;
+  border: 1px solid var(--rs-border);
+  border-radius: 10px;
+  background: var(--rs-bg);
+  background: color-mix(in srgb, var(--rs-bg) 88%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 5px 16px rgba(0,0,0,.12);
+}
+
+.oddi-rs-selection-count { padding: 0 2px 6px; color: var(--rs-text); font-size: 10px; font-weight: 700; }
+.oddi-rs-selection-actions { display: flex; align-items: center; gap: 4px; }
+.oddi-rs-selection-actions button {
+  min-width: 0;
+  min-height: 29px;
+  flex: 1;
+  max-width: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 6px;
+  border: 1px solid var(--rs-border);
+  border-radius: 7px;
+  background: var(--rs-surface);
+  color: var(--rs-text);
+  font: inherit;
+  font-size: 9px;
+  cursor: pointer;
+}
+.oddi-rs-selection-actions button:hover:not(:disabled) { background: var(--rs-hover); }
+.oddi-rs-selection-actions button.danger { color: #d44; }
+.oddi-rs-selection-actions button.clear { flex: 0 0 29px; max-width: 29px; padding: 0; }
+.oddi-rs-selection-actions button:disabled { opacity: .52; cursor: wait; }
 
 .oddi-rs-actions { display: flex; opacity: 0; pointer-events: none; }
 .oddi-rs-chat:hover .oddi-rs-actions { opacity: 1; pointer-events: auto; }

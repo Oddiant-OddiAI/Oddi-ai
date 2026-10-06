@@ -457,7 +457,7 @@ def delete_conversation_message(conversation_id, user_id, message_id):
         return _store_updated_locked(account_id, conversation, messages=messages)
 
 
-def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None):
+def update_conversation_metadata(conversation_id, user_id, pinned=None, archived=None, deleted=None, title=None):
     account_id = _account_key(user_id)
     chat_id = _chat_key(conversation_id)
     with _lock_for(account_id):
@@ -467,6 +467,9 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
         next_deleted = conversation["deleted"] if deleted is None else bool(deleted)
         next_archived = conversation["archived"] if archived is None else bool(archived)
         next_pinned = conversation["pinned"] if pinned is None else bool(pinned)
+        next_title = conversation.get("title") or "New Chat"
+        if title is not None:
+            next_title = str(title).strip()[:500] or "New Chat"
         if next_deleted:
             next_archived = False
             next_pinned = False
@@ -480,6 +483,7 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
             archived=next_archived,
             deleted=next_deleted,
             deleted_at=deleted_at,
+            title=next_title,
         )
 
 
