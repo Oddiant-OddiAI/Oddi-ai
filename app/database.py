@@ -2,7 +2,9 @@ import json
 import json
 import logging
 import os
+import secrets
 import sqlite3
+import threading
 from datetime import datetime, timedelta, timezone
 
 from app import google_drive_storage, local_chat_files
@@ -10,6 +12,8 @@ from app import google_drive_storage, local_chat_files
 logger = logging.getLogger("oddi.persistence")
 
 USER_FILE_LIMIT = 30
+_MEMORY_QUEUE_LOCK = threading.Lock()
+DEFAULT_MEMORY_SETTINGS = {"enabled": True, "auto_extract": True}
 
 
 class FileLimitExceeded(Exception):
@@ -526,6 +530,32 @@ def _create_archive_memory_tables():
                 )
             """)
             conn.execute("""
+                CREATE TABLE IF NOT EXISTS memory_extraction_queue (
+                    id BIGSERIAL PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    event_id TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    available_at TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    claim_token TEXT NULL,
+                    claimed_at TEXT NULL,
+                    last_error TEXT NULL,
+                    UNIQUE(user_id, event_id)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS memory_extraction_activity (
+                    user_id TEXT PRIMARY KEY,
+                    last_activity TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memory_extraction_queue_ready
+                ON memory_extraction_queue(status, available_at, created_at)
+            """)
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_knowledge (
                     user_id BIGINT PRIMARY KEY,
                     vector_store_id TEXT NOT NULL,
@@ -557,6 +587,32 @@ def _create_archive_memory_tables():
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     UNIQUE(user_id, memory_key)
                 )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS memory_extraction_queue (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id TEXT NOT NULL,
+                    event_id TEXT NOT NULL,
+                    message TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    available_at TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    claim_token TEXT NULL,
+                    claimed_at TEXT NULL,
+                    last_error TEXT NULL,
+                    UNIQUE(user_id, event_id)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS memory_extraction_activity (
+                    user_id TEXT PRIMARY KEY,
+                    last_activity TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE INDEX IF NOT EXISTS idx_memory_extraction_queue_ready
+                ON memory_extraction_queue(status, available_at, created_at)
             """)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS user_knowledge (
@@ -636,6 +692,12 @@ def create_user(username, email, password_hash):
             "INSERT INTO users(username, email, password_hash) VALUES (?, ?, ?)",
             (username, email, password_hash),
         )
+        user = _fetchone(conn, "SELECT id FROM users WHERE lower(email) = lower(?)", (email,))
+        if user:
+            conn.execute(
+                "INSERT INTO user_settings(user_id, settings) VALUES (?, ?)",
+                (user["id"], json.dumps({"memory": DEFAULT_MEMORY_SETTINGS})),
+            )
         conn.commit()
     finally:
         conn.close()
@@ -657,6 +719,17 @@ def get_user_by_email(email):
         return _fetchone(conn, "SELECT * FROM users WHERE lower(email) = lower(?)", (email,))
     finally:
         conn.close()
+
+
+def _normalize_user_settings(value):
+    settings = value if isinstance(value, dict) else {}
+    memory = settings.get("memory")
+    memory = memory if isinstance(memory, dict) else {}
+    settings["memory"] = {
+        "enabled": memory.get("enabled") is not False,
+        "auto_extract": memory.get("auto_extract") is not False,
+    }
+    return settings
 
 
 def get_users_for_drive_sync():
@@ -750,20 +823,21 @@ def get_user_settings(user_id):
     if ODDI_DRIVE_CHAT_STORAGE:
         account = google_drive_storage.get_account_by_id(user_id)
         settings = account.get("settings", {}) if account else {}
-        return settings if isinstance(settings, dict) else {}
+        return _normalize_user_settings(settings)
     conn = get_db("chat")
     try:
         row = _fetchone(conn, "SELECT settings FROM user_settings WHERE user_id = ?", (user_id,))
         if not row:
-            return {}
+            return _normalize_user_settings({})
         value = _row_value(row, "settings", "{}")
         parsed = json.loads(value) if isinstance(value, str) else (value or {})
-        return parsed if isinstance(parsed, dict) else {}
+        return _normalize_user_settings(parsed)
     finally:
         conn.close()
 
 
 def save_user_settings(user_id, settings):
+    settings = _normalize_user_settings(settings)
     if ODDI_DRIVE_CHAT_STORAGE:
         if not google_drive_storage.update_account_settings(user_id, settings):
             raise google_drive_storage.DriveStorageError(
@@ -1729,6 +1803,8 @@ def delete_memory(user_id, key):
     conn = get_db("archive_memory")
     try:
         conn.execute("DELETE FROM memories WHERE user_id = ? AND memory_key = ?", (user_id, key))
+        conn.execute("DELETE FROM memory_extraction_queue WHERE user_id = ?", (str(user_id),))
+        conn.execute("DELETE FROM memory_extraction_activity WHERE user_id = ?", (str(user_id),))
         conn.commit()
     finally:
         conn.close()
@@ -1738,6 +1814,248 @@ def clear_memory(user_id):
     conn = get_db("archive_memory")
     try:
         conn.execute("DELETE FROM memories WHERE user_id = ?", (user_id,))
+        conn.execute("DELETE FROM memory_extraction_queue WHERE user_id = ?", (str(user_id),))
+        conn.execute("DELETE FROM memory_extraction_activity WHERE user_id = ?", (str(user_id),))
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def enqueue_memory_message(user_id, event_id, message):
+    """Record account activity and queue safe text until 30 minutes of inactivity."""
+    user_id = str(user_id or "").strip()
+    event_id = str(event_id or "").strip()[:128]
+    message = str(message or "").strip()[:24000]
+    if not user_id or not event_id:
+        return False
+
+    now = datetime.now(timezone.utc)
+    created_at = now.isoformat(timespec="seconds")
+    available_at = (now + timedelta(minutes=30)).isoformat(timespec="seconds")
+    conn = get_db("archive_memory")
+    try:
+        inserted = False
+        if message:
+            cursor = conn.execute(
+                """
+                INSERT INTO memory_extraction_queue
+                    (user_id, event_id, message, created_at, available_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(user_id, event_id) DO NOTHING
+                """,
+                (user_id, event_id, message, created_at, available_at),
+            )
+            inserted = bool(getattr(cursor, "rowcount", 0))
+
+        conn.execute(
+            """
+            INSERT INTO memory_extraction_activity (user_id, last_activity)
+            VALUES (?, ?)
+            ON CONFLICT(user_id) DO UPDATE SET last_activity = CASE
+                WHEN memory_extraction_activity.last_activity > excluded.last_activity
+                    THEN memory_extraction_activity.last_activity
+                ELSE excluded.last_activity
+            END
+            """,
+            (user_id, created_at),
+        )
+        activity_row = _fetchone(
+            conn,
+            "SELECT last_activity FROM memory_extraction_activity WHERE user_id = ?",
+            (user_id,),
+        )
+        last_activity = datetime.fromisoformat(str(activity_row["last_activity"]))
+        if last_activity.tzinfo is None:
+            last_activity = last_activity.replace(tzinfo=timezone.utc)
+        available_at = (last_activity + timedelta(minutes=30)).isoformat(timespec="seconds")
+        # Every user turn restarts the account-wide quiet window. Preserve
+        # genuine provider backoff, but migrate old daily-scheduled rows to it.
+        conn.execute(
+            """
+            UPDATE memory_extraction_queue
+            SET available_at = CASE
+                WHEN attempts > 0 AND available_at > ? THEN available_at
+                ELSE ?
+            END
+            WHERE user_id = ? AND status = 'pending'
+            """,
+            (available_at, available_at, user_id),
+        )
+        conn.commit()
+        return inserted
+    finally:
+        conn.close()
+
+
+def get_memory_user_last_activity(user_id):
+    conn = get_db("archive_memory")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT last_activity FROM memory_extraction_activity WHERE user_id = ?",
+            (str(user_id),),
+        )
+        return str(row["last_activity"]) if row and row["last_activity"] else None
+    finally:
+        conn.close()
+
+
+def recover_stale_memory_claims(stale_after_seconds=600):
+    now = datetime.now(timezone.utc)
+    cutoff = (now - timedelta(seconds=max(60, int(stale_after_seconds)))).isoformat(timespec="seconds")
+    available_at = now.isoformat(timespec="seconds")
+    conn = get_db("archive_memory")
+    try:
+        conn.execute(
+            """
+            UPDATE memory_extraction_queue
+            SET status = 'pending', claim_token = NULL, claimed_at = NULL,
+                available_at = ?, last_error = 'worker_restarted'
+            WHERE status = 'processing' AND claimed_at < ?
+            """,
+            (available_at, cutoff),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def claim_memory_message_batch(max_messages=1000, max_characters=80000):
+    """Atomically claim the oldest ready user's new messages for one extraction."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    claim_token = secrets.token_urlsafe(24)
+    max_messages = max(1, min(1000, int(max_messages)))
+    max_characters = max(1000, min(80000, int(max_characters)))
+
+    with _MEMORY_QUEUE_LOCK:
+        conn = get_db("archive_memory")
+        try:
+            if not _use_postgres("archive_memory"):
+                conn.execute("BEGIN IMMEDIATE")
+
+            user_row = _fetchone(
+                conn,
+                """
+                SELECT user_id
+                FROM memory_extraction_queue
+                WHERE status = 'pending' AND available_at <= ?
+                  AND NOT EXISTS (
+                      SELECT 1 FROM memory_extraction_queue active
+                      WHERE active.user_id = memory_extraction_queue.user_id
+                        AND active.status = 'processing'
+                  )
+                ORDER BY created_at, id
+                LIMIT 1
+                """ + (" FOR UPDATE SKIP LOCKED" if _use_postgres("archive_memory") else ""),
+                (now,),
+            )
+            if not user_row:
+                conn.commit()
+                return None
+
+            user_id = str(user_row["user_id"])
+            rows = _fetchall(
+                conn,
+                """
+                SELECT id, event_id, message, attempts
+                FROM memory_extraction_queue
+                WHERE user_id = ? AND status = 'pending' AND available_at <= ?
+                ORDER BY created_at, id
+                LIMIT ?
+                """ + (" FOR UPDATE SKIP LOCKED" if _use_postgres("archive_memory") else ""),
+                (user_id, now, max_messages),
+            )
+
+            selected = []
+            character_count = 0
+            for row in rows:
+                message = str(row["message"] or "")
+                if selected and character_count + len(message) > max_characters:
+                    break
+                if len(message) > max_characters:
+                    message = message[:max_characters]
+                selected.append({
+                    "id": row["id"],
+                    "event_id": str(row["event_id"]),
+                    "message": message,
+                    "attempts": int(row["attempts"] or 0),
+                })
+                character_count += len(message)
+
+            if not selected:
+                conn.commit()
+                return None
+
+            ids = [item["id"] for item in selected]
+            for offset in range(0, len(ids), 900):
+                id_batch = ids[offset:offset + 900]
+                placeholders = ", ".join("?" for _ in id_batch)
+                conn.execute(
+                    f"""
+                    UPDATE memory_extraction_queue
+                    SET status = 'processing', claim_token = ?, claimed_at = ?, attempts = attempts + 1
+                    WHERE id IN ({placeholders}) AND status = 'pending'
+                    """,
+                    (claim_token, now, *id_batch),
+                )
+            conn.commit()
+            return {
+                "user_id": user_id,
+                "claim_token": claim_token,
+                "messages": [item["message"] for item in selected],
+                "event_ids": [item["event_id"] for item in selected],
+                "attempts": max(item["attempts"] for item in selected) + 1,
+            }
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+
+def complete_memory_message_batch(claim_token):
+    conn = get_db("archive_memory")
+    try:
+        conn.execute(
+            "DELETE FROM memory_extraction_queue WHERE status = 'processing' AND claim_token = ?",
+            (str(claim_token),),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def retry_memory_message_batch(claim_token, delay_seconds=900, error_code="provider_unavailable"):
+    now = datetime.now(timezone.utc)
+    available_at = (now + timedelta(seconds=max(60, int(delay_seconds)))).isoformat(timespec="seconds")
+    error_code = str(error_code or "provider_unavailable")[:64]
+    conn = get_db("archive_memory")
+    try:
+        conn.execute(
+            """
+            UPDATE memory_extraction_queue
+            SET status = 'pending', claim_token = NULL, claimed_at = NULL,
+                available_at = ?, last_error = ?
+            WHERE status = 'processing' AND claim_token = ?
+            """,
+            (available_at, error_code, str(claim_token)),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def clear_memory_extraction_queue(user_id):
+    conn = get_db("archive_memory")
+    try:
+        conn.execute(
+            "DELETE FROM memory_extraction_queue WHERE user_id = ?",
+            (str(user_id),),
+        )
+        conn.execute(
+            "DELETE FROM memory_extraction_activity WHERE user_id = ?",
+            (str(user_id),),
+        )
         conn.commit()
     finally:
         conn.close()

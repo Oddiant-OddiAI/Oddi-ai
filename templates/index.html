@@ -4604,14 +4604,14 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
             <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true">✎</span><span class="oddi-suggestion-copy"><strong>Write something for me</strong><br><small>Draft, rewrite, or polish your ideas</small></span></button>
             <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true">☷</span><span class="oddi-suggestion-copy"><strong>Help me plan a project</strong><br><small>Turn an idea into clear steps and milestones</small></span></button>
             <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true">⌕</span><span class="oddi-suggestion-copy"><strong>Analyze a file or document</strong><br><small>Extract, summarize, and find key information</small></span></button>
+            <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-action="continue" aria-label="Continue where you left off">
+                <span class="oddi-last-message-icon" aria-hidden="true">ϟ</span>
+                <span class="oddi-last-message-copy">
+                    <span class="oddi-last-message-label">Continue where you left off</span>
+                </span>
+                <span class="oddi-last-message-arrow" aria-hidden="true">→</span>
+            </button>
         </div>
-        <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-action="continue" aria-label="Continue where you left off">
-            <span class="oddi-last-message-icon" aria-hidden="true">ϟ</span>
-            <span class="oddi-last-message-copy">
-                <span class="oddi-last-message-label">Continue where you left off</span>
-            </span>
-            <span class="oddi-last-message-arrow" aria-hidden="true">→</span>
-        </button>
     </div>
     </main>
     <button type="button" id="oddiSayHello" class="oddi-say-hello" aria-label="Say hello to learn about Vedanssh" hidden>Say Hello to know about me</button>
@@ -7248,7 +7248,9 @@ let conversationSyncTimer = null;
 let conversationSyncStarted = false;
 let lastPendingLocalImportRetryAt = 0;
 const localChatImportInFlight = new Map();
+const missingCloudRecoveryInFlight = new Map();
 const conversationSaveInFlight = new Set();
+const conversationSaveQueues = new Map();
 const conversationDirtyLocal = new Set();
 
 function makeMessageId() {
@@ -7452,6 +7454,38 @@ async function importBrowserLocalChatToAccount(conversation) {
     removeAllOddiConversationBackups(sourceId);
     window.dispatchEvent(new CustomEvent("oddi:conversations-changed"));
     return true;
+}
+
+async function recoverMissingCloudConversation(conversation) {
+    const missingId = String(conversation?.id || "").trim();
+    if (!isLoggedIn || browserLocalChatStorage || !/^\d+$/.test(missingId)) return false;
+    if (conversation.deleted || conversation.deleted_at || conversation.archived) return false;
+
+    let recovery = missingCloudRecoveryInFlight.get(missingId);
+    if (!recovery) {
+        recovery = (async () => {
+            const sourceId = `local-recovered-${missingId}`;
+            const localCopy = { ...conversation, id: sourceId };
+            await importBrowserLocalChatToAccount(localCopy);
+            Object.assign(conversation, normalizeConversationObject(localCopy));
+            conversationDirtyLocal.delete(missingId);
+            conversation.__recoveredLocally = false;
+            await deleteOddiBrowserChat(missingId);
+            removeAllOddiConversationBackups(missingId);
+            publishConversationDataReady();
+            window.dispatchEvent(new CustomEvent("oddi:conversations-changed"));
+            return true;
+        })();
+        missingCloudRecoveryInFlight.set(missingId, recovery);
+    }
+
+    try {
+        return await recovery;
+    } finally {
+        if (missingCloudRecoveryInFlight.get(missingId) === recovery) {
+            missingCloudRecoveryInFlight.delete(missingId);
+        }
+    }
 }
 
 async function ensureAccountConversationId(conversation) {
@@ -7677,7 +7711,7 @@ async function loadConversations() {
     }
 }
 
-async function saveConversation(conversation) {
+async function saveConversationNow(conversation) {
     if (!conversation?.id) return false;
     normalizeConversationObject(conversation);
     if (isLoggedIn && String(conversation.id).startsWith("local-")) {
@@ -7726,6 +7760,7 @@ async function saveConversation(conversation) {
                 working.__recoveredLocally = false;
                 return true;
             }
+            if (response.status === 404 && await recoverMissingCloudConversation(working)) return true;
             if (response.status !== 409) throw new Error(`Save conversation failed (${response.status})`);
             const conflict = await response.json();
             if (!conflict?.conversation) throw new Error("Conversation conflict did not include server state.");
@@ -7735,10 +7770,44 @@ async function saveConversation(conversation) {
         }
         throw new Error("Conversation conflict could not be resolved after retries.");
     } catch (error) {
+        if (error?.status === 404 || String(error?.message || "").includes("(404)")) {
+            conversationDirtyLocal.delete(conversationId);
+            working.__recoveredLocally = true;
+            const conversationIsInactive = !!(working.deleted || working.deleted_at || working.archived);
+            if (!conversationIsInactive && !window.__oddiMissingChatNoticeShown) {
+                window.__oddiMissingChatNoticeShown = true;
+                window.showOddiToast?.("An older chat copy is still on this device; its missing account copy could not be restored yet.", "error");
+            }
+            return false;
+        }
         console.error("Save conversation error:", error);
         return false;
     } finally {
         conversationSaveInFlight.delete(conversationId);
+    }
+}
+
+// Multiple UI paths can request a save for the same conversation at once
+// (message append, title edits, autosync and recovery). Serialize full-chat
+// writes per ID so they always send the revision returned by the previous
+// save instead of racing each other into repeated 409 conflicts.
+async function saveConversation(conversation) {
+    if (!conversation?.id) return false;
+    const localId = String(conversation.id);
+    if (isLoggedIn && localId.startsWith("local-")) {
+        return saveConversationNow(conversation);
+    }
+    if (!await ensureAccountConversationId(conversation)) return false;
+    const conversationId = String(conversation.id);
+    const previous = conversationSaveQueues.get(conversationId) || Promise.resolve(true);
+    const current = previous.catch(() => false).then(() => saveConversationNow(conversation));
+    conversationSaveQueues.set(conversationId, current);
+    try {
+        return await current;
+    } finally {
+        if (conversationSaveQueues.get(conversationId) === current) {
+            conversationSaveQueues.delete(conversationId);
+        }
     }
 }
 
@@ -7771,6 +7840,7 @@ async function appendConversationMessage(conversation, message) {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ message })
         });
+        if (response.status === 404 && await recoverMissingCloudConversation(conversation)) return true;
         if (!response.ok) throw new Error(`Append message failed (${response.status})`);
         const data = await response.json();
         if (data?.conversation) Object.assign(conversation, normalizeConversationObject(data.conversation));
@@ -18052,12 +18122,13 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
   const defaultCategories = [
     ["All Memories","✨"],["Name","👤"],["Preferences","⚙️"],["Goals","🎯"],
     ["Education","🎓"],["Work","💼"],["Projects","🚀"],["Interests","✨"],
-    ["People","👥"],["Communication","💬"],["Other","📌"],["Learning","📚"]
+    ["People","👥"],["Communication","💬"],["User Patterns","🔎"],["Other","📌"],["Learning","📚"]
   ];
 
   let allMemories = [];
   let activeCategory = "All Memories";
   let searchTerm = "";
+  let memorySettingsReady = false;
   let memoryEnabled = localStorage.getItem("oddi_memory_enabled") !== "false";
 
   function openMemory() {
@@ -18450,6 +18521,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
         cancelBtn.hidden = true;
         setMemoryStatus("Memory updated. ✓", "success");
         renderCategories();
+        window.dispatchEvent(new CustomEvent("oddi:memory-updated"));
       } catch (error) {
         console.error("Memory update error:", error);
         setMemoryStatus("Could not update memory yet.", "error");
@@ -18479,6 +18551,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
       setMemoryStatus("Memory deleted. 🗑️", "success");
       renderCategories();
       renderMemoryCards();
+      window.dispatchEvent(new CustomEvent("oddi:memory-updated"));
       return true;
     } catch (error) {
       console.error("Memory delete error:", error);
@@ -18510,6 +18583,14 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
       });
       if (!response.ok) throw new Error(await response.text() || `HTTP ${response.status}`);
       const payload = await response.json();
+      if (payload.memory_settings && typeof payload.memory_settings === "object") {
+        window.__oddiMemorySettings = {...(window.__oddiMemorySettings || {}), ...payload.memory_settings};
+        setMemoryToggle(payload.memory_settings.enabled !== false);
+        memorySettingsReady = true;
+        window.dispatchEvent(new CustomEvent("oddi:memory-setting-changed", {
+          detail:{...window.__oddiMemorySettings, source:"server-sync"}
+        }));
+      }
       allMemories = normalizeMemories(payload).map(normalizeMemory).filter(x => x.memory);
       renderCategories();
       renderMemoryCards();
@@ -18549,6 +18630,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
       activeCategory = "All Memories";
       await loadMemory();
       setMemoryStatus("Memory created. 🧠", "success");
+      window.dispatchEvent(new CustomEvent("oddi:memory-updated"));
     } catch (error) {
       console.error("Memory create error:", error);
       setMemoryStatus("Could not create memory yet.", "error");
@@ -18575,6 +18657,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
     }
     await loadMemory();
     setMemoryStatus(failed ? `${failed} memories could not be deleted.` : "All memories cleared. 🗑️", failed ? "error" : "success");
+    if (!failed) window.dispatchEvent(new CustomEvent("oddi:memory-updated"));
   }
 
   async function deleteSelected() {
@@ -18596,9 +18679,9 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
     }
   }
 
-  function setMemoryToggle(enabled) {
+  function setMemoryToggle(enabled, notifySettings = false) {
     memoryEnabled = !!enabled;
-    localStorage.setItem("oddi_memory_enabled", String(memoryEnabled));
+    try { localStorage.setItem("oddi_memory_enabled", String(memoryEnabled)); } catch (_) {}
     if (enabledToggle) {
       enabledToggle.classList.toggle("on", memoryEnabled);
       enabledToggle.setAttribute("aria-checked", String(memoryEnabled));
@@ -18607,8 +18690,16 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
     if (addBtn) addBtn.disabled = !memoryEnabled;
     if (clearAllBtn) clearAllBtn.disabled = !memoryEnabled;
     document.body.dataset.oddiMemoryEnabled = String(memoryEnabled);
-    window.__oddiSetMemoryEnabled = setMemoryToggle;
-    window.dispatchEvent(new CustomEvent("oddi:memory-setting-changed", {detail:{enabled:memoryEnabled, source:"memory-ui"}}));
+    window.__oddiMemorySettings = {...(window.__oddiMemorySettings || {}), enabled:memoryEnabled};
+    window.__oddiSetMemoryEnabled = value => {
+      memorySettingsReady = true;
+      setMemoryToggle(value, false);
+    };
+    if (notifySettings) {
+      window.dispatchEvent(new CustomEvent("oddi:memory-setting-changed", {
+        detail:{...window.__oddiMemorySettings, source:"memory-ui"}
+      }));
+    }
   }
 
   function openAddModal() {
@@ -18627,7 +18718,11 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
   }
 
   enabledToggle?.addEventListener("click", () => {
-    setMemoryToggle(!memoryEnabled);
+    if (!memorySettingsReady) {
+      setMemoryStatus("Syncing your Memory settings. Try again in a moment.", "error");
+      return;
+    }
+    setMemoryToggle(!memoryEnabled, true);
     setMemoryStatus(memoryEnabled ? "Memory is on. 🧠" : "Memory is off.", memoryEnabled ? "success" : "");
   });
   memoryBtn?.addEventListener("click", openMemory);
@@ -18683,6 +18778,10 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
   });
 
   setMemoryToggle(memoryEnabled);
+  window.addEventListener("oddi:memory-setting-changed", event => {
+    if (event.detail?.source === "memory-ui") return;
+    if (typeof event.detail?.enabled === "boolean") setMemoryToggle(event.detail.enabled);
+  });
 })();
 </script>
 
@@ -26964,6 +27063,23 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
   const settings = document.getElementById('settingsModal');
   const accountModal = document.getElementById('accountSettingsModal');
   if (!settings) return;
+  let settingsReturnFocus = null;
+
+  function focusOutOfSettings() {
+    if (!settings.contains(document.activeElement)) return;
+    const candidates = [
+      settingsReturnFocus,
+      document.getElementById('settingsBtn'),
+      document.getElementById('headerMoreBtn')
+    ];
+    const target = candidates.find(element => {
+      if (!element?.isConnected || settings.contains(element) || element.closest('[aria-hidden="true"]')) return false;
+      const rect = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden';
+    });
+    target?.focus({ preventScroll: true });
+  }
 
   function setSettingsRoute(tab){
     try {
@@ -26972,6 +27088,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
     } catch(_) {}
   }
   function openSettings(tab){
+    if (!settings.classList.contains('show')) settingsReturnFocus = document.activeElement;
     settings.classList.add('show');
     settings.setAttribute('aria-hidden','false');
     document.body.classList.add('oddi-settings-workspace-open');
@@ -26981,9 +27098,14 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
     setSettingsRoute(target);
   }
   function closeSettingsWorkspace(){
+    document.body.classList.remove('oddi-settings-workspace-open');
+    focusOutOfSettings();
+    if (settings.contains(document.activeElement)) {
+      document.body.tabIndex = -1;
+      document.body.focus({ preventScroll: true });
+    }
     settings.classList.remove('show');
     settings.setAttribute('aria-hidden','true');
-    document.body.classList.remove('oddi-settings-workspace-open');
     try {
       if (window.location.pathname === '/settings' || window.location.pathname === '/settings/account') {
         window.history.pushState({}, '', '/');
@@ -27007,9 +27129,10 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
   /* Existing account modal's App Settings action returns to the Account tab. */
   document.getElementById('openFullSettingsBtn')?.addEventListener('click', function(e){
     e.preventDefault();
+    openSettings('account');
+    settings.querySelector('#closeSettings')?.focus({ preventScroll: true });
     accountModal?.classList.remove('show');
     accountModal?.setAttribute('aria-hidden','true');
-    openSettings('account');
   }, true);
 
   /* Make sidebar/header settings controls use the workspace instead of a full-screen overlay. */
@@ -27059,7 +27182,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
       openSettings('appearance');
     } else {
       accountModal?.classList.remove('show'); accountModal?.setAttribute('aria-hidden','true');
-      settings.classList.remove('show'); settings.setAttribute('aria-hidden','true');
+      closeSettingsWorkspace();
     }
   });
 
@@ -27149,6 +27272,19 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
 
     const tabs = Array.from(settings.querySelectorAll("[data-settings-tab]"));
     const panels = Array.from(settings.querySelectorAll("[data-settings-panel]"));
+    let returnFocus = null;
+
+    function focusOutOfSettings() {
+      if (!settings.contains(document.activeElement)) return;
+      const candidates = [returnFocus, document.getElementById("settingsBtn"), document.getElementById("headerMoreBtn")];
+      const target = candidates.find(function(element){
+        if (!element || !element.isConnected || settings.contains(element) || element.closest('[aria-hidden="true"]')) return false;
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility !== "hidden";
+      });
+      if (target) target.focus({ preventScroll: true });
+    }
 
     function activateTab(name) {
       tabs.forEach(function (button) {
@@ -27160,6 +27296,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
     }
 
     function open(tab) {
+      if (!settings.classList.contains("show")) returnFocus = document.activeElement;
       settings.classList.add("show");
       settings.setAttribute("aria-hidden", "false");
       document.body.classList.add("oddi-settings-workspace-open");
@@ -27167,9 +27304,14 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
     }
 
     function close() {
+      document.body.classList.remove("oddi-settings-workspace-open");
+      focusOutOfSettings();
+      if (settings.contains(document.activeElement)) {
+        document.body.tabIndex = -1;
+        document.body.focus({ preventScroll: true });
+      }
       settings.classList.remove("show");
       settings.setAttribute("aria-hidden", "true");
-      document.body.classList.remove("oddi-settings-workspace-open");
     }
 
     window.__oddiSettingsActivateTab = activateTab;
@@ -28513,7 +28655,7 @@ html[data-oddi-font-size="small"] .user-message,html[data-oddi-font-size="small"
   async function saveState(){delete state.chat_preferences.default_provider;const r=await fetch('/api/settings',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({settings:state})});if(!r.ok)throw new Error(await r.text()||'Settings could not be saved');const data=await r.json();state=data.settings||state;window.__oddiChatPreferences=state.chat_preferences;}
   function updateAvatar(data){const img=$('#oddiProfileAvatar'),initial=$('#oddiAvatarInitial');if(!img||!initial)return;if(data){img.src=data;img.hidden=false;initial.hidden=true}else{img.removeAttribute('src');img.hidden=true;initial.hidden=false}}
   function syncAppLock(){const toggle=$('#toggleAppLockOptBtn'),proxy=$('#oddiAccountLockProxy');if(toggle&&proxy){proxy.checked=toggle.getAttribute('aria-pressed')==='true';proxy.disabled=false}}
-  function fill(){document.querySelectorAll('[data-privacy-pref]').forEach(el=>el.checked=!!state.privacy[el.dataset.privacyPref]);$('#oddiRetention').value=String(state.privacy.retention_days||'90');document.querySelectorAll('[data-chat-pref]').forEach(el=>el.checked=state.chat_preferences[el.dataset.chatPref]!==false);const range=$('#oddiContextWindow');range.value=String(state.chat_preferences.context_window||20);$('#oddiContextValue').value=`${range.value} msgs`;$('#oddiContextValue').textContent=`${range.value} msgs`;$('#oddiProfileName').value=identity?.name||'';$('#oddiProfileEmail').value=identity?.email||'';$('#oddiProfileBio').value=state.profile.bio||'';updateAvatar(state.profile.avatar||'');const name=identity?.name||'';$('#oddiAvatarInitial').textContent=name.trim().charAt(0).toUpperCase()||'?';$('#oddiMemoryEnabled').checked=state.memory.enabled!==false;$('#oddiMemoryAutoExtract').checked=state.memory.auto_extract!==false;window.__oddiMemorySettings=state.memory;syncAppLock();}
+  function fill(){document.querySelectorAll('[data-privacy-pref]').forEach(el=>el.checked=!!state.privacy[el.dataset.privacyPref]);$('#oddiRetention').value=String(state.privacy.retention_days||'90');document.querySelectorAll('[data-chat-pref]').forEach(el=>el.checked=state.chat_preferences[el.dataset.chatPref]!==false);const range=$('#oddiContextWindow');range.value=String(state.chat_preferences.context_window||20);$('#oddiContextValue').value=`${range.value} msgs`;$('#oddiContextValue').textContent=`${range.value} msgs`;$('#oddiProfileName').value=identity?.name||'';$('#oddiProfileEmail').value=identity?.email||'';$('#oddiProfileBio').value=state.profile.bio||'';updateAvatar(state.profile.avatar||'');const name=identity?.name||'';$('#oddiAvatarInitial').textContent=name.trim().charAt(0).toUpperCase()||'?';$('#oddiMemoryEnabled').checked=state.memory.enabled!==false;$('#oddiMemoryAutoExtract').checked=state.memory.auto_extract!==false;window.__oddiMemorySettings=state.memory;window.__oddiSetMemoryEnabled?.(state.memory.enabled);syncAppLock();}
   async function boot(){
     try{const auth=await getJSON('/api/auth/me');identity=auth.user||null;const data=await getJSON('/api/settings');state={...defaults,...(data.settings||{})};state.privacy={...defaults.privacy,...state.privacy};state.chat_preferences={...defaults.chat_preferences,...state.chat_preferences};state.profile={...defaults.profile,...state.profile};state.memory={...defaults.memory,...state.memory};if(!data.settings?.memory){state.memory.enabled=localStorage.getItem('oddi_memory_enabled')!=='false';state.memory.auto_extract=state.memory.enabled;}}catch(_){identity=null;try{const saved=JSON.parse(localStorage.getItem('oddi_settings_fallback')||'{}');state={...defaults,...saved};state.privacy={...defaults.privacy,...state.privacy};state.chat_preferences={...defaults.chat_preferences,...state.chat_preferences};state.profile={...defaults.profile,...state.profile};state.memory={...defaults.memory,...state.memory};if(!saved.memory){state.memory.enabled=localStorage.getItem('oddi_memory_enabled')!=='false';state.memory.auto_extract=state.memory.enabled;}}catch(__){}}
     window.__oddiChatPreferences=state.chat_preferences;fill();
@@ -28550,7 +28692,7 @@ html[data-oddi-font-size="small"] .user-message,html[data-oddi-font-size="small"
     if(!shown.length){memList.innerHTML=`<div class="oddi-memory-empty">${memoryItems.length?'No memories in this category yet.':'No stored memories yet. Add one above, or enable auto-extract to save useful facts from conversations.'}</div>`;return;}
     memList.innerHTML=shown.map(item=>`<article class="oddi-pref-card oddi-memory-item"><div class="oddi-memory-item-meta"><span>${esc(memoryCategory(item))}</span><code>${esc(item.key||'')}</code><button type="button" data-memory-delete="${encodeURIComponent(item.key||'')}" aria-label="Delete memory">Delete</button></div><p>${esc(item.memory||'')}</p><button type="button" data-memory-edit="${encodeURIComponent(item.key||'')}">Edit</button></article>`).join('');
   }
-  async function loadMemories(){if(!memList)return;memList.innerHTML='<div class="oddi-memory-empty">Loading memories…</div>';try{const data=await memoryRequest('GET');memoryItems=Array.isArray(data.memories)?data.memories:[];renderMemories()}catch(e){memList.innerHTML=`<div class="oddi-memory-empty">Could not load memories. ${esc(e.message)}</div>`}}
+  async function loadMemories(){if(!memList)return;memList.innerHTML='<div class="oddi-memory-empty">Loading memories…</div>';try{const data=await memoryRequest('GET');if(data.memory_settings){state.memory={...state.memory,...data.memory_settings};$('#oddiMemoryEnabled').checked=state.memory.enabled!==false;$('#oddiMemoryAutoExtract').checked=state.memory.auto_extract!==false;window.__oddiMemorySettings=state.memory;window.__oddiSetMemoryEnabled?.(state.memory.enabled)}memoryItems=Array.isArray(data.memories)?data.memories:[];renderMemories()}catch(e){memList.innerHTML=`<div class="oddi-memory-empty">Could not load memories. ${esc(e.message)}</div>`}}
   memFilters?.addEventListener('click',e=>{const b=e.target.closest('[data-memory-filter]');if(!b)return;memoryFilter=b.dataset.memoryFilter;renderMemories()});
   memList?.addEventListener('click',async e=>{const del=e.target.closest('[data-memory-delete]'), edit=e.target.closest('[data-memory-edit]');try{if(del){const item=memoryItems.find(x=>x.key===decodeURIComponent(del.dataset.memoryDelete));if(!item||!confirm('Delete this saved memory?'))return;await memoryRequest('DELETE',{key:item.key});await loadMemories();show('Memory deleted.')}else if(edit){const item=memoryItems.find(x=>x.key===decodeURIComponent(edit.dataset.memoryEdit));if(!item)return;const value=prompt('Edit this memory',item.memory||'');if(value===null||!value.trim())return;await memoryRequest('PUT',{key:item.key,memory:value.trim()});await loadMemories();show('Memory updated.')}}catch(err){show(err.message,true)}});
   $('#oddiMemoryAddBtn')?.addEventListener('click',async()=>{const category=$('#oddiMemoryNewCategory').value.trim().replace(/::/g,' ').slice(0,40), value=$('#oddiMemoryNewValue').value.trim();if(!category||!value){show('Enter both a category and a memory.',true);return}try{await memoryRequest('PUT',{key:`${category}::${Date.now()}`,memory:value});$('#oddiMemoryNewValue').value='';await loadMemories();show('Memory saved.')}catch(e){show(e.message,true)}});
@@ -28558,9 +28700,9 @@ html[data-oddi-font-size="small"] .user-message,html[data-oddi-font-size="small"
   async function saveMemoryPrefs(){state.memory={enabled:$('#oddiMemoryEnabled').checked,auto_extract:$('#oddiMemoryAutoExtract').checked};window.__oddiMemorySettings=state.memory;try{localStorage.setItem('oddi_memory_enabled',String(state.memory.enabled));localStorage.setItem('oddi_settings_fallback',JSON.stringify(state));}catch(_){}window.__oddiSetMemoryEnabled?.(state.memory.enabled);await saveState();window.dispatchEvent(new CustomEvent('oddi:memory-setting-changed',{detail:state.memory}));}
   $('#oddiMemoryEnabled')?.addEventListener('change',async()=>{try{await saveMemoryPrefs();show('Memory setting updated.')}catch(e){show(e.message,true)}});
   $('#oddiMemoryAutoExtract')?.addEventListener('change',async()=>{try{await saveMemoryPrefs();show('Memory setting updated.')}catch(e){show(e.message,true)}});
-  document.querySelector('[data-settings-tab="memory"]')?.addEventListener('click',()=>{if(!memList.dataset.loaded){memList.dataset.loaded='1';loadMemories()}});
-  window.addEventListener('oddi:memory-setting-changed',e=>{if(!e.detail||!$('#oddiMemoryEnabled'))return;const enabled=e.detail.enabled!==false;$('#oddiMemoryEnabled').checked=enabled;if(state.memory.enabled!==enabled){state.memory.enabled=enabled;window.__oddiMemorySettings=state.memory;saveState().catch(err=>show(err.message,true));}});
-  loadMemories();
+  document.querySelector('[data-settings-tab="memory"]')?.addEventListener('click',()=>{if(memList)memList.dataset.loaded='1';loadMemories()});
+  window.addEventListener('oddi:memory-setting-changed',e=>{if(!e.detail||!$('#oddiMemoryEnabled'))return;const next={...state.memory,enabled:e.detail.enabled!==false};if(typeof e.detail.auto_extract==='boolean')next.auto_extract=e.detail.auto_extract;const changed=next.enabled!==state.memory.enabled||next.auto_extract!==state.memory.auto_extract;state.memory=next;$('#oddiMemoryEnabled').checked=next.enabled;$('#oddiMemoryAutoExtract').checked=next.auto_extract;window.__oddiMemorySettings=next;if(changed){try{localStorage.setItem('oddi_memory_enabled',String(next.enabled))}catch(_){}if(e.detail.source!=='server-sync')saveState().catch(err=>show(err.message,true));}});
+  window.addEventListener('oddi:memory-updated',()=>{if(memList?.dataset.loaded==='1'&&document.querySelector('[data-settings-panel="memory"]')?.classList.contains('is-active'))loadMemories()});
 
   // Appearance options apply immediately and persist on this device.
   const fontKey='oddi_font_size_v1', compactKey='oddi_compact_messages_v1';
@@ -30157,7 +30299,7 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
   .oddi-suggestion-card.oddi-workspace-card-hidden{display:none!important}.oddi-draft-recovery{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 78px);transform:translateX(-50%);z-index:100190;padding:6px 10px;border:1px solid #8885;border-radius:999px;background:var(--settings-card-bg,#fff);color:var(--settings-text,#222);font:12px system-ui;box-shadow:0 3px 14px #0002;pointer-events:none}
   @media(max-width:600px){ #oddiWorkspaceOverlay{padding:8px;align-items:end}#oddiWorkspaceDialog{max-height:88dvh;border-radius:20px 20px 14px 14px}.oddi-workspace-head{padding:14px}.oddi-workspace-tabs{padding:8px}.oddi-workspace-tabs button{white-space:nowrap}.oddi-workspace-content{padding:15px}.oddi-workspace-form{flex-wrap:wrap}.oddi-workspace-form input{flex-basis:100%}.oddi-workspace-row{align-items:flex-start}}
 </style>
-<div id="oddiWorkspaceOverlay" aria-hidden="true">
+<div id="oddiWorkspaceOverlay" aria-hidden="true" inert>
   <section id="oddiWorkspaceDialog" role="dialog" aria-modal="true" aria-labelledby="oddiWorkspaceTitle">
     <header class="oddi-workspace-head"><h2 id="oddiWorkspaceTitle">ODDI Workspace</h2><button class="oddi-workspace-close" type="button" aria-label="Close workspace">×</button></header>
     <nav class="oddi-workspace-tabs" aria-label="Workspace tools">
@@ -30245,9 +30387,10 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
     content.innerHTML=html;
     const style=document.getElementById("oddiWorkspaceStyle");if(style)style.value=state.responseStyle||"";
   }
-  function open(){content.innerHTML='<div class="oddi-workspace-empty">Loading account workspace…</div>';overlay.classList.add("is-open");overlay.setAttribute("aria-hidden","false");dialog.querySelector(".oddi-workspace-close")?.focus();Promise.resolve(window.__oddiWorkspaceReady).then(()=>loadState()).then(()=>{if(overlay.classList.contains("is-open"))render()})}
-  function close(){overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true")}
-  const workspaceBtn=document.createElement("button");workspaceBtn.type="button";workspaceBtn.className="header-more-action";workspaceBtn.id="oddiWorkspaceOpen";workspaceBtn.innerHTML='▦ <span>Workspace &amp; Prompts</span>';panel.append(workspaceBtn);workspaceBtn.addEventListener("click",()=>{document.getElementById("headerMoreClose")?.click();open()});
+  function open(opener){content.innerHTML='<div class="oddi-workspace-empty">Loading account workspace…</div>';overlay.inert=false;overlay.classList.add("is-open");overlay.setAttribute("aria-hidden","false");document.body.classList.add("oddi-workspace-open");workspaceReturnFocus=opener||document.getElementById("headerMoreBtn");dialog.querySelector(".oddi-workspace-close")?.focus({preventScroll:true});Promise.resolve(window.__oddiWorkspaceReady).then(()=>loadState()).then(()=>{if(overlay.classList.contains("is-open"))render()})}
+  function close(){document.body.classList.remove("oddi-workspace-open");if(dialog.contains(document.activeElement)){const target=workspaceReturnFocus?.isConnected&&!overlay.contains(workspaceReturnFocus)?workspaceReturnFocus:document.getElementById("headerMoreBtn");target?.focus({preventScroll:true});if(dialog.contains(document.activeElement)){document.body.tabIndex=-1;document.body.focus({preventScroll:true})}}overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");overlay.inert=true}
+  let workspaceReturnFocus=null;
+  const workspaceBtn=document.createElement("button");workspaceBtn.type="button";workspaceBtn.className="header-more-action";workspaceBtn.id="oddiWorkspaceOpen";workspaceBtn.innerHTML='▦ <span>Workspace &amp; Prompts</span>';panel.append(workspaceBtn);workspaceBtn.addEventListener("click",()=>{const opener=document.getElementById("headerMoreBtn");document.getElementById("headerMoreClose")?.click();open(opener)});
   dialog.querySelector(".oddi-workspace-close").addEventListener("click",close);overlay.addEventListener("click",e=>{if(e.target===overlay)close()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&overlay.classList.contains("is-open"))close()});
   dialog.querySelector(".oddi-workspace-tabs").addEventListener("click",e=>{const b=e.target.closest("[data-workspace-tab]");if(!b)return;tab=b.dataset.workspaceTab;render()});
   content.addEventListener("submit",e=>{const form=e.target.closest("form[data-form]");if(!form)return;e.preventDefault();const fd=new FormData(form);
@@ -30730,6 +30873,546 @@ body:has(#memoryModal.show) #oddiSayHello,
 body:has(.utility-modal.show) #oddiSayHello,
 body:has(#appLockOverlay[aria-hidden="false"]) #oddiSayHello{visibility:hidden!important;pointer-events:none!important;}
 @media(max-width:768px){ #oddiSayHello{z-index:610!important;} }
+</style>
+
+<style id="oddi-workspace-phone-and-card-fix-v1">
+#oddiWorkspaceOverlay{z-index:2147483646!important;--oddi-workspace-bg:#fff;--oddi-workspace-fg:#171717;--oddi-workspace-head-bg:#f7f7f7;--oddi-workspace-border:#dedede;box-sizing:border-box!important;overscroll-behavior:contain!important;}
+#oddiWorkspaceDialog{--oddi-workspace-bg:#fff;--oddi-workspace-fg:#171717;--oddi-workspace-head-bg:#f7f7f7;--oddi-workspace-border:#dedede;background:var(--oddi-workspace-bg)!important;color:var(--oddi-workspace-fg)!important;box-sizing:border-box!important;}
+body.dark-mode #oddiWorkspaceOverlay,body.dark-mode #oddiWorkspaceDialog{--oddi-workspace-bg:#0a0a0a;--oddi-workspace-fg:#f0f0f0;--oddi-workspace-head-bg:#141414;--oddi-workspace-border:#292929;}
+body.oddi-system-theme #oddiWorkspaceOverlay,body.oddi-system-theme #oddiWorkspaceDialog{--oddi-workspace-bg:var(--os-canvas);--oddi-workspace-fg:var(--os-text);--oddi-workspace-head-bg:var(--os-sidebar);--oddi-workspace-border:var(--os-border);}
+.oddi-workspace-head{flex:0 0 auto!important;min-width:0!important;box-sizing:border-box!important;background:var(--oddi-workspace-head-bg)!important;border-color:var(--oddi-workspace-border)!important;color:var(--oddi-workspace-fg)!important;}
+.oddi-workspace-tabs{flex:0 0 auto!important;min-width:0!important;box-sizing:border-box!important;border-color:var(--oddi-workspace-border)!important;}
+.oddi-workspace-sync{flex:0 0 auto!important;box-sizing:border-box!important;border-color:var(--oddi-workspace-border)!important;}
+#oddiWorkspaceContent{flex:1 1 auto!important;min-height:0!important;max-height:none!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;-webkit-overflow-scrolling:touch!important;scrollbar-gutter:stable!important;}
+#oddiWorkspaceContent>.oddi-workspace-content{min-height:0!important;overflow:visible!important;box-sizing:border-box!important;}
+body.oddi-system-theme .oddi-workspace-tabs button[aria-selected="true"]{background:var(--os-accent)!important;border-color:var(--os-accent)!important;color:#fff!important;}
+body.oddi-system-theme .oddi-workspace-tabs button{border-color:var(--os-border)!important;color:var(--os-text)!important;}
+body.oddi-workspace-open #oddi-hard-sidebar-launcher{visibility:hidden!important;opacity:0!important;pointer-events:none!important;}
+#oddiLastMessageCard{grid-column:1/-1!important;justify-self:center!important;width:min(348px,calc((100% - 9px)/2))!important;height:auto!important;min-height:66px!important;margin:12px 0 0!important;box-sizing:border-box!important;}
+@media(max-width:768px){
+  body.oddi-workspace-open .header-controls{visibility:hidden!important;pointer-events:none!important;}
+  body.oddi-workspace-open #oddi-react-sidebar-root{visibility:hidden!important;pointer-events:none!important;}
+}
+@media(max-width:600px){
+  #oddiWorkspaceOverlay{inset:0!important;padding:0!important;overflow:hidden!important;place-items:stretch!important;background:var(--oddi-workspace-bg,#fff)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}
+  #oddiWorkspaceDialog{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;border:0!important;border-radius:0!important;box-shadow:none!important;}
+  .oddi-workspace-head{height:auto!important;min-height:70px!important;padding:calc(10px + env(safe-area-inset-top,0px)) 16px 10px!important;gap:10px!important;border-bottom:1px solid var(--oddi-workspace-border)!important;}
+  .oddi-workspace-head h2{font-size:18px!important;line-height:1.2!important;}
+  .oddi-workspace-close{flex:0 0 40px!important;width:40px!important;height:40px!important;border:1px solid var(--oddi-workspace-border)!important;border-radius:50%!important;background:color-mix(in srgb,var(--oddi-workspace-bg) 88%,var(--oddi-workspace-fg) 12%)!important;color:var(--oddi-workspace-fg)!important;}
+  .oddi-workspace-tabs{width:100%!important;max-width:100%!important;gap:6px!important;padding:8px 10px!important;overflow-x:auto!important;overflow-y:hidden!important;scrollbar-width:thin!important;-webkit-overflow-scrolling:touch!important;}
+  .oddi-workspace-tabs button{flex:0 0 auto!important;min-height:38px!important;padding:0 12px!important;border-radius:10px!important;white-space:nowrap!important;}
+  .oddi-workspace-sync{padding:6px 14px!important;font-size:11px!important;line-height:1.35!important;}
+  #oddiWorkspaceContent{padding:0!important;}
+  #oddiWorkspaceContent>.oddi-workspace-content{padding:16px 14px calc(24px + env(safe-area-inset-bottom,0px))!important;}
+  .oddi-workspace-content h3{font-size:16px!important;}
+  .oddi-workspace-content p{font-size:13px!important;}
+  .oddi-workspace-form{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:9px!important;}
+  .oddi-workspace-form>*{width:100%!important;min-width:0!important;box-sizing:border-box!important;}
+  .oddi-workspace-row{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:9px!important;}
+  .oddi-workspace-row>*{width:100%!important;max-width:none!important;box-sizing:border-box!important;}
+  #oddiLastMessageCard{width:100%!important;min-height:52px!important;margin-top:8px!important;}
+}
+</style>
+
+<style id="oddi-laptop-settings-refine-v1">
+@media (min-width: 769px) {
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page {
+    background: #070907 !important;
+    color: #edf2ee !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 30 !important;
+    height: 68px !important;
+    min-height: 68px !important;
+    flex: 0 0 68px !important;
+    padding: 0 clamp(22px, 3vw, 42px) !important;
+    background: rgba(13, 17, 14, .96) !important;
+    border-bottom: 1px solid #252d27 !important;
+    backdrop-filter: blur(16px) !important;
+    -webkit-backdrop-filter: blur(16px) !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-title-wrap {
+    gap: 10px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-back,
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-icon {
+    width: 36px !important;
+    height: 36px !important;
+    flex: 0 0 36px !important;
+    border-color: #303a32 !important;
+    background: #151b16 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-header h3 {
+    font-size: 20px !important;
+    letter-spacing: -.02em !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-header p {
+    margin-top: 2px !important;
+    color: #89968c !important;
+    font-size: 11px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-body {
+    min-height: 0 !important;
+    height: calc(100dvh - 68px) !important;
+    overflow: hidden !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-nav {
+    position: sticky !important;
+    top: 0 !important;
+    width: 220px !important;
+    min-width: 220px !important;
+    flex: 0 0 220px !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    padding: 18px 13px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    background: #0c110e !important;
+    border-right: 1px solid #263029 !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #354239 transparent !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item {
+    position: relative !important;
+    width: 100% !important;
+    min-height: 41px !important;
+    height: 41px !important;
+    flex: 0 0 41px !important;
+    gap: 10px !important;
+    padding: 0 11px !important;
+    border: 1px solid transparent !important;
+    border-radius: 9px !important;
+    color: #a2ada5 !important;
+    font-size: 13px !important;
+    transition: background .16s ease, border-color .16s ease, color .16s ease !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item span {
+    width: 18px !important;
+    flex: 0 0 18px !important;
+    color: #92a097 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item:hover {
+    background: #151d17 !important;
+    color: #eff5f0 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item.is-active {
+    background: rgba(32, 199, 107, .12) !important;
+    border-color: rgba(59, 206, 124, .24) !important;
+    color: #e9f8ee !important;
+    box-shadow: inset 2px 0 #26bd6c !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item.is-active span {
+    color: #48d486 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-content {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    justify-content: center !important;
+    overflow: auto !important;
+    padding: 24px clamp(24px, 3vw, 44px) 48px !important;
+    background: #070907 !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: #354239 transparent !important;
+    scrollbar-gutter: stable !important;
+    overscroll-behavior: contain !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-content::-webkit-scrollbar {
+    width: 7px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-content::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-page-content::-webkit-scrollbar-thumb {
+    background: #354239 !important;
+    border: 2px solid #070907 !important;
+    border-radius: 999px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-tab {
+    width: min(100%, 960px) !important;
+    max-width: 960px !important;
+    margin: 0 auto !important;
+    padding: 0 0 8px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-content-heading {
+    margin: 0 0 18px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-content-heading h4 {
+    font-size: 17px !important;
+    letter-spacing: -.01em !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-content-heading p {
+    margin-top: 4px !important;
+    color: #8b968e !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-label {
+    margin: 0 0 8px !important;
+    color: #dce5de !important;
+    font-size: 12px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-group {
+    border: 1px solid #273129 !important;
+    border-radius: 14px !important;
+    background: #0c100d !important;
+    box-shadow: 0 8px 26px rgba(0, 0, 0, .16) !important;
+  }
+  #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] > .oddi-settings-group {
+    display: grid !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] .oddi-settings-label:has(+ .oddi-theme-grid) {
+    margin: 0 !important;
+    padding: 14px 16px 0 !important;
+    border: 1px solid #273129 !important;
+    border-bottom: 0 !important;
+    border-radius: 13px 13px 0 0 !important;
+    background: #0c100d !important;
+  }
+  #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] .oddi-theme-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    padding: 10px 14px 14px !important;
+    border: 1px solid #273129 !important;
+    border-top: 0 !important;
+    border-radius: 0 0 13px 13px !important;
+    background: #0c100d !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-theme-choice {
+    position: relative !important;
+    min-width: 0 !important;
+    min-height: 62px !important;
+    height: 62px !important;
+    flex-direction: row !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    padding: 0 30px 0 12px !important;
+    border: 1px solid #2b352d !important;
+    border-radius: 10px !important;
+    background: #0c100d !important;
+    color: #aeb8b1 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-theme-choice span {
+    font-size: 18px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-theme-choice strong {
+    font-size: 12px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-theme-choice.is-active {
+    border-color: #28bd6d !important;
+    background: rgba(32, 199, 107, .11) !important;
+    color: #e6f8ec !important;
+    box-shadow: inset 0 0 0 1px rgba(40, 189, 109, .22) !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-theme-choice.is-active::after {
+    content: "✓" !important;
+    position: absolute !important;
+    top: 8px !important;
+    right: 9px !important;
+    color: #48d486 !important;
+    font-size: 11px !important;
+    font-weight: 800 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-setting-row,
+  #settingsModal.oddi-settings-page-modal .oddi-pref-card {
+    min-height: 58px !important;
+    margin: 0 !important;
+    padding: 10px 14px !important;
+    border: 1px solid #273129 !important;
+    border-radius: 12px !important;
+    background: #0c100d !important;
+    color: #edf2ee !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-setting-row {
+    gap: 12px !important;
+    border-bottom: 1px solid #273129 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-setting-row .oddi-setting-copy {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-setting-select {
+    flex: 0 0 180px !important;
+    width: 180px !important;
+    min-width: 180px !important;
+    max-width: 220px !important;
+    height: 38px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-setting-icon {
+    width: 30px !important;
+    height: 30px !important;
+    flex-basis: 30px !important;
+    border-color: #303b33 !important;
+    border-radius: 8px !important;
+    background: #141a15 !important;
+    color: #c2d1c5 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-setting-copy strong,
+  #settingsModal.oddi-settings-page-modal .oddi-pref-card strong {
+    color: #e8eee9 !important;
+    font-size: 13px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-setting-copy small,
+  #settingsModal.oddi-settings-page-modal .oddi-pref-card small,
+  #settingsModal.oddi-settings-page-modal .oddi-font-preview {
+    color: #8b968e !important;
+    font-size: 11px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-appearance-extra {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 10px !important;
+    padding: 14px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-font-size-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button {
+    position: relative !important;
+    min-height: 38px !important;
+    padding: 0 26px 0 10px !important;
+    border: 1px solid #303a32 !important;
+    border-radius: 9px !important;
+    background: #0b0f0c !important;
+    color: #b6c0b8 !important;
+    font-size: 12px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button.is-active {
+    border-color: #28bd6d !important;
+    background: rgba(32, 199, 107, .1) !important;
+    color: #e7f8ed !important;
+    box-shadow: inset 0 0 0 1px rgba(40, 189, 109, .2) !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button.is-active::after {
+    content: "✓" !important;
+    position: absolute !important;
+    right: 9px !important;
+    color: #48d486 !important;
+    font-weight: 800 !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-appearance-compact {
+    min-height: 58px !important;
+    padding: 10px 14px !important;
+  }
+  #settingsModal.oddi-settings-page-modal .oddi-settings-group > .oddi-setting-row:last-child {
+    border-bottom: 0 !important;
+  }
+  #settingsModal.oddi-settings-page-modal :where(.oddi-pref-card, .oddi-settings-group, .oddi-setting-row) {
+    transition: border-color .16s ease, background .16s ease, box-shadow .16s ease !important;
+  }
+  #settingsModal.oddi-settings-page-modal :where(button, select, input):focus-visible {
+    outline: 2px solid #35c879 !important;
+    outline-offset: 2px !important;
+  }
+
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-page {
+    background: #f3f6f3 !important;
+    color: #243229 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-page-header {
+    background: rgba(255, 255, 255, .96) !important;
+    border-bottom-color: #dce5de !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-back,
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-page-icon {
+    background: #f7faf7 !important;
+    border-color: #d8e2da !important;
+    color: #2b382e !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-page-header h3 {
+    color: #1c2b21 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-page-header p {
+    color: #718076 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-nav {
+    background: #eef3ef !important;
+    border-right-color: #dce5de !important;
+    scrollbar-color: #c0ccc3 transparent !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item {
+    color: #536257 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item span {
+    color: #718076 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item:hover {
+    background: #e5ece6 !important;
+    color: #213328 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item.is-active {
+    background: #e2f3e7 !important;
+    border-color: #c4e4cd !important;
+    color: #1e482c !important;
+    box-shadow: inset 2px 0 #24a85d !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item.is-active span {
+    color: #168846 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-page-content {
+    background: #f3f6f3 !important;
+    color: #243229 !important;
+    scrollbar-color: #c0ccc3 transparent !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-page-content::-webkit-scrollbar-thumb {
+    background: #c0ccc3 !important;
+    border-color: #f3f6f3 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-content-heading h4 {
+    color: #243229 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-content-heading p,
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-setting-copy small,
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-pref-card small,
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-font-preview {
+    color: #718076 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-label {
+    color: #405046 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-settings-group {
+    background: #fff !important;
+    border-color: #dce5de !important;
+    box-shadow: 0 8px 24px rgba(40, 70, 48, .045) !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] > .oddi-settings-group {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] .oddi-settings-label:has(+ .oddi-theme-grid),
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] .oddi-theme-grid {
+    background: #fff !important;
+    border-color: #dce5de !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-theme-choice {
+    background: #f8faf8 !important;
+    border-color: #d9e3db !important;
+    color: #59685d !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-theme-choice.is-active {
+    background: #eaf7ed !important;
+    border-color: #36ae65 !important;
+    color: #1c512f !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-theme-choice.is-active::after {
+    color: #168846 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-setting-row,
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-pref-card {
+    background: #fff !important;
+    border-color: #dce5de !important;
+    color: #243229 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-setting-row {
+    border-bottom-color: #dce5de !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-setting-icon {
+    background: #f1f5f1 !important;
+    border-color: #dce5de !important;
+    color: #536257 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-setting-copy strong,
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-pref-card strong {
+    color: #26352b !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-setting-select {
+    background: #fff !important;
+    border-color: #d3ded5 !important;
+    color: #26352b !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button {
+    background: #f8faf8 !important;
+    border-color: #d7e1d9 !important;
+    color: #536257 !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button.is-active {
+    background: #eaf7ed !important;
+    border-color: #36ae65 !important;
+    color: #1c512f !important;
+  }
+  body:not(.dark-mode) #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button.is-active::after {
+    color: #168846 !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-nav {
+    background: #0c110e !important;
+    border-right-color: #263029 !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item.is-active {
+    background: rgba(32, 199, 107, .12) !important;
+    border-color: rgba(59, 206, 124, .24) !important;
+    color: #e9f8ee !important;
+    box-shadow: inset 2px 0 #26bd6c !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-page-content {
+    background: #070907 !important;
+    color: #edf2ee !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-settings-group,
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-pref-card,
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-theme-choice,
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-setting-select,
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button {
+    background: #0c100d !important;
+    border-color: #273129 !important;
+    color: #edf2ee !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] > .oddi-settings-group {
+    background: transparent !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] .oddi-settings-label:has(+ .oddi-theme-grid),
+  body.dark-mode #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] .oddi-theme-grid {
+    background: #0c100d !important;
+    border-color: #273129 !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-theme-choice.is-active,
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button.is-active {
+    background: rgba(32, 199, 107, .11) !important;
+    border-color: #28bd6d !important;
+    color: #e7f8ed !important;
+    box-shadow: inset 0 0 0 1px rgba(40, 189, 109, .22) !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-setting-row {
+    background: #0c100d !important;
+    border-color: #273129 !important;
+    color: #edf2ee !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-setting-icon {
+    background: #141a15 !important;
+    border-color: #303b33 !important;
+    color: #c2d1c5 !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-setting-copy strong,
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-pref-card strong {
+    color: #e8eee9 !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-setting-copy small,
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-pref-card small,
+  body.dark-mode #settingsModal.oddi-settings-page-modal .oddi-font-preview {
+    color: #8b968e !important;
+  }
+  body.dark-mode #settingsModal.oddi-settings-page-modal #languageSetting {
+    background: #0c100d !important;
+    border-color: #273129 !important;
+    color: #edf2ee !important;
+  }
+}
 </style>
 
 </body>

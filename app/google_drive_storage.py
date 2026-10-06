@@ -849,7 +849,7 @@ def create_account(username, email, password_hash):
             "password_hash": str(password_hash or ""),
             "created_at": now,
             "updated_at": now,
-            "settings": {},
+            "settings": {"memory": {"enabled": True, "auto_extract": True}},
             "settings_updated_at": now,
         }
         _write_json_file(folder_id, "account.json", account)

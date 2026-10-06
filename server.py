@@ -1,5 +1,6 @@
 import io
 import asyncio
+from contextlib import nullcontext
 import hashlib
 import json
 import logging
@@ -81,6 +82,9 @@ from app.database import (
     update_user_profile,
     clear_memory,
     get_vector_store_id,
+    enqueue_memory_message,
+    clear_memory_extraction_queue,
+    recover_stale_memory_claims,
 )
 from app.google_drive_storage import (
     DriveStorageError,
@@ -92,7 +96,17 @@ from app.engine import process_message
 from app.config import client
 from app.fast_responses import fast_response
 from identity.identity import create_identity
-from app.memory_ai import update_user_memory_from_chat
+from app.memory_ai import (
+    is_safe_memory_message,
+    memory_provider_keys_configured,
+    memory_user_disabled,
+    memory_user_lock,
+    memory_user_opted_out,
+    set_memory_user_disabled,
+    set_memory_user_opt_out,
+    normalize_memory_settings,
+    process_one_memory_batch,
+)
 from app.storage import (
     storage_router,
     StorageQuotaExceeded,
@@ -229,6 +243,26 @@ async def start_bin_retention_cleanup():
 
     app.state.bin_retention_task = asyncio.create_task(cleanup_expired_bin_chats())
 
+    if (
+        not ODDI_LOCAL_ONLY_STORAGE
+        and not ODDI_BROWSER_LOCAL_CHATS
+        and memory_provider_keys_configured()
+    ):
+        await run_in_threadpool(recover_stale_memory_claims)
+
+        async def extract_queued_memories():
+            # Let the app finish its first account and conversation requests.
+            await asyncio.sleep(20)
+            while True:
+                try:
+                    result = await run_in_threadpool(process_one_memory_batch)
+                except Exception:
+                    logger.exception("Memory extraction worker hit a storage error; it will retry")
+                    result = "retry"
+                await asyncio.sleep(3 if result == "processed" else 15)
+
+        app.state.memory_extraction_task = asyncio.create_task(extract_queued_memories())
+
     if ODDI_LOCAL_ONLY_STORAGE:
         from app import google_drive_storage
         if google_drive_storage.is_configured():
@@ -246,7 +280,7 @@ async def start_bin_retention_cleanup():
 
 @app.on_event("shutdown")
 async def stop_bin_retention_cleanup():
-    for task_name in ("bin_retention_task", "drive_sync_task"):
+    for task_name in ("bin_retention_task", "drive_sync_task", "memory_extraction_task"):
         task = getattr(app.state, task_name, None)
         if task:
             task.cancel()
@@ -1057,19 +1091,55 @@ async def api_update_settings(request: Request):
     incoming = data.get("settings")
     if not isinstance(incoming, dict):
         return JSONResponse({"error": "Settings must be an object."}, status_code=400)
-    with _WORKSPACE_MUTATION_LOCK:
-        current = get_user_settings(user_id)
-        # Only settings used by the UI are accepted. Never store arbitrary payloads.
-        if isinstance(current.get("chat_preferences"), dict):
-            current["chat_preferences"].pop("default_provider", None)
-        allowed = {"privacy", "chat_preferences", "profile", "memory"}
-        for key in allowed:
-            value = incoming.get(key)
-            if isinstance(value, dict):
-                if key == "chat_preferences":
-                    value = {name: item for name, item in value.items() if name != "default_provider"}
-                current[key] = value
-        save_user_settings(user_id, current)
+    memory_update = incoming.get("memory")
+    requested_memory = (
+        normalize_memory_settings(memory_update)
+        if isinstance(memory_update, dict)
+        else None
+    )
+    if requested_memory:
+        # Publish the opt-out before waiting for any in-flight extraction to
+        # finish, so it cannot start a fallback provider request meanwhile.
+        if not requested_memory["enabled"]:
+            set_memory_user_disabled(user_id, True)
+        if not requested_memory["enabled"] or not requested_memory["auto_extract"]:
+            set_memory_user_opt_out(user_id, True)
+
+    def update_settings():
+        # Turning extraction off waits for any already-running provider request,
+        # saves the opt-out, then drops queued messages before the API returns.
+        preference_lock = (
+            memory_user_lock(user_id)
+            if requested_memory and (not requested_memory["enabled"] or not requested_memory["auto_extract"])
+            else nullcontext()
+        )
+        with preference_lock:
+            with _WORKSPACE_MUTATION_LOCK:
+                current = get_user_settings(user_id)
+                # Only settings used by the UI are accepted. Never store arbitrary payloads.
+                if isinstance(current.get("chat_preferences"), dict):
+                    current["chat_preferences"].pop("default_provider", None)
+                allowed = {"privacy", "chat_preferences", "profile", "memory"}
+                for key in allowed:
+                    value = incoming.get(key)
+                    if isinstance(value, dict):
+                        if key == "chat_preferences":
+                            value = {name: item for name, item in value.items() if name != "default_provider"}
+                        elif key == "memory":
+                            value = normalize_memory_settings(value)
+                        current[key] = value
+                save_user_settings(user_id, current)
+                if requested_memory:
+                    set_memory_user_disabled(user_id, not requested_memory["enabled"])
+                    set_memory_user_opt_out(
+                        user_id,
+                        not requested_memory["enabled"] or not requested_memory["auto_extract"],
+                    )
+                    if not requested_memory["enabled"] or not requested_memory["auto_extract"]:
+                        clear_memory_extraction_queue(user_id)
+                return current
+
+    current = await run_in_threadpool(update_settings)
     return JSONResponse({"success": True, "settings": current})
 
 
@@ -1692,9 +1762,15 @@ def _memory_category_label(category, all_categories):
 def api_get_memory(request: Request):
     user_id = require_user_id(request)
     memories = get_memory(user_id) or {}
+    try:
+        memory_settings = normalize_memory_settings(get_user_settings(user_id).get("memory"))
+    except Exception as error:
+        logger.warning("Memory preference lookup failed while opening Memory (%s).", type(error).__name__)
+        memory_settings = {"enabled": False, "auto_extract": False}
 
     return JSONResponse(
         {
+            "memory_settings": memory_settings,
             "memories": [
                 {
                     "key": key,
@@ -1720,7 +1796,11 @@ async def api_update_memory(request: Request):
     if not memory:
         return JSONResponse({"error": "Memory cannot be empty."}, status_code=400)
 
-    save_memory(user_id, key, memory)
+    def save_manual_memory():
+        with memory_user_lock(user_id):
+            save_memory(user_id, key, memory)
+
+    await run_in_threadpool(save_manual_memory)
 
     return JSONResponse(
         {
@@ -1741,11 +1821,17 @@ async def api_delete_memory(request: Request):
     if not key:
         return JSONResponse({"error": "Memory key is required."}, status_code=400)
 
-    existing = get_memory(user_id, key)
-    if existing is None:
-        return JSONResponse({"error": "Memory not found."}, status_code=404)
+    def delete_manual_memory():
+        with memory_user_lock(user_id):
+            existing = get_memory(user_id, key)
+            if existing is None:
+                return False
+            delete_memory(user_id, key)
+            return True
 
-    delete_memory(user_id, key)
+    deleted = await run_in_threadpool(delete_manual_memory)
+    if not deleted:
+        return JSONResponse({"error": "Memory not found."}, status_code=404)
     return JSONResponse({"success": True, "deleted": key})
 
 
@@ -1967,22 +2053,22 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     if not generation_id or len(generation_id) > 128:
         generation_id = str(uuid.uuid4())
     memory_enabled_value = form.get("memory_enabled")
-    memory_enabled = (
+    client_memory_enabled = (
         str(memory_enabled_value).strip().casefold() in {"1", "true", "yes", "on"}
         if memory_enabled_value is not None
-        else False
+        else None
     )
     auto_extract_value = form.get("memory_auto_extract")
-    memory_auto_extract = (
+    client_memory_auto_extract = (
         str(auto_extract_value).strip().casefold() in {"1", "true", "yes", "on"}
         if auto_extract_value is not None
-        else memory_enabled
+        else None
     )
     if ODDI_BROWSER_LOCAL_CHATS:
         # A cloud process may generate a response, but it must not persist
         # chat-derived memory alongside the browser-local conversation.
-        memory_enabled = False
-        memory_auto_extract = False
+        client_memory_enabled = False
+        client_memory_auto_extract = False
 
     raw_conversation_id = form.get("conversation_id")
     try:
@@ -2006,17 +2092,46 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = await require_user_id_async(request)
-    if ODDI_DRIVE_CHAT_STORAGE:
-        # Chat generation does not need a Drive round-trip for optional user
-        # preferences. Keep the send path available during Drive outages and
-        # do not log uploaded filenames without loading its privacy preference.
+    settings_loaded = True
+    try:
+        # Memory consent is server-authoritative, including for Drive-backed
+        # accounts. A failed lookup fails closed for memory while chat itself
+        # remains available.
+        user_settings = await run_in_threadpool(get_user_settings, user_id)
+    except Exception as error:
+        logger.warning("User settings lookup failed; memory is disabled for this turn (%s).", type(error).__name__)
         user_settings = {}
-    else:
+        settings_loaded = False
+    server_memory = normalize_memory_settings(user_settings.get("memory"))
+    memory_enabled = (
+        settings_loaded
+        and server_memory["enabled"]
+        and client_memory_enabled is not False
+        and not memory_user_disabled(user_id)
+    )
+    memory_auto_extract = (
+        memory_enabled
+        and server_memory["auto_extract"]
+        and client_memory_auto_extract is not False
+        and not memory_user_opted_out(user_id)
+    )
+    if (
+        not ODDI_LOCAL_ONLY_STORAGE
+        and not ODDI_BROWSER_LOCAL_CHATS
+        and memory_provider_keys_configured()
+        and memory_auto_extract
+    ):
         try:
-            user_settings = await run_in_threadpool(get_user_settings, user_id)
-        except DriveStorageError:
-            logger.warning("Google Drive settings lookup failed; using default chat settings.")
-            user_settings = {}
+            # Mark activity at request start; the completed-turn queue task
+            # records it again so long replies also reset the quiet window.
+            await run_in_threadpool(
+                enqueue_memory_message,
+                str(user_id),
+                assistant_message_id,
+                "",
+            )
+        except Exception as error:
+            logger.warning("Memory activity timestamp failed (%s).", type(error).__name__)
     privacy_settings = user_settings.get("privacy", {}) if isinstance(user_settings, dict) else {}
     request_logging_enabled = (
         not ODDI_BROWSER_LOCAL_CHATS
@@ -2334,12 +2449,18 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                     user_id,
                 )
 
-    if not ODDI_LOCAL_ONLY_STORAGE and not ODDI_BROWSER_LOCAL_CHATS and memory_enabled and memory_auto_extract and memory_message:
+    if (
+        not ODDI_LOCAL_ONLY_STORAGE
+        and not ODDI_BROWSER_LOCAL_CHATS
+        and memory_provider_keys_configured()
+        and memory_enabled
+        and memory_auto_extract
+    ):
         background_tasks.add_task(
-            update_user_memory_from_chat,
+            enqueue_memory_message,
             str(user_id),
-            conversation_history,
-            memory_message,
+            assistant_message_id,
+            memory_message if is_safe_memory_message(memory_message) else "",
         )
 
     if file_record_ids:
