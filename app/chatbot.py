@@ -194,6 +194,7 @@ def _record_user_usage(
     user_id,
     chat_history,
     response,
+    quota_exempt=False,
 ):
     """
     Record estimated input + output token usage.
@@ -206,6 +207,11 @@ def _record_user_usage(
         return
 
     if not response:
+        return
+
+    # This legacy manager stores capped-token usage. Host usage must not be
+    # presented through that capped counter or its limit-oriented log output.
+    if quota_exempt:
         return
 
     # Do not count the generic provider-unavailable message
@@ -241,6 +247,7 @@ def _record_user_usage(
 def _check_user_quota(
     user_id,
     chat_history,
+    quota_exempt=False,
 ) -> bool:
     """
     Check whether the user has enough remaining daily quota
@@ -251,7 +258,10 @@ def _check_user_quota(
         False -> request must be blocked
     """
 
-    if user_id is None:
+    # The authenticated host/admin identity is supplied by app.engine.
+    # This legacy capability path must honor the same exemption as the
+    # primary Phase-6 router instead of re-applying its older token gate.
+    if user_id is None or quota_exempt:
         # Legacy/terminal callers without an authenticated
         # user ID are not subject to per-user limits.
         return True
@@ -423,6 +433,8 @@ def get_response(
     vector_store_id=None,
     user_role="user",
     user_id=None,
+    is_host=False,
+    quota_exempt=False,
 ):
     """
     Generate an ODDI-AI response.
@@ -451,9 +463,16 @@ def get_response(
     # PHASE 6 — CHECK USER QUOTA
     # ==========================================
 
+    effective_quota_exempt = bool(
+        is_host
+        or quota_exempt
+        or str(user_role or "").strip().lower() in {"owner", "admin"}
+    )
+
     if not _check_user_quota(
         user_id,
         chat_history,
+        quota_exempt=effective_quota_exempt,
     ):
         return USER_QUOTA_ERROR
 
@@ -521,6 +540,7 @@ def get_response(
             user_id,
             chat_history,
             response,
+            quota_exempt=effective_quota_exempt,
         )
 
         return response
@@ -576,6 +596,7 @@ def get_response(
                             user_id,
                             chat_history,
                             response,
+                            quota_exempt=effective_quota_exempt,
                         )
 
                         return response

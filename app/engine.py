@@ -955,7 +955,10 @@ def process_message(
         response = get_response(
             chat_history,
             vector_store_id,
-            user_id=user_id
+            user_role=user_context.get("user_role", "user"),
+            user_id=user_id,
+            is_host=user_context.get("is_host", False),
+            quota_exempt=user_context.get("quota_exempt", False),
         )
 
         return response
