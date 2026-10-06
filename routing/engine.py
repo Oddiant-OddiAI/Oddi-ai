@@ -111,7 +111,10 @@ MODEL_PROFILES: Dict[str, Dict[str, Any]] = {
         },
         "supports_web": False,
         "supports_files": True,
-        "supports_images": False,
+        "supports_images": True,
+        "supports_audio": True,
+        "max_images": 16,
+        "max_audio_bytes": 18 * 1024 * 1024,
         "supports_video": False,
         "quality": 8,
         "speed": 10,
@@ -131,7 +134,10 @@ MODEL_PROFILES: Dict[str, Dict[str, Any]] = {
         },
         "supports_web": False,
         "supports_files": True,
-        "supports_images": False,
+        "supports_images": True,
+        "supports_audio": True,
+        "max_images": 16,
+        "max_audio_bytes": 18 * 1024 * 1024,
         "supports_video": False,
         "quality": 9,
         "speed": 9,
@@ -150,7 +156,9 @@ MODEL_PROFILES: Dict[str, Dict[str, Any]] = {
         },
         "supports_web": False,
         "supports_files": True,
-        "supports_images": False,
+        "supports_images": True,
+        "supports_audio": False,
+        "max_images": 8,
         "supports_video": False,
         "quality": 7,
         "speed": 10,
@@ -169,7 +177,9 @@ MODEL_PROFILES: Dict[str, Dict[str, Any]] = {
         },
         "supports_web": False,
         "supports_files": True,
-        "supports_images": False,
+        "supports_images": True,
+        "supports_audio": False,
+        "max_images": 8,
         "supports_video": False,
         "quality": 8,
         "speed": 8,
@@ -188,6 +198,8 @@ MODEL_PROFILES: Dict[str, Dict[str, Any]] = {
         "supports_web": False,
         "supports_files": True,
         "supports_images": False,
+        "supports_audio": True,
+        "max_audio_bytes": 25 * 1024 * 1024,
         "supports_video": False,
         "quality": 10,
         "speed": 8,
@@ -205,6 +217,7 @@ MODEL_PROFILES: Dict[str, Dict[str, Any]] = {
         "supports_web": False,
         "supports_files": True,
         "supports_images": False,
+        "supports_audio": False,
         "supports_video": False,
         "quality": 6,
         "speed": 10,
@@ -223,23 +236,86 @@ MODEL_PROFILES: Dict[str, Dict[str, Any]] = {
             "complex",
         },
         "supports_web": False,
-        "supports_files": False,
+        "supports_files": True,
         "supports_images": False,
+        "supports_audio": False,
         "supports_video": False,
         "quality": 7,
         "speed": 8,
         "role": "overflow",
     },
+    "openrouter/vision": {
+        "provider": "openrouter",
+        "strengths": {"general_chat", "reasoning", "coding", "education", "analysis", "simple", "fast", "complex"},
+        "supports_web": False,
+        "supports_files": True,
+        "supports_images": True,
+        "supports_audio": False,
+        "max_images": 3,
+        "vision_only": True,
+        "supports_video": False,
+        "quality": 8,
+        "speed": 7,
+        "role": "vision_overflow",
+    },
+    "@cf/meta/llama-3.2-11b-vision-instruct": {
+        "provider": "cloudflare",
+        "strengths": {"general_chat", "reasoning", "education", "analysis", "simple", "fast"},
+        "supports_web": False,
+        "supports_files": True,
+        "supports_images": True,
+        "supports_audio": False,
+        "max_images": 1,
+        "vision_only": True,
+        "supports_video": False,
+        "quality": 7,
+        "speed": 8,
+        "role": "vision_fallback",
+    },
+    "qwen/qwen3.8-27b": {
+        "provider": "groq",
+        "strengths": {"general_chat", "reasoning", "coding", "education", "analysis", "simple", "fast", "complex"},
+        "supports_web": False,
+        "supports_files": True,
+        "supports_images": True,
+        "supports_audio": True,
+        "max_images": 3,
+        "vision_only": True,
+        "max_audio_bytes": 25 * 1024 * 1024,
+        "supports_video": False,
+        "quality": 9,
+        "speed": 8,
+        "role": "vision_reasoning_fallback",
+    },
 }
+
+# OpenRouter's free alias can resolve to a different model each request, so it
+# stays text-only. The vision candidate resolves to a free image-capable model.
+OPENROUTER_VISION_MODEL = os.getenv("OPENROUTER_VISION_MODEL", "").strip()
+if OPENROUTER_VISION_MODEL:
+    MODEL_PROFILES[OPENROUTER_VISION_MODEL] = {
+        "provider": "openrouter",
+        "strengths": {"general_chat", "reasoning", "coding", "education", "analysis", "simple", "fast", "complex"},
+        "supports_web": False,
+        "supports_files": True,
+        "supports_images": True,
+        "supports_audio": False,
+        "max_images": 3,
+        "vision_only": True,
+        "supports_video": False,
+        "quality": 8,
+        "speed": 7,
+        "role": "configured_openrouter_vision",
+    }
 
 
 # Provider -> adapter-backed default models.
 DEFAULT_MODELS = {
     "gemini": ["gemini-3.5-flash-lite", "gemini-3.6-flash"],
     "mistral": ["ministral-3b-2512", "mistral-small-latest"],
-    "groq": ["gpt-oss-120b"],
-    "cloudflare": ["llama-3.1-8b"],
-    "openrouter": ["openrouter/free"],
+    "groq": ["gpt-oss-120b", "qwen/qwen3.8-27b"],
+    "cloudflare": ["llama-3.1-8b", "@cf/meta/llama-3.2-11b-vision-instruct"],
+    "openrouter": ["openrouter/free"] + ([OPENROUTER_VISION_MODEL] if OPENROUTER_VISION_MODEL else ["openrouter/vision"]),
 }
 
 
@@ -567,6 +643,9 @@ class RoutingEngine:
         if not state.get("configured", True):
             return False
 
+        if profile.get("vision_only") and not request.get("requires_image", False):
+            return False
+
         if not state.get("healthy", False):
             return False
 
@@ -597,11 +676,29 @@ class RoutingEngine:
         ):
             return False
 
+        if request.get("requires_image", False):
+            maximum_images = int(profile.get("max_images", 0) or 0)
+            image_count = int(request.get("image_count", 1) or 1)
+            if maximum_images and image_count > maximum_images:
+                return False
+
         if request.get("requires_video", False) and not profile.get(
             "supports_video",
             False,
         ):
             return False
+
+        if request.get("requires_audio", False) and not profile.get(
+            "supports_audio",
+            False,
+        ):
+            return False
+
+        if request.get("requires_audio", False):
+            maximum_audio_bytes = int(profile.get("max_audio_bytes", 0) or 0)
+            audio_bytes = int(request.get("audio_bytes", 0) or 0)
+            if maximum_audio_bytes and audio_bytes > maximum_audio_bytes:
+                return False
 
         required_capabilities = request.get(
             "required_capabilities",
@@ -1094,4 +1191,3 @@ if __name__ == "__main__":
             default=str,
         )
     )
-    

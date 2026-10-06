@@ -1,3 +1,4 @@
+import re
 from typing import Any, Dict, List
 
 
@@ -9,6 +10,7 @@ class RequestAnalyzer:
         uploaded_files: List[Any] | None = None,
         images: List[Any] | None = None,
         video_frames: List[Any] | None = None,
+        audios: List[Any] | None = None,
     ) -> Dict[str, Any]:
 
         text = (user_message or "").strip().lower()
@@ -16,6 +18,7 @@ class RequestAnalyzer:
         uploaded_files = uploaded_files or []
         images = images or []
         video_frames = video_frames or []
+        audios = audios or []
 
         result = {
             "intent": "general_chat",
@@ -27,6 +30,7 @@ class RequestAnalyzer:
             "requires_file": bool(uploaded_files),
             "requires_image": bool(images),
             "requires_video": bool(video_frames),
+            "requires_audio": bool(audios),
 
             "requires_platform_action": False,
             "required_capabilities": [],
@@ -113,13 +117,21 @@ class RequestAnalyzer:
                 "make",
                 "build",
                 "generate",
+                "draft",
+                "write",
+                "prepare",
+                "craft",
+                "format",
+                "bana",
+                "banado",
+                "banaye",
+                "tayyar",
+                "taiyar",
             )):
                 result["intent"] = "resume_create"
                 result["actions"].append("create")
-                result["requires_platform_action"] = True
-                result["required_capabilities"].append(
-                    "resume.create"
-                )
+                # Creating a resume is ordinary model-generated content, not
+                # a platform action requiring a special privileged capability.
 
             elif any(word in text for word in (
                 "edit",
@@ -129,10 +141,7 @@ class RequestAnalyzer:
             )):
                 result["intent"] = "resume_edit"
                 result["actions"].append("edit")
-                result["requires_platform_action"] = True
-                result["required_capabilities"].append(
-                    "resume.edit"
-                )
+                # Resume editing is model-generated content as well.
 
         # -----------------------------------------
         # APPLICATIONS
@@ -267,17 +276,12 @@ class RequestAnalyzer:
         # WEB / CURRENT INFORMATION
         # -----------------------------------------
 
-        if any(word in text for word in (
-            "latest",
-            "current",
-            "today",
-            "recent",
-            "news",
-            "price",
-            "weather",
-            "live",
-            "right now",
-        )):
+        if re.search(
+            r"\b(?:latest|current|today|recent|news|price|weather)\b"
+            r"|\b(?:live\s+(?:updates?|scores?|results?|news|data|weather|prices?))\b"
+            r"|\bright\s+now\b",
+            text,
+        ):
             result["requires_web"] = True
 
         # -----------------------------------------
@@ -366,6 +370,7 @@ def analyze_request(
     uploaded_files=None,
     images=None,
     video_frames=None,
+    audios=None,
 ) -> Dict[str, Any]:
 
     analyzer = RequestAnalyzer()
@@ -375,4 +380,5 @@ def analyze_request(
         uploaded_files=uploaded_files,
         images=images,
         video_frames=video_frames,
+        audios=audios,
     )

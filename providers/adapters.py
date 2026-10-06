@@ -1,9 +1,14 @@
+import base64
+import io
 import os
-from typing import Optional
+import re
+from functools import lru_cache
+from typing import Any, Optional
 
 import requests
 from dotenv import load_dotenv
 from google import genai
+from google.genai import types as genai_types
 from mistralai.client import Mistral
 
 from reliability.manager import RELIABILITY_MANAGER
@@ -15,6 +20,27 @@ class ProviderAdapterError(RuntimeError):
     def __init__(self, message: str, retryable: bool = True):
         super().__init__(message)
         self.retryable = retryable
+
+
+def _retryable_http_status(status_code) -> bool:
+    try:
+        status = int(status_code)
+    except (TypeError, ValueError):
+        return True
+    return status not in {400, 401, 403, 404, 405, 410, 413, 415, 422}
+
+
+def _retryable_provider_exception(error) -> bool:
+    response = getattr(error, "response", None)
+    status = getattr(error, "status_code", None) or getattr(response, "status_code", None)
+    if status is None:
+        code = getattr(error, "code", None)
+        if isinstance(code, int):
+            status = code
+        else:
+            match = re.search(r"\b(400|401|403|404|405|408|409|410|413|415|422|429|5\d\d)\b", str(error))
+            status = match.group(1) if match else None
+    return _retryable_http_status(status)
 
 # ---------------------------------------------------------------------------
 # Configuration helpers
@@ -60,6 +86,8 @@ def call_gemini(
     prompt: str,
     model: Optional[str] = None,
     api_key: Optional[str] = None,
+    images: Optional[list[dict]] = None,
+    audios: Optional[list[dict]] = None,
 ) -> str:
     """Call Gemini using a supplied key, or GEMINI_API_KEY (key 1)."""
     if not prompt or not prompt.strip():
@@ -70,10 +98,20 @@ def call_gemini(
 
     try:
         client = genai.Client(api_key=api_key)
-        response = client.models.generate_content(model=model, contents=prompt)
+        media_parts = []
+        for item in (images or []) + (audios or []):
+            media_parts.append(
+                genai_types.Part.from_bytes(
+                    data=item["bytes"],
+                    mime_type=item.get("mimetype") or "application/octet-stream",
+                )
+            )
+        contents = [prompt, *media_parts] if media_parts else prompt
+        response = client.models.generate_content(model=model, contents=contents)
     except Exception as exc:
         raise ProviderAdapterError(
-            f"Gemini API error (model '{model}'): {exc}"
+            f"Gemini API error (model '{model}'): {exc}",
+            retryable=_retryable_provider_exception(exc),
         ) from exc
 
     content = getattr(response, "text", None)
@@ -87,11 +125,19 @@ def call_gemini_with_key(
     prompt: str,
     key_number: int,
     model: Optional[str] = None,
+    images: Optional[list[dict]] = None,
+    audios: Optional[list[dict]] = None,
 ) -> str:
     """Call Gemini with a specific configured project/API key (1-4)."""
     env_name = _gemini_env_name(key_number)
     api_key = _require_env(env_name)
-    return call_gemini(prompt=prompt, model=model, api_key=api_key)
+    return call_gemini(
+        prompt=prompt,
+        model=model,
+        api_key=api_key,
+        images=images,
+        audios=audios,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -102,6 +148,7 @@ def call_gemini_with_key(
 def call_mistral(
     prompt: str,
     model: Optional[str] = None,
+    images: Optional[list[dict]] = None,
 ) -> str:
     if not prompt or not prompt.strip():
         raise ValueError("Prompt cannot be empty.")
@@ -110,20 +157,38 @@ def call_mistral(
     model = model or _env("MISTRAL_MODEL", "ministral-3b-2512")
 
     try:
-        client = Mistral(api_key=api_key)
-        response = client.chat.complete(
-            model=model,
-            messages=[{"role": "user", "content": prompt}],
+        content: Any = prompt
+        if images:
+            content = [{"type": "text", "text": prompt}]
+            for image in images:
+                encoded = base64.b64encode(image["bytes"]).decode("ascii")
+                content.append({
+                    "type": "image_url",
+                    "image_url": {"url": f"data:{image.get('mimetype', 'image/jpeg')};base64,{encoded}"},
+                })
+        response = requests.post(
+            "https://api.mistral.ai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json={"model": model, "messages": [{"role": "user", "content": content}]},
+            timeout=90,
         )
-    except Exception as exc:
+    except requests.RequestException as exc:
         raise ProviderAdapterError(
-            f"Mistral API error (model '{model}'): {exc}"
+            f"Mistral API error (model '{model}'): {exc}",
+            retryable=True,
         ) from exc
 
+    if not response.ok:
+        raise ProviderAdapterError(
+            f"Mistral API error {response.status_code}: {response.text}",
+            retryable=_retryable_http_status(response.status_code),
+        )
+
     try:
-        content = response.choices[0].message.content
-    except (AttributeError, IndexError, TypeError) as exc:
-        raise ProviderAdapterError(f"Unexpected Mistral response: {response}") from exc
+        data = response.json()
+        content = data["choices"][0]["message"]["content"]
+    except (ValueError, KeyError, IndexError, TypeError) as exc:
+        raise ProviderAdapterError(f"Unexpected Mistral response: {response.text}") from exc
 
     if content is None or not str(content).strip():
         raise ProviderAdapterError(f"Mistral returned empty content: {response}")
@@ -154,6 +219,8 @@ def call_groq(
     prompt: str,
     model: Optional[str] = None,
     api_key: Optional[str] = None,
+    images: Optional[list[dict]] = None,
+    audios: Optional[list[dict]] = None,
 ) -> str:
     """Call Groq's OpenAI-compatible chat endpoint."""
     if not prompt or not prompt.strip():
@@ -162,6 +229,51 @@ def call_groq(
     api_key = api_key or _require_env("GROQ_API_KEY")
     model = model or _env("GROQ_MODEL", "openai/gpt-oss-120b")
     url = "https://api.groq.com/openai/v1/chat/completions"
+
+    if audios:
+        transcripts = []
+        transcription_model = _env("GROQ_TRANSCRIPTION_MODEL", "whisper-large-v3-turbo")
+        for audio in audios:
+            filename = str(audio.get("filename") or "attachment.wav")
+            audio_bytes = audio.get("bytes") or b""
+            if len(audio_bytes) > 25 * 1024 * 1024:
+                raise ProviderAdapterError(
+                    f"Audio file '{filename}' is over Groq's 25 MB transcription request limit.",
+                    retryable=False,
+                )
+            try:
+                transcription = requests.post(
+                    "https://api.groq.com/openai/v1/audio/transcriptions",
+                    headers={"Authorization": f"Bearer {api_key}"},
+                    data={"model": transcription_model, "response_format": "text"},
+                    files={"file": (filename, io.BytesIO(audio_bytes), audio.get("mimetype") or "application/octet-stream")},
+                    timeout=120,
+                )
+            except requests.RequestException as exc:
+                raise ProviderAdapterError(f"Groq audio transcription network error: {exc}") from exc
+            if not transcription.ok:
+                raise ProviderAdapterError(
+                    f"Groq audio transcription error {transcription.status_code}: {transcription.text}",
+                    retryable=_retryable_http_status(transcription.status_code),
+                )
+            transcripts.append(f"--- Transcript: {filename} ---\n{transcription.text.strip()}")
+        prompt += "\n\nTRANSCRIBED ATTACHED AUDIO (from Groq):\n" + "\n\n".join(transcripts)
+
+    if images and len(images) > 3 and model == "qwen/qwen3.8-27b":
+        raise ProviderAdapterError(
+            "Groq vision accepts up to 3 images per request; route this request to another vision provider.",
+            retryable=False,
+        )
+
+    message_content: Any = prompt
+    if images:
+        message_content = [{"type": "text", "text": prompt}]
+        for image in images:
+            encoded = base64.b64encode(image["bytes"]).decode("ascii")
+            message_content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{image.get('mimetype', 'image/jpeg')};base64,{encoded}"},
+            })
 
     try:
         response = requests.post(
@@ -172,7 +284,7 @@ def call_groq(
             },
             json={
                 "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": [{"role": "user", "content": message_content}],
             },
             timeout=60,
         )
@@ -181,7 +293,8 @@ def call_groq(
 
     if not response.ok:
         raise ProviderAdapterError(
-            f"Groq API error {response.status_code}: {response.text}"
+            f"Groq API error {response.status_code}: {response.text}",
+            retryable=_retryable_http_status(response.status_code),
         )
 
     try:
@@ -202,10 +315,18 @@ def call_groq_with_key(
     prompt: str,
     key_number: int,
     model: Optional[str] = None,
+    images: Optional[list[dict]] = None,
+    audios: Optional[list[dict]] = None,
 ) -> str:
     env_name = _groq_env_name(key_number)
     api_key = _require_env(env_name)
-    return call_groq(prompt=prompt, model=model, api_key=api_key)
+    return call_groq(
+        prompt=prompt,
+        model=model,
+        api_key=api_key,
+        images=images,
+        audios=audios,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -216,6 +337,7 @@ def call_groq_with_key(
 def call_cloudflare(
     prompt: str,
     model: Optional[str] = None,
+    images: Optional[list[dict]] = None,
 ) -> str:
     if not prompt or not prompt.strip():
         raise ValueError("Prompt cannot be empty.")
@@ -232,14 +354,26 @@ def call_cloudflare(
         f"{account_id}/ai/run/{model}"
     )
 
+    if images and len(images) > 1:
+        raise ProviderAdapterError(
+            "This Cloudflare vision model accepts one image per request.",
+            retryable=False,
+        )
+
     try:
+        payload = {"messages": [{"role": "user", "content": prompt}]}
+        if images:
+            payload = {
+                "prompt": prompt,
+                "image": base64.b64encode(images[0]["bytes"]).decode("ascii"),
+            }
         response = requests.post(
             url,
             headers={
                 "Authorization": f"Bearer {api_token}",
                 "Content-Type": "application/json",
             },
-            json={"messages": [{"role": "user", "content": prompt}]},
+            json=payload,
             timeout=60,
         )
     except requests.RequestException as exc:
@@ -247,7 +381,8 @@ def call_cloudflare(
 
     if not response.ok:
         raise ProviderAdapterError(
-            f"Cloudflare API error {response.status_code}: {response.text}"
+            f"Cloudflare API error {response.status_code}: {response.text}",
+            retryable=_retryable_http_status(response.status_code),
         )
 
     try:
@@ -278,6 +413,7 @@ def call_cloudflare(
 def call_openrouter(
     prompt: str,
     model: Optional[str] = None,
+    images: Optional[list[dict]] = None,
 ) -> str:
     """Use OpenRouter as an overflow/fallback adapter.
 
@@ -288,7 +424,19 @@ def call_openrouter(
         raise ValueError("Prompt cannot be empty.")
 
     api_key = _require_env("OPENROUTER_API_KEY")
+    if model == "openrouter/vision":
+        model = _env("OPENROUTER_VISION_MODEL", "") or _discover_openrouter_free_vision_model(api_key)
     model = model or _env("OPENROUTER_MODEL", "openrouter/free")
+
+    content: Any = prompt
+    if images:
+        content = [{"type": "text", "text": prompt}]
+        for image in images:
+            encoded = base64.b64encode(image["bytes"]).decode("ascii")
+            content.append({
+                "type": "image_url",
+                "image_url": {"url": f"data:{image.get('mimetype', 'image/jpeg')};base64,{encoded}"},
+            })
 
     try:
         response = requests.post(
@@ -301,7 +449,7 @@ def call_openrouter(
             },
             json={
                 "model": model,
-                "messages": [{"role": "user", "content": prompt}],
+                "messages": [{"role": "user", "content": content}],
             },
             timeout=60,
         )
@@ -310,7 +458,8 @@ def call_openrouter(
 
     if not response.ok:
         raise ProviderAdapterError(
-            f"OpenRouter API error {response.status_code}: {response.text}"
+            f"OpenRouter API error {response.status_code}: {response.text}",
+            retryable=_retryable_http_status(response.status_code),
         )
 
     try:
@@ -327,6 +476,45 @@ def call_openrouter(
     return str(content)
 
 
+@lru_cache(maxsize=8)
+def _discover_openrouter_free_vision_model(api_key: str) -> str:
+    """Pick a zero-price image-input model from OpenRouter's live catalog."""
+    try:
+        response = requests.get(
+            "https://openrouter.ai/api/v1/models",
+            headers={"Authorization": f"Bearer {api_key}"},
+            params={"input_modalities": "image", "output_modalities": "text", "max_price": "0", "sort": "latency-low-to-high"},
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        raise ProviderAdapterError(f"OpenRouter vision model discovery failed: {exc}") from exc
+    if not response.ok:
+        raise ProviderAdapterError(
+            f"OpenRouter model discovery error {response.status_code}: {response.text}",
+            retryable=_retryable_http_status(response.status_code),
+        )
+    try:
+        entries = response.json().get("data", [])
+    except (ValueError, AttributeError) as exc:
+        raise ProviderAdapterError("OpenRouter returned an invalid model catalog.") from exc
+
+    for entry in entries:
+        architecture = entry.get("architecture") or {}
+        modalities = architecture.get("input_modalities") or []
+        output_modalities = architecture.get("output_modalities") or []
+        pricing = entry.get("pricing") or {}
+        try:
+            zero_price = float(pricing.get("prompt", 1)) == 0 and float(pricing.get("completion", 1)) == 0
+        except (TypeError, ValueError):
+            zero_price = False
+        if entry.get("id") and "image" in modalities and "text" in output_modalities and zero_price:
+            return str(entry["id"])
+    raise ProviderAdapterError(
+        "OpenRouter has no currently listed zero-price model that accepts image input.",
+        retryable=False,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Unified routing adapter
 # ---------------------------------------------------------------------------
@@ -338,6 +526,8 @@ def call_provider(
     model: Optional[str] = None,
     capacity_id: Optional[str] = None,
     api_key_number: Optional[int] = None,
+    images: Optional[list[dict]] = None,
+    audios: Optional[list[dict]] = None,
 ) -> str:
     """Execute the exact provider/capacity selected by the routing engine."""
     if not prompt or not prompt.strip():
@@ -347,33 +537,39 @@ def call_provider(
 
     if provider == "gemini":
         if api_key_number is not None:
-            return call_gemini_with_key(prompt, int(api_key_number), model)
+            return call_gemini_with_key(prompt, int(api_key_number), model, images, audios)
         if capacity_id and capacity_id.startswith("gemini_key_"):
             try:
                 return call_gemini_with_key(
-                    prompt, int(capacity_id.rsplit("_", 1)[-1]), model
+                    prompt, int(capacity_id.rsplit("_", 1)[-1]), model, images, audios
                 )
             except ValueError as exc:
                 raise ProviderAdapterError(str(exc)) from exc
-        return call_gemini(prompt, model)
+        return call_gemini(prompt, model, images=images, audios=audios)
 
     if provider == "mistral":
-        return call_mistral(prompt, model)
+        if audios:
+            raise ProviderAdapterError("Mistral adapter does not support audio input on this configured route.", retryable=False)
+        return call_mistral(prompt, model, images=images)
 
     if provider == "groq":
         if api_key_number is not None:
-            return call_groq_with_key(prompt, int(api_key_number), model)
+            return call_groq_with_key(prompt, int(api_key_number), model, images, audios)
         if capacity_id and capacity_id.startswith("groq_key_"):
             return call_groq_with_key(
-                prompt, int(capacity_id.rsplit("_", 1)[-1]), model
+                prompt, int(capacity_id.rsplit("_", 1)[-1]), model, images, audios
             )
-        return call_groq(prompt, model)
+        return call_groq(prompt, model, images=images, audios=audios)
 
     if provider == "cloudflare":
-        return call_cloudflare(prompt, model)
+        if audios:
+            raise ProviderAdapterError("Cloudflare adapter does not support audio input on this configured route.", retryable=False)
+        return call_cloudflare(prompt, model, images=images)
 
     if provider == "openrouter":
-        return call_openrouter(prompt, model)
+        if audios:
+            raise ProviderAdapterError("This OpenRouter chat adapter is configured for text and image inputs only.", retryable=False)
+        return call_openrouter(prompt, model, images=images)
 
     raise ProviderAdapterError(f"No adapter available for provider: {provider}")
 
@@ -410,7 +606,12 @@ def call_provider_with_fallback(
 # ---------------------------------------------------------------------------
 
 
-def execute_route(route: dict, prompt: str) -> dict:
+def execute_route(
+    route: dict,
+    prompt: str,
+    images: Optional[list[dict]] = None,
+    audios: Optional[list[dict]] = None,
+) -> dict:
     """Execute routed candidates in order with shared reliability tracking."""
     if not prompt or not prompt.strip():
         raise ValueError("Prompt cannot be empty.")
@@ -464,6 +665,8 @@ def execute_route(route: dict, prompt: str) -> dict:
                 model=model,
                 capacity_id=capacity_id,
                 api_key_number=api_key_number,
+                images=images,
+                audios=audios,
             )
 
             if not response or not str(response).strip():

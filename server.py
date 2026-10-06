@@ -243,11 +243,7 @@ async def start_bin_retention_cleanup():
 
     app.state.bin_retention_task = asyncio.create_task(cleanup_expired_bin_chats())
 
-    if (
-        not ODDI_LOCAL_ONLY_STORAGE
-        and not ODDI_BROWSER_LOCAL_CHATS
-        and memory_provider_keys_configured()
-    ):
+    if not ODDI_BROWSER_LOCAL_CHATS and memory_provider_keys_configured():
         await run_in_threadpool(recover_stale_memory_claims)
 
         async def extract_queued_memories():
@@ -2116,8 +2112,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         and not memory_user_opted_out(user_id)
     )
     if (
-        not ODDI_LOCAL_ONLY_STORAGE
-        and not ODDI_BROWSER_LOCAL_CHATS
+        not ODDI_BROWSER_LOCAL_CHATS
         and memory_provider_keys_configured()
         and memory_auto_extract
     ):
@@ -2450,8 +2445,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 )
 
     if (
-        not ODDI_LOCAL_ONLY_STORAGE
-        and not ODDI_BROWSER_LOCAL_CHATS
+        not ODDI_BROWSER_LOCAL_CHATS
         and memory_provider_keys_configured()
         and memory_enabled
         and memory_auto_extract

@@ -7,10 +7,12 @@ itsdangerous
 openai
 python-dotenv
 pypdf
+pymupdf>=1.24,<2
 openpyxl
 python-pptx
 python-docx
 opencv-python
+imageio-ffmpeg>=0.5,<1
 groq==1.6.0
 psycopg[binary]>=3.2,<4
 Authlib

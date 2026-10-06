@@ -13046,6 +13046,164 @@ function typeAIResponse(
     });
 }
 
+function isResumeBuilderPrompt(text) {
+    const value = String(text || "").toLowerCase();
+    return /\b(resume|cv|curriculum vitae|biodata)\b/.test(value) &&
+        /\b(create|make|build|generate|draft|write|prepare|craft|format|tailor|improve|edit|rewrite|bana|banado|banaye|tayyar|taiyar)\b/.test(value) &&
+        !/\b(analyze|analyse|review|score|check)\b/.test(value);
+}
+
+function findResumeDraftSection(aiContent) {
+    if (!aiContent) return null;
+    const headings = Array.from(aiContent.querySelectorAll("h1,h2,h3"));
+    const heading = headings.find(node => /^resume draft$/i.test(node.textContent.trim()));
+    if (!heading) return null;
+    const level = Number(heading.tagName.slice(1));
+    const wrapper = document.createElement("div");
+    for (let node = heading.nextElementSibling; node; node = node.nextElementSibling) {
+        const nodeLevel = /^H[1-6]$/.test(node.tagName) ? Number(node.tagName.slice(1)) : 99;
+        if (nodeLevel <= level) break;
+        wrapper.appendChild(node.cloneNode(true));
+    }
+    return wrapper.childElementCount ? wrapper : null;
+}
+
+function resumeSectionMarkdown(root) {
+    const lines = [];
+    for (const node of Array.from(root.children)) {
+        const tag = node.tagName.toLowerCase();
+        const text = String(node.innerText || node.textContent || "").trim();
+        if (!text) continue;
+        if (/^h[1-6]$/.test(tag)) lines.push(`${"#".repeat(Number(tag[1]))} ${text}`);
+        else if (tag === "ul" || tag === "ol") {
+            Array.from(node.children).forEach((item, index) => lines.push(tag === "ol" ? `${index + 1}. ${item.innerText.trim()}` : `- ${item.innerText.trim()}`));
+        } else if (tag === "pre") lines.push(`\`\`\`\n${node.innerText}\n\`\`\``);
+        else lines.push(text);
+    }
+    return lines.join("\n\n");
+}
+
+async function createResumePdfBlob(resumeRoot) {
+    const JsPDF = window.jspdf?.jsPDF;
+    if (typeof JsPDF !== "function" || typeof window.html2canvas !== "function") {
+        throw new Error("PDF export is unavailable right now.");
+    }
+    const printRoot = document.createElement("article");
+    printRoot.style.cssText = "position:fixed;left:-10000px;top:0;width:794px;padding:52px;box-sizing:border-box;background:#fff;color:#111;font:14px/1.55 Arial,sans-serif;";
+    printRoot.innerHTML = `<style>h2{font-size:18px;margin:18px 0 6px}h3{font-size:15px;margin:14px 0 5px}p{margin:5px 0}ul,ol{padding-left:24px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:6px;text-align:left}</style>${resumeRoot.innerHTML}`;
+    document.body.appendChild(printRoot);
+    try {
+        const canvas = await window.html2canvas(printRoot, {scale: 1.6, backgroundColor: "#fff", useCORS: true, logging: false});
+        const pdf = new JsPDF({unit: "pt", format: "a4", orientation: "portrait", compress: true});
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const margin = 30;
+        const usableWidth = pageWidth - margin * 2;
+        const pxToPt = usableWidth / canvas.width;
+        const sliceHeight = Math.max(1, Math.floor((pageHeight - margin * 2) / pxToPt));
+        let offset = 0;
+        let page = 0;
+        while (offset < canvas.height) {
+            const height = Math.min(sliceHeight, canvas.height - offset);
+            const slice = document.createElement("canvas");
+            slice.width = canvas.width;
+            slice.height = height;
+            const context = slice.getContext("2d", {alpha: false});
+            context.fillStyle = "#fff";
+            context.fillRect(0, 0, slice.width, slice.height);
+            context.drawImage(canvas, 0, offset, canvas.width, height, 0, 0, canvas.width, height);
+            if (page++) pdf.addPage();
+            pdf.addImage(slice.toDataURL("image/jpeg", .94), "JPEG", margin, margin, usableWidth, height * pxToPt, undefined, "FAST");
+            offset += height;
+        }
+        return pdf.output("blob");
+    } finally {
+        printRoot.remove();
+    }
+}
+
+function saveResumeBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
+}
+
+function addResumeExportControls(botMessage, conversation, messageIndex) {
+    if (!botMessage || !conversation || botMessage.querySelector(".oddi-resume-export")) return;
+    const precedingUser = conversation.messages.slice(0, messageIndex).reverse().find(item => item?.role === "user");
+    if (!isResumeBuilderPrompt(precedingUser?.text)) return;
+    const aiContent = botMessage.querySelector(".ai-content");
+    const draft = findResumeDraftSection(aiContent);
+    if (!draft) return;
+
+    const controls = document.createElement("div");
+    controls.className = "oddi-resume-export";
+    controls.innerHTML = `
+        <strong>Resume draft</strong>
+        <button type="button" data-resume-copy>Copy resume</button>
+        <label>Download as
+            <select aria-label="Resume download format">
+                <option value="pdf" selected>PDF</option>
+                <option value="docx">Word (.docx)</option>
+                <option value="html">HTML</option>
+                <option value="txt">Text (.txt)</option>
+                <option value="md">Markdown (.md)</option>
+            </select>
+        </label>
+        <button type="button" data-resume-download>Download</button>
+        <span class="oddi-resume-status" aria-live="polite"></span>
+    `;
+    const status = controls.querySelector(".oddi-resume-status");
+    const baseName = `${sanitizeExportFilename("Resume")}`;
+    controls.querySelector("[data-resume-copy]").addEventListener("click", async () => {
+        try {
+            await navigator.clipboard.writeText(draft.innerText.trim());
+            status.textContent = "Copied";
+        } catch (_) {
+            const area = document.createElement("textarea");
+            area.value = draft.innerText.trim();
+            document.body.appendChild(area);
+            area.select();
+            document.execCommand("copy");
+            area.remove();
+            status.textContent = "Copied";
+        }
+    });
+    controls.querySelector("[data-resume-download]").addEventListener("click", async event => {
+        const button = event.currentTarget;
+        const format = controls.querySelector("select").value;
+        button.disabled = true;
+        status.textContent = "Preparing file…";
+        try {
+            const html = `<!doctype html><html><head><meta charset="utf-8"><title>Resume</title><style>body{max-width:800px;margin:40px auto;padding:0 28px;color:#111;font:14px/1.55 Arial,sans-serif}h2{font-size:18px;margin:18px 0 6px}h3{font-size:15px;margin:14px 0 5px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #aaa;padding:6px;text-align:left}</style></head><body>${draft.innerHTML}</body></html>`;
+            const markdown = resumeSectionMarkdown(draft);
+            let blob;
+            let extension = format;
+            if (format === "pdf") blob = await createResumePdfBlob(draft);
+            else if (format === "docx") {
+                if (!window.htmlDocx?.asBlob) throw new Error("Word export is unavailable right now.");
+                blob = window.htmlDocx.asBlob(html);
+            } else if (format === "html") blob = new Blob([html], {type: "text/html;charset=utf-8"});
+            else if (format === "md") blob = new Blob([markdown], {type: "text/markdown;charset=utf-8"});
+            else { extension = "txt"; blob = new Blob([draft.innerText.trim()], {type: "text/plain;charset=utf-8"}); }
+            saveResumeBlob(blob, `${baseName}.${extension}`);
+            status.textContent = "Downloaded";
+        } catch (error) {
+            console.error("Could not export resume:", error);
+            status.textContent = error.message || "Download failed";
+        } finally {
+            button.disabled = false;
+        }
+    });
+    const meta = botMessage.querySelector(".odd-chat-meta");
+    botMessage.insertBefore(controls, meta || botMessage.querySelector(".bot-actions") || null);
+}
+
 function addBotMessageActions(botMessage, messageIndex, conversationIndex = currentConversation) {
     if (!botMessage) return;
 
@@ -13057,6 +13215,14 @@ function addBotMessageActions(botMessage, messageIndex, conversationIndex = curr
 
     const feedback = message?.feedback || '';
     const pinned = !!message?.pinned;
+
+    if (message) {
+        addResumeExportControls(
+            botMessage,
+            conversations[conversationIndex],
+            messageIndex
+        );
+    }
 
     const actions = document.createElement('div');
     actions.className = 'bot-actions';
@@ -14447,6 +14613,12 @@ async function openConversation(index) {
             }
         }
     );
+
+    conversation.messages.forEach((msg, messageIndex) => {
+        if (msg?.role !== "assistant") return;
+        const bubble = chat.querySelector(`.bot-message[data-message-index="${messageIndex}"]`);
+        if (bubble) addResumeExportControls(bubble, conversation, messageIndex);
+    });
 
     // Keep the live generation bubble attached when returning to its chat.
     // The timer continues updating this same node even while another chat is open.
@@ -27293,6 +27465,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
       panels.forEach(function (panel) {
         panel.classList.toggle("is-active", panel.getAttribute("data-settings-panel") === name);
       });
+      window.dispatchEvent(new CustomEvent("oddi:settings-tab-activated", { detail: { name: name } }));
     }
 
     function open(tab) {
@@ -28700,7 +28873,7 @@ html[data-oddi-font-size="small"] .user-message,html[data-oddi-font-size="small"
   async function saveMemoryPrefs(){state.memory={enabled:$('#oddiMemoryEnabled').checked,auto_extract:$('#oddiMemoryAutoExtract').checked};window.__oddiMemorySettings=state.memory;try{localStorage.setItem('oddi_memory_enabled',String(state.memory.enabled));localStorage.setItem('oddi_settings_fallback',JSON.stringify(state));}catch(_){}window.__oddiSetMemoryEnabled?.(state.memory.enabled);await saveState();window.dispatchEvent(new CustomEvent('oddi:memory-setting-changed',{detail:state.memory}));}
   $('#oddiMemoryEnabled')?.addEventListener('change',async()=>{try{await saveMemoryPrefs();show('Memory setting updated.')}catch(e){show(e.message,true)}});
   $('#oddiMemoryAutoExtract')?.addEventListener('change',async()=>{try{await saveMemoryPrefs();show('Memory setting updated.')}catch(e){show(e.message,true)}});
-  document.querySelector('[data-settings-tab="memory"]')?.addEventListener('click',()=>{if(memList)memList.dataset.loaded='1';loadMemories()});
+  window.addEventListener('oddi:settings-tab-activated',e=>{if(e.detail?.name==='memory'){if(memList)memList.dataset.loaded='1';loadMemories()}});
   window.addEventListener('oddi:memory-setting-changed',e=>{if(!e.detail||!$('#oddiMemoryEnabled'))return;const next={...state.memory,enabled:e.detail.enabled!==false};if(typeof e.detail.auto_extract==='boolean')next.auto_extract=e.detail.auto_extract;const changed=next.enabled!==state.memory.enabled||next.auto_extract!==state.memory.auto_extract;state.memory=next;$('#oddiMemoryEnabled').checked=next.enabled;$('#oddiMemoryAutoExtract').checked=next.auto_extract;window.__oddiMemorySettings=next;if(changed){try{localStorage.setItem('oddi_memory_enabled',String(next.enabled))}catch(_){}if(e.detail.source!=='server-sync')saveState().catch(err=>show(err.message,true));}});
   window.addEventListener('oddi:memory-updated',()=>{if(memList?.dataset.loaded==='1'&&document.querySelector('[data-settings-panel="memory"]')?.classList.contains('is-active'))loadMemories()});
 
@@ -31413,6 +31586,21 @@ body.oddi-workspace-open #oddi-hard-sidebar-launcher{visibility:hidden!important
     color: #edf2ee !important;
   }
 }
+</style>
+
+<style id="oddi-resume-export-controls">
+.oddi-resume-export{width:min(100%,720px);box-sizing:border-box;display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px auto;padding:10px 12px;border:1px solid #dce9df;border-radius:13px;background:#f7fbf8;color:#193923;font-size:12px}
+.oddi-resume-export>strong{margin-right:auto;font-size:13px}
+.oddi-resume-export button,.oddi-resume-export select{min-height:36px;padding:0 11px;border:1px solid #d4ded7;border-radius:9px;background:#fff;color:#18241c;font:inherit;font-weight:650;cursor:pointer}
+.oddi-resume-export button:hover{border-color:#28a961;background:#f0faf3}
+.oddi-resume-export button:disabled{opacity:.55;cursor:wait}
+.oddi-resume-export label{display:flex;align-items:center;gap:6px}
+.oddi-resume-export select{min-width:112px}
+.oddi-resume-status{min-width:70px;color:#348154}
+body.dark-mode .oddi-resume-export{border-color:#294332;background:#101b14;color:#dcefe1}
+body.dark-mode .oddi-resume-export button,body.dark-mode .oddi-resume-export select{border-color:#344439;background:#18221b;color:#e8f2eb}
+body.dark-mode .oddi-resume-status{color:#8dd7a5}
+@media(max-width:560px){.oddi-resume-export{justify-content:space-between;gap:7px;padding:9px}.oddi-resume-export>strong{width:100%}.oddi-resume-export label{flex:1 1 150px}.oddi-resume-export select{flex:1;min-width:90px}.oddi-resume-export button{padding:0 9px}}
 </style>
 
 </body>
