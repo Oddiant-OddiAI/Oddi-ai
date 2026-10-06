@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
-  Home, LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search,
+  Home, LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search, List,
   Settings, Sun, X, Pencil, Trash2, Menu, Monitor, Share2
 } from 'lucide-react';
 
@@ -47,6 +47,7 @@ const WIN = () => window as OddiWindow;
 const PENDING_GENERATION_KEY = 'oddi_pending_chat_generation_v1';
 const LAST_OPEN_CONVERSATION_KEY = 'oddi_last_open_conversation_v1';
 const FRESH_CHAT_MARKER = '__oddi_fresh_chat__';
+const MAX_PINNED_CHATS = 8;
 
 function getPendingConversationId() {
   try {
@@ -87,6 +88,15 @@ function grouped(items: Conversation[]) {
     map.get(key)!.push(c);
   });
   return order.filter(k => map.has(k)).map(label => ({ label, items: map.get(label)! }));
+}
+
+function duplicateTitleGroups(items: Conversation[]) {
+  const groups = new Map<string, Conversation[]>();
+  items.forEach(chat => {
+    const key = (chat.title || 'New Chat').trim().toLocaleLowerCase() || 'new chat';
+    groups.set(key, [...(groups.get(key) || []), chat]);
+  });
+  return [...groups.entries()].map(([key, chats]) => ({ key, chats }));
 }
 
 function refreshLegacySidebar() {
@@ -154,6 +164,10 @@ export default function Sidebar() {
   // must remain available after Memory is closed.
   const openBeforeMemoryRef = useRef<boolean | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [compactList, setCompactList] = useState(() => {
+    try { return localStorage.getItem('oddi_sidebar_compact_v1') === 'true'; } catch { return false; }
+  });
+  const [expandedDuplicateGroups, setExpandedDuplicateGroups] = useState<Set<string>>(() => new Set());
   const [query, setQuery] = useState('');
   const [items, setItems] = useState<Conversation[]>([]);
   const [active, setActive] = useState<string | number | null>(null);
@@ -164,6 +178,7 @@ export default function Sidebar() {
   const [bulkBusy, setBulkBusy] = useState(false);
   const [busyConversationIds, setBusyConversationIds] = useState<Set<string>>(() => new Set());
   const pendingActionsRef = useRef<Set<string>>(new Set());
+  const pinActionPendingRef = useRef(false);
   const bulkBusyRef = useRef(false);
   const pressTimerRef = useRef<number | null>(null);
   const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
@@ -506,7 +521,14 @@ export default function Sidebar() {
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const source = q ? items.filter(c => (c.title || '').toLowerCase().includes(q)) : items;
-    return grouped(source);
+    const activeChats = source.filter(c => !c.archived && !c.deleted && !c.pinned);
+    const repeated = duplicateTitleGroups(activeChats).filter(group => group.chats.length > 1);
+    const repeatedIds = new Set(repeated.flatMap(group => group.chats.map(c => String(c.id))));
+    const recent = grouped(activeChats.filter(c => !repeatedIds.has(String(c.id))));
+    const repeatedSection = repeated.length
+      ? [{ label: 'Repeated Chats', items: repeated.flatMap(group => group.chats) }]
+      : [];
+    return [...repeatedSection, ...recent];
   }, [items, query]);
 
   const pinnedItems = useMemo(() => {
@@ -515,6 +537,44 @@ export default function Sidebar() {
       .filter(c => !c.archived && !c.deleted && !!c.pinned && (!q || (c.title || '').toLowerCase().includes(q)))
       .sort((a,b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
   }, [items, query]);
+
+  const displayTitles = useMemo(() => {
+    const groups = new Map<string, Conversation[]>();
+    items.filter(c => !c.deleted).forEach(c => {
+      const key = (c.title || 'New Chat').trim().toLocaleLowerCase() || 'new chat';
+      groups.set(key, [...(groups.get(key) || []), c]);
+    });
+    const labels = new Map<string, string>();
+    groups.forEach(group => {
+      const ordered = [...group].sort((a, b) => {
+        const at = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const bt = Date.parse(b.updated_at || b.created_at || '') || 0;
+        return at - bt || String(a.id).localeCompare(String(b.id));
+      });
+      const sameTimeCounts = new Map<number, number>();
+      ordered.forEach((c, index) => {
+        const base = (c.title || 'New Chat').trim() || 'New Chat';
+        if (ordered.length < 2) { labels.set(String(c.id), base); return; }
+        const parsed = Date.parse(c.updated_at || c.created_at || '');
+        const time = Number.isFinite(parsed) ? parsed : 0;
+        const repeatedTimeIndex = sameTimeCounts.get(time) || 0;
+        sameTimeCounts.set(time, repeatedTimeIndex + 1);
+        const timeLabel = time
+          ? new Date(time).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+          : `chat ${index + 1}`;
+        labels.set(String(c.id), `${base} · ${timeLabel}${repeatedTimeIndex ? ` · ${repeatedTimeIndex + 1}` : ''}`);
+      });
+    });
+    return labels;
+  }, [items]);
+
+  function displayTitle(c: Conversation) {
+    return displayTitles.get(String(c.id)) || c.title || 'New Chat';
+  }
+
+  useEffect(() => {
+    try { localStorage.setItem('oddi_sidebar_compact_v1', String(compactList)); } catch {}
+  }, [compactList]);
 
   function newChat() {
     const startNewChat = WIN().newChat;
@@ -675,10 +735,18 @@ export default function Sidebar() {
   async function pin(c: Conversation) {
     setMenuId(null);
     const id = String(c.id);
-    if (pendingActionsRef.current.has(id)) return;
+    if (pinActionPendingRef.current || pendingActionsRef.current.has(id)) return;
+    pinActionPendingRef.current = true;
     pendingActionsRef.current.add(id);
     setConversationBusy(id, true);
     const previous = !!c.pinned;
+    if (!previous && items.filter(item => !item.archived && !item.deleted && item.pinned).length >= MAX_PINNED_CHATS) {
+      pendingActionsRef.current.delete(id);
+      pinActionPendingRef.current = false;
+      setConversationBusy(id, false);
+      WIN().showOddiToast?.(`You can pin up to ${MAX_PINNED_CHATS} chats. Unpin one to make room.`);
+      return;
+    }
     setItems(items => items.map(item => String(item.id) === id ? { ...item, pinned: !previous } : item));
     try {
       const saved = await updateMetadata(c, { pinned: !previous }, { deferRender: true });
@@ -689,7 +757,7 @@ export default function Sidebar() {
       console.error('Pin failed:', error);
       WIN().showOddiToast?.('Could not save the pin. Please try again.');
     }
-    finally { pendingActionsRef.current.delete(id); setConversationBusy(id, false); }
+    finally { pendingActionsRef.current.delete(id); pinActionPendingRef.current = false; setConversationBusy(id, false); }
   }
 
   async function archive(c: Conversation) {
@@ -896,10 +964,54 @@ export default function Sidebar() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  function renderChatRow(c: Conversation, isPinned = false) {
+    const id = String(c.id);
+    return <div key={`${isPinned ? 'pinned-' : ''}${id}`} data-conversation-id={id} className={`oddi-rs-chat ${isPinned ? 'pinned' : ''} ${active === c.id ? 'active' : ''} ${selectedIds.has(id) ? 'selected' : ''} ${selectedIds.size ? 'selecting' : ''} ${busyConversationIds.has(id) ? 'busy' : ''}`} onPointerDown={onChatPointerDown} onPointerMove={onChatPointerMove} onPointerUp={onChatPointerEnd} onPointerCancel={onChatPointerEnd} onContextMenu={e => e.preventDefault()} onClick={e => onChatClick(c, e)} role="button" aria-pressed={selectedIds.has(id)} tabIndex={0} onKeyDown={e => e.key === 'Enter' && (selectedIds.size ? toggleSelected(c) : select(c))}>
+      {isPinned && <span className="oddi-rs-select-check" aria-hidden="true">{selectedIds.has(id) ? '✓' : ''}</span>}
+      {generatingConversationId === id ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" /> : isPinned ? <Pin size={11} /> : <MessageSquare size={11} />}
+      <span className="oddi-rs-title-glass"><span>{displayTitle(c)}</span></span>
+      <div className="oddi-rs-actions">
+        <button onClick={e => { e.stopPropagation(); pin(c); }} title={isPinned ? 'Unpin chat' : 'Pin chat'} aria-label={isPinned ? 'Unpin chat' : 'Pin chat'}><Pin size={11} /></button>
+        <div className="oddi-rs-chat-menu">
+          <button onClick={e => { e.stopPropagation(); setMenuId(menuId === c.id ? null : c.id); }} title="More" aria-label="More"><MoreHorizontal size={13} /></button>
+          {menuId === c.id && <div className="oddi-rs-menu" onClick={e => e.stopPropagation()}>
+            <button onClick={() => rename(c)}><Pencil size={13} /><span>Rename</span></button>
+            <button onClick={() => archive(c)}><Archive size={13} /><span>{c.archived ? 'Unarchive' : 'Archive'}</span></button>
+            <button className="danger" onClick={() => moveToBin(c)}><Trash2 size={13} /><span>Delete</span></button>
+          </div>}
+        </div>
+      </div>
+    </div>;
+  }
+
+  function renderChatBucket(chats: Conversation[], scope: string, isPinned = false) {
+    return duplicateTitleGroups(chats).map(group => {
+      if (group.chats.length === 1) return renderChatRow(group.chats[0], isPinned);
+      const groupId = `${scope}:${group.key}`;
+      const expanded = expandedDuplicateGroups.has(groupId) || group.chats.some(chat => String(chat.id) === String(active));
+      const title = (group.chats[0].title || 'New Chat').trim() || 'New Chat';
+      return <section key={groupId} className={`oddi-rs-duplicate-cluster ${isPinned ? 'is-pinned' : ''} ${expanded ? 'is-expanded' : ''}`}>
+        <button type="button" className="oddi-rs-duplicate-toggle" aria-expanded={expanded} onClick={() => setExpandedDuplicateGroups(previous => {
+          const next = new Set(previous);
+          if (next.has(groupId)) next.delete(groupId); else next.add(groupId);
+          return next;
+        })}>
+          <span className="oddi-rs-duplicate-name" title={title}>{isPinned && <Pin size={11} />}{title}</span>
+          <span className="oddi-rs-duplicate-count">{group.chats.length}</span>
+          <ChevronRight size={13} className="oddi-rs-duplicate-chevron" />
+        </button>
+        {expanded && <div className="oddi-rs-duplicate-items">{group.chats.map(chat => renderChatRow(chat, isPinned))}</div>}
+      </section>;
+    });
+  }
+
   return <>
     <button className={`oddi-rs-backdrop ${open ? 'is-open' : 'is-closed'}`} aria-label="Close sidebar" onClick={() => setOpen(false)} />
 
-    <aside className={`oddi-rs-sidebar ${open ? 'open' : 'closed'} ${collapsed ? 'collapsed' : ''}`} aria-label="ODDI AI sidebar">
+    <aside
+      className={`oddi-rs-sidebar ${open ? 'open' : 'closed'} ${collapsed ? 'collapsed' : ''} ${compactList ? 'compact-list' : ''}`}
+      aria-label="ODDI AI sidebar"
+    >
       <header className="oddi-rs-header">
         <button className="oddi-rs-brand" onClick={() => collapsed && setCollapsed(false)} aria-label="ODDI AI">
           <img
@@ -914,6 +1026,14 @@ export default function Sidebar() {
           />
           {!collapsed && <span>ODDI AI</span>}
         </button>
+        {!collapsed && <button
+          className={`oddi-rs-density ${compactList ? 'is-active' : ''}`}
+          type="button"
+          onClick={() => setCompactList(value => !value)}
+          aria-pressed={compactList}
+          title={compactList ? 'Use comfortable chat spacing' : 'Use compact chat spacing'}
+          aria-label={compactList ? 'Use comfortable chat spacing' : 'Use compact chat spacing'}
+        ><List size={14} /></button>}
         <button className="oddi-rs-collapse" onClick={() => setCollapsed(v => !v)} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           {collapsed ? <ChevronRight size={15} /> : <ChevronLeft size={15} />}
         </button>
@@ -956,49 +1076,19 @@ export default function Sidebar() {
           </div>}
           {collapsed
               ? [...pinnedItems, ...visible.flatMap(g => g.items).filter(c => !c.pinned)].slice(0, 8).map(c =>
-              <button key={c.id} className={`oddi-rs-mini-chat ${active === c.id ? 'active' : ''}`} onClick={() => { setCollapsed(false); select(c); }} title={`${generatingConversationId === String(c.id) ? 'Generating response · ' : ''}${c.title || 'New Chat'}`}>
+              <button key={c.id} className={`oddi-rs-mini-chat ${active === c.id ? 'active' : ''}`} onClick={() => { setCollapsed(false); select(c); }} title={`${generatingConversationId === String(c.id) ? 'Generating response · ' : ''}${displayTitle(c)}`}>
                 {generatingConversationId === String(c.id) ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" /> : c.pinned ? <Pin size={13} /> : <MessageSquare size={13} />}
               </button>
             )
             : <>
-                {pinnedItems.length > 0 && <section className="oddi-rs-pinned-group" aria-label="Pinned chats">
-                  <div className="oddi-rs-label"><Pin size={11} /> <span>Pinned</span></div>
-                  {pinnedItems.map(c => <div key={`pinned-${c.id}`} data-conversation-id={String(c.id)} className={`oddi-rs-chat pinned ${active === c.id ? 'active' : ''} ${selectedIds.has(String(c.id)) ? 'selected' : ''} ${selectedIds.size ? 'selecting' : ''} ${busyConversationIds.has(String(c.id)) ? 'busy' : ''}`} onPointerDown={onChatPointerDown} onPointerMove={onChatPointerMove} onPointerUp={onChatPointerEnd} onPointerCancel={onChatPointerEnd} onContextMenu={e => e.preventDefault()} onClick={e => onChatClick(c, e)} role="button" aria-pressed={selectedIds.has(String(c.id))} tabIndex={0} onKeyDown={e => e.key === 'Enter' && (selectedIds.size ? toggleSelected(c) : select(c))}>
-                    <span className="oddi-rs-select-check" aria-hidden="true">{selectedIds.has(String(c.id)) ? '✓' : ''}</span>
-                    <Pin size={11} />
-                    <span className="oddi-rs-title-glass"><span>{c.title || 'New Chat'}</span></span>
-                    {generatingConversationId === String(c.id) && <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" />}
-                    <div className="oddi-rs-actions">
-                      <button onClick={e => { e.stopPropagation(); pin(c); }} title="Unpin chat" aria-label="Unpin chat"><Pin size={11} /></button>
-                      <div className="oddi-rs-chat-menu">
-                        <button onClick={e => { e.stopPropagation(); setMenuId(menuId === c.id ? null : c.id); }} title="More" aria-label="More"><MoreHorizontal size={13} /></button>
-                        {menuId === c.id && <div className="oddi-rs-menu" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => rename(c)}><Pencil size={13} /><span>Rename</span></button>
-                          <button onClick={() => archive(c)}><Archive size={13} /><span>Archive</span></button>
-                          <button className="danger" onClick={() => moveToBin(c)}><Trash2 size={13} /><span>Delete</span></button>
-                        </div>}
-                      </div>
-                    </div>
-                  </div>)}
+                {pinnedItems.length > 0 && <section className="oddi-rs-pinned-group" aria-label={`Pinned chats, ${pinnedItems.length} of ${MAX_PINNED_CHATS} allowed`}>
+                  <div className="oddi-rs-label"><Pin size={11} /> <span>Pinned</span><span className="oddi-rs-pinned-count" title={`${pinnedItems.length} pinned; limit ${MAX_PINNED_CHATS}`}>{pinnedItems.length}/{MAX_PINNED_CHATS}</span></div>
+                  {renderChatBucket(pinnedItems, 'pinned', true)}
                 </section>}
                 {visible.filter(g => g.items.some(c => !c.pinned)).map(g =>
                   <section className="oddi-rs-group" key={g.label}>
                     <div className="oddi-rs-label">{g.label}</div>
-                    {g.items.filter(c => !c.pinned).map(c => <div key={c.id} data-conversation-id={String(c.id)} className={`oddi-rs-chat ${active === c.id ? 'active' : ''} ${selectedIds.has(String(c.id)) ? 'selected' : ''} ${selectedIds.size ? 'selecting' : ''} ${busyConversationIds.has(String(c.id)) ? 'busy' : ''}`} onPointerDown={onChatPointerDown} onPointerMove={onChatPointerMove} onPointerUp={onChatPointerEnd} onPointerCancel={onChatPointerEnd} onContextMenu={e => e.preventDefault()} onClick={e => onChatClick(c, e)} role="button" aria-pressed={selectedIds.has(String(c.id))} tabIndex={0} onKeyDown={e => e.key === 'Enter' && (selectedIds.size ? toggleSelected(c) : select(c))}>
-                      {generatingConversationId === String(c.id) ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" /> : <MessageSquare size={11} />}
-                      <span className="oddi-rs-title-glass"><span>{c.title || 'New Chat'}</span></span>
-                      <div className="oddi-rs-actions">
-                        <button onClick={e => { e.stopPropagation(); pin(c); }} title="Pin chat" aria-label="Pin chat"><Pin size={11} /></button>
-                        <div className="oddi-rs-chat-menu">
-                          <button onClick={e => { e.stopPropagation(); setMenuId(menuId === c.id ? null : c.id); }} title="More" aria-label="More"><MoreHorizontal size={13} /></button>
-                          {menuId === c.id && <div className="oddi-rs-menu" onClick={e => e.stopPropagation()}>
-                            <button onClick={() => rename(c)}><Pencil size={13} /><span>Rename</span></button>
-                            <button onClick={() => archive(c)}><Archive size={13} /><span>{c.archived ? 'Unarchive' : 'Archive'}</span></button>
-                            <button className="danger" onClick={() => moveToBin(c)}><Trash2 size={13} /><span>Delete</span></button>
-                          </div>}
-                        </div>
-                      </div>
-                    </div>)}
+                    {renderChatBucket(g.items.filter(c => !c.pinned), g.label)}
                   </section>
                 )}
               </>
@@ -1018,10 +1108,10 @@ export default function Sidebar() {
           }}
         >
           {[
-            { label: 'Memory', icon: <Brain size={14} />, action: openMemory, badge: '24' },
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
             { label: 'Archive', icon: <Archive size={14} />, action: openArchive },
             { label: 'Settings', icon: <Settings size={14} />, action: openSettings },
+            { label: 'Memory', icon: <Brain size={14} />, action: openMemory, badge: '24' },
           ].map(item => (
             <button
               key={item.label}
@@ -1072,6 +1162,15 @@ export default function Sidebar() {
       </footer>
     </aside>
 
+    {isPhone && !open && splashReady && <nav className="oddi-mobile-tabbar" aria-label="Quick navigation">
+      <button type="button" onClick={goHome} aria-label="Home" title="Home"><Home size={18} /><span>Home</span></button>
+      <button type="button" onClick={newChat} aria-label="New chat" title="New chat"><Plus size={19} /><span>New</span></button>
+      <button type="button" onClick={() => { setCollapsed(false); setOpen(true); }} aria-label="Chats" title="Chats"><MessageSquare size={17} /><span>Chats</span></button>
+      <button type="button" onClick={openMemory} aria-label="Memory" title="Memory"><Brain size={17} /><span>Memory</span></button>
+      <button type="button" onClick={openLibrary} aria-label="Library" title="Library"><FolderOpen size={17} /><span>Library</span></button>
+      <button type="button" onClick={openSettings} aria-label="Settings" title="Settings"><Settings size={17} /><span>Settings</span></button>
+    </nav>}
+
     {archiveModalOpen && (
       <div
         role="presentation"
@@ -1097,7 +1196,7 @@ export default function Sidebar() {
             ) : items.filter(c => c.archived && !c.deleted).map(c => (
               <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 10px', borderRadius: 9, marginBottom: 4 }}>
                 <Archive size={14} style={{ flexShrink: 0, opacity: .65 }} />
-                <button type="button" onClick={() => { setArchiveModalOpen(false); select(c); }} title={c.title || 'New Chat'} style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title || 'New Chat'}</button>
+                <button type="button" onClick={() => { setArchiveModalOpen(false); select(c); }} title={displayTitle(c)} style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTitle(c)}</button>
                 <button type="button" onClick={async () => { try { await updateMetadata(c, { archived: false }); await load(); refreshLegacySidebar(); } catch (error) { console.error('Restore archive failed:', error); } }} style={{ border: theme === 'dark' ? '1px solid #333' : '1px solid #ddd', borderRadius: 7, padding: '6px 9px', background: theme === 'dark' ? '#191919' : '#f7f7f7', color: 'inherit', cursor: 'pointer', font: 'inherit', fontSize: 11, whiteSpace: 'nowrap' }}>Restore</button>
               </div>
             ))}

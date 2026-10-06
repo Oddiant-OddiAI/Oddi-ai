@@ -436,7 +436,7 @@ def update_conversation_message(conversation_id, user_id, message_id, patch):
             if str(message.get("id")) != str(message_id):
                 continue
             for key, value in (patch or {}).items():
-                if key in {"text", "content", "pinned", "feedback", "stopped"}:
+                if key in {"text", "content", "pinned", "feedback", "stopped", "resume_draft"}:
                     message[key] = value
             found = True
             break

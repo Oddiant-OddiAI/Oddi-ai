@@ -643,12 +643,14 @@ def _create_files_tables():
                     storage_key TEXT,
                     external_file_id TEXT,
                     file_data BYTEA,
+                    content_hash TEXT,
                     status TEXT NOT NULL DEFAULT 'received',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
             conn.execute("ALTER TABLE files ADD COLUMN IF NOT EXISTS file_data BYTEA")
+            conn.execute("ALTER TABLE files ADD COLUMN IF NOT EXISTS content_hash TEXT")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_files_user_created ON files(user_id, created_at DESC)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_files_user_conversation ON files(user_id, conversation_id)")
         else:
@@ -664,6 +666,7 @@ def _create_files_tables():
                     storage_backend TEXT NOT NULL DEFAULT 'metadata-only',
                     storage_key TEXT,
                     external_file_id TEXT,
+                    content_hash TEXT,
                     status TEXT NOT NULL DEFAULT 'received',
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -672,6 +675,8 @@ def _create_files_tables():
             columns = {row[1] for row in conn.execute("PRAGMA table_info(files)").fetchall()}
             if "file_data" not in columns:
                 conn.execute("ALTER TABLE files ADD COLUMN file_data BLOB")
+            if "content_hash" not in columns:
+                conn.execute("ALTER TABLE files ADD COLUMN content_hash TEXT")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_files_user_created ON files(user_id, created_at DESC)")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_files_user_conversation ON files(user_id, conversation_id)")
         conn.commit()
@@ -1559,7 +1564,7 @@ def update_conversation_message(conversation_id, user_id, message_id, patch):
     for message in messages:
         if str(message.get("id")) == str(message_id):
             for key, value in (patch or {}).items():
-                if key in {"text", "content", "pinned", "feedback", "stopped"}:
+                if key in {"text", "content", "pinned", "feedback", "stopped", "resume_draft"}:
                     message[key] = value
             found = True
             break
@@ -2122,6 +2127,7 @@ def register_file(
     external_file_id=None,
     file_data=None,
     status="received",
+    content_hash=None,
 ):
     extension = os.path.splitext(filename or "")[1].lower().lstrip(".") or None
 
@@ -2156,14 +2162,14 @@ def register_file(
                 """
                 INSERT INTO files
                 (user_id, conversation_id, filename, mime_type, extension, size_bytes,
-                 storage_backend, storage_key, external_file_id, file_data, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 storage_backend, storage_key, external_file_id, file_data, status, content_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 RETURNING id
                 """,
                 (
                     user_id, conversation_id, filename or "", mime_type, extension,
                     int(size_bytes or 0), storage_backend, storage_key,
-                    external_file_id, file_data, status,
+                    external_file_id, file_data, status, content_hash,
                 ),
             )
             file_id = row["id"]
@@ -2172,18 +2178,117 @@ def register_file(
                 """
                 INSERT INTO files
                 (user_id, conversation_id, filename, mime_type, extension, size_bytes,
-                 storage_backend, storage_key, external_file_id, file_data, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 storage_backend, storage_key, external_file_id, file_data, status, content_hash)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     user_id, conversation_id, filename or "", mime_type, extension,
                     int(size_bytes or 0), storage_backend, storage_key,
-                    external_file_id, file_data, status,
+                    external_file_id, file_data, status, content_hash,
                 ),
             )
             file_id = cursor.lastrowid
         conn.commit()
         return file_id
+    finally:
+        conn.close()
+
+
+def register_files(user_id, file_records, replace_file_ids=None):
+    """Atomically replace selected Library records and register a file batch."""
+    records = list(file_records or [])
+    replace_ids = []
+    seen_ids = set()
+    for value in replace_file_ids or []:
+        try:
+            file_id = int(value)
+        except (TypeError, ValueError):
+            continue
+        if file_id > 0 and file_id not in seen_ids:
+            seen_ids.add(file_id)
+            replace_ids.append(file_id)
+
+    if not records:
+        return []
+
+    conn = get_db("files")
+    try:
+        if _use_postgres("files"):
+            conn.execute("SELECT pg_advisory_xact_lock(?)", (int(user_id),))
+        else:
+            _begin_write(conn, "files")
+
+        existing_count_row = _fetchone(
+            conn,
+            "SELECT COUNT(*) AS file_count FROM files WHERE user_id = ?",
+            (user_id,),
+        )
+        existing_count = int(_row_value(existing_count_row, "file_count", 0) or 0)
+
+        removed_count = 0
+        for file_id in replace_ids:
+            cursor = conn.execute(
+                "DELETE FROM files WHERE id = ? AND user_id = ?",
+                (file_id, user_id),
+            )
+            removed_count += int(getattr(cursor, "rowcount", 0) or 0)
+
+        if existing_count - removed_count + len(records) > USER_FILE_LIMIT:
+            conn.rollback()
+            raise FileLimitExceeded(
+                "Your Library is full (30 files). Delete an older file from Library before uploading more."
+            )
+
+        file_ids = []
+        for record in records:
+            filename = record.get("filename") or ""
+            extension = os.path.splitext(filename)[1].lower().lstrip(".") or None
+            storage_backend = record.get("storage_backend", "filesystem")
+            file_data = None if storage_backend == "filesystem" else record.get("file_data")
+            values = (
+                user_id,
+                record.get("conversation_id"),
+                filename,
+                record.get("mime_type"),
+                extension,
+                int(record.get("size_bytes", 0) or 0),
+                storage_backend,
+                record.get("storage_key"),
+                record.get("external_file_id"),
+                file_data,
+                record.get("status", "received"),
+                record.get("content_hash"),
+            )
+            if _use_postgres("files"):
+                row = _fetchone(
+                    conn,
+                    """
+                    INSERT INTO files
+                    (user_id, conversation_id, filename, mime_type, extension, size_bytes,
+                     storage_backend, storage_key, external_file_id, file_data, status, content_hash)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    RETURNING id
+                    """,
+                    values,
+                )
+                file_ids.append(row["id"])
+            else:
+                cursor = conn.execute(
+                    """
+                    INSERT INTO files
+                    (user_id, conversation_id, filename, mime_type, extension, size_bytes,
+                     storage_backend, storage_key, external_file_id, file_data, status, content_hash)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    values,
+                )
+                file_ids.append(cursor.lastrowid)
+
+        conn.commit()
+        return file_ids
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
@@ -2205,7 +2310,8 @@ def count_files(user_id):
 def update_file_record(file_id, user_id, **patch):
     allowed = {
         "storage_backend", "storage_key", "external_file_id", "status",
-        "conversation_id", "size_bytes", "filename", "mime_type", "file_data"
+        "conversation_id", "size_bytes", "filename", "mime_type", "file_data",
+        "content_hash",
     }
     patch = {k: v for k, v in patch.items() if k in allowed}
     if not patch:
@@ -2225,13 +2331,15 @@ def update_file_record(file_id, user_id, **patch):
         conn.close()
 
 
-def get_files(user_id, conversation_id=None):
+def get_files(user_id, conversation_id=None, include_content_hash=False):
     """Return file metadata only; never serialize binary file_data in Library responses."""
     columns = (
         "id, user_id, conversation_id, filename, mime_type, extension, "
         "size_bytes, storage_backend, storage_key, external_file_id, status, "
         "created_at, updated_at"
     )
+    if include_content_hash:
+        columns = columns.replace("status, ", "status, content_hash, ")
     conn = get_db("files")
     try:
         if conversation_id is None:

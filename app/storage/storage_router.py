@@ -40,11 +40,13 @@ class StorageRouter:
         user_id,
         data,
         original_filename=None,
+        quota_credit_bytes=0,
     ):
         return self.files.save_bytes(
             user_id=user_id,
             data=data,
             original_filename=original_filename,
+            quota_credit_bytes=quota_credit_bytes,
         )
 
     def get_file_path(

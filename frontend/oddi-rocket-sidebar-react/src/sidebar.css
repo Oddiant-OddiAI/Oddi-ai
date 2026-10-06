@@ -355,6 +355,9 @@ body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
 
 .oddi-rs-actions { display: flex; opacity: 0; pointer-events: none; }
 .oddi-rs-chat:hover .oddi-rs-actions { opacity: 1; pointer-events: auto; }
+.oddi-rs-actions { transform: translateX(4px); transition: opacity .14s ease, transform .14s ease; }
+.oddi-rs-chat:hover .oddi-rs-actions,
+.oddi-rs-chat:focus-within .oddi-rs-actions { transform: translateX(0); }
 
 .oddi-rs-actions button {
   width: 22px;
@@ -370,6 +373,45 @@ body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
 }
 
 .oddi-rs-actions button:hover { background: var(--rs-hover); color: var(--rs-text); }
+
+.oddi-rs-density {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--rs-muted);
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.oddi-rs-density:hover,
+.oddi-rs-density.is-active { background: var(--rs-hover); color: var(--rs-text); border-color: var(--rs-border); }
+.oddi-rs-sidebar.collapsed .oddi-rs-density { display: none; }
+
+.oddi-rs-sidebar.compact-list .oddi-rs-chat { min-height: 27px; gap: 5px; margin-block: 0; padding-inline: 6px; }
+.oddi-rs-sidebar.compact-list .oddi-rs-group { margin-bottom: 5px; }
+.oddi-rs-sidebar.compact-list .oddi-rs-label { padding-top: 3px; padding-bottom: 2px; }
+.oddi-rs-sidebar.compact-list .oddi-rs-pinned-group { padding-bottom: 5px; margin-bottom: 2px; }
+
+.oddi-rs-sidebar .oddi-rs-brand,
+.oddi-rs-sidebar .oddi-rs-new,
+.oddi-rs-sidebar .oddi-rs-home,
+.oddi-rs-sidebar .oddi-rs-nav button,
+.oddi-rs-sidebar .oddi-rs-theme,
+.oddi-rs-sidebar .oddi-rs-install,
+.oddi-rs-sidebar .oddi-rs-mini-chat {
+  transition: width .2s ease, min-height .18s ease, transform .18s ease, opacity .15s ease,
+    background .15s ease, color .15s ease;
+}
+.oddi-rs-sidebar.collapsed .oddi-rs-mini-chat { animation: oddiSidebarIconSettle .18s ease both; }
+@keyframes oddiSidebarIconSettle {
+  from { opacity: .55; transform: scale(.82) translateY(-2px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
 
 /* Sidebar chat action menu: keep the three-dot menu attached to its chat row. */
 .oddi-rs-chat-menu {
@@ -444,6 +486,59 @@ body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
   .oddi-rs-menu {
     width: 124px;
   }
+}
+
+.oddi-mobile-tabbar { display: none; }
+@media (max-width: 768px) and (pointer: coarse) {
+  .oddi-mobile-tabbar {
+    position: fixed;
+    z-index: 2147483000;
+    left: 8px;
+    right: 8px;
+    bottom: max(5px, env(safe-area-inset-bottom));
+    min-height: 55px;
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    align-items: center;
+    gap: 2px;
+    padding: 4px 5px;
+    border: 1px solid var(--rs-border);
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--rs-bg) 91%, transparent);
+    color: var(--rs-text);
+    box-shadow: 0 8px 26px rgba(0,0,0,.22);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .oddi-mobile-tabbar button {
+    min-width: 0;
+    min-height: 46px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 2px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--rs-muted);
+    font: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .oddi-mobile-tabbar button:active { background: var(--rs-hover); color: var(--rs-text); transform: scale(.96); }
+  .oddi-mobile-tabbar button span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 8px; line-height: 1.1; }
+  body.oddi-memory-workspace-open .oddi-mobile-tabbar,
+  body.oddi-settings-workspace-open .oddi-mobile-tabbar,
+  body:has(#oddiLibraryModal.show) .oddi-mobile-tabbar { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oddi-rs-actions, .oddi-rs-sidebar .oddi-rs-brand, .oddi-rs-sidebar .oddi-rs-new,
+  .oddi-rs-sidebar .oddi-rs-home, .oddi-rs-sidebar .oddi-rs-nav button,
+  .oddi-rs-sidebar .oddi-rs-theme, .oddi-rs-sidebar .oddi-rs-install,
+  .oddi-rs-sidebar .oddi-rs-mini-chat { transition: none !important; animation: none !important; }
 }
 
 
@@ -861,12 +956,40 @@ body.dark-mode .oddi-rs-upload-item{background:rgba(255,255,255,.035);}
 .oddi-rs-sidebar:not(.open) .oddi-rs-upload-strip{display:none;}
 
 
-/* Separate pinned chat section. */
-.oddi-rs-pinned-group{padding:4px 8px 8px;margin-bottom:4px;border-bottom:1px solid rgba(127,127,127,.18);}
-.oddi-rs-pinned-group .oddi-rs-label{display:flex;align-items:center;gap:5px;}
-.oddi-rs-chat.pinned{background:rgba(127,127,127,.09);}
-body.dark-mode .oddi-rs-pinned-group{border-bottom-color:rgba(255,255,255,.12);}
-body.dark-mode .oddi-rs-chat.pinned{background:rgba(255,255,255,.06);}
+/* Pinned chats get a compact glass panel with an unmistakable section edge. */
+.oddi-rs-pinned-group{position:relative;padding:7px 7px 8px;margin:4px 8px 9px;border:1px solid rgba(38,128,78,.2);border-radius:12px;background:linear-gradient(145deg,rgba(38,128,78,.075),rgba(127,127,127,.025) 58%);box-shadow:inset 0 1px 0 rgba(255,255,255,.025);}
+.oddi-rs-pinned-group::after{content:'';position:absolute;left:10px;right:10px;bottom:-6px;height:1px;background:linear-gradient(90deg,transparent,rgba(127,127,127,.28),transparent);}
+.oddi-rs-pinned-group .oddi-rs-label{display:flex;align-items:center;gap:6px;padding:0 3px 6px;color:var(--rs-dim);font-size:9px;letter-spacing:.12em;}
+.oddi-rs-pinned-group .oddi-rs-label>svg{color:#26804e;filter:drop-shadow(0 1px 3px rgba(38,128,78,.22));}
+.oddi-rs-pinned-count{margin-left:auto;padding:2px 6px;border:1px solid rgba(38,128,78,.24);border-radius:999px;background:rgba(38,128,78,.08);color:#247145;font-size:8px;font-weight:750;letter-spacing:.01em;line-height:1.35;}
+.oddi-rs-chat.pinned{min-height:34px;margin:2px 0;padding-inline:7px;border:1px solid transparent;border-radius:9px;background:rgba(127,127,127,.065);transition:background .15s ease,border-color .15s ease,transform .15s ease,box-shadow .15s ease;}
+.oddi-rs-chat.pinned>svg{color:#38845a;}
+.oddi-rs-chat.pinned:hover{transform:translateY(-1px);border-color:rgba(38,128,78,.2);background:rgba(38,128,78,.095);box-shadow:0 4px 12px rgba(15,70,39,.07);}
+.oddi-rs-chat.pinned.active{border-color:rgba(38,128,78,.3);background:rgba(38,128,78,.12);box-shadow:inset 2px 0 #26804e,0 3px 10px rgba(15,70,39,.055);}
+body.dark-mode .oddi-rs-pinned-group{border-color:rgba(75,190,119,.18);background:linear-gradient(145deg,rgba(42,120,72,.13),rgba(255,255,255,.018) 62%);box-shadow:inset 0 1px 0 rgba(255,255,255,.035);}
+body.dark-mode .oddi-rs-pinned-group::after{background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);}
+body.dark-mode .oddi-rs-pinned-group .oddi-rs-label>svg{color:#76d396;}
+body.dark-mode .oddi-rs-pinned-count{border-color:rgba(105,210,143,.22);background:rgba(55,150,88,.13);color:#9ce4b3;}
+body.dark-mode .oddi-rs-chat.pinned{background:rgba(255,255,255,.045);}
+body.dark-mode .oddi-rs-chat.pinned>svg{color:#85d6a0;}
+body.dark-mode .oddi-rs-chat.pinned:hover{border-color:rgba(105,210,143,.22);background:rgba(55,150,88,.15);box-shadow:0 5px 14px rgba(0,0,0,.22);}
+body.dark-mode .oddi-rs-chat.pinned.active{border-color:rgba(105,210,143,.3);background:rgba(55,150,88,.2);box-shadow:inset 2px 0 #63c985,0 4px 12px rgba(0,0,0,.18);}
+@media(prefers-reduced-motion:reduce){.oddi-rs-chat.pinned{transition:none;}}
+
+/* Duplicate titles collapse into a named group; individual timestamps remain visible inside. */
+.oddi-rs-duplicate-cluster{min-width:0;margin:2px 0;border:1px solid rgba(127,127,127,.14);border-radius:9px;background:rgba(127,127,127,.035);overflow:visible;}
+.oddi-rs-duplicate-toggle{width:100%;min-height:33px;display:flex;align-items:center;gap:7px;padding:4px 8px;border:0;border-radius:8px;background:transparent;color:var(--rs-text);text-align:left;font:inherit;cursor:pointer;}
+.oddi-rs-duplicate-toggle:hover,.oddi-rs-duplicate-toggle:focus-visible{background:var(--rs-hover);outline:none;}
+.oddi-rs-duplicate-name{display:flex;align-items:center;gap:6px;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10.5px;font-weight:650;}
+.oddi-rs-duplicate-count{flex:none;padding:1px 6px;border:1px solid var(--rs-border);border-radius:999px;color:var(--rs-dim);font-size:9px;line-height:1.4;}
+.oddi-rs-duplicate-chevron{flex:none;transition:transform .16s ease;}
+.oddi-rs-duplicate-cluster.is-expanded .oddi-rs-duplicate-chevron{transform:rotate(90deg);}
+.oddi-rs-duplicate-items{padding:2px 4px 4px 8px;border-top:1px solid rgba(127,127,127,.12);}
+.oddi-rs-duplicate-items .oddi-rs-chat{min-height:31px;}
+.oddi-rs-pinned-group>.oddi-rs-duplicate-cluster{background:rgba(127,127,127,.055);}
+body.dark-mode .oddi-rs-duplicate-cluster{border-color:rgba(255,255,255,.1);background:rgba(255,255,255,.025);}
+body.dark-mode .oddi-rs-duplicate-items{border-top-color:rgba(255,255,255,.1);}
+@media(prefers-reduced-motion:reduce){.oddi-rs-duplicate-chevron{transition:none;}}
 
 /* ODDI sidebar hardening: keep the React mount alive and visible after legacy
    Memory/workspace transitions. The actual sidebar/rail still own visibility. */

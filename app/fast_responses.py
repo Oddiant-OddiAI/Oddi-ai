@@ -1,5 +1,6 @@
 import string
 import re
+from app.platform_knowledge import is_platform_help_question
 from app.job_fast_responses import (
     JOB_FAST_RESPONSES,
     match_job_interview_request,
@@ -459,6 +460,12 @@ def fast_response(message, history=None):
 # 1. NORMALIZE USER MESSAGE
 
     text = normalize_text(message)
+
+    # In-app capability and navigation questions need the grounded platform
+    # reference in the provider prompt; do not answer them with a stale,
+    # generic fast-response string.
+    if is_platform_help_question(message):
+        return None
 
     global LAST_JOB_CONTEXT
     history_context = get_job_context_from_history(history)

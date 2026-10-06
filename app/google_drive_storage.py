@@ -1132,7 +1132,7 @@ def update_conversation_message(conversation_id, user_id, message_id, patch):
     for message in conversation["messages"]:
         if str(message.get("id")) == str(message_id):
             for key, value in (patch or {}).items():
-                if key in {"text", "content", "pinned", "feedback", "stopped"}:
+                if key in {"text", "content", "pinned", "feedback", "stopped", "resume_draft"}:
                     message[key] = value
             return update_conversation(
                 conversation_id, user_id, conversation["title"], conversation["messages"],

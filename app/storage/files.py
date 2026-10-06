@@ -86,15 +86,17 @@ class FileStorage:
             else 0,
         }
 
-    def check_quota(self, user_id, additional_bytes):
+    def check_quota(self, user_id, additional_bytes, quota_credit_bytes=0):
         additional_bytes = int(additional_bytes)
+        quota_credit_bytes = max(0, int(quota_credit_bytes or 0))
         if additional_bytes < 0:
             raise ValueError("additional_bytes cannot be negative.")
         used = self.get_usage(user_id)
-        return used + additional_bytes <= self.quota_bytes
+        credited_usage = max(0, used - quota_credit_bytes)
+        return credited_usage + additional_bytes <= self.quota_bytes
 
-    def ensure_quota(self, user_id, additional_bytes):
-        if not self.check_quota(user_id, additional_bytes):
+    def ensure_quota(self, user_id, additional_bytes, quota_credit_bytes=0):
+        if not self.check_quota(user_id, additional_bytes, quota_credit_bytes):
             info = self.get_quota(user_id)
             raise StorageQuotaExceeded(
                 f"File storage quota exceeded. "
@@ -107,12 +109,13 @@ class FileStorage:
         user_id,
         data,
         original_filename=None,
+        quota_credit_bytes=0,
     ):
         if not isinstance(data, bytes):
             raise TypeError("data must be bytes.")
 
         size_bytes = len(data)
-        self.ensure_quota(user_id, size_bytes)
+        self.ensure_quota(user_id, size_bytes, quota_credit_bytes)
         user_dir = self.user_directory(user_id)
 
         extension = ""

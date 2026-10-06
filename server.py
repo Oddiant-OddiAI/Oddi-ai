@@ -66,7 +66,7 @@ from app.database import (
     get_memory,
     save_memory,
     delete_memory,
-    register_file,
+    register_files,
     count_files,
     FileLimitExceeded,
     USER_FILE_LIMIT,
@@ -156,6 +156,208 @@ def _remember_chat_upload_retry_fingerprint(user_id, generation_id, fingerprint)
         _chat_upload_retry_cache.move_to_end(key)
         while len(_chat_upload_retry_cache) > _CHAT_UPLOAD_RETRY_CACHE_LIMIT:
             _chat_upload_retry_cache.popitem(last=False)
+
+
+def _library_filename_key(filename):
+    value = str(filename or "unnamed-file").replace("\\", "/").rsplit("/", 1)[-1]
+    return value.strip().casefold() or "unnamed-file"
+
+
+def _read_library_file_bytes(user_id, record):
+    storage_key = record.get("storage_key")
+    if storage_key:
+        try:
+            return storage_router.read_file(user_id, storage_key)
+        except Exception:
+            pass
+
+    try:
+        full_record = get_file(record.get("id"), user_id)
+    except Exception:
+        return None
+    if not full_record:
+        return None
+    data = full_record.get("file_data")
+    if isinstance(data, memoryview):
+        data = data.tobytes()
+    return data if isinstance(data, bytes) else None
+
+
+def _library_record_content_details(user_id, record):
+    cached_hash = str(record.get("content_hash") or "").strip().lower()
+    if len(cached_hash) == 64:
+        try:
+            int(cached_hash, 16)
+        except ValueError:
+            cached_hash = ""
+
+    storage_key = record.get("storage_key")
+    if storage_key:
+        try:
+            path = storage_router.get_file_path(user_id, storage_key)
+            physical_size = int(path.stat().st_size)
+            if cached_hash:
+                return cached_hash, physical_size
+
+            digest = hashlib.sha256()
+            with open(path, "rb") as stored_file:
+                for chunk in iter(lambda: stored_file.read(1024 * 1024), b""):
+                    digest.update(chunk)
+            return digest.hexdigest(), physical_size
+        except Exception:
+            # A hash is only meaningful while its backing blob still exists.
+            cached_hash = ""
+
+    if cached_hash:
+        return cached_hash, 0
+    data = _read_library_file_bytes(user_id, record)
+    if data is None:
+        return None, 0
+    return hashlib.sha256(data).hexdigest(), 0
+
+
+def _plan_chat_library_uploads(user_id, file_payloads):
+    """Plan content deduplication and same-name replacement without writing."""
+    library_records = get_files(user_id, include_content_hash=True)
+    library_hashes = set()
+    library_assets = []
+
+    for record in library_records:
+        digest, physical_size = _library_record_content_details(user_id, record)
+        if digest:
+            library_hashes.add(digest)
+            if str(record.get("content_hash") or "").lower() != digest:
+                try:
+                    update_file_record(record.get("id"), user_id, content_hash=digest)
+                except Exception:
+                    logger.debug("Could not cache content hash for Library file %s", record.get("id"))
+        library_assets.append({
+            "record": record,
+            "filename_key": _library_filename_key(record.get("filename")),
+            "digest": digest,
+            "stored_size": physical_size,
+        })
+
+    # If a single send contains several files with the same name, keep only
+    # the last selected version for the Library. The engine still gets every
+    # uploaded stream exactly as sent.
+    latest_by_name = {}
+    for uploaded_file, file_bytes in file_payloads:
+        filename = uploaded_file.filename or "unnamed-file"
+        latest_by_name[_library_filename_key(filename)] = {
+            "uploaded_file": uploaded_file,
+            "file_bytes": file_bytes,
+            "filename": filename,
+            "filename_key": _library_filename_key(filename),
+            "digest": hashlib.sha256(file_bytes).hexdigest(),
+        }
+
+    planned_uploads = []
+    already_exists_count = 0
+    seen_hashes = set(library_hashes)
+    for entry in latest_by_name.values():
+        if entry["digest"] in seen_hashes:
+            if entry["digest"] in library_hashes:
+                already_exists_count += 1
+            continue
+        seen_hashes.add(entry["digest"])
+        planned_uploads.append(entry)
+
+    replacement_names = {entry["filename_key"] for entry in planned_uploads}
+    replaced_assets = [
+        asset for asset in library_assets
+        if asset["filename_key"] in replacement_names
+    ]
+    replace_file_ids = [asset["record"].get("id") for asset in replaced_assets]
+    replace_ids_set = {str(file_id) for file_id in replace_file_ids if file_id is not None}
+
+    # Credit the old physical bytes against the quota while writing the new
+    # version. Old files remain untouched until the new metadata transaction
+    # succeeds, so a failed AI or storage request cannot destroy the old copy.
+    replace_keys = []
+    quota_credit_bytes = 0
+    seen_storage_keys = set()
+    for asset in replaced_assets:
+        record = asset["record"]
+        storage_key = record.get("storage_key")
+        if not storage_key or storage_key in seen_storage_keys:
+            continue
+        seen_storage_keys.add(storage_key)
+        is_shared = any(
+            str(other["record"].get("id")) not in replace_ids_set
+            and other["record"].get("storage_key") == storage_key
+            for other in library_assets
+        )
+        if is_shared:
+            continue
+        replace_keys.append(storage_key)
+        quota_credit_bytes += int(asset["stored_size"] or 0)
+
+    return {
+        "uploads": planned_uploads,
+        "replace_file_ids": replace_file_ids,
+        "replace_storage_keys": replace_keys,
+        "quota_credit_bytes": quota_credit_bytes,
+        "already_exists_count": already_exists_count,
+    }
+
+
+def _persist_chat_library_uploads(user_id, conversation_id, plan):
+    uploads = plan.get("uploads") or []
+    if not uploads:
+        return []
+
+    stored_keys = []
+    records = []
+    try:
+        for entry in uploads:
+            uploaded_file = entry["uploaded_file"]
+            file_bytes = entry["file_bytes"]
+            stored = storage_router.save_file(
+                user_id=user_id,
+                data=file_bytes,
+                original_filename=entry["filename"],
+                quota_credit_bytes=plan.get("quota_credit_bytes", 0),
+            )
+            storage_key = stored["storage_key"]
+            stored_keys.append(storage_key)
+            records.append({
+                "filename": entry["filename"],
+                "mime_type": uploaded_file.mimetype,
+                "size_bytes": len(file_bytes),
+                "conversation_id": conversation_id,
+                "storage_backend": "filesystem",
+                "storage_key": storage_key,
+                "external_file_id": None,
+                "file_data": None,
+                "content_hash": entry["digest"],
+                "status": "processed",
+            })
+
+        new_record_ids = register_files(
+            user_id,
+            records,
+            replace_file_ids=plan.get("replace_file_ids"),
+        )
+    except Exception:
+        rollback_stored_files(user_id, stored_keys)
+        raise
+
+    # The database now points only at the new version. Remove replaced blobs
+    # after commit; cleanup failure must not roll back the valid new record.
+    for storage_key in plan.get("replace_storage_keys", []):
+        try:
+            storage_router.delete_file(user_id, storage_key)
+        except StorageFileNotFound:
+            pass
+        except Exception as error:
+            logger.exception(
+                "Could not remove replaced Library file %s for user %s: %s",
+                storage_key,
+                user_id,
+                error,
+            )
+    return new_record_ids
 
 _chat_generation_lock = threading.Lock()
 _active_chat_generations = {}
@@ -2085,6 +2287,12 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     # Convert FastAPI UploadFile objects into a Flask-FileStorage-compatible
     # object before passing them to the existing ODDI engine.
     engine_files = adapt_uploaded_files(uploaded_files)
+    library_source_indexes = set()
+    for raw_index in form.getlist("library_source_indexes"):
+        try:
+            library_source_indexes.add(int(raw_index))
+        except (TypeError, ValueError):
+            continue
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = await require_user_id_async(request)
@@ -2169,24 +2377,33 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             response.headers["X-Oddi-Token-Estimate"] = str(response_meta.get("token_estimate") or 0)
             return response
 
-    # Store the actual uploaded bytes through the Storage Router.
-    # PostgreSQL keeps metadata/references only for new uploads.
+    # Plan Library persistence before generation, but commit only after the
+    # AI successfully processes the uploads. This keeps replacements reversible.
     file_record_ids = []
-    stored_file_keys = []
+    upload_fingerprint = None
+    is_upload_retry = False
+    upload_library_plan = {
+        "uploads": [],
+        "replace_file_ids": [],
+        "replace_storage_keys": [],
+        "quota_credit_bytes": 0,
+        "already_exists_count": 0,
+    }
 
     if engine_files and not ODDI_BROWSER_LOCAL_CHATS:
         file_payloads = []
 
         try:
-            total_upload_bytes = 0
-
-            for uploaded_file in engine_files:
+            library_upload_payloads = []
+            for upload_index, uploaded_file in enumerate(engine_files):
                 uploaded_file.stream.seek(0)
                 file_bytes = uploaded_file.stream.read()
                 uploaded_file.stream.seek(0)
 
-                file_payloads.append((uploaded_file, file_bytes))
-                total_upload_bytes += len(file_bytes)
+                payload = (uploaded_file, file_bytes)
+                file_payloads.append(payload)
+                if upload_index not in library_source_indexes:
+                    library_upload_payloads.append(payload)
 
             upload_fingerprint = _uploaded_batch_fingerprint(file_payloads)
             previous_fingerprint = _get_chat_upload_retry_fingerprint(
@@ -2201,8 +2418,12 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 )
 
             if not is_upload_retry:
+                upload_library_plan = _plan_chat_library_uploads(user_id, library_upload_payloads)
                 current_file_count = count_files(user_id)
-                if current_file_count + len(engine_files) > USER_FILE_LIMIT:
+                replacement_count = len(upload_library_plan["replace_file_ids"])
+                planned_count = len(upload_library_plan["uploads"])
+                projected_count = current_file_count - replacement_count + planned_count
+                if projected_count > USER_FILE_LIMIT:
                     return JSONResponse(
                         {
                             "error": "Your Library is full (30 files). Delete an older file from Library before uploading more.",
@@ -2212,13 +2433,23 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                         status_code=413,
                     )
 
-            # Check the complete batch before writing anything so a request
-            # cannot partially consume the user's quota.
-            if not is_upload_retry:
-                quota = storage_router.get_file_quota(user_id)
-                remaining_bytes = int(quota.get("remaining_bytes", 0) or 0)
+                # Validate the projected size with credit for replaced objects.
+                # Exact duplicates contribute zero bytes and do not consume a
+                # Library slot.
+                planned_bytes = sum(
+                    len(entry["file_bytes"])
+                    for entry in upload_library_plan["uploads"]
+                )
+                if planned_bytes:
+                    quota = storage_router.get_file_quota(user_id)
+                    remaining_bytes = int(quota.get("remaining_bytes", 0) or 0)
+                    quota_credit_bytes = int(upload_library_plan["quota_credit_bytes"] or 0)
+                else:
+                    quota = None
+                    remaining_bytes = 0
+                    quota_credit_bytes = 0
 
-                if total_upload_bytes > remaining_bytes:
+                if planned_bytes > remaining_bytes + quota_credit_bytes:
                     return JSONResponse(
                         {
                             "error": "File storage quota exceeded.",
@@ -2227,46 +2458,6 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                         status_code=413,
                     )
 
-                for uploaded_file, file_bytes in file_payloads:
-                    stored = storage_router.save_file(
-                        user_id=user_id,
-                        data=file_bytes,
-                        original_filename=(
-                            uploaded_file.filename or "unnamed-file"
-                        ),
-                    )
-                    storage_key = stored["storage_key"]
-                    stored_file_keys.append(storage_key)
-
-                    try:
-                        file_record_id = register_file(
-                            user_id=user_id,
-                            filename=(
-                                uploaded_file.filename or "unnamed-file"
-                            ),
-                            mime_type=uploaded_file.mimetype,
-                            size_bytes=len(file_bytes),
-                            conversation_id=conversation_id,
-                            storage_backend="filesystem",
-                            storage_key=storage_key,
-                            external_file_id=None,
-                            file_data=None,
-                            status="received",
-                        )
-                        file_record_ids.append(file_record_id)
-
-                    except Exception as file_db_error:
-                        logger.exception(
-                            "File metadata save failed for user %s: %s",
-                            user_id,
-                            file_db_error,
-                        )
-                        # Metadata failure is a transaction failure. Do not let
-                        # the engine process a file ODDI can no longer account for.
-                        raise
-
-            # Rewind every upload so the existing engine receives the same
-            # file stream it received before the storage migration.
             for uploaded_file, _ in file_payloads:
                 uploaded_file.stream.seek(0)
 
@@ -2275,11 +2466,6 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 "File count limit reached for user %s: %s",
                 user_id,
                 file_limit_error,
-            )
-            rollback_stored_files(
-                user_id,
-                stored_file_keys,
-                file_record_ids,
             )
             return JSONResponse(
                 {
@@ -2296,11 +2482,6 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 user_id,
                 quota_error,
             )
-            rollback_stored_files(
-                user_id,
-                stored_file_keys,
-                file_record_ids,
-            )
             return JSONResponse(
                 {
                     "error": "File storage quota exceeded.",
@@ -2314,11 +2495,6 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 "File storage failed for user %s: %s",
                 user_id,
                 storage_error,
-            )
-            rollback_stored_files(
-                user_id,
-                stored_file_keys,
-                file_record_ids,
             )
             return JSONResponse(
                 {"error": "Uploaded file could not be stored."},
@@ -2376,21 +2552,60 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         if cancel_event.is_set():
             return PlainTextResponse("Generation stopped.", status_code=409)
     except Exception:
-        # If AI processing fails after files have been persisted, roll back
-        # both the physical objects and their metadata so quota is not leaked.
-        rollback_stored_files(
-            user_id,
-            stored_file_keys,
-            file_record_ids,
-        )
         logger.exception(
-            "Chat processing failed for user %s; uploaded files rolled back.",
+            "Chat processing failed for user %s; uploaded Library files were left unchanged.",
             user_id,
         )
         raise
     finally:
         with _chat_generation_lock:
             _active_chat_generations.pop(generation_id, None)
+
+    if upload_library_plan.get("uploads"):
+        try:
+            file_record_ids = await run_in_threadpool(
+                _persist_chat_library_uploads,
+                user_id,
+                conversation_id,
+                upload_library_plan,
+            )
+        except FileLimitExceeded as file_limit_error:
+            logger.info(
+                "File count changed before Library replacement for user %s: %s",
+                user_id,
+                file_limit_error,
+            )
+            return JSONResponse(
+                {
+                    "error": str(file_limit_error),
+                    "file_limit": USER_FILE_LIMIT,
+                    "file_count": count_files(user_id),
+                },
+                status_code=413,
+            )
+        except StorageQuotaExceeded as quota_error:
+            logger.warning(
+                "File storage quota changed before Library replacement for user %s: %s",
+                user_id,
+                quota_error,
+            )
+            return JSONResponse(
+                {
+                    "error": "File storage quota exceeded.",
+                    "storage": storage_router.get_file_quota(user_id),
+                },
+                status_code=413,
+            )
+        except Exception as storage_error:
+            logger.exception(
+                "Could not update Library files for user %s: %s",
+                user_id,
+                storage_error,
+            )
+            return JSONResponse(
+                {"error": "Uploaded file could not be stored."},
+                status_code=500,
+            )
 
     if engine_files and not ODDI_BROWSER_LOCAL_CHATS:
         _remember_chat_upload_retry_fingerprint(
@@ -2477,6 +2692,11 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     response.headers["X-Oddi-Provider"] = "Auto routing"
     response.headers["X-Oddi-Latency-Ms"] = str(latency_ms)
     response.headers["X-Oddi-Token-Estimate"] = str(token_estimate)
+    planned_count = len(upload_library_plan.get("uploads") or [])
+    replaced_count = min(planned_count, len(upload_library_plan.get("replace_file_ids") or []))
+    response.headers["X-Oddi-Library-Added-Count"] = str(max(0, planned_count - replaced_count))
+    response.headers["X-Oddi-Library-Updated-Count"] = str(replaced_count)
+    response.headers["X-Oddi-Library-Existing-Count"] = str(int(upload_library_plan.get("already_exists_count") or 0))
     return response
 
 
