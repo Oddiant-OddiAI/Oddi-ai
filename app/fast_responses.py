@@ -546,6 +546,19 @@ def fast_response(message, history=None):
             return JOB_FAST_RESPONSES[canonical]
 
 
+# Short first-person student introductions are useful context, but do not
+# need a provider round-trip. Their original text is still queued for the
+# user's normal delayed memory extraction after the reply is returned.
+    student_intro = re.fullmatch(r"(?:i am|im)\s+(?:a\s+)?((?:b\.?\s*tech|m\.?\s*tech|mca|cse|computer science)[\w .+-]*student)", text)
+    if student_intro:
+        identity = " ".join(student_intro.group(1).split())
+        identity = re.sub(r"\bb\.?\s*tech\b", "BTech", identity, flags=re.IGNORECASE)
+        identity = re.sub(r"\bm\.?\s*tech\b", "MTech", identity, flags=re.IGNORECASE)
+        identity = re.sub(r"\bmca\b", "MCA", identity, flags=re.IGNORECASE)
+        identity = re.sub(r"\bcse\b", "CSE", identity, flags=re.IGNORECASE)
+        return f"Got it — you're a {identity}. What are you studying or working toward?"
+
+
 # 5. REMOVE COMMON FILLER WORDS
 
     fillers = {

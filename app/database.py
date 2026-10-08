@@ -1905,6 +1905,37 @@ def get_memory_user_last_activity(user_id):
         conn.close()
 
 
+def get_memory_extraction_status(user_id):
+    """Return queue counts and timing only; never expose queued message text."""
+    conn = get_db("archive_memory")
+    try:
+        row = _fetchone(
+            conn,
+            """
+            SELECT
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS queued_count,
+                SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) AS processing_count,
+                MIN(CASE WHEN status = 'pending' THEN available_at END) AS next_available_at
+            FROM memory_extraction_queue
+            WHERE user_id = ?
+            """,
+            (str(user_id),),
+        )
+        activity = _fetchone(
+            conn,
+            "SELECT last_activity FROM memory_extraction_activity WHERE user_id = ?",
+            (str(user_id),),
+        )
+        return {
+            "queued_count": int((row["queued_count"] if row else 0) or 0),
+            "processing_count": int((row["processing_count"] if row else 0) or 0),
+            "next_available_at": str(row["next_available_at"]) if row and row["next_available_at"] else None,
+            "last_activity": str(activity["last_activity"]) if activity and activity["last_activity"] else None,
+        }
+    finally:
+        conn.close()
+
+
 def recover_stale_memory_claims(stale_after_seconds=600):
     now = datetime.now(timezone.utc)
     cutoff = (now - timedelta(seconds=max(60, int(stale_after_seconds)))).isoformat(timespec="seconds")

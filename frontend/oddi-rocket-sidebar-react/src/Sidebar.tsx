@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
   Home, LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search, List,
@@ -8,12 +9,13 @@ import {
 type Conversation = {
   id: string | number;
   title?: string;
-  pinned?: boolean;
-  archived?: boolean;
-  deleted?: boolean;
+  pinned?: boolean | number | string | null;
+  archived?: boolean | number | string | null;
+  deleted?: boolean | number | string | null;
   updated_at?: string;
   created_at?: string;
   messages?: unknown[];
+  message_count?: number;
   revision?: number;
 };
 
@@ -48,6 +50,25 @@ const PENDING_GENERATION_KEY = 'oddi_pending_chat_generation_v1';
 const LAST_OPEN_CONVERSATION_KEY = 'oddi_last_open_conversation_v1';
 const FRESH_CHAT_MARKER = '__oddi_fresh_chat__';
 const MAX_PINNED_CHATS = 8;
+
+function isEnabledFlag(value: unknown) {
+  if (typeof value === 'string') return ['true', '1', 'yes'].includes(value.trim().toLowerCase());
+  return value === true || value === 1;
+}
+
+function normalizeConversation(conversation: Conversation): Conversation {
+  return {
+    ...conversation,
+    pinned: isEnabledFlag(conversation.pinned),
+    archived: isEnabledFlag(conversation.archived),
+    deleted: isEnabledFlag(conversation.deleted),
+  };
+}
+
+function hasConversationMessages(conversation: Conversation) {
+  return (Array.isArray(conversation.messages) && conversation.messages.length > 0) ||
+    Number(conversation.message_count || 0) > 0;
+}
 
 function getPendingConversationId() {
   try {
@@ -164,6 +185,13 @@ export default function Sidebar() {
   // must remain available after Memory is closed.
   const openBeforeMemoryRef = useRef<boolean | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    try {
+      const saved = Number(localStorage.getItem('oddi_sidebar_width_v1'));
+      return Number.isFinite(saved) && saved >= 190 ? Math.max(190, Math.min(360, saved)) : 208;
+    } catch { return 208; }
+  });
+  const sidebarResizeRef = useRef<{ pointerId: number; startX: number; startWidth: number; currentWidth: number } | null>(null);
   const [compactList, setCompactList] = useState(() => {
     try { return localStorage.getItem('oddi_sidebar_compact_v1') === 'true'; } catch { return false; }
   });
@@ -174,6 +202,9 @@ export default function Sidebar() {
   const [chatStarted, setChatStarted] = useState(() => !document.getElementById('welcomeContainer'));
   const [generatingConversationId, setGeneratingConversationId] = useState<string | null>(getPendingConversationId);
   const [menuId, setMenuId] = useState<string | number | null>(null);
+  const [menuPosition, setMenuPosition] = useState<{ left: number; top: number } | null>(null);
+  const chatMenuAnchorsRef = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const menuPanelRef = useRef<HTMLDivElement | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [busyConversationIds, setBusyConversationIds] = useState<Set<string>>(() => new Set());
@@ -204,8 +235,6 @@ export default function Sidebar() {
   const [splashReady, setSplashReady] = useState(() =>
     typeof document === 'undefined' || !document.getElementById('oddi-video-splash')
   );
-  const [uploadedFiles, setUploadedFiles] = useState<Array<{name: string; type?: string; size?: number}>>([]);
-
   useEffect(() => {
     const root = document.getElementById('oddi-react-sidebar-root');
     const sync = () => {
@@ -218,6 +247,10 @@ export default function Sidebar() {
     sync();
     return () => document.body.classList.remove('oddi-react-sidebar-open', 'oddi-react-sidebar-collapsed');
   }, [open, collapsed]);
+
+  useEffect(() => {
+    document.body.style.setProperty('--oddi-sidebar-width', `${collapsed ? 58 : sidebarWidth}px`);
+  }, [sidebarWidth, collapsed]);
 
   useEffect(() => {
     const app = document.querySelector('.app');
@@ -324,7 +357,8 @@ export default function Sidebar() {
 
   useEffect(() => {
     const close = (event: MouseEvent) => {
-      if (!(event.target as HTMLElement)?.closest('.oddi-rs-chat-menu')) setMenuId(null);
+      const target = event.target as Element | null;
+      if (!target?.closest('.oddi-rs-chat-menu, .oddi-rs-menu-portal')) setMenuId(null);
     };
     const key = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setMenuId(null);
@@ -348,6 +382,40 @@ export default function Sidebar() {
     document.addEventListener('keydown', key);
     return () => { document.removeEventListener('click', close); document.removeEventListener('keydown', key); };
   }, []);
+
+  useEffect(() => {
+    if (menuId === null) return;
+    const positionMenu = () => {
+      const anchor = chatMenuAnchorsRef.current.get(String(menuId));
+      if (!anchor?.isConnected) { setMenuId(null); return; }
+      const anchorRect = anchor.getBoundingClientRect();
+      const panelRect = menuPanelRef.current?.getBoundingClientRect();
+      const width = panelRect?.width || 144;
+      const height = panelRect?.height || 112;
+      const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      const left = Math.max(8, Math.min(viewportWidth - width - 8, anchorRect.right - width));
+      const below = anchorRect.bottom + 5;
+      const top = below + height <= viewportHeight - 8
+        ? below
+        : Math.max(8, anchorRect.top - height - 5);
+      setMenuPosition(current => current && Math.abs(current.left - left) < 1 && Math.abs(current.top - top) < 1
+        ? current
+        : { left, top });
+    };
+    const frame = window.requestAnimationFrame(positionMenu);
+    document.addEventListener('scroll', positionMenu, true);
+    window.addEventListener('resize', positionMenu, { passive: true });
+    window.visualViewport?.addEventListener('resize', positionMenu, { passive: true });
+    window.visualViewport?.addEventListener('scroll', positionMenu, { passive: true });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      document.removeEventListener('scroll', positionMenu, true);
+      window.removeEventListener('resize', positionMenu);
+      window.visualViewport?.removeEventListener('resize', positionMenu);
+      window.visualViewport?.removeEventListener('scroll', positionMenu);
+    };
+  }, [menuId]);
 
   // Memory is a main-window view. The sidebar closes while Memory is open.
   // The closed rail itself stays mounted; CSS hides it only while the Memory
@@ -428,32 +496,16 @@ export default function Sidebar() {
     };
   }, []);
 
-  // File/gesture bridge from the legacy index.html. A selected upload expands
-  // the React sidebar and shows the attachment directly inside it on desktop
-  // and phone. This is presentation-only; the actual upload pipeline remains
-  // owned by the main app.
+  // Keep the legacy sidebar shortcuts available without coupling file uploads
+  // to sidebar visibility. Attachments are presented by the composer itself.
   useEffect(() => {
-    const onAttachments = (event: Event) => {
-      const detail = (event as CustomEvent).detail || {};
-      const files = Array.isArray(detail.files) ? detail.files : [];
-      setUploadedFiles(files.slice(0, 12));
-      if (files.length) {
-        setCollapsed(false);
-        setOpen(true);
-      }
-    };
-    const onClearAttachments = () => setUploadedFiles([]);
     const onOpenSidebarShortcut = () => WIN().__oddiOpenSidebar?.();
     const onCloseSidebarShortcut = () => { setCollapsed(false); setOpen(false); };
     const onToggleSidebarShortcut = () => setOpen(v => !v);
-    window.addEventListener('oddi:attachments-changed', onAttachments as EventListener);
-    window.addEventListener('oddi:attachments-cleared', onClearAttachments);
     window.addEventListener('oddi:sidebar-open', onOpenSidebarShortcut);
     window.addEventListener('oddi:sidebar-close', onCloseSidebarShortcut);
     window.addEventListener('oddi:sidebar-toggle', onToggleSidebarShortcut);
     return () => {
-      window.removeEventListener('oddi:attachments-changed', onAttachments as EventListener);
-      window.removeEventListener('oddi:attachments-cleared', onClearAttachments);
       window.removeEventListener('oddi:sidebar-open', onOpenSidebarShortcut);
       window.removeEventListener('oddi:sidebar-close', onCloseSidebarShortcut);
       window.removeEventListener('oddi:sidebar-toggle', onToggleSidebarShortcut);
@@ -484,12 +536,13 @@ export default function Sidebar() {
       if (!r.ok) return;
       const data = await r.json();
       const list = Array.isArray(data) ? data : (Array.isArray(data?.conversations) ? data.conversations : []);
-      setItems(list);
+      const normalizedList = list.map(normalizeConversation);
+      setItems(normalizedList);
       const preferredId = getLastOpenConversationId();
-      const preferred = preferredId && list.find((c: Conversation) => String(c.id) === String(preferredId));
+      const preferred = preferredId && normalizedList.find((c: Conversation) => String(c.id) === String(preferredId));
       if (preferredId === FRESH_CHAT_MARKER) setActive(null);
       else if (preferred) setActive(preferred.id);
-      else if (active === null && list[0]) setActive(list[0].id);
+      else if (active === null && normalizedList[0]) setActive(normalizedList[0].id);
     } catch (error) { console.error('ODDI sidebar conversation load failed:', error); }
   }
 
@@ -499,12 +552,13 @@ export default function Sidebar() {
       const list = Array.isArray(detail?.conversations)
         ? detail!.conversations!
         : Array.isArray(WIN().oddiConversations) ? WIN().oddiConversations! : [];
-      setItems(list.slice());
+      const normalizedList = list.map(normalizeConversation);
+      setItems(normalizedList);
       const preferredId = getLastOpenConversationId();
-      const preferred = preferredId && list.find(c => String(c.id) === String(preferredId));
+      const preferred = preferredId && normalizedList.find(c => String(c.id) === String(preferredId));
       if (preferredId === FRESH_CHAT_MARKER) setActive(null);
       else if (preferred) setActive(preferred.id);
-      else if (list[0]) setActive(current => current ?? list[0].id);
+      else if (normalizedList[0]) setActive(current => current ?? normalizedList[0].id);
     };
     const onLoaded = (event: Event) => syncFromLegacy(event);
     window.addEventListener('oddi:conversations-loaded', onLoaded);
@@ -520,23 +574,27 @@ export default function Sidebar() {
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const source = q ? items.filter(c => (c.title || '').toLowerCase().includes(q)) : items;
-    const activeChats = source.filter(c => !c.archived && !c.deleted && !c.pinned);
-    const repeated = duplicateTitleGroups(activeChats).filter(group => group.chats.length > 1);
-    const repeatedIds = new Set(repeated.flatMap(group => group.chats.map(c => String(c.id))));
-    const recent = grouped(activeChats.filter(c => !repeatedIds.has(String(c.id))));
-    const repeatedSection = repeated.length
-      ? [{ label: 'Repeated Chats', items: repeated.flatMap(group => group.chats) }]
-      : [];
-    return [...repeatedSection, ...recent];
+    return items
+      .filter(c => hasConversationMessages(c))
+      .filter(c => !isEnabledFlag(c.archived) && !isEnabledFlag(c.deleted) && !isEnabledFlag(c.pinned))
+      .filter(c => !q || (c.title || '').toLowerCase().includes(q))
+      .sort((a, b) => {
+        const aTime = Date.parse(a.updated_at || a.created_at || '') || 0;
+        const bTime = Date.parse(b.updated_at || b.created_at || '') || 0;
+        return bTime - aTime || String(b.id).localeCompare(String(a.id));
+      });
   }, [items, query]);
 
   const pinnedItems = useMemo(() => {
     const q = query.trim().toLowerCase();
     return items
-      .filter(c => !c.archived && !c.deleted && !!c.pinned && (!q || (c.title || '').toLowerCase().includes(q)))
+      .filter(c => !isEnabledFlag(c.archived) && !isEnabledFlag(c.deleted) && isEnabledFlag(c.pinned) && (!q || (c.title || '').toLowerCase().includes(q)))
+      .filter(hasConversationMessages)
       .sort((a,b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
   }, [items, query]);
+
+  const latestItems = visible.slice(0, 5);
+  const olderGroups = grouped(visible.slice(5));
 
   const displayTitles = useMemo(() => {
     const groups = new Map<string, Conversation[]>();
@@ -732,32 +790,37 @@ export default function Sidebar() {
     }
   }
 
-  async function pin(c: Conversation) {
+  async function pin(c: Conversation, requestedState?: boolean, currentState?: boolean) {
     setMenuId(null);
     const id = String(c.id);
-    if (pinActionPendingRef.current || pendingActionsRef.current.has(id)) return;
-    pinActionPendingRef.current = true;
+    const previous = currentState ?? isEnabledFlag(c.pinned);
+    const nextPinned = requestedState ?? !previous;
+    if (pendingActionsRef.current.has(id) || (nextPinned && pinActionPendingRef.current)) return;
+    if (nextPinned) pinActionPendingRef.current = true;
     pendingActionsRef.current.add(id);
     setConversationBusy(id, true);
-    const previous = !!c.pinned;
-    if (!previous && items.filter(item => !item.archived && !item.deleted && item.pinned).length >= MAX_PINNED_CHATS) {
+    if (nextPinned && !previous && items.filter(item => !isEnabledFlag(item.archived) && !isEnabledFlag(item.deleted) && isEnabledFlag(item.pinned)).length >= MAX_PINNED_CHATS) {
       pendingActionsRef.current.delete(id);
       pinActionPendingRef.current = false;
       setConversationBusy(id, false);
       WIN().showOddiToast?.(`You can pin up to ${MAX_PINNED_CHATS} chats. Unpin one to make room.`);
       return;
     }
-    setItems(items => items.map(item => String(item.id) === id ? { ...item, pinned: !previous } : item));
+    setItems(items => items.map(item => String(item.id) === id ? { ...item, pinned: nextPinned } : item));
     try {
-      const saved = await updateMetadata(c, { pinned: !previous }, { deferRender: true });
+      const saved = await updateMetadata(c, { pinned: nextPinned }, { deferRender: true });
       if (saved === false) throw new Error('Pin state was not saved.');
-      c.pinned = !previous;
+      c.pinned = nextPinned;
     } catch (error) {
       setItems(items => items.map(item => String(item.id) === id ? { ...item, pinned: previous } : item));
       console.error('Pin failed:', error);
       WIN().showOddiToast?.('Could not save the pin. Please try again.');
     }
-    finally { pendingActionsRef.current.delete(id); pinActionPendingRef.current = false; setConversationBusy(id, false); }
+    finally {
+      pendingActionsRef.current.delete(id);
+      if (nextPinned) pinActionPendingRef.current = false;
+      setConversationBusy(id, false);
+    }
   }
 
   async function archive(c: Conversation) {
@@ -964,21 +1027,89 @@ export default function Sidebar() {
     return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
+  function clampSidebarWidth(value: number) {
+    return Math.max(190, Math.min(360, Math.round(value)));
+  }
+
+  function resizeSidebarTo(value: number) {
+    const next = clampSidebarWidth(value);
+    setSidebarWidth(next);
+    document.body.style.setProperty('--oddi-sidebar-width', `${next}px`);
+    try { localStorage.setItem('oddi_sidebar_width_v1', String(next)); } catch {}
+  }
+
+  function beginSidebarResize(event: ReactPointerEvent<HTMLDivElement>) {
+    if (isPhone || collapsed || !open) return;
+    event.preventDefault();
+    event.stopPropagation();
+    sidebarResizeRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startWidth: sidebarWidth,
+      currentWidth: sidebarWidth,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    document.body.classList.add('oddi-sidebar-resizing');
+  }
+
+  function moveSidebarResize(event: ReactPointerEvent<HTMLDivElement>) {
+    const resize = sidebarResizeRef.current;
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    const next = clampSidebarWidth(resize.startWidth + event.clientX - resize.startX);
+    resize.currentWidth = next;
+    document.body.style.setProperty('--oddi-sidebar-width', `${next}px`);
+  }
+
+  function endSidebarResize(event: ReactPointerEvent<HTMLDivElement>) {
+    const resize = sidebarResizeRef.current;
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    sidebarResizeRef.current = null;
+    document.body.classList.remove('oddi-sidebar-resizing');
+    try { event.currentTarget.releasePointerCapture?.(event.pointerId); } catch {}
+    resizeSidebarTo(resize.currentWidth);
+  }
+
+  function handleSidebarResizeKey(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    event.stopPropagation();
+    resizeSidebarTo(sidebarWidth + (event.key === 'ArrowRight' ? 1 : -1) * (event.shiftKey ? 32 : 16));
+  }
+
   function renderChatRow(c: Conversation, isPinned = false) {
     const id = String(c.id);
-    return <div key={`${isPinned ? 'pinned-' : ''}${id}`} data-conversation-id={id} className={`oddi-rs-chat ${isPinned ? 'pinned' : ''} ${active === c.id ? 'active' : ''} ${selectedIds.has(id) ? 'selected' : ''} ${selectedIds.size ? 'selecting' : ''} ${busyConversationIds.has(id) ? 'busy' : ''}`} onPointerDown={onChatPointerDown} onPointerMove={onChatPointerMove} onPointerUp={onChatPointerEnd} onPointerCancel={onChatPointerEnd} onContextMenu={e => e.preventDefault()} onClick={e => onChatClick(c, e)} role="button" aria-pressed={selectedIds.has(id)} tabIndex={0} onKeyDown={e => e.key === 'Enter' && (selectedIds.size ? toggleSelected(c) : select(c))}>
+    const isActive = String(active) === id;
+    return <div key={`${isPinned ? 'pinned-' : ''}${id}`} data-conversation-id={id} className={`oddi-rs-chat ${isPinned ? 'pinned' : ''} ${isActive ? 'active' : ''} ${selectedIds.has(id) ? 'selected' : ''} ${selectedIds.size ? 'selecting' : ''} ${busyConversationIds.has(id) ? 'busy' : ''}`} onPointerDown={onChatPointerDown} onPointerMove={onChatPointerMove} onPointerUp={onChatPointerEnd} onPointerCancel={onChatPointerEnd} onContextMenu={e => e.preventDefault()} onClick={e => onChatClick(c, e)} role="button" aria-pressed={selectedIds.has(id)} tabIndex={0} onKeyDown={e => e.key === 'Enter' && (selectedIds.size ? toggleSelected(c) : select(c))}>
       {isPinned && <span className="oddi-rs-select-check" aria-hidden="true">{selectedIds.has(id) ? '✓' : ''}</span>}
-      {generatingConversationId === id ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" /> : isPinned ? <Pin size={11} /> : <MessageSquare size={11} />}
+      {generatingConversationId === id ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" title="Generating response" /> : isPinned ? <Pin size={18} /> : <MessageSquare size={18} />}
       <span className="oddi-rs-title-glass"><span>{displayTitle(c)}</span></span>
       <div className="oddi-rs-actions">
-        <button onClick={e => { e.stopPropagation(); pin(c); }} title={isPinned ? 'Unpin chat' : 'Pin chat'} aria-label={isPinned ? 'Unpin chat' : 'Pin chat'}><Pin size={11} /></button>
+        {isActive && <button onClick={e => { e.stopPropagation(); rename(c); }} title="Rename current chat" aria-label="Rename current chat"><Pencil size={11} /></button>}
+        <button onClick={e => { e.stopPropagation(); void pin(c, !isPinned, isPinned); }} title={isPinned ? 'Unpin chat' : 'Pin chat'} aria-label={isPinned ? 'Unpin chat' : 'Pin chat'}><Pin size={11} /></button>
         <div className="oddi-rs-chat-menu">
-          <button onClick={e => { e.stopPropagation(); setMenuId(menuId === c.id ? null : c.id); }} title="More" aria-label="More"><MoreHorizontal size={13} /></button>
-          {menuId === c.id && <div className="oddi-rs-menu" onClick={e => e.stopPropagation()}>
-            <button onClick={() => rename(c)}><Pencil size={13} /><span>Rename</span></button>
-            <button onClick={() => archive(c)}><Archive size={13} /><span>{c.archived ? 'Unarchive' : 'Archive'}</span></button>
-            <button className="danger" onClick={() => moveToBin(c)}><Trash2 size={13} /><span>Delete</span></button>
-          </div>}
+          <button
+            ref={node => { if (node) chatMenuAnchorsRef.current.set(id, node); else chatMenuAnchorsRef.current.delete(id); }}
+            aria-haspopup="menu"
+            aria-expanded={menuId === c.id}
+            onPointerDown={e => e.stopPropagation()}
+            onClick={e => {
+              e.stopPropagation();
+              if (menuId === c.id) { setMenuId(null); return; }
+              chatMenuAnchorsRef.current.set(id, e.currentTarget);
+              const rect = e.currentTarget.getBoundingClientRect();
+              const width = 144, height = 112;
+              const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+              const viewportHeight = window.visualViewport?.height || window.innerHeight;
+              const left = Math.max(8, Math.min(viewportWidth - width - 8, rect.right - width));
+              const below = rect.bottom + 5;
+              const top = below + height <= viewportHeight - 8 ? below : Math.max(8, rect.top - height - 5);
+              setMenuPosition({ left, top });
+              setMenuId(c.id);
+            }}
+            title="More"
+            aria-label="More"
+          ><MoreHorizontal size={13} /></button>
         </div>
       </div>
     </div>;
@@ -988,7 +1119,7 @@ export default function Sidebar() {
     return duplicateTitleGroups(chats).map(group => {
       if (group.chats.length === 1) return renderChatRow(group.chats[0], isPinned);
       const groupId = `${scope}:${group.key}`;
-      const expanded = expandedDuplicateGroups.has(groupId) || group.chats.some(chat => String(chat.id) === String(active));
+      const expanded = expandedDuplicateGroups.has(groupId);
       const title = (group.chats[0].title || 'New Chat').trim() || 'New Chat';
       return <section key={groupId} className={`oddi-rs-duplicate-cluster ${isPinned ? 'is-pinned' : ''} ${expanded ? 'is-expanded' : ''}`}>
         <button type="button" className="oddi-rs-duplicate-toggle" aria-expanded={expanded} onClick={() => setExpandedDuplicateGroups(previous => {
@@ -1004,6 +1135,10 @@ export default function Sidebar() {
       </section>;
     });
   }
+
+  const menuConversation = menuId === null
+    ? null
+    : items.find(conversation => String(conversation.id) === String(menuId)) || null;
 
   return <>
     <button className={`oddi-rs-backdrop ${open ? 'is-open' : 'is-closed'}`} aria-label="Close sidebar" onClick={() => setOpen(false)} />
@@ -1040,6 +1175,24 @@ export default function Sidebar() {
         <button className="oddi-rs-mobile-close" onClick={() => setOpen(false)} aria-label="Close sidebar"><X size={15} /></button>
       </header>
 
+      {open && !isPhone && !collapsed && <div
+        className="oddi-rs-resize-hit-area"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize sidebar"
+        aria-valuemin={190}
+        aria-valuemax={360}
+        aria-valuenow={sidebarWidth}
+        aria-valuetext={`${sidebarWidth} pixels`}
+        tabIndex={0}
+        onPointerDown={beginSidebarResize}
+        onPointerMove={moveSidebarResize}
+        onPointerUp={endSidebarResize}
+        onPointerCancel={endSidebarResize}
+        onLostPointerCapture={endSidebarResize}
+        onKeyDown={handleSidebarResizeKey}
+      />}
+
       <main className="oddi-rs-main">
         {chatStarted && collapsed && <button className="oddi-rs-home" onClick={goHome} aria-label="Go to home" title="Home"><Home size={19} strokeWidth={3} /></button>}
         <button className="oddi-rs-new" onClick={newChat}><Plus size={19} strokeWidth={3} />{!collapsed && <span>New Chat</span>}</button>
@@ -1049,20 +1202,6 @@ export default function Sidebar() {
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search conversations..." aria-label="Search conversations" />
           {query && <button className="oddi-rs-search-clear" onClick={() => setQuery('')} aria-label="Clear search">×</button>}
         </div>}
-
-        {uploadedFiles.length > 0 && !collapsed && (
-          <div className="oddi-rs-upload-strip" aria-label="Uploaded files">
-            <div className="oddi-rs-upload-title"><FolderOpen size={12} /><span>Attachments</span><b>{uploadedFiles.length}</b></div>
-            <div className="oddi-rs-upload-list">
-              {uploadedFiles.map((file, index) => (
-                <div className="oddi-rs-upload-item" key={`${file.name}-${index}`}>
-                  <span className="oddi-rs-upload-icon">{file.type?.startsWith('image/') ? '🖼️' : '📎'}</span>
-                  <span className="oddi-rs-upload-name" title={file.name}>{file.name}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="oddi-rs-history">
           {selectedIds.size > 0 && !collapsed && <div className="oddi-rs-selection-toolbar" role="toolbar" aria-label="Selected chat actions">
@@ -1075,7 +1214,7 @@ export default function Sidebar() {
             </div>
           </div>}
           {collapsed
-              ? [...pinnedItems, ...visible.flatMap(g => g.items).filter(c => !c.pinned)].slice(0, 8).map(c =>
+              ? [...pinnedItems, ...visible].slice(0, 8).map(c =>
               <button key={c.id} className={`oddi-rs-mini-chat ${active === c.id ? 'active' : ''}`} onClick={() => { setCollapsed(false); select(c); }} title={`${generatingConversationId === String(c.id) ? 'Generating response · ' : ''}${displayTitle(c)}`}>
                 {generatingConversationId === String(c.id) ? <span className="oddi-rs-chat-spinner" role="status" aria-label="Generating response" /> : c.pinned ? <Pin size={13} /> : <MessageSquare size={13} />}
               </button>
@@ -1085,12 +1224,14 @@ export default function Sidebar() {
                   <div className="oddi-rs-label"><Pin size={11} /> <span>Pinned</span><span className="oddi-rs-pinned-count" title={`${pinnedItems.length} pinned; limit ${MAX_PINNED_CHATS}`}>{pinnedItems.length}/{MAX_PINNED_CHATS}</span></div>
                   {renderChatBucket(pinnedItems, 'pinned', true)}
                 </section>}
-                {visible.filter(g => g.items.some(c => !c.pinned)).map(g =>
-                  <section className="oddi-rs-group" key={g.label}>
-                    <div className="oddi-rs-label">{g.label}</div>
-                    {renderChatBucket(g.items.filter(c => !c.pinned), g.label)}
-                  </section>
-                )}
+                {visible.length > 0 && <section className="oddi-rs-group" aria-label="Recent chats">
+                  <div className="oddi-rs-label">Recent</div>
+                  {latestItems.map(chat => renderChatRow(chat))}
+                </section>}
+                {olderGroups.map(group => <section key={`recent-date:${group.label}`} className="oddi-rs-group" aria-label={`${group.label} chats`}>
+                  <div className="oddi-rs-label">{group.label}</div>
+                  {renderChatBucket(group.items, `recent:${group.label}`)}
+                </section>)}
               </>
           }
         </div>
@@ -1098,14 +1239,6 @@ export default function Sidebar() {
         <nav
           className="oddi-rs-nav"
           aria-label="Sidebar utilities"
-          style={{
-            display: collapsed ? 'flex' : 'grid',
-            gridTemplateColumns: '1fr',
-            gap: collapsed ? 4 : 2,
-            padding: collapsed ? '8px 6px' : '8px 10px',
-            borderTop: collapsed ? '0' : '1px solid rgba(255,255,255,.10)',
-            marginTop: collapsed ? 4 : 8,
-          }}
         >
           {[
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
@@ -1124,10 +1257,8 @@ export default function Sidebar() {
                 color: 'var(--oddi-sidebar-muted, #a5a5a5)', font: 'inherit', fontSize: 13,
                 textAlign: 'left', cursor: 'pointer', boxSizing: 'border-box',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,.07)'; e.currentTarget.style.color='var(--oddi-sidebar-text, #f5f5f5)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.color='var(--oddi-sidebar-muted, #a5a5a5)'; }}
             >
-              <span style={{ width: 18, display: 'inline-flex', justifyContent: 'center', flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ width: 18, display: 'inline-flex', justifyContent: 'flex-start', flexShrink: 0 }}>{item.icon}</span>
               {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
               {!collapsed && item.badge && <b style={{ minWidth: 19, height: 19, padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#9d9d9d', fontSize: 10, fontWeight: 600, boxSizing: 'border-box' }}>{item.badge}</b>}
             </button>
@@ -1162,14 +1293,21 @@ export default function Sidebar() {
       </footer>
     </aside>
 
-    {isPhone && !open && splashReady && <nav className="oddi-mobile-tabbar" aria-label="Quick navigation">
-      <button type="button" onClick={goHome} aria-label="Home" title="Home"><Home size={18} /><span>Home</span></button>
-      <button type="button" onClick={newChat} aria-label="New chat" title="New chat"><Plus size={19} /><span>New</span></button>
-      <button type="button" onClick={() => { setCollapsed(false); setOpen(true); }} aria-label="Chats" title="Chats"><MessageSquare size={17} /><span>Chats</span></button>
-      <button type="button" onClick={openMemory} aria-label="Memory" title="Memory"><Brain size={17} /><span>Memory</span></button>
-      <button type="button" onClick={openLibrary} aria-label="Library" title="Library"><FolderOpen size={17} /><span>Library</span></button>
-      <button type="button" onClick={openSettings} aria-label="Settings" title="Settings"><Settings size={17} /><span>Settings</span></button>
-    </nav>}
+    {menuConversation && menuPosition && createPortal(
+      <div
+        ref={menuPanelRef}
+        className="oddi-rs-menu oddi-rs-menu-portal"
+        role="menu"
+        aria-label={`${displayTitle(menuConversation)} actions`}
+        style={{ left: menuPosition.left, top: menuPosition.top }}
+        onClick={e => e.stopPropagation()}
+      >
+        <button type="button" role="menuitem" onClick={() => rename(menuConversation)}><Pencil size={13} /><span>Rename</span></button>
+        <button type="button" role="menuitem" onClick={() => archive(menuConversation)}><Archive size={13} /><span>{menuConversation.archived ? 'Unarchive' : 'Archive'}</span></button>
+        <button type="button" role="menuitem" className="danger" onClick={() => moveToBin(menuConversation)}><Trash2 size={13} /><span>Delete</span></button>
+      </div>,
+      document.body
+    )}
 
     {archiveModalOpen && (
       <div

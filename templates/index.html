@@ -2006,6 +2006,11 @@ body.dark-mode .user-message .user-expand-btn:hover{
   background:#121212;color:#888;font-size:10px;
 }
 .memory-off-banner.show{display:block;}
+.memory-auto-status{
+  margin:8px 22px 0;padding:9px 11px;border:1px solid #292929;border-radius:9px;
+  background:#111;color:#aaa;font-size:11px;line-height:1.45;
+}
+body:not(.dark-mode) .memory-auto-status{background:#fafafa;border-color:#e5e5e5;color:#666;}
 
 .memory-add-modal{
   position:fixed;inset:0;z-index:2147483647;
@@ -2835,7 +2840,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261006-sidebar-ui-3">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261007-sidebar-ui-9">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -4590,7 +4595,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         <div class="welcome-message" id="welcomeContainer">
             <h2>
                 {% if logged_in %}
-                    <span class="welcome-line">Ready to level up, {{ username }}? 🚀</span>
+                    <span class="welcome-line">Ready to level up, {{ username }}?<span class="welcome-emoji" aria-hidden="true"> 🚀</span></span>
                 {% else %}
                     <span class="welcome-line">What would you like to</span>
                     <span class="welcome-line">work on today?</span>
@@ -4600,10 +4605,10 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         <p class="oddi-home-subtitle">Understand, create, plan, and explore — all in one place.</p>
 
         <div id="oddiSuggestionCards" class="oddi-suggestion-cards" aria-label="Quick suggestions">
-            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true">?</span><span class="oddi-suggestion-copy"><strong>Help me understand something</strong><br><small>Break down a concept, article, or topic</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true">✎</span><span class="oddi-suggestion-copy"><strong>Write something for me</strong><br><small>Draft, rewrite, or polish your ideas</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true">☷</span><span class="oddi-suggestion-copy"><strong>Help me plan a project</strong><br><small>Turn an idea into clear steps and milestones</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true">⌕</span><span class="oddi-suggestion-copy"><strong>Analyze a file or document</strong><br><small>Extract, summarize, and find key information</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5c3.1-.9 5.8-.4 8 1.2v13c-2.2-1.6-4.9-2.1-8-1.2z"/><path d="M20 5.5c-3.1-.9-5.8-.4-8 1.2v13c2.2-1.6 4.9-2.1 8-1.2z"/></svg></span><span class="oddi-suggestion-copy"><strong>Understand a topic</strong><br><small>Get a clear explanation of an idea or subject</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Draft or refine writing</strong><br><small>Create, refine, or polish your writing</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><br><small>Turn a goal into clear, actionable steps</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Analyze a document</strong><br><small>Extract key details and concise summaries</small></span></button>
             <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-action="continue" aria-label="Continue where you left off">
                 <span class="oddi-last-message-icon" aria-hidden="true">ϟ</span>
                 <span class="oddi-last-message-copy">
@@ -4614,7 +4619,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         </div>
     </div>
     </main>
-    <button type="button" id="oddiSayHello" class="oddi-say-hello" aria-label="Say hello to learn about Vedanssh" hidden>Say Hello to know about me</button>
+    <button type="button" id="oddiSayHello" class="oddi-say-hello" aria-label="Get to know ODDI AI" hidden>Get to know ODDI AI</button>
     <div id="oddiComposerShell" class="input-area">
         <div id="attachmentPreview" class="attachment-preview" style="display:none;">
             <div class="attachment-header">
@@ -4702,7 +4707,7 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
     const halfWidth=(button.offsetWidth||180)/2;
     const viewportWidth=document.documentElement.clientWidth||window.innerWidth;
     const center=Math.min(Math.max(rect.left+rect.width/2,halfWidth+8),viewportWidth-halfWidth-8);
-    const top=Math.max(8,Math.round(rect.top-(button.offsetHeight||34)-10));
+    const top=Math.max(8,Math.round(rect.top-(button.offsetHeight||34)-18));
     button.style.setProperty('--oddi-say-hello-left',Math.round(center)+'px');
     button.style.setProperty('--oddi-say-hello-top',top+'px');
   };
@@ -4792,7 +4797,7 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
         <div class="memory-category-title">Categories</div>
         <div class="memory-category-subtitle">Filter memories by type</div>
         <div id="memoryCategoryList" class="memory-category-list"></div>
-        <button id="memoryAddCategoryBtn" class="memory-category-add" type="button">＋ Add category</button>
+        <button id="memoryAddCategoryBtn" class="memory-category-add" type="button">+ Add category</button>
       </aside>
 
       <main class="memory-main">
@@ -4821,12 +4826,13 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
               <input id="memorySearch" type="search" placeholder="Search memories..." autocomplete="off" aria-label="Search memories">
             </div>
             <button id="memoryCategoryToggle" class="memory-toolbar-btn memory-category-toggle" type="button" aria-expanded="false">☰ Categories</button>
-            <button id="memoryAddBtn" class="memory-toolbar-btn primary add-label" type="button">＋ Add memory</button>
+            <button id="memoryAddBtn" class="memory-toolbar-btn primary add-label" type="button">+ Add memory</button>
             <button id="memoryClearAllBtn" class="memory-toolbar-btn" type="button">↻ Clear all</button>
           </div>
         </header>
 
         <div id="memoryOffBanner" class="memory-off-banner">Memory is off. ODDI will keep this saved data here, but memory controls are paused.</div>
+        <div id="memoryAutoStatus" class="memory-auto-status" role="status" aria-live="polite">Checking automatic memory updates…</div>
 
         <div class="memory-select-row">
           <label><input id="memorySelectAll" type="checkbox"> Select all</label>
@@ -5353,11 +5359,21 @@ async function getOddiStoredFile(id) {
     });
 }
 
-async function openOddiUploadedFile(fileId) {
+async function openOddiUploadedFile(fileId, trigger = null) {
     try {
         const stored = await getOddiStoredFile(fileId);
         if (!stored || !stored.blob) {
             alert("This uploaded file is no longer available on this device.");
+            return;
+        }
+
+        const file = new File(
+            [stored.blob],
+            stored.name || "Uploaded file",
+            { type: stored.type || stored.blob.type || "application/octet-stream", lastModified: Date.now() }
+        );
+        if (typeof window.__oddiPreviewAttachment === "function") {
+            window.__oddiPreviewAttachment(file, trigger);
             return;
         }
 
@@ -5375,16 +5391,23 @@ async function openOddiUploadedFile(fileId) {
     }
 }
 
-function buildFileHTML(fileName, fileId = "") {
+function buildFileHTML(fileName, fileId = "", fileType = "") {
     const safeName = escapeUserText(fileName);
     const key = escapeUserText(fileId);
+    const safeType = escapeUserText(fileType);
 
     return `
-        <div class="message-file"
-             ${fileId ? `data-file-key="${key}" role="button" tabindex="0" title="Open ${safeName}"` : ""}>
-            ${getFileIcon(fileName)}
-            <span>${safeName}</span>
-        </div>
+        <button type="button" class="message-file"
+             ${fileId ? `data-file-key="${key}" data-file-name="${safeName}" role="button" title="Preview ${safeName}"` : `data-file-name="${safeName}"`}
+             ${fileType ? `data-file-type="${safeType}"` : ""}
+             ${fileId ? `aria-label="Preview ${safeName}"` : "aria-disabled=\"true\" disabled"}>
+            <span class="message-file-preview" aria-hidden="true">
+                <img class="message-file-image" alt="" hidden>
+                <span class="message-file-generic">${getFileIcon(fileName)}</span>
+                <span class="message-file-type"></span>
+            </span>
+            <span class="message-file-name">${safeName}</span>
+        </button>
     `;
 }
 
@@ -5408,6 +5431,10 @@ function oddiPauseAutoFollowForManualScroll() {
         oddiChatManualFollowLock = true;
     }
     oddiChatShouldFollow = false;
+    if (oddiChatScrollFrame) {
+        cancelAnimationFrame(oddiChatScrollFrame);
+        oddiChatScrollFrame = 0;
+    }
 }
 
 function oddiUpdateChatFollowState() {
@@ -5442,28 +5469,6 @@ function oddiSmartScroll(forceFollow = false) {
         }
 
         if (forceFollow || oddiChatShouldFollow) {
-            chat.scrollTop = maxScroll;
-            oddiChatShouldFollow = true;
-        }
-    });
-}
-
-function oddiRestoreChatScroll(savedScroll = 0) {
-    if (!chat) return;
-
-    requestAnimationFrame(() => {
-        const maxScroll = Math.max(0, chat.scrollHeight - chat.clientHeight);
-
-        if (maxScroll <= 2) {
-            chat.scrollTop = 0;
-            oddiChatShouldFollow = true;
-            return;
-        }
-
-        if (Number(savedScroll) > 0) {
-            chat.scrollTop = Math.min(Number(savedScroll), maxScroll);
-            oddiUpdateChatFollowState();
-        } else {
             chat.scrollTop = maxScroll;
             oddiChatShouldFollow = true;
         }
@@ -5692,6 +5697,11 @@ function stopGeneration() {
         botMessage,
         elapsed ? `Stopped after ${formatAssistantElapsedTime(elapsed)}` : "Stopped"
     );
+    // A stopped assistant bubble is final; do not leave its animated dots
+    // behind when a later request starts in the same conversation.
+    botMessage?.classList.add('stopped-message');
+    botMessage?.querySelector('.thinking-indicator')?.remove();
+    botMessage?.querySelector('.thinking-actions')?.remove();
 
     if (
         botMessage &&
@@ -5727,7 +5737,6 @@ function stopGeneration() {
             conversation.messages.push(stoppedMessage);
 
             botMessage.dataset.messageIndex = stoppedIndex;
-            botMessage.querySelector('.thinking-actions')?.remove();
             addBotMessageActions(botMessage, stoppedIndex, conversationIndex);
 
             touchConversation(conversation);
@@ -5770,11 +5779,62 @@ const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
+function showSpeechCaptureMessage(message) {
+    if (typeof showOddiToast === "function") {
+        showOddiToast(message, "error");
+    } else {
+        window.alert(message);
+    }
+}
+
+function speechCaptureErrorMessage(error) {
+    const code = typeof error === "string" ? error : error?.name;
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        return "Microphone access needs a secure page. Open ODDI on HTTPS or localhost, then allow microphone access.";
+    }
+    if (["NotAllowedError", "PermissionDeniedError", "not-allowed"].includes(code)) {
+        return "Microphone access is blocked. Allow it for this site in your browser settings, then try again.";
+    }
+    if (["network", "service-not-allowed"].includes(code)) {
+        return "Speech recognition could not connect. Check your internet connection or browser speech service and try again.";
+    }
+    if (["NotFoundError", "DevicesNotFoundError", "audio-capture"].includes(code)) {
+        return "No working microphone was found. Connect or enable a microphone and try again.";
+    }
+    if (["NotReadableError", "TrackStartError"].includes(code)) {
+        return "The microphone is busy or unavailable. Close other apps using it and try again.";
+    }
+    return "Could not start speech capture. Check microphone permission and try again.";
+}
+
+async function requestSpeechCaptureAccess() {
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        showSpeechCaptureMessage(speechCaptureErrorMessage());
+        return false;
+    }
+
+    let stream;
+    try {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (!stream.getAudioTracks().length) {
+            throw new DOMException("No microphone audio track was returned.", "NotFoundError");
+        }
+        return true;
+    } catch (error) {
+        console.error("Could not access the microphone:", error);
+        showSpeechCaptureMessage(speechCaptureErrorMessage(error));
+        return false;
+    } finally {
+        stream?.getTracks().forEach(track => track.stop());
+    }
+}
+
 const dictationBtn =
     document.getElementById("dictation-btn");
 
 let dictationRecognition = null;
 let dictationActive = false;
+let dictationStartupPending = false;
 
 function resizeInputAfterDictation() {
     input.style.height = "auto";
@@ -5782,6 +5842,13 @@ function resizeInputAfterDictation() {
         Math.min(input.scrollHeight, 180) + "px";
 
     updateActionButton();
+}
+
+function restoreDictationButton() {
+    dictationBtn.classList.remove("listening");
+    dictationBtn.innerHTML = `<svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
+    dictationBtn.title = "Type with your voice";
+    dictationBtn.setAttribute("aria-label", "Type with your voice");
 }
 
 if (SpeechRecognition) {
@@ -5793,10 +5860,13 @@ if (SpeechRecognition) {
     dictationRecognition.continuous = false;
     dictationRecognition.interimResults = true;
 
-    dictationBtn.onclick = () => {
+    dictationBtn.onclick = async () => {
+
+        if (dictationStartupPending || voiceStartupPending) return;
 
         if (voiceModeActive) {
             stopVoiceMode();
+            await new Promise(resolve => setTimeout(resolve, 250));
         }
 
         if (dictationActive) {
@@ -5806,6 +5876,17 @@ if (SpeechRecognition) {
             return;
         }
 
+        if (dictationStartupPending) return;
+        dictationStartupPending = true;
+
+        if (typeof getSpeechRecognitionLanguage === "function") {
+            dictationRecognition.lang = getSpeechRecognitionLanguage();
+        }
+
+        const microphoneReady = await requestSpeechCaptureAccess();
+        dictationStartupPending = false;
+        if (!microphoneReady) return;
+
         try {
             dictationRecognition.start();
         } catch (error) {
@@ -5814,6 +5895,7 @@ if (SpeechRecognition) {
                     "Could not start dictation:",
                     error
                 );
+                showSpeechCaptureMessage(speechCaptureErrorMessage(error));
             }
         }
     };
@@ -5858,12 +5940,11 @@ if (SpeechRecognition) {
 
         if (finalText.trim()) {
 
-            const existing =
-                input.value.trim();
-
-            input.value = existing
-                ? existing + " " + finalText.trim()
-                : finalText.trim();
+            const spokenText = finalText.trim();
+            const existing = input.value.replace(/\s+$/, "");
+            const nextValue = `${existing ? `${existing} ` : ""}${spokenText}`;
+            input.setRangeText(nextValue, 0, input.value.length, "end");
+            input.dispatchEvent(new Event("input", { bubbles: true }));
 
             resizeInputAfterDictation();
         }
@@ -5877,29 +5958,7 @@ if (SpeechRecognition) {
     dictationRecognition.onend = () => {
 
         dictationActive = false;
-
-        dictationBtn.classList.remove(
-            "listening"
-        );
-
-        dictationBtn.innerHTML = `
-            <svg
-                height="24"
-                viewBox="0 0 24 24"
-                width="24"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="currentColor">
-                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39-6-6.92h-2z"/>
-            </svg>
-        `;
-
-        dictationBtn.title =
-            "Type with your voice";
-
-        dictationBtn.setAttribute(
-            "aria-label",
-            "Type with your voice"
-        );
+        restoreDictationButton();
 
         input.placeholder =
             "Ask Oddi anything...";
@@ -5922,20 +5981,14 @@ if (SpeechRecognition) {
 
         input.placeholder =
             "Ask Oddi anything...";
-
-        if (event.error === "not-allowed") {
-            alert(
-                "Microphone permission is required for voice typing."
-            );
-        }
+        restoreDictationButton();
+        showSpeechCaptureMessage(speechCaptureErrorMessage(event.error));
     };
 
 } else {
 
     dictationBtn.onclick = () => {
-        alert(
-            "Voice typing is not supported by this browser. Try Chrome or Edge."
-        );
+        showSpeechCaptureMessage("Voice typing is not supported in this browser. Use a current version of Chrome or Edge on HTTPS or localhost.");
     };
 }
 
@@ -6364,20 +6417,44 @@ function startVoiceRecognition() {
                 "Could not start voice recognition:",
                 error
             );
+            updateVoiceStatus(
+                "Could not start listening",
+                speechCaptureErrorMessage(error)
+            );
+            showSpeechCaptureMessage(speechCaptureErrorMessage(error));
         }
     }
 }
 
-function startVoiceMode() {
+let voiceStartupPending = false;
+
+function getSpeechRecognitionLanguage() {
+    const languageSetting = document.getElementById("languageSetting")?.value || "en";
+    return speechLanguageMap[languageSetting] || languageSetting || "en-IN";
+}
+
+async function startVoiceMode() {
 
     if (!SpeechRecognition) {
 
-        alert(
-            "Voice conversation is not supported by this browser. Try Chrome or Edge."
-        );
+        showSpeechCaptureMessage("Voice conversation is not supported in this browser. Use a current version of Chrome or Edge on HTTPS or localhost.");
 
         return;
     }
+
+    if (voiceStartupPending || dictationStartupPending) return;
+    voiceStartupPending = true;
+
+    if (dictationActive) {
+        try { dictationRecognition?.stop(); } catch (error) {}
+        await new Promise(resolve => setTimeout(resolve, 250));
+    }
+
+    const microphoneReady = await requestSpeechCaptureAccess();
+    voiceStartupPending = false;
+    if (!microphoneReady) return;
+
+    if (recognition) recognition.lang = getSpeechRecognitionLanguage();
 
     createVoicePanel();
     input.blur();
@@ -6900,8 +6977,7 @@ if (SpeechRecognition) {
     recognition =
         new SpeechRecognition();
 
-    recognition.lang =
-        speechLanguageMap[getSelectedLanguage()] || "en-IN";
+    recognition.lang = getSpeechRecognitionLanguage();
     recognition.continuous = false;
     recognition.interimResults = false;
 
@@ -7086,9 +7162,17 @@ if (SpeechRecognition) {
 
             updateVoiceStatus(
                 "Microphone permission is required.",
-                "Please allow microphone access and try again."
+                speechCaptureErrorMessage(event.error)
             );
+            showSpeechCaptureMessage(speechCaptureErrorMessage(event.error));
 
+            return;
+        }
+
+        if (event.error === "audio-capture" || event.error === "network" || event.error === "service-not-allowed") {
+            const message = speechCaptureErrorMessage(event.error);
+            updateVoiceStatus("Speech capture failed", message);
+            showSpeechCaptureMessage(message);
             return;
         }
 
@@ -7114,9 +7198,7 @@ if (SpeechRecognition) {
 
     voiceBtn.onclick = () => {
 
-        alert(
-            "Voice conversation is not supported by this browser. Try Chrome or Edge."
-        );
+        showSpeechCaptureMessage("Voice conversation is not supported in this browser. Use a current version of Chrome or Edge on HTTPS or localhost.");
     };
 }
 
@@ -7755,7 +7837,10 @@ async function saveConversationNow(conversation) {
             });
             if (response.ok) {
                 const data = await response.json();
-                if (data?.conversation) Object.assign(working, normalizeConversationObject(data.conversation));
+                if (data?.conversation) {
+                    const merged = mergeConversationForRetry(working, data.conversation);
+                    Object.assign(working, merged);
+                }
                 conversationDirtyLocal.delete(conversationId);
                 removeOddiConversationBackup(conversationId);
                 working.__recoveredLocally = false;
@@ -7788,10 +7873,24 @@ async function saveConversationNow(conversation) {
     }
 }
 
+async function queueConversationMutation(conversationId, operation) {
+    const key = String(conversationId || "");
+    if (!key || typeof operation !== "function") return false;
+    const previous = conversationSaveQueues.get(key) || Promise.resolve(true);
+    const current = previous.catch(() => false).then(operation);
+    conversationSaveQueues.set(key, current);
+    try {
+        return await current;
+    } finally {
+        if (conversationSaveQueues.get(key) === current) {
+            conversationSaveQueues.delete(key);
+        }
+    }
+}
+
 // Multiple UI paths can request a save for the same conversation at once
-// (message append, title edits, autosync and recovery). Serialize full-chat
-// writes per ID so they always send the revision returned by the previous
-// save instead of racing each other into repeated 409 conflicts.
+// (message append, title edits, autosync and recovery). Serialize every cloud
+// mutation per ID so message appends cannot race a revision-checked full save.
 async function saveConversation(conversation) {
     if (!conversation?.id) return false;
     const localId = String(conversation.id);
@@ -7800,16 +7899,7 @@ async function saveConversation(conversation) {
     }
     if (!await ensureAccountConversationId(conversation)) return false;
     const conversationId = String(conversation.id);
-    const previous = conversationSaveQueues.get(conversationId) || Promise.resolve(true);
-    const current = previous.catch(() => false).then(() => saveConversationNow(conversation));
-    conversationSaveQueues.set(conversationId, current);
-    try {
-        return await current;
-    } finally {
-        if (conversationSaveQueues.get(conversationId) === current) {
-            conversationSaveQueues.delete(conversationId);
-        }
-    }
+    return queueConversationMutation(conversationId, () => saveConversationNow(conversation));
 }
 
 async function appendConversationMessage(conversation, message) {
@@ -7833,26 +7923,31 @@ async function appendConversationMessage(conversation, message) {
         return saveConversation(conversation);
     }
     const conversationId = String(conversation.id);
-    conversationDirtyLocal.add(conversationId);
-    backupOddiConversation(conversation);
-    try {
-        const response = await fetch(`/api/conversations/${conversation.id}/messages`, {
-            method: "POST", credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message })
-        });
-        if (response.status === 404 && await recoverMissingCloudConversation(conversation)) return true;
-        if (!response.ok) throw new Error(`Append message failed (${response.status})`);
-        const data = await response.json();
-        if (data?.conversation) Object.assign(conversation, normalizeConversationObject(data.conversation));
-        conversationDirtyLocal.delete(conversationId);
-        removeOddiConversationBackup(conversationId);
-        conversation.__recoveredLocally = false;
-        return true;
-    } catch (error) {
-        console.error("Append conversation message error:", error);
-        return false;
-    }
+    return queueConversationMutation(conversationId, async () => {
+        conversationDirtyLocal.add(conversationId);
+        backupOddiConversation(conversation);
+        try {
+            const response = await fetch(`/api/conversations/${conversation.id}/messages`, {
+                method: "POST", credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message })
+            });
+            if (response.status === 404 && await recoverMissingCloudConversation(conversation)) return true;
+            if (!response.ok) throw new Error(`Append message failed (${response.status})`);
+            const data = await response.json();
+            if (data?.conversation) {
+                const merged = mergeConversationForRetry(conversation, data.conversation);
+                Object.assign(conversation, merged);
+            }
+            conversationDirtyLocal.delete(conversationId);
+            removeOddiConversationBackup(conversationId);
+            conversation.__recoveredLocally = false;
+            return true;
+        } catch (error) {
+            console.error("Append conversation message error:", error);
+            return false;
+        }
+    });
 }
 
 async function updateConversationMessageRemote(conversation, messageId, patch) {
@@ -7867,25 +7962,30 @@ async function updateConversationMessageRemote(conversation, messageId, patch) {
         return saveConversation(conversation);
     }
     const conversationId = String(conversation.id);
-    conversationDirtyLocal.add(conversationId);
-    backupOddiConversation(conversation);
-    try {
-        const response = await fetch(`/api/conversations/${conversation.id}/messages/${encodeURIComponent(messageId)}`, {
-            method: "PUT", credentials: "same-origin",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ patch })
-        });
-        if (!response.ok) throw new Error(`Update message failed (${response.status})`);
-        const data = await response.json();
-        if (data?.conversation) Object.assign(conversation, normalizeConversationObject(data.conversation));
-        conversationDirtyLocal.delete(conversationId);
-        removeOddiConversationBackup(conversationId);
-        conversation.__recoveredLocally = false;
-        return true;
-    } catch (error) {
-        console.error("Update conversation message error:", error);
-        return false;
-    }
+    return queueConversationMutation(conversationId, async () => {
+        conversationDirtyLocal.add(conversationId);
+        backupOddiConversation(conversation);
+        try {
+            const response = await fetch(`/api/conversations/${conversation.id}/messages/${encodeURIComponent(messageId)}`, {
+                method: "PUT", credentials: "same-origin",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ patch })
+            });
+            if (!response.ok) throw new Error(`Update message failed (${response.status})`);
+            const data = await response.json();
+            if (data?.conversation) {
+                const merged = mergeConversationForRetry(conversation, data.conversation);
+                Object.assign(conversation, merged);
+            }
+            conversationDirtyLocal.delete(conversationId);
+            removeOddiConversationBackup(conversationId);
+            conversation.__recoveredLocally = false;
+            return true;
+        } catch (error) {
+            console.error("Update conversation message error:", error);
+            return false;
+        }
+    });
 }
 
 async function deleteConversationMessageRemote(conversation, messageId) {
@@ -7898,21 +7998,26 @@ async function deleteConversationMessageRemote(conversation, messageId) {
         return saveConversation(conversation);
     }
     const conversationId = String(conversation.id);
-    conversationDirtyLocal.add(conversationId);
-    backupOddiConversation(conversation);
-    try {
-        const response = await fetch(`/api/conversations/${conversation.id}/messages/${encodeURIComponent(messageId)}`, { method: "DELETE", credentials: "same-origin" });
-        if (!response.ok) throw new Error(`Delete message failed (${response.status})`);
-        const data = await response.json();
-        if (data?.conversation) Object.assign(conversation, normalizeConversationObject(data.conversation));
-        conversationDirtyLocal.delete(conversationId);
-        removeOddiConversationBackup(conversationId);
-        conversation.__recoveredLocally = false;
-        return true;
-    } catch (error) {
-        console.error("Delete conversation message error:", error);
-        return false;
-    }
+    return queueConversationMutation(conversationId, async () => {
+        conversationDirtyLocal.add(conversationId);
+        backupOddiConversation(conversation);
+        try {
+            const response = await fetch(`/api/conversations/${conversation.id}/messages/${encodeURIComponent(messageId)}`, { method: "DELETE", credentials: "same-origin" });
+            if (!response.ok) throw new Error(`Delete message failed (${response.status})`);
+            const data = await response.json();
+            if (data?.conversation) {
+                const merged = mergeConversationForRetry(conversation, data.conversation);
+                Object.assign(conversation, merged);
+            }
+            conversationDirtyLocal.delete(conversationId);
+            removeOddiConversationBackup(conversationId);
+            conversation.__recoveredLocally = false;
+            return true;
+        } catch (error) {
+            console.error("Delete conversation message error:", error);
+            return false;
+        }
+    });
 }
 
 async function createServerConversation(title = "New Chat") {
@@ -7961,6 +8066,7 @@ function buildConversationTitle(value) {
     }
 
     text = text
+        .replace(/^(?:good\s+(?:morning|afternoon|evening)|how\s+are\s+you|what(?:'|’)s\s+up)[\s,!.:-]*/i, "")
         .replace(/^(?:(?:hi|hello|hey)\b[\s,!.:-]*)+/i, "")
         .replace(/^(?:please\s+)?(?:can|could|would|will)\s+you\s+/i, "")
         .replace(/^(?:please\s+)?(?:i want to|i need to|i would like to|i'd like to)\s+/i, "")
@@ -7972,7 +8078,30 @@ function buildConversationTitle(value) {
         .replace(/\s+/g, " ")
         .trim();
 
-    if (!text) return "New Chat";
+    if (!text) return "General Chat";
+
+    const personalIntro = text.match(/^(?:i am|i'm|my name is|call me)\s+(.+)$/i);
+    if (personalIntro) {
+        const identity = personalIntro[1].trim();
+        if (/\b(?:b\s?\.\s?tech|btech|m\s?\.\s?tech|mtech|cse|mca|ai|ml)\b/i.test(identity)) {
+            const title = identity
+                .replace(/\bb\s?\.\s?tech\b/ig, "BTech")
+                .replace(/\bbtech\b/ig, "BTech")
+                .replace(/\bm\s?\.\s?tech\b/ig, "MTech")
+                .replace(/\bmtech\b/ig, "MTech")
+                .replace(/\bcse\b/ig, "CSE")
+                .replace(/\bai\b/ig, "AI")
+                .replace(/\bml\b/ig, "ML");
+            const words = title.split(" ");
+            const titledIdentity = words.map((word, index) => index === 0 && /^(?:a|an|the)$/i.test(word)
+                ? word.toLowerCase()
+                : word.charAt(0).toLocaleUpperCase() + word.slice(1)).join(" ");
+            return `About Me · ${titledIdentity}`.slice(0, 58);
+        }
+        return "About Me";
+    }
+
+    if (/^(?:thanks?|thank you|ok(?:ay)?|good night)[.!?]*$/i.test(text)) return "General Chat";
     const words = text.split(" ").slice(0, 9);
     const minorWords = new Set(["a", "an", "and", "as", "at", "by", "for", "from", "in", "of", "on", "or", "the", "to", "vs", "with"]);
     const titled = words.map((word, index) => {
@@ -8417,15 +8546,15 @@ function getFileIcon(
     }
 
     if (/\.pdf$/i.test(filename)) {
-        return "📕";
+        return "🖼️";
     }
 
     if (/\.xlsx$/i.test(filename)) {
-        return "📊";
+        return "🖼️";
     }
 
     if (/\.docx$/i.test(filename)) {
-        return "📝";
+        return "🖼️";
     }
 
     return "📄";
@@ -11729,7 +11858,7 @@ function speakAIMessage(button) {
     utterance.onend = () => {
 
         button.textContent =
-            "🔊";
+            "⏹️";
 
         button.classList.remove(
             "speaking"
@@ -11739,7 +11868,7 @@ function speakAIMessage(button) {
     utterance.onerror = () => {
 
         button.textContent =
-            "🔊";
+            "⏹️";
 
         button.classList.remove(
             "speaking"
@@ -12325,13 +12454,20 @@ async function sendMessage(
 
     const skipUserMessage = !!options.skipUserMessage;
 
-    let message =
+    const rawMessage =
         options.messageOverride !== undefined
             ? String(options.messageOverride).trim()
             : input.value.trim();
 
-    const userDisplayMessage =
-        displayMessage || message;
+    const serializeFormattedText = window.__oddiSerializeFormattedText;
+    let message = typeof serializeFormattedText === "function"
+        ? serializeFormattedText(rawMessage).trim()
+        : rawMessage;
+
+    const displaySource = displayMessage || rawMessage;
+    const userDisplayMessage = typeof serializeFormattedText === "function"
+        ? serializeFormattedText(displaySource)
+        : displaySource;
 
     if (!message) return;
 
@@ -12390,9 +12526,6 @@ async function sendMessage(
 
             currentConversation = 0;
             touchConversation(conversations[0]);
-
-            renderHistory();
-            publishConversationDataReady();
 
         } else {
 
@@ -12474,8 +12607,8 @@ async function sendMessage(
             for (const file of selectedFiles) {
                 try {
                     const fileId = await storeOddiFile(file);
-                    fileRefs.push({ id: fileId, name: file.name });
-                    fileHTML += buildFileHTML(file.name, fileId);
+                    fileRefs.push({ id: fileId, name: file.name, type: file.type || "" });
+                    fileHTML += buildFileHTML(file.name, fileId, file.type || "");
                 } catch (error) {
                     console.error("Could not store uploaded file:", error);
                     fileHTML += buildFileHTML(file.name);
@@ -12488,7 +12621,7 @@ async function sendMessage(
         if (conversations[currentConversation] === targetConversation) {
             chat.innerHTML += `
             <div class="user-message" data-message-index="${userMessageIndex}">
-                ${fileHTML}
+                ${fileHTML ? `<div class="user-attachments">${fileHTML}</div>` : ""}
 
                 <div class="user-bubble-main">
                     <div class="user-text">${renderUserMessageHtml(userDisplayMessage)}</div>
@@ -12530,7 +12663,6 @@ async function sendMessage(
             </div>
             `;
 
-            oddiSmartScroll(true);
         }
 
         const newUserMessage = {
@@ -12564,6 +12696,8 @@ async function sendMessage(
         }
 
         renderHistory();
+        // Only publish the new row after a real user message has been added.
+        publishConversationDataReady();
 
         // Handle explicit "remember ..." requests immediately. The server
         // separately checks normal chat for durable memories after replying.
@@ -12624,16 +12758,6 @@ async function sendMessage(
     activeGenerationId = generationId;
     activeGenerationAssistantMessageId = assistantMessageId;
     renderHistory();
-
-    const scrollKey = targetConversationId
-        ? `oddi_chat_scroll_${getConversationKey(targetConversation)}`
-        : "";
-    const savedScroll = scrollKey
-        ? Number(localStorage.getItem(scrollKey) || 0)
-        : 0;
-    if (conversations[currentConversation] === targetConversation) {
-        oddiRestoreChatScroll(savedScroll);
-    }
 
     /* -----------------------------------------
        SEND TO BACKEND
@@ -12803,11 +12927,15 @@ async function sendMessage(
             clearPendingGeneration(generationId);
             const responseBody = await response.text();
             let errorMessage = responseBody;
+            let errorPayload = null;
             try {
-                const errorPayload = JSON.parse(responseBody);
+                errorPayload = JSON.parse(responseBody);
                 errorMessage = errorPayload?.error || responseBody;
             } catch (_) {}
-            throw new Error(errorMessage || `Chat request failed (${response.status}).`);
+            const chatError = new Error(errorMessage || `Chat request failed (${response.status}).`);
+            chatError.requestId = errorPayload?.request_id || response.headers.get("X-Oddi-Request-ID") || "";
+            chatError.httpStatus = response.status;
+            throw chatError;
         }
 
         const reply = await response.text();
@@ -12906,7 +13034,9 @@ async function sendMessage(
             const fileLimitFailure = failureMessage.includes("Your Library is full (30 files)");
             typing.textContent = fileLimitFailure
                 ? failureMessage
-                : "⚠️ Sorry! Something went wrong.";
+                : error?.requestId
+                    ? `The chat server returned an error (${error?.httpStatus || "request failed"}). Reference: ${error.requestId}. Please retry.`
+                    : "⚠️ Sorry! Something went wrong.";
 
             if (!fileLimitFailure && bubble) {
                 bubble.querySelector(".thinking-actions")?.remove();
@@ -14022,6 +14152,7 @@ function updateAttachmentPreview() {
             imageFiles.forEach(file => {
                 const card = document.createElement("div");
                 card.className = "pasted-image-card";
+                card.dataset.attachmentIndex = String(selectedFiles.indexOf(file));
                 const img = document.createElement("img");
                 const objectUrl = URL.createObjectURL(file);
                 img.src = objectUrl;
@@ -14039,6 +14170,10 @@ function updateAttachmentPreview() {
                     if (realIndex >= 0) selectedFiles.splice(realIndex, 1);
                     updateAttachmentPreview();
                 };
+                card.addEventListener("click", event => {
+                    if (event.target.closest(".pasted-image-remove")) return;
+                    window.__oddiPreviewAttachment?.(file, card);
+                });
                 card.appendChild(img);
                 card.appendChild(remove);
                 pastedImagePreview.appendChild(card);
@@ -14060,6 +14195,7 @@ function updateAttachmentPreview() {
 
         row.className =
             "attachment-item";
+        row.dataset.attachmentIndex = String(index);
 
         const name =
             document.createElement("span");
@@ -14084,16 +14220,19 @@ function updateAttachmentPreview() {
             "Remove this file";
         removeBtn.setAttribute("aria-label", `Remove ${file.name || "attached file"}`);
 
-        const previewBtn = document.createElement("button");
-        previewBtn.type = "button";
-        previewBtn.className = "attachment-file-preview";
-        previewBtn.textContent = "Preview";
-        previewBtn.title = `Preview ${file.name || "attached file"}`;
-        previewBtn.setAttribute("aria-label", `Preview ${file.name || "attached file"}`);
-        previewBtn.onclick = event => {
-            event.stopPropagation();
-            window.__oddiPreviewAttachment?.(file, previewBtn);
+        row.setAttribute("role", "button");
+        row.setAttribute("tabindex", "0");
+        row.setAttribute("aria-label", `Preview ${file.name || "attached file"}`);
+        const openFilePreview = event => {
+            if (event.target.closest(".attachment-file-remove")) return;
+            window.__oddiPreviewAttachment?.(file, row);
         };
+        row.addEventListener("click", openFilePreview);
+        row.addEventListener("keydown", event => {
+            if (event.target !== row || !["Enter", " "].includes(event.key)) return;
+            event.preventDefault();
+            window.__oddiPreviewAttachment?.(file, row);
+        });
 
         removeBtn.onclick = event => {
 
@@ -14109,11 +14248,33 @@ function updateAttachmentPreview() {
 
         row.appendChild(name);
 
-        row.appendChild(previewBtn);
         row.appendChild(removeBtn);
 
         attachmentList.appendChild(row);
     });
+
+    // Merge image previews and document cards into one ordered horizontal strip.
+    if (pastedImagePreview) {
+        const imageCards = new Map(
+            Array.from(pastedImagePreview.querySelectorAll(".pasted-image-card"))
+                .map(card => [Number(card.dataset.attachmentIndex), card])
+        );
+        const fileRows = new Map(
+            Array.from(attachmentList.querySelectorAll(".attachment-item"))
+                .map(row => [Number(row.dataset.attachmentIndex), row])
+        );
+        selectedFiles.forEach((file, index) => {
+            const imageCard = imageCards.get(index);
+            if (imageCard) {
+                attachmentList.appendChild(imageCard);
+                fileRows.get(index)?.remove();
+            } else if (fileRows.has(index)) {
+                attachmentList.appendChild(fileRows.get(index));
+            }
+        });
+        pastedImagePreview.innerHTML = "";
+        pastedImagePreview.hidden = true;
+    }
 }
 
 attachmentToggle.onclick = () => {
@@ -14219,9 +14380,14 @@ chatSearchInput.addEventListener(
     }
 );
 
+function isMetadataFlagEnabled(value) {
+    if (typeof value === "string") return ["true", "1", "yes"].includes(value.trim().toLowerCase());
+    return value === true || value === 1;
+}
+
 function getPinnedChatIds() {
     if (Array.isArray(conversations)) {
-        return conversations.filter(c => c?.pinned).map(c => getConversationKey(c));
+        return conversations.filter(c => isMetadataFlagEnabled(c?.pinned)).map(c => getConversationKey(c));
     }
     return [];
 }
@@ -14287,6 +14453,7 @@ async function updateConversationMetadata(conversation, patch = {}, options = {}
         }
         return true;
     }
+    return queueConversationMutation(conversationId, async () => {
     try {
         const response = await fetch(`/api/conversations/${encodeURIComponent(conversationId)}/metadata`, {
             method: "PUT",
@@ -14332,6 +14499,7 @@ async function updateConversationMetadata(conversation, patch = {}, options = {}
         console.error("Conversation metadata update error:", error);
         return false;
     }
+    });
 }
 
 async function migrateLegacyConversationState() {
@@ -14656,6 +14824,9 @@ function renderHistory() {
         const ap = pinnedIds.includes(getConversationKey(a)) ? 1 : 0;
         const bp = pinnedIds.includes(getConversationKey(b)) ? 1 : 0;
         if (ap !== bp) return bp - ap;
+        const aIsCurrent = currentId !== null && String(a.id) === String(currentId);
+        const bIsCurrent = currentId !== null && String(b.id) === String(currentId);
+        if (aIsCurrent !== bIsCurrent) return aIsCurrent ? -1 : 1;
         const activityDifference = getConversationDate(b) - getConversationDate(a);
         if (activityDifference !== 0) return activityDifference;
         return conversations.indexOf(a) - conversations.indexOf(b);
@@ -14691,8 +14862,13 @@ function renderHistory() {
 };
     makeSectionToggle('Pinned', 'pinned', pinnedSection);
     makeSectionToggle('Recents', 'recent', normalSection);
-    const pinnedMatches = orderedConversations.filter(c => !c.deleted && isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
-    const normalMatches = orderedConversations.filter(c => !c.deleted && !isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
+    const hasMessages = c => c?.__summaryOnly
+        ? Number(c?.message_count || 0) > 0
+        : Array.isArray(c?.messages)
+            ? c.messages.length > 0
+            : Number(c?.message_count || 0) > 0;
+    const pinnedMatches = orderedConversations.filter(c => hasMessages(c) && !c.deleted && isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
+    const normalMatches = orderedConversations.filter(c => hasMessages(c) && !c.deleted && !isConversationPinned(c) && !isConversationArchived(c) && conversationMatchesQuery(c, query));
 
     if (pinnedMatches.length) {
         pinnedMatches.forEach(c => pinnedSection.appendChild(createHistoryItem(c, { searchQuery: query })));
@@ -14738,7 +14914,7 @@ function renderHistoryAfterMetadata(options = {}) {
 async function togglePinConversation(conversation, options = {}) {
     if (!conversation?.id) return false;
     const conversationId = String(conversation.id);
-    const shouldPin = !Boolean(conversation.pinned);
+    const shouldPin = !isMetadataFlagEnabled(conversation.pinned);
     const ok = await updateConversationMetadata(conversation, { pinned: shouldPin }, options);
     const latest = conversations.find(item => String(item?.id) === conversationId);
     if (ok && latest) {
@@ -14896,7 +15072,7 @@ async function openConversation(index) {
 
                 if (Array.isArray(msg.fileRefs) && msg.fileRefs.length) {
                     msg.fileRefs.forEach(file => {
-                        fileHTML += buildFileHTML(file.name, file.id);
+                        fileHTML += buildFileHTML(file.name, file.id, file.type || file.mime_type || "");
                     });
                 } else if (msg.files) {
                     msg.files.forEach(file => {
@@ -14908,7 +15084,7 @@ async function openConversation(index) {
                     <div class="user-message ${msg.pinned ? "pinned-message" : ""}"
                          data-message-index="${messageIndex}">
 
-                        ${fileHTML}
+                        ${fileHTML ? `<div class="user-attachments">${fileHTML}</div>` : ""}
 
                         <div class="user-bubble-main">
                             <div class="user-text">${renderUserMessageHtml(msg.text)}</div>
@@ -15079,7 +15255,7 @@ async function openConversation(index) {
 chat.addEventListener("click", event => {
     const fileElement = event.target.closest(".message-file[data-file-key]");
     if (!fileElement) return;
-    openOddiUploadedFile(fileElement.dataset.fileKey);
+    openOddiUploadedFile(fileElement.dataset.fileKey, fileElement);
 });
 
 chat.addEventListener("keydown", event => {
@@ -15087,7 +15263,7 @@ chat.addEventListener("keydown", event => {
     const fileElement = event.target.closest(".message-file[data-file-key]");
     if (!fileElement) return;
     event.preventDefault();
-    openOddiUploadedFile(fileElement.dataset.fileKey);
+    openOddiUploadedFile(fileElement.dataset.fileKey, fileElement);
 });
 
 window.__oddiOpenConversation = openConversation;
@@ -18689,6 +18865,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
   const deleteSelectedBtn = document.getElementById("memoryDeleteSelected");
   const enabledToggle = document.getElementById("memoryEnabledToggle");
   const offBanner = document.getElementById("memoryOffBanner");
+  const memoryAutoStatus = document.getElementById("memoryAutoStatus");
   const addBtn = document.getElementById("memoryAddBtn");
   const addCategoryBtn = document.getElementById("memoryAddCategoryBtn");
   const addModal = document.getElementById("memoryAddModal");
@@ -19173,6 +19350,31 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
         window.dispatchEvent(new CustomEvent("oddi:memory-setting-changed", {
           detail:{...window.__oddiMemorySettings, source:"server-sync"}
         }));
+      }
+      if (memoryAutoStatus) {
+        const autoMemory = payload.auto_memory || {};
+        const queue = autoMemory.queue || {};
+        const pendingCount = Number(queue.queued_count || 0);
+        const processingCount = Number(queue.processing_count || 0);
+        if (queue.lookup_failed) {
+          memoryAutoStatus.textContent = "Automatic memory status could not be checked. Refresh this page to try again.";
+        } else if (autoMemory.browser_local_chats) {
+          memoryAutoStatus.textContent = "This chat is saved only in this browser, so it is not added to account memory automatically.";
+        } else if (!autoMemory.available && payload.memory_settings?.enabled === false) {
+          memoryAutoStatus.textContent = "Memory is off. Turn it on to queue new conversation details for review and extraction.";
+        } else if (!autoMemory.available && payload.memory_settings?.auto_extract === false) {
+          memoryAutoStatus.textContent = "Automatic memory updates are off in your memory settings.";
+        } else if (!autoMemory.provider_configured) {
+          memoryAutoStatus.textContent = "Automatic memory extraction is not configured on this server, so new chats will not be added automatically.";
+        } else if (processingCount > 0) {
+          memoryAutoStatus.textContent = "Automatic memory extraction is processing recent conversation details. Refresh shortly to see saved facts.";
+        } else if (pendingCount > 0) {
+          const next = queue.next_available_at ? new Date(queue.next_available_at) : null;
+          const nextText = next && !Number.isNaN(next.getTime()) ? `, eligible around ${next.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}` : "";
+          memoryAutoStatus.textContent = `${pendingCount} conversation update${pendingCount === 1 ? " is" : "s are"} waiting for 30 minutes of inactivity${nextText}.`;
+        } else {
+          memoryAutoStatus.textContent = "No conversation updates are waiting. Refresh after the 30-minute quiet period to check whether new facts were saved below.";
+        }
       }
       allMemories = normalizeMemories(payload).map(normalizeMemory).filter(x => x.memory);
       renderCategories();
@@ -22578,7 +22780,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261006-sidebar-ui-3"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261007-sidebar-ui-9"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -25413,6 +25615,17 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
   function escapeLibraryText(value){
     return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
   }
+  async function previewLibraryFile(file,trigger){
+    let upload=null;
+    if(file?.source==="server") upload=await oddiRetrieveLibraryFileAsUpload(file);
+    else if(file?.source==="local"&&typeof getOddiStoredFile==="function"){
+      const stored=await getOddiStoredFile(file.id);
+      if(stored?.blob) upload=new File([stored.blob],stored.name||file.filename||file.name||"library-file",{type:stored.type||stored.blob.type||"application/octet-stream",lastModified:Date.now()});
+    }
+    if(!upload) throw new Error("Could not load this Library file for preview.");
+    if(typeof window.__oddiPreviewAttachment!=="function") throw new Error("The file preview is not ready yet.");
+    window.__oddiPreviewAttachment(upload,trigger);
+  }
   function renderLibrary(files){
     const q=(librarySearch?.value||"").trim().toLowerCase();
     const type=libraryTypeFilter?.value||"all";
@@ -25434,12 +25647,19 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
         <span class="oddi-library-icon">${fileIcon(name,f.mime_type||f.type)}</span>
         <div class="oddi-library-meta"><div class="oddi-library-name" title="${name}">${name}</div><div class="oddi-library-detail">${detail}</div></div>
         <div class="oddi-library-actions">
+          <button type="button" class="oddi-library-preview" title="Preview this file">Preview</button>
           <button type="button" class="oddi-library-upload" title="Attach this Library file to the current chat">Attach</button>
           <button type="button" class="oddi-library-delete" title="Delete file">Delete</button>
           <button type="button" class="oddi-library-download" title="Download ${name}" aria-label="Download ${name}">&#11015;</button>
         </div>
       </div>`;
     }).join("");
+    libraryList.querySelectorAll(".oddi-library-preview").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
+      btn.disabled=true;
+      try{await previewLibraryFile(rows[idx],btn);}
+      catch(e){showOddiToast(e.message||"Could not preview this file.","error");}
+      finally{btn.disabled=false;}
+    }));
     libraryList.querySelectorAll(".oddi-library-delete").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
       btn.disabled=true;
       await deleteLibraryFile(rows[idx]);
@@ -27247,6 +27467,9 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
     window.setTimeout(collapseWhenReady, 0);
   }
 
+  // The fresh-chat wrapper below runs in a separate script scope.
+  window.__oddiEnsureCompactDesktopSidebar = ensureCompactDesktopSidebar;
+
   function keepClosedRailState() {
     if (window.__oddiKeepSidebarOnFreshHome === true) {
       ensureCompactDesktopSidebar();
@@ -27292,7 +27515,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
         cls.includes("phone-launcher") || cls.includes("sidebar-launcher")) return false;
 
     if (cls.includes("new-chat") || aria.includes("new chat") || title.includes("new chat")) return true;
-    if (text === "+" || text === "＋" || text === "+ new chat" || text === "new chat") return true;
+    if (text === "+" || text === "+" || text === "+ new chat" || text === "new chat") return true;
 
     /* The compact rail can wrap its controls in divs, so the + button is
        not necessarily a direct child of the rail. Treat the first visible
@@ -27491,7 +27714,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
       markFresh();
       var result = await originalNewChat.apply(this, arguments);
       markFresh();
-      if (keepDesktopRail) ensureCompactDesktopSidebar();
+      if (keepDesktopRail) window.__oddiEnsureCompactDesktopSidebar?.();
       scheduleRepair();
       return result;
     };
@@ -27514,7 +27737,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
       var aria = String(button.getAttribute("aria-label") || "").toLowerCase();
       var title = String(button.getAttribute("title") || "").toLowerCase();
       var cls = String(button.className || "").toLowerCase();
-      isPlus = text === "+" || text === "＋" || aria.includes("new chat") || title.includes("new chat") || cls.includes("new-chat");
+      isPlus = text === "+" || text === "+" || aria.includes("new chat") || title.includes("new chat") || cls.includes("new-chat");
       if (!isPlus) {
         var controls = Array.prototype.filter.call(rail.querySelectorAll("button,[role='button'],a"), function(el){ return el.offsetParent !== null; });
         isPlus = controls.length && (controls[0] === button || controls[0].contains(button));
@@ -27573,7 +27796,7 @@ body:not(.oddi-react-sidebar-open) #oddi-react-sidebar-root:has(.oddi-rs-rail) ~
     var title = String(btn.getAttribute("title") || "").trim().toLowerCase();
     var cls = String(btn.className || "").toLowerCase();
 
-    if (text === "+" || text === "＋") return true;
+    if (text === "+" || text === "+") return true;
     if (aria.includes("new chat") || title.includes("new chat") || cls.includes("new-chat")) return true;
 
     return false;
@@ -29804,8 +30027,8 @@ body.oddi-archived-preview #oddiComposerShell{display:none !important;}
   }
   #chatbox.chatbox>.bot-message .ai-content{padding-left:4px !important;}
   body:not(.oddi-react-sidebar-open) .app{margin-left:0 !important;width:100vw !important;}
-  body.oddi-react-sidebar-open:not(.oddi-react-sidebar-collapsed) .app{margin-left:208px !important;width:calc(100vw - 208px) !important;}
-  body.oddi-react-sidebar-open.oddi-react-sidebar-collapsed .app{margin-left:58px !important;width:calc(100vw - 58px) !important;}
+  body.oddi-react-sidebar-open:not(.oddi-react-sidebar-collapsed) .app{margin-left:var(--oddi-sidebar-width,208px) !important;width:calc(100vw - var(--oddi-sidebar-width,208px)) !important;}
+  body.oddi-react-sidebar-open.oddi-react-sidebar-collapsed .app{margin-left:var(--oddi-sidebar-width,58px) !important;width:calc(100vw - var(--oddi-sidebar-width,58px)) !important;}
 }
 @media(max-width:768px){
   .input-area{
@@ -30067,7 +30290,7 @@ body.dark-mode .oddi-backup-reminder .oddi-backup-later{background:transparent;c
   window.addEventListener("oddi:new-chat-ready",()=>{findPanel.hidden=true;findButton.setAttribute("aria-expanded","false");findButton.hidden=true;scheduleLatestButtonUpdate();});
   window.addEventListener("oddi:conversation-opened",()=>{findButton.hidden=false;requestAnimationFrame(()=>{scheduleLatestButtonUpdate();if(!findPanel.hidden)updateFindResults();});});
 
-  /* #9 Preview locally selected images, PDFs, and text files before sending. */
+  /* Preview locally selected images/PDFs and server-read office/text files before sending. */
   const previewModal=document.createElement("div");previewModal.id="oddiAttachmentPreviewModal";previewModal.hidden=true;previewModal.setAttribute("role","presentation");
   previewModal.innerHTML='<section class="oddi-file-preview-card" role="dialog" aria-modal="true" aria-labelledby="oddiFilePreviewTitle"><div class="oddi-file-preview-head"><strong id="oddiFilePreviewTitle"></strong><button type="button" data-file-preview-close aria-label="Close file preview">×</button></div><div class="oddi-file-preview-body"></div></section>';
   document.body.appendChild(previewModal);
@@ -30077,14 +30300,70 @@ body.dark-mode .oddi-backup-reminder .oddi-backup-later{background:transparent;c
   function closeAttachmentPreview(){
     previewRequest++;
     previewModal.hidden=true;previewBody.replaceChildren();
+    document.documentElement.classList.remove("oddi-file-preview-lock");
+    document.body.classList.remove("oddi-file-preview-lock");
     if(previewObjectUrl){URL.revokeObjectURL(previewObjectUrl);previewObjectUrl="";}
     if(previewTrigger?.isConnected)previewTrigger.focus({preventScroll:true});
     previewTrigger=null;
+  }
+  function renderPreviewResult(result,request){
+    if(request!==previewRequest)return;
+    if(result?.kind!=="spreadsheet"){
+      const pre=document.createElement("pre");
+      pre.textContent=String(result?.content||"No readable content found.");
+      if(result?.truncated){const wrap=document.createElement("div");wrap.className="oddi-preview-text-wrap";const note=document.createElement("div");note.className="oddi-preview-truncated-note";note.textContent="Preview shortened to keep it responsive.";wrap.append(pre,note);previewBody.replaceChildren(wrap);}
+      else previewBody.replaceChildren(pre);
+      return;
+    }
+    const sheets=Array.isArray(result.sheets)?result.sheets:[];
+    const workbook=document.createElement("div");workbook.className="oddi-preview-workbook";
+    const tabBar=document.createElement("div");tabBar.className="oddi-preview-sheet-tabs";tabBar.setAttribute("role","tablist");
+    const tableScroll=document.createElement("div");tableScroll.className="oddi-file-preview-table-scroll";
+    const status=document.createElement("div");status.className="oddi-preview-truncated-note";
+    const renderSheet=index=>{
+      const sheet=sheets[index];if(!sheet)return;
+      tabBar.querySelectorAll("button").forEach((tab,tabIndex)=>tab.setAttribute("aria-selected",String(tabIndex===index)));
+      tableScroll.replaceChildren();
+      const rows=Array.isArray(sheet.rows)?sheet.rows:[];
+      if(!rows.length){const empty=document.createElement("div");empty.className="oddi-file-preview-empty";empty.textContent="This sheet has no readable cells.";tableScroll.appendChild(empty);}
+      else{
+        const table=document.createElement("table");table.className="oddi-file-preview-table";
+        const tbody=document.createElement("tbody");
+        rows.forEach((row,rowIndex)=>{
+          const tr=document.createElement("tr");
+          (Array.isArray(row)?row:[]).forEach(value=>{
+            const cell=document.createElement(rowIndex===0?"th":"td");
+            cell.textContent=value==null?"":String(value);tr.appendChild(cell);
+          });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(tbody);tableScroll.appendChild(table);
+      }
+      status.textContent=sheet.truncated?"Showing up to 500 rows and 30 columns for this sheet.":"";
+      status.hidden=!sheet.truncated;
+    };
+    sheets.forEach((sheet,index)=>{
+      const tab=document.createElement("button");tab.type="button";tab.textContent=String(sheet.name||`Sheet ${index+1}`);tab.setAttribute("role","tab");tab.setAttribute("aria-selected",String(index===0));
+      tab.addEventListener("click",()=>renderSheet(index));tabBar.appendChild(tab);
+    });
+    if(!sheets.length){const empty=document.createElement("div");empty.className="oddi-file-preview-empty";empty.textContent="No readable worksheets found.";tableScroll.appendChild(empty);}
+    else renderSheet(0);
+    workbook.append(tabBar,tableScroll,status);previewBody.replaceChildren(workbook);
+  }
+  async function requestOfficePreview(file,request){
+    const formData=new FormData();formData.append("file",file,file.name||"attachment");
+    const response=await fetch("/api/preview-file",{method:"POST",body:formData,credentials:"same-origin"});
+    const result=await response.json().catch(()=>({error:"The preview service returned an unreadable response."}));
+    if(request!==previewRequest)return;
+    if(!response.ok)throw new Error(result.error||result.detail||"This file could not be previewed.");
+    renderPreviewResult(result,request);
   }
   async function previewAttachment(file,trigger){
     if(!file)return;
     closeAttachmentPreview();previewTrigger=trigger||null;const request=++previewRequest;
     previewTitle.textContent=file.name||"Attachment preview";previewModal.hidden=false;
+    document.documentElement.classList.add("oddi-file-preview-lock");
+    document.body.classList.add("oddi-file-preview-lock");
     const type=String(file.type||"").toLowerCase();
     const extension=String(file.name||"").split(".").pop().toLowerCase();
     const message=document.createElement("div");message.className="oddi-file-preview-empty";
@@ -30092,14 +30371,61 @@ body.dark-mode .oddi-backup-reminder .oddi-backup-later{background:transparent;c
       const image=document.createElement("img");image.alt=file.name||"Attached image";previewObjectUrl=URL.createObjectURL(file);image.src=previewObjectUrl;previewBody.replaceChildren(image);
     }else if(type==="application/pdf"||extension==="pdf"){
       const frame=document.createElement("iframe");frame.title=`Preview of ${file.name||"PDF file"}`;previewObjectUrl=URL.createObjectURL(file);frame.src=previewObjectUrl;previewBody.replaceChildren(frame);
-    }else if(type.startsWith("text/")||["txt","csv","md","json","log"].includes(extension)){
+    }else if(["docx","xlsx","xlsm","xltx","xltm","xls","pptx","csv","tsv","rtf"].includes(extension)){
+      message.textContent="Preparing file preview…";previewBody.replaceChildren(message);
+      try{await requestOfficePreview(file,request);}
+      catch(error){if(request===previewRequest){message.textContent=error.message||"This file could not be previewed.";previewBody.replaceChildren(message);}}
+    }else if(type.startsWith("text/")||["txt","md","markdown","json","log","xml","yaml","yml","py","js","ts","tsx","jsx","css","sql","ini","cfg","toml","html","htm"].includes(extension)){
       message.textContent="Loading preview…";previewBody.replaceChildren(message);
       try{const maxBytes=2*1024*1024;let text=await file.slice(0,maxBytes).text();if(request!==previewRequest)return;if(file.size>maxBytes)text+=`\n\n[Preview truncated at 2 MB · original ${file.size.toLocaleString()} bytes]`;const pre=document.createElement("pre");pre.textContent=text;previewBody.replaceChildren(pre);}
       catch(_){message.textContent="This file could not be previewed. It can still be attached to your message.";}
     }else{
       message.textContent=`Preview is not available for this file type (${file.type||extension||"unknown"}). The file can still be attached to your message.`;previewBody.replaceChildren(message);
     }
+    if(request!==previewRequest)return;
     previewModal.querySelector("[data-file-preview-close]").focus({preventScroll:true});
+  }
+  function hydrateMessageAttachmentTiles(root=chatBox){
+    if(!root)return;
+    root.querySelectorAll(".message-file[data-file-key]:not([data-tile-state])").forEach(async card=>{
+      card.dataset.tileState="loading";
+      try{
+        const stored=await getOddiStoredFile(card.dataset.fileKey);
+        if(!card.isConnected)return;
+        if(!stored?.blob){card.dataset.tileState="unavailable";return;}
+        const fileName=String(stored.name||card.dataset.fileName||"Uploaded file");
+        const type=String(stored.type||stored.blob.type||card.dataset.fileType||"").toLowerCase();
+        const extension=fileName.includes(".")?fileName.split(".").pop().toLowerCase():"";
+        const isImage=type.startsWith("image/")||["png","jpg","jpeg","gif","webp","bmp","svg","avif","heic"].includes(extension);
+        const image=card.querySelector(".message-file-image");
+        const generic=card.querySelector(".message-file-generic");
+        const typeLabel=card.querySelector(".message-file-type");
+        card.title=`Preview ${fileName}`;
+        card.setAttribute("aria-label",`Preview ${fileName}`);
+        if(isImage&&image){
+          const objectUrl=URL.createObjectURL(stored.blob);
+          image.onload=()=>URL.revokeObjectURL(objectUrl);
+          image.onerror=()=>URL.revokeObjectURL(objectUrl);
+          image.src=objectUrl;
+          image.hidden=false;
+          card.classList.add("is-image");
+        }else{
+          if(typeLabel)typeLabel.textContent=extension?extension.toUpperCase():"FILE";
+          if(generic)generic.hidden=false;
+          card.classList.add("is-document");
+        }
+        card.dataset.tileState="ready";
+      }catch(error){
+        card.dataset.tileState="unavailable";
+        console.warn("Could not prepare the sent file thumbnail:",error);
+      }
+    });
+  }
+  window.__oddiHydrateMessageFileTiles=hydrateMessageAttachmentTiles;
+  hydrateMessageAttachmentTiles();
+  if(chatBox){
+    const attachmentTileObserver=new MutationObserver(()=>hydrateMessageAttachmentTiles(chatBox));
+    attachmentTileObserver.observe(chatBox,{childList:true,subtree:true});
   }
   window.__oddiPreviewAttachment=previewAttachment;
   previewModal.querySelector("[data-file-preview-close]").addEventListener("click",closeAttachmentPreview);
@@ -31348,7 +31674,7 @@ body.oddi-system-theme #binModal .utility-empty,body.oddi-system-theme #binModal
   }
   body.dark-mode #oddi-react-sidebar-root .oddi-rs-rail>.oddi-rs-phone-launcher,
   body.dark-mode #oddi-react-sidebar-root .oddi-rs-rail>.oddi-rs-launcher{border-color:#68736c!important;background:#171a18!important;color:#fff!important;}
-  #oddi-react-sidebar-root .oddi-rs-phone-launcher svg,#oddi-react-sidebar-root .oddi-rs-launcher svg{width:23px!important;height:23px!important;stroke-width:2.3!important;}
+  #oddi-react-sidebar-root .oddi-rs-phone-launcher svg,#oddi-react-sidebar-root .oddi-rs-launcher svg{width:18px!important;height:18px!important;stroke-width:1.8!important;}
   body.oddi-react-sidebar-open .header-controls{visibility:hidden!important;pointer-events:none!important;}
 
   /* The compact all-chats sheet is left aligned; Home is row one in its scroll. */
@@ -32110,6 +32436,63 @@ body.dark-mode .user-message .user-text a{color:#9acbff}
   document.body.appendChild(toolbar);
   const inlineProps=["fontFamily","fontSize","fontWeight","fontStyle","letterSpacing","lineHeight","textAlign","textIndent","textTransform","wordSpacing","paddingTop","paddingRight","paddingBottom","paddingLeft","borderTopWidth","borderRightWidth","borderBottomWidth","borderLeftWidth","boxSizing","direction","tabSize"];
   let hideTimer=0,lastRange=null;
+  function styledCharacter(character){
+    const point=character.codePointAt(0);
+    if(point>=0x1D400&&point<=0x1D419)return {base:String.fromCharCode(65+point-0x1D400),bold:true,italic:false};
+    if(point>=0x1D41A&&point<=0x1D433)return {base:String.fromCharCode(97+point-0x1D41A),bold:true,italic:false};
+    if(point>=0x1D7CE&&point<=0x1D7D7)return {base:String.fromCharCode(48+point-0x1D7CE),bold:true,italic:false};
+    if(point>=0x1D434&&point<=0x1D44D)return {base:String.fromCharCode(65+point-0x1D434),bold:false,italic:true};
+    if(point>=0x1D44E&&point<=0x1D467)return {base:String.fromCharCode(97+point-0x1D44E),bold:false,italic:true};
+    if(point===0x210E)return {base:"h",bold:false,italic:true};
+    if(point>=0x1D468&&point<=0x1D481)return {base:String.fromCharCode(65+point-0x1D468),bold:true,italic:true};
+    if(point>=0x1D482&&point<=0x1D49B)return {base:String.fromCharCode(97+point-0x1D482),bold:true,italic:true};
+    return null;
+  }
+  function styledCodePoint(character,bold,italic){
+    const code=character.codePointAt(0);
+    const upper=code>=65&&code<=90,lower=code>=97&&code<=122,digit=code>=48&&code<=57;
+    if(!upper&&!lower&&!digit)return character;
+    if(italic&&digit)return bold?String.fromCodePoint(0x1D7CE+code-48):character;
+    if(bold&&italic)return String.fromCodePoint((upper?0x1D468:0x1D482)+(code-(upper?65:97)));
+    if(bold)return String.fromCodePoint(digit?0x1D7CE+code-48:(upper?0x1D400:0x1D41A)+(code-(upper?65:97)));
+    if(italic){if(lower&&code===104)return "h";return String.fromCodePoint((upper?0x1D434:0x1D44E)+(code-(upper?65:97)));}
+    return character;
+  }
+  function formatSelectionText(text,format,forceEnabled=null){
+    const characters=Array.from(text),eligible=characters.map(character=>styledCharacter(character)||{base:character,bold:false,italic:false});
+    const targetIndex=format==="bold"?"bold":"italic";
+    const canStyle=eligible.map(item=>/[A-Za-z]/.test(item.base)||(format==="bold"&&/[0-9]/.test(item.base)));
+    const targetCount=eligible.reduce((count,item,index)=>count+(canStyle[index]?1:0),0);
+    if(!targetCount)return text;
+    const enabled=forceEnabled===null?eligible.some((item,index)=>canStyle[index]&&!item[targetIndex]):forceEnabled;
+    return characters.map((character,index)=>{
+      if(!canStyle[index])return character;
+      const item=eligible[index];
+      return styledCodePoint(item.base, targetIndex==="bold"?enabled:item.bold, targetIndex==="italic"?enabled:item.italic);
+    }).join("");
+  }
+  function serializeFormattedText(source){
+    const characters=Array.from(String(source??""));let output="",index=0;
+    while(index<characters.length){
+      const first=styledCharacter(characters[index]);
+      if(!first){output+=characters[index++];continue;}
+      const style=`${first.bold?"b":""}${first.italic?"i":""}`;
+      let text=first.base,next=index+1;
+      while(next<characters.length){
+        const info=styledCharacter(characters[next]);
+        if(info){if(`${info.bold?"b":""}${info.italic?"i":""}`!==style)break;text+=info.base;next++;continue;}
+        let lookahead=next;
+        while(lookahead<characters.length&&!styledCharacter(characters[lookahead]))lookahead++;
+        const following=lookahead<characters.length?styledCharacter(characters[lookahead]):null;
+        if(following&&`${following.bold?"b":""}${following.italic?"i":""}`===style){text+=characters.slice(next,lookahead).join("");next=lookahead;continue;}
+        break;
+      }
+      const marker=style==="bi"?"***":style==="b"?"**":"_";
+      output+=`${marker}${text}${marker}`;index=next;
+    }
+    return output;
+  }
+  window.__oddiSerializeFormattedText=serializeFormattedText;
   function readRange(){
     const start=input.selectionStart??0,end=input.selectionEnd??start;
     if(end>start){lastRange={start,end};return lastRange;}
@@ -32164,8 +32547,8 @@ body.dark-mode .user-message .user-text a{color:#9acbff}
       if(!["http:","https:","mailto:"].includes(url.protocol))return window.alert("Only http, https, and email links are supported.");
       replaceRange(range.start,range.end,()=>({text:`[${selected}](${url.href})`,selectStart:1,selectEnd:1+selected.length}));return;
     }
-    const wrapper=format==="bold"?"**":"_";
-    replaceRange(range.start,range.end,()=>({text:`${wrapper}${selected}${wrapper}`,selectStart:wrapper.length,selectEnd:wrapper.length+selected.length}));
+    const formatted=formatSelectionText(selected,format);
+    replaceRange(range.start,range.end,()=>({text:formatted,selectStart:0,selectEnd:formatted.length}));
   }
   function applyBlock(format){
     const range=readRange();if(!range)return;
@@ -32175,7 +32558,7 @@ body.dark-mode .user-message .user-text a{color:#9acbff}
       if(format==="number")return `${index+1}. ${clean}`;
       if(format==="bullet")return `- ${clean}`;
       if(format==="quote")return `> ${clean}`;
-      if(format==="heading")return clean?`**${clean}**`:clean;
+      if(format==="heading")return clean?formatSelectionText(clean,"bold",true):clean;
       return clean;
     }).join("\n");
     replaceRange(range.start,range.end,()=>({text,selectStart:0,selectEnd:text.length}));
@@ -32369,8 +32752,6 @@ body.dark-mode #oddiPromptLength { background: rgba(22,24,22,.94); color: #aab3a
   .input-area { max-height: min(46dvh, 360px) !important; }
   .input-area textarea#userInput { max-height: min(26dvh, 180px) !important; }
   #oddiPromptLength { right: 100px; bottom: 3px; font-size: 8px; }
-  body:has(.oddi-mobile-tabbar) .input-area { bottom: calc(68px + env(safe-area-inset-bottom, 0px)) !important; }
-  body:has(.oddi-mobile-tabbar) .chatbox { padding-bottom: calc(150px + env(safe-area-inset-bottom, 0px)) !important; }
   body:has(#oddiLibraryModal.show) .input-area,
   body.oddi-memory-workspace-open .input-area,
   body.oddi-settings-workspace-open .input-area { bottom: max(7px, env(safe-area-inset-bottom, 0px)) !important; }
@@ -32408,24 +32789,24 @@ body.dark-mode #oddiPromptLength { background: rgba(22,24,22,.94); color: #aab3a
     var items;
     if (/resume|\bcv\b|job|career|interview|recruit/.test(workflow)) {
       items = [
-        ["Improve my resume", "Make my experience clearer and stronger", "Review my resume and suggest specific, truthful improvements for my target role: "],
-        ["Practice an interview", "Run a realistic role-based practice", "Start a realistic interview practice for this role. Ask one question at a time: "],
-        ["Plan my job search", "Turn my goal into manageable next steps", "Help me make a practical job-search plan with weekly steps for this role: "],
-        ["Write a recruiter message", "Draft a concise, professional note", "Draft a short, natural message to a recruiter about this opportunity: "]
+        ["Strengthen my résumé", "Refine my experience for a target role", "Review my resume and suggest specific, truthful improvements for my target role: "],
+        ["Practice an interview", "Work through realistic questions", "Start a realistic interview practice for this role. Ask one question at a time: "],
+        ["Plan a job search", "Set focused, manageable weekly goals", "Help me make a practical job-search plan with weekly steps for this role: "],
+        ["Write to a recruiter", "Draft a concise, professional message", "Draft a short, natural message to a recruiter about this opportunity: "]
       ];
     } else if (/study|learn|exam|course|assignment|python|programming|coding|debug/.test(workflow)) {
       items = [
-        ["Review what I’m learning", "Explain a tricky concept simply", "Explain the topic I am currently learning with a clear example: "],
-        ["Quiz me", "Ask one question and wait for my answer", "Quiz me on this topic one question at a time. Wait for my answer before explaining: "],
-        ["Debug my next step", "Help me understand the cause, not just the fix", "Help me debug this problem. Explain the cause and a step-by-step fix: "],
-        ["Plan a study session", "Make a focused plan for today", "Create a focused study plan for today with short breaks: "]
+        ["Review a concept", "Understand it with a clear example", "Explain the topic I am currently learning with a clear example: "],
+        ["Practice with a quiz", "Answer one question at a time", "Quiz me on this topic one question at a time. Wait for my answer before explaining: "],
+        ["Work through a coding issue", "Understand the cause and solution", "Help me debug this problem. Explain the cause and a step-by-step fix: "],
+        ["Plan a study session", "Set a focused plan with short breaks", "Create a focused study plan for today with short breaks: "]
       ];
     } else {
       items = [
-        ["Help me understand something", "Break down a concept, article, or topic", "Can you help me understand a complex topic? I want a clear, structured explanation: "],
-        ["Write something for me", "Draft, rewrite, or polish your ideas", "I need help writing something. Can you assist me with drafting content? "],
-        ["Plan my next project", "Turn an idea into clear steps", "Help me plan a project from start to finish with clear milestones and tasks: "],
-        [morning ? "Plan my day" : evening ? "Wrap up and plan tomorrow" : "Set today's priorities", morning ? "Choose a useful first step" : evening ? "Capture what is next" : "Make room for the important work", morning ? "Help me choose the three most useful priorities for today: " : evening ? "Help me review today's progress and choose a first step for tomorrow: " : "Help me prioritize today's work into three realistic tasks: "]
+        ["Understand a topic", "Get a clear explanation of an idea or subject", "Can you help me understand a complex topic? I want a clear, structured explanation: "],
+        ["Draft or refine writing", "Create, refine, or polish your writing", "I need help writing something. Can you assist me with drafting content? "],
+        ["Plan a project", "Turn a goal into clear, actionable steps", "Help me plan a project from start to finish with clear milestones and tasks: "],
+        [morning ? "Plan the day" : evening ? "Plan for tomorrow" : "Set today's priorities", morning ? "Choose a useful first step" : evening ? "Capture the next steps" : "Focus on the most important work", morning ? "Help me choose the three most useful priorities for today: " : evening ? "Help me review today's progress and choose a first step for tomorrow: " : "Help me prioritize today's work into three realistic tasks: "]
       ];
     }
     cards.forEach(function (card, index) {
@@ -32465,8 +32846,7 @@ body.dark-mode #oddiPromptLength { background: rgba(22,24,22,.94); color: #aab3a
 })();
 </script>
 <style id="oddi-user-message-outer-shadow-only-v1">
-/* The outer user-message wrapper should hug its contents. Keep the inner
-   .user-text bubble unchanged and reduce the extra wrapper to a soft shadow. */
+/* Keep the text bubble as the only visible message surface. */
 #chatbox.chatbox > .user-message {
   width: fit-content !important;
   max-width: min(820px, calc(100% - 8px)) !important;
@@ -32474,13 +32854,13 @@ body.dark-mode #oddiPromptLength { background: rgba(22,24,22,.94); color: #aab3a
   padding: 0 !important;
   background: transparent !important;
   border: 0 !important;
-  border-radius: 16px !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, .08) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
 }
 body.dark-mode #chatbox.chatbox > .user-message {
   background: transparent !important;
   border-color: transparent !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, .18) !important;
+  box-shadow: none !important;
 }
 </style>
 <style id="oddi-composer-focus-expand-v1">
@@ -32546,6 +32926,328 @@ body:not(.dark-mode) .input-area::before{background:rgba(22,168,83,.38) !importa
 }
 @media(prefers-reduced-motion:reduce){.oddi-composer-field{transition:none !important;}}
 </style>
+<style id="oddi-home-centering-and-responsive-composer-v2">
+/* Center the complete welcome group in the space available above the composer. */
+#chatbox.chatbox:has(#welcomeContainer) {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 20px 24px var(--oddi-home-safe-bottom, 148px) !important;
+  box-sizing: border-box !important;
+}
+#chatbox.chatbox:has(#welcomeContainer) > #welcomeContainer {
+  flex: 0 0 auto !important;
+  width: min(100%, 760px) !important;
+  margin: auto !important;
+}
+/* Give desktop and mobile the same contained composer width and stable gutters. */
+#oddiComposerShell.input-area {
+  position: fixed !important;
+  left: var(--oddi-composer-left, 24px) !important;
+  right: auto !important;
+  width: var(--oddi-composer-width, min(768px, calc(100vw - 48px))) !important;
+  max-width: var(--oddi-composer-width, min(768px, calc(100vw - 48px))) !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+  min-height: 52px !important;
+  padding: 0 8px !important;
+  grid-template-rows: auto minmax(52px, auto) !important;
+  align-content: end !important;
+}
+.oddi-composer-field {
+  min-width: 0 !important;
+  min-height: var(--oddi-composer-field-height, 52px) !important;
+  box-sizing: border-box !important;
+  align-items: center !important;
+  border-radius: 30px !important;
+  padding: 5px 10px !important;
+  gap: 10px !important;
+}
+.oddi-composer-field #attach-btn,
+.oddi-composer-field #dictation-btn,
+.oddi-composer-field .action-button-slot,
+.oddi-composer-field .voice-btn,
+.oddi-composer-field .send-btn {
+  flex: 0 0 42px !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+}
+#oddiComposerShell #voice-btn {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  background: #16c76b !important;
+  color: #08130d !important;
+  animation: oddiConversationPortalPulse 2s ease-in-out infinite !important;
+}
+#oddiComposerShell #send-btn {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: #16c76b !important;
+  color: #08130d !important;
+  box-shadow: none !important;
+}
+body.oddi-composer-has-text #oddiComposerShell #voice-btn,
+body.oddi-composer-focused #oddiComposerShell #voice-btn,
+body.oddi-generation-active #oddiComposerShell #voice-btn {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  animation: none !important;
+}
+body.oddi-composer-has-text #oddiComposerShell #send-btn,
+body.oddi-composer-focused #oddiComposerShell #send-btn,
+body.oddi-generation-active #oddiComposerShell #send-btn {
+  display: inline-flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+@keyframes oddiConversationPortalPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(22,199,107,.22); }
+  50% { box-shadow: 0 0 0 6px rgba(22,199,107,.07); }
+}
+#oddiComposerShell #send-btn .send-icon {
+  font-size: 23px !important;
+  line-height: 1 !important;
+  transform: none !important;
+}
+.oddi-composer-field #userInput {
+  display: block !important;
+  flex: 1 1 0% !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  height: var(--oddi-composer-input-height, 40px) !important;
+  min-height: 40px !important;
+  max-height: 126px !important;
+  padding: 9px 6px !important;
+  line-height: 22px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  word-break: normal !important;
+}
+.oddi-composer-field:has(#userInput:not(:placeholder-shown)) {
+  align-items: flex-end !important;
+  border-radius: 28px !important;
+}
+.oddi-composer-field:has(#userInput:not(:placeholder-shown)) #attach-btn,
+.oddi-composer-field:has(#userInput:not(:placeholder-shown)) #dictation-btn,
+.oddi-composer-field:has(#userInput:not(:placeholder-shown)) .action-button-slot {
+  align-self: flex-end !important;
+}
+body.oddi-composer-focused .oddi-composer-field #attach-btn,
+body.oddi-composer-focused .oddi-composer-field #dictation-btn,
+body.oddi-composer-focused .oddi-composer-field .action-button-slot {
+  align-self: flex-end !important;
+}
+.input-area.has-long-prompt #userInput { padding-bottom: 9px !important; }
+#oddiPromptLength { display: none !important; }
+/* Keep the greeting a fixed, measured distance above the composer on all screens. */
+#oddiSayHello {
+  position: fixed !important;
+  left: var(--oddi-say-hello-left, 50%) !important;
+  top: var(--oddi-say-hello-top, auto) !important;
+  bottom: auto !important;
+  z-index: 2147483001 !important;
+  transform: translateX(-50%) !important;
+}
+#oddiSayHello:hover { transform: translateX(-50%) translateY(-1px) !important; }
+@media (max-width: 768px) {
+  #oddiComposerShell.input-area { min-height: 52px !important; padding: 0 5px !important; }
+  .oddi-composer-field { min-height: var(--oddi-composer-field-height, 52px) !important; }
+  #chatbox.chatbox:has(#welcomeContainer) { padding: 18px 14px var(--oddi-home-safe-bottom, 154px) !important; }
+  #chatbox.chatbox:has(#welcomeContainer) > #welcomeContainer { width: 100% !important; }
+  #oddiComposerShell.input-area {
+    left: var(--oddi-composer-left, 8px) !important;
+    width: var(--oddi-composer-width, min(768px, calc(100vw - 16px))) !important;
+    max-width: var(--oddi-composer-width, min(768px, calc(100vw - 16px))) !important;
+    grid-template-rows: auto minmax(50px, auto) !important;
+  }
+  .oddi-composer-field { gap: 6px !important; padding: 4px 7px !important; }
+  .oddi-composer-field #attach-btn,
+  .oddi-composer-field #dictation-btn,
+  .oddi-composer-field .action-button-slot,
+  .oddi-composer-field .voice-btn,
+  .oddi-composer-field .send-btn {
+    flex-basis: 40px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+  .oddi-composer-field #userInput {
+    max-height: 121px !important;
+    padding: 8px 4px !important;
+    line-height: 21px !important;
+  }
+}
+/* Short normal-height windows need a tighter home stack while the composer grows. */
+@media (max-height: 680px) {
+  body.oddi-composer-has-text #oddiSuggestionCards {
+    margin-top: 12px !important;
+    gap: 6px !important;
+  }
+  body.oddi-composer-has-text #oddiSuggestionCards .oddi-suggestion-card {
+    min-height: 56px !important;
+    height: auto !important;
+    padding-block: 7px !important;
+  }
+  body.oddi-composer-has-text #oddiLastMessageCard {
+    min-height: 50px !important;
+    margin-top: 6px !important;
+  }
+}
+@media (max-height: 680px) and (max-width: 768px) {
+  body.oddi-composer-has-text #oddiSuggestionCards .oddi-suggestion-card {
+    min-height: 46px !important;
+    padding-block: 5px !important;
+  }
+  body.oddi-composer-has-text #oddiLastMessageCard { min-height: 46px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .oddi-composer-field, .oddi-composer-field #userInput { transition: none !important; }
+  #oddiComposerShell #voice-btn { animation: none !important; }
+}
+</style>
+<style id="oddi-composer-attachments-upgrade-v1">
+/* Keep uploaded files visible and manageable inside the composer itself. */
+#oddiComposerShell.input-area.has-attachments {
+  row-gap: 4px !important;
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview {
+  display: flex !important;
+  flex: 0 0 100% !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: 122px !important;
+  margin: 0 !important;
+  padding: 0 3px 2px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-header {
+  flex: 0 0 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  gap: 7px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-toggle { display: none !important; }
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentName {
+  flex: 1 1 auto !important;
+  height: 27px !important;
+  min-height: 27px !important;
+  padding: 0 8px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--oddi-sidebar-muted, #888) !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #removeAttachment {
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  border: 1px solid rgba(128,128,128,.14) !important;
+  border-radius: 8px !important;
+  background: rgba(128,128,128,.08) !important;
+  font-size: 12px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  align-items: stretch !important;
+  gap: 7px !important;
+  width: 100% !important;
+  max-height: 40px !important;
+  margin: 0 !important;
+  padding: 0 1px 3px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+  box-sizing: border-box !important;
+  -webkit-overflow-scrolling: touch;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList::-webkit-scrollbar { height: 4px; }
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList::-webkit-scrollbar-thumb { border-radius: 99px; background: rgba(128,128,128,.35); }
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item {
+  flex: 0 0 min(230px, 68vw) !important;
+  width: min(230px, 68vw) !important;
+  min-width: 0 !important;
+  min-height: 34px !important;
+  height: 34px !important;
+  gap: 6px !important;
+  padding: 3px 5px 3px 8px !important;
+  border: 1px solid rgba(128,128,128,.16) !important;
+  border-radius: 10px !important;
+  background: rgba(128,128,128,.07) !important;
+  box-sizing: border-box !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-name {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: inherit !important;
+  font-size: 11px !important;
+  font-weight: 550 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-preview {
+  min-height: 27px !important;
+  height: 27px !important;
+  padding: 0 7px !important;
+  border-radius: 7px !important;
+  font-size: 10px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-remove {
+  flex: 0 0 25px !important;
+  width: 25px !important;
+  min-width: 25px !important;
+  height: 25px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 10px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-preview:not([hidden]) {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  max-width: 100% !important;
+  max-height: 42px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card { flex: 0 0 48px !important; width: 48px !important; height: 36px !important; border-radius: 8px !important; }
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-label { overflow: hidden; color: #777; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentName { color: #aaa !important; }
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item { background: rgba(255,255,255,.045) !important; border-color: rgba(255,255,255,.1) !important; }
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-preview { background: #202420 !important; color: #c8e8d2 !important; border-color: #34463a !important; }
+@media (max-width: 768px) {
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview { max-height: 122px !important; }
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item { flex-basis: min(215px, 72vw) !important; width: min(215px, 72vw) !important; }
+}
+</style>
 <script id="oddi-composer-line-growth-v1">
 (function(){
   "use strict";
@@ -32555,28 +33257,63 @@ body:not(.dark-mode) .input-area::before{background:rgba(22,168,83,.38) !importa
     const input=document.getElementById("userInput");
     if(!composer||!field||!input)return false;
     const phone=window.matchMedia("(max-width:768px)");
+    const chat=document.getElementById("chatbox");
+    const greeting=document.getElementById("oddiSayHello");
+    function alignComposerToChat(){
+      if(!chat)return;
+      const rect=chat.getBoundingClientRect();
+      if(rect.width){
+        const gutter=phone.matches?8:24;
+        const widthLimit=document.body.classList.contains("oddi-fullscreen-home")?920:768;
+        const width=Math.min(widthLimit,Math.max(0,rect.width-gutter*2));
+        composer.style.setProperty("--oddi-composer-left",Math.round(rect.left+(rect.width-width)/2)+"px");
+        composer.style.setProperty("--oddi-composer-width",Math.round(width)+"px");
+      }
+    }
+    function syncHomeCentering(){
+      alignComposerToChat();
+      if(greeting&&!greeting.hidden){
+        const composerRect=composer.getBoundingClientRect();
+        const helloHeight=greeting.getBoundingClientRect().height||34;
+        if(composerRect.width&&composerRect.height){
+          const halfWidth=(greeting.offsetWidth||180)/2;
+          const viewportWidth=document.documentElement.clientWidth||window.innerWidth;
+          const center=Math.min(Math.max(composerRect.left+composerRect.width/2,halfWidth+8),viewportWidth-halfWidth-8);
+          const top=Math.max(8,Math.round(composerRect.top-helloHeight-18));
+          greeting.style.setProperty("--oddi-say-hello-left",Math.round(center)+"px");
+          greeting.style.setProperty("--oddi-say-hello-top",top+"px");
+        }
+      }
+      if(!chat||!greeting||!chat.querySelector("#welcomeContainer")||greeting.hidden)return;
+      const chatRect=chat.getBoundingClientRect();
+      const greetingRect=greeting.getBoundingClientRect();
+      if(!chatRect.height||!greetingRect.height)return;
+      const reserve=Math.max(0,Math.ceil(chatRect.bottom-greetingRect.top+8));
+      chat.style.setProperty("--oddi-home-safe-bottom",reserve+"px");
+    }
     function resizeByLines(){
       const value=String(input.value||"");
       const styles=getComputedStyle(input);
-      const lineHeight=parseFloat(styles.lineHeight)||20;
+      const lineHeight=parseFloat(styles.lineHeight)||21;
       const verticalPadding=(parseFloat(styles.paddingTop)||0)+(parseFloat(styles.paddingBottom)||0);
-      let lines=0;
+      const maxInputLines=composer.classList.contains("has-attachments")?3:6;
+      const maxInputHeight=lineHeight*maxInputLines+verticalPadding;
+      let inputHeight=40;
       input.style.setProperty("height","auto","important");
-      if(value.trim()){
-        lines=Math.max(1,Math.round(Math.max(0,input.scrollHeight-verticalPadding)/lineHeight));
-      }
-      const step=phone.matches?14:16;
-      const base=phone.matches?52:54;
-      const inputBase=40;
-      const inputStep=phone.matches?14:16;
-      const fieldHeight=lines?base+14+(lines-1)*step:base;
-      const inputHeight=lines?inputBase+14+(lines-1)*inputStep:inputBase;
-      field.style.setProperty("--oddi-composer-field-height",Math.min(fieldHeight,phone.matches?164:182)+"px");
-      field.style.setProperty("--oddi-composer-input-height",Math.min(inputHeight,phone.matches?150:168)+"px");
-      input.dataset.composerLines=String(lines);
-      input.style.setProperty("height",Math.min(inputHeight,phone.matches?150:168)+"px","important");
+      if(value.trim()) inputHeight=Math.max(40,Math.min(input.scrollHeight,maxInputHeight));
+      const fieldHeight=Math.max(52,inputHeight+10);
+      field.style.setProperty("--oddi-composer-field-height",fieldHeight+"px");
+      field.style.setProperty("--oddi-composer-input-height",inputHeight+"px");
+      input.dataset.composerLines=String(Math.max(1,Math.round(inputHeight/lineHeight)));
+      input.style.setProperty("height",inputHeight+"px","important");
       document.body.classList.toggle("oddi-composer-has-text",!!value.trim());
+      requestAnimationFrame(syncHomeCentering);
     }
+    composer.addEventListener("focusin",function(){document.body.classList.add("oddi-composer-focused");});
+    composer.addEventListener("focusout",function(event){
+      if(!composer.contains(event.relatedTarget))document.body.classList.remove("oddi-composer-focused");
+    });
+    if(composer.contains(document.activeElement))document.body.classList.add("oddi-composer-focused");
     input.addEventListener("input",resizeByLines,{passive:true});
     input.addEventListener("change",resizeByLines);
     input.addEventListener("focus",resizeByLines);
@@ -32584,12 +33321,1568 @@ body:not(.dark-mode) .input-area::before{background:rgba(22,168,83,.38) !importa
     phone.addEventListener?.("change",resizeByLines);
     window.addEventListener("oddi:attachments-changed",resizeByLines);
     window.addEventListener("oddi:attachments-cleared",resizeByLines);
+    window.addEventListener("resize",syncHomeCentering,{passive:true});
+    window.addEventListener("oddi:display-mode-changed",syncHomeCentering);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener("resize",syncHomeCentering,{passive:true});
+      window.visualViewport.addEventListener("scroll",syncHomeCentering,{passive:true});
+    }
+    if(window.ResizeObserver){
+      const homeLayoutObserver=new ResizeObserver(syncHomeCentering);
+      homeLayoutObserver.observe(composer);
+      if(greeting)homeLayoutObserver.observe(greeting);
+      if(chat)homeLayoutObserver.observe(chat);
+    }
+    alignComposerToChat();
     resizeByLines();
+    requestAnimationFrame(syncHomeCentering);
     return true;
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
   else if(!init())document.addEventListener("DOMContentLoaded",init,{once:true});
 })();
 </script>
+<style id="oddi-fullscreen-home-spacing-and-mobile-composer-v1">
+/* Give desktop fullscreen enough scale to use its extra space while keeping
+   the normal window layout compact. */
+@media (min-width: 769px) {
+  body.oddi-fullscreen-home #chatbox.chatbox:has(#welcomeContainer) {
+    padding: clamp(22px, 3.5vh, 42px) 28px var(--oddi-home-safe-bottom, 148px) !important;
+  }
+  body.oddi-fullscreen-home #chatbox.chatbox:has(#welcomeContainer) > #welcomeContainer {
+    width: min(920px, calc(100vw - 150px)) !important;
+  }
+  body.oddi-fullscreen-home #welcomeContainer h2 {
+    max-width: 760px !important;
+    margin-bottom: 12px !important;
+    font-size: clamp(36px, 3vw, 44px) !important;
+    line-height: 1.08 !important;
+  }
+  body.oddi-fullscreen-home #welcomeContainer > .oddi-home-subtitle {
+    margin: 0 auto !important;
+    padding: 17px 24px !important;
+    font-size: 15px !important;
+    line-height: 1.45 !important;
+  }
+  body.oddi-fullscreen-home #oddiSuggestionCards {
+    width: min(900px, calc(100% - 20px)) !important;
+    margin-top: 24px !important;
+    gap: 14px !important;
+  }
+  body.oddi-fullscreen-home #oddiSuggestionCards .oddi-suggestion-card {
+    min-height: 72px !important;
+    padding: 14px 18px !important;
+    column-gap: 12px !important;
+    border-radius: 13px !important;
+  }
+  body.oddi-fullscreen-home #oddiSuggestionCards .oddi-suggestion-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  body.oddi-fullscreen-home #oddiSuggestionCards .oddi-suggestion-copy strong { font-size: 14px !important; }
+  body.oddi-fullscreen-home #oddiSuggestionCards .oddi-suggestion-copy small { font-size: 11.5px !important; }
+  body.oddi-fullscreen-home #oddiLastMessageCard {
+    width: min(410px, calc(100% - 20px)) !important;
+    min-height: 66px !important;
+    margin-top: 12px !important;
+    padding: 12px 16px !important;
+  }
+  body.oddi-fullscreen-home #oddiLastMessageCard .oddi-last-message-label { font-size: 11px !important; }
+  body.oddi-fullscreen-home #oddiComposerShell.input-area {
+    width: var(--oddi-composer-width, min(920px, calc(100vw - 64px))) !important;
+    max-width: var(--oddi-composer-width, min(920px, calc(100vw - 64px))) !important;
+  }
+}
+
+/* The phone composer grows upward from a fixed bottom edge. Its greeting is
+   positioned by measuring that top edge in the composer sizing script. */
+@media (max-width: 768px) {
+  #oddiComposerShell.input-area {
+    position: fixed !important;
+    top: auto !important;
+    bottom: calc(var(--oddi-mobile-keyboard-inset, 0px) + max(8px, env(safe-area-inset-bottom, 0px))) !important;
+    height: auto !important;
+    max-height: none !important;
+    box-sizing: border-box !important;
+    align-content: end !important;
+    transition: none !important;
+  }
+}
+</style>
+<script id="oddi-fullscreen-home-detection-v1">
+(()=>{
+  const desktop=window.matchMedia("(min-width: 769px)");
+  const fullscreenMode=window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)");
+  const sync=()=>{
+    const screenHeight=window.screen?.height||window.screen?.availHeight||window.innerHeight;
+    const screenWidth=window.screen?.width||window.innerWidth;
+    const fullscreenApi=!!document.fullscreenElement||fullscreenMode.matches;
+    const edgeToEdge=window.innerHeight>=screenHeight-72&&window.innerWidth>=screenWidth-120;
+    const expanded=desktop.matches&&(fullscreenApi||edgeToEdge);
+    if(document.body.classList.contains("oddi-fullscreen-home")!==expanded){
+      document.body.classList.toggle("oddi-fullscreen-home",expanded);
+      window.dispatchEvent(new Event("oddi:display-mode-changed"));
+    }
+  };
+  sync();
+  window.addEventListener("resize",sync,{passive:true});
+  window.addEventListener("orientationchange",sync,{passive:true});
+  document.addEventListener("fullscreenchange",sync);
+  fullscreenMode.addEventListener?.("change",sync);
+})();
+</script>
+<style id="oddi-composer-contained-attachments-v2">
+/* Keep the attachment tray inside one composer surface and let it grow upward. */
+#oddiComposerShell.input-area.has-attachments {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(52px, auto) !important;
+  grid-template-areas: "preview" "field" !important;
+  align-items: stretch !important;
+  align-content: end !important;
+  height: auto !important;
+  max-height: min(78dvh, 560px) !important;
+  overflow: hidden !important;
+  row-gap: 7px !important;
+  padding: 9px !important;
+  border: 1px solid rgba(128,128,128,.24) !important;
+  border-radius: 26px !important;
+  background: #f8f8f8 !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,.16) !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview {
+  grid-area: preview !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 4px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(50dvh, 380px) !important;
+  margin: 0 !important;
+  padding: 0 2px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
+  scrollbar-width: thin !important;
+  -webkit-overflow-scrolling: touch;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-header {
+  display: flex !important;
+  flex: 0 0 28px !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  gap: 6px !important;
+  margin: 0 !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-toggle { display: none !important; }
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentName {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  height: 27px !important;
+  min-height: 27px !important;
+  padding: 0 6px !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #777 !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #removeAttachment {
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  min-width: 28px !important;
+  height: 28px !important;
+  min-height: 28px !important;
+  border: 1px solid rgba(128,128,128,.18) !important;
+  border-radius: 8px !important;
+  background: rgba(128,128,128,.09) !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-content: flex-start !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
+  width: 100% !important;
+  max-height: min(34dvh, 250px) !important;
+  margin: 0 !important;
+  padding: 0 1px 2px !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  scrollbar-width: thin !important;
+  -webkit-overflow-scrolling: touch;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item {
+  display: flex !important;
+  flex: 0 1 calc((100% - 12px) / 3) !important;
+  width: calc((100% - 12px) / 3) !important;
+  min-width: 0 !important;
+  max-width: calc((100% - 12px) / 3) !important;
+  height: 36px !important;
+  min-height: 36px !important;
+  gap: 5px !important;
+  padding: 3px 5px 3px 8px !important;
+  border: 1px solid rgba(128,128,128,.18) !important;
+  border-radius: 10px !important;
+  background: rgba(128,128,128,.07) !important;
+  box-sizing: border-box !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-name {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  font-size: 11px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-preview {
+  flex: 0 0 auto !important;
+  min-height: 27px !important;
+  height: 27px !important;
+  padding: 0 6px !important;
+  border-radius: 7px !important;
+  font-size: 10px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-remove {
+  flex: 0 0 25px !important;
+  width: 25px !important;
+  min-width: 25px !important;
+  height: 25px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  font-size: 10px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-preview:not([hidden]) {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 72px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: thin !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card {
+  flex: 0 0 82px !important;
+  width: 82px !important;
+  height: 62px !important;
+  border-radius: 10px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-label {
+  flex: 0 0 auto !important;
+  max-width: 230px !important;
+  overflow: hidden !important;
+  color: #777 !important;
+  font-size: 11px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+#oddiComposerShell.input-area.has-attachments > .oddi-composer-field {
+  grid-area: field !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  border: 0 !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+body.dark-mode #oddiComposerShell.input-area.has-attachments {
+  border-color: rgba(255,255,255,.15) !important;
+  background: #191919 !important;
+  box-shadow: 0 10px 32px rgba(0,0,0,.34) !important;
+}
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentName,
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-label { color: #aaa !important; }
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item {
+  border-color: rgba(255,255,255,.1) !important;
+  background: rgba(255,255,255,.045) !important;
+}
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-preview {
+  border-color: #34463a !important;
+  background: #202420 !important;
+  color: #c8e8d2 !important;
+}
+@media (max-width: 768px) {
+  #oddiComposerShell.input-area.has-attachments {
+    row-gap: 5px !important;
+    padding: 7px !important;
+    border-radius: 22px !important;
+    max-height: min(76dvh, 560px) !important;
+  }
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview {
+    max-height: min(48dvh, 320px) !important;
+  }
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList {
+    max-height: min(34dvh, 220px) !important;
+  }
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item {
+    flex-basis: calc((100% - 6px) / 2) !important;
+    width: calc((100% - 6px) / 2) !important;
+    max-width: calc((100% - 6px) / 2) !important;
+  }
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card {
+    flex-basis: 76px !important;
+    width: 76px !important;
+    height: 58px !important;
+  }
+}
+</style>
+<style id="oddi-composer-horizontal-attachments-v3">
+/* One compact, horizontal attachment rail above an unchanged message field. */
+#oddiComposerShell.input-area > .oddi-composer-field #userInput {
+  max-height: 142px !important;
+}
+#oddiSayHello[hidden] { display: none !important; }
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview {
+  flex-direction: column !important;
+  gap: 5px !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-header {
+  flex: 0 0 24px !important;
+  height: 24px !important;
+  min-height: 24px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #removeAttachment {
+  width: 22px !important;
+  min-width: 22px !important;
+  height: 22px !important;
+  min-height: 22px !important;
+  border-radius: 7px !important;
+  font-size: 10px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+  width: 100% !important;
+  height: 100px !important;
+  min-height: 100px !important;
+  max-height: 100px !important;
+  padding: 0 1px 2px !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  overscroll-behavior-inline: contain !important;
+  -webkit-overflow-scrolling: touch;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item,
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card {
+  position: relative !important;
+  display: block !important;
+  flex: 0 0 146px !important;
+  width: 146px !important;
+  min-width: 146px !important;
+  max-width: 146px !important;
+  height: 96px !important;
+  min-height: 96px !important;
+  max-height: 96px !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(128,128,128,.18) !important;
+  border-radius: 12px !important;
+  background: #e8e8e8 !important;
+  box-sizing: border-box !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item::before {
+  content: "📄" !important;
+  position: absolute !important;
+  top: 13px !important;
+  left: 0 !important;
+  width: 100% !important;
+  color: #777 !important;
+  font-size: 25px !important;
+  line-height: 30px !important;
+  text-align: center !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-name {
+  position: absolute !important;
+  right: 53px !important;
+  bottom: 6px !important;
+  left: 8px !important;
+  z-index: 1 !important;
+  overflow: hidden !important;
+  color: #f3f3f3 !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  line-height: 20px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 3px rgba(0,0,0,.7) !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  height: 34px !important;
+  background: linear-gradient(transparent,rgba(0,0,0,.78)) !important;
+  pointer-events: none !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-preview {
+  position: absolute !important;
+  right: 27px !important;
+  bottom: 5px !important;
+  z-index: 2 !important;
+  min-height: 20px !important;
+  height: 20px !important;
+  padding: 0 5px !important;
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: rgba(20,20,20,.72) !important;
+  color: #d7eadc !important;
+  font-size: 9px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-remove,
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-remove {
+  position: absolute !important;
+  top: 4px !important;
+  right: 4px !important;
+  z-index: 3 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 18px !important;
+  width: 18px !important;
+  min-width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: rgba(24,24,24,.72) !important;
+  color: #fff !important;
+  font-size: 10px !important;
+  line-height: 18px !important;
+  text-shadow: none !important;
+  cursor: pointer !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-preview { display: none !important; }
+#oddiComposerShell.input-area.has-attachments > .oddi-composer-field {
+  flex: 0 0 auto !important;
+  min-height: var(--oddi-composer-field-height, 52px) !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+#oddiComposerShell.input-area.has-attachments > .oddi-composer-field #userInput {
+  flex: 1 1 auto !important;
+  min-height: 40px !important;
+  max-height: 142px !important;
+  overflow-y: auto !important;
+}
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item,
+body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card {
+  border-color: rgba(255,255,255,.12) !important;
+  background-color: #111 !important;
+}
+@media (max-width: 768px) {
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList {
+    height: 88px !important;
+    min-height: 88px !important;
+    max-height: 88px !important;
+  }
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item,
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card {
+    flex-basis: 128px !important;
+    width: 128px !important;
+    min-width: 128px !important;
+    max-width: 128px !important;
+    height: 84px !important;
+    min-height: 84px !important;
+    max-height: 84px !important;
+  }
+  #oddiComposerShell.input-area.has-attachments > .oddi-composer-field #userInput {
+    max-height: 142px !important;
+  }
+}
+</style>
+<script id="oddi-composer-greeting-and-six-line-input-v2">
+(()=>{
+  const init=()=>{
+    const composer=document.getElementById("oddiComposerShell");
+    const input=document.getElementById("userInput");
+    const greeting=document.getElementById("oddiSayHello");
+    const chat=document.getElementById("chatbox");
+    if(!composer||!input||!greeting||!chat)return false;
+    const home=()=>!!chat.querySelector("#welcomeContainer");
+    const sync=()=>{
+      if(!home()){
+        chat.style.removeProperty("--oddi-home-safe-bottom");
+        return;
+      }
+      const active=!!input.value.trim()||composer.classList.contains("has-attachments");
+      greeting.hidden=active;
+      requestAnimationFrame(()=>{
+        if(!home())return;
+        const chatRect=chat.getBoundingClientRect();
+        const composerRect=composer.getBoundingClientRect();
+        const greetingRect=greeting.getBoundingClientRect();
+        const reserveFrom=(!active&&greetingRect.height)?greetingRect.top:composerRect.top;
+        if(chatRect.height&&Number.isFinite(reserveFrom)){
+          chat.style.setProperty("--oddi-home-safe-bottom",Math.max(0,Math.ceil(chatRect.bottom-reserveFrom+10))+"px");
+        }
+      });
+    };
+    input.addEventListener("input",sync,{passive:true});
+    input.addEventListener("change",sync);
+    window.addEventListener("oddi:attachments-changed",sync);
+    window.addEventListener("oddi:attachments-cleared",sync);
+    window.addEventListener("resize",sync,{passive:true});
+    window.addEventListener("oddi:display-mode-changed",sync);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener("resize",sync,{passive:true});
+      window.visualViewport.addEventListener("scroll",sync,{passive:true});
+    }
+    if(window.ResizeObserver){
+      const observer=new ResizeObserver(sync);
+      observer.observe(composer);
+      observer.observe(chat);
+    }
+    sync();
+    return true;
+  };
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",init,{once:true});
+  else if(!init())document.addEventListener("DOMContentLoaded",init,{once:true});
+})();
+</script>
+<style id="oddi-home-fit-and-file-click-v1">
+/* Make the whole file tile open its preview, while keeping its remove control separate. */
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item,
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card {
+  cursor: pointer !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item:focus-visible,
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card:focus-visible {
+  outline: 2px solid #20c76b !important;
+  outline-offset: 2px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-preview { display: none !important; }
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-file-name { right: 8px !important; }
+
+/* Compact the home stack in a regular laptop window so it clears the composer. */
+@media (min-width: 769px) {
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(#welcomeContainer) {
+    padding: clamp(12px, 2.2vh, 22px) 22px var(--oddi-home-safe-bottom, 170px) !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+  }
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(#welcomeContainer) > #welcomeContainer {
+    width: min(760px, calc(100vw - 110px)) !important;
+  }
+  body:not(.oddi-fullscreen-home) #welcomeContainer h2 {
+    max-width: 680px !important;
+    margin-bottom: 8px !important;
+    font-size: clamp(28px, 2.5vw, 36px) !important;
+    line-height: 1.1 !important;
+  }
+  body:not(.oddi-fullscreen-home) #welcomeContainer > .oddi-home-subtitle {
+    padding: 12px 18px !important;
+    font-size: 13px !important;
+  }
+  body:not(.oddi-fullscreen-home) #oddiSuggestionCards {
+    width: min(740px, calc(100% - 16px)) !important;
+    margin-top: 16px !important;
+    gap: 9px !important;
+  }
+  body:not(.oddi-fullscreen-home) #oddiSuggestionCards .oddi-suggestion-card {
+    min-height: 62px !important;
+    padding: 10px 13px !important;
+    border-radius: 12px !important;
+  }
+  body:not(.oddi-fullscreen-home) #oddiLastMessageCard {
+    width: min(360px, calc(100% - 16px)) !important;
+    min-height: 58px !important;
+    margin-top: 10px !important;
+    padding: 9px 13px !important;
+  }
+
+  /* Fullscreen gets a small outer breathing margin and a slightly smaller stack. */
+  body.oddi-fullscreen-home #chatbox.chatbox:has(#welcomeContainer) {
+    padding: clamp(14px, 2.2vh, 26px) 28px var(--oddi-home-safe-bottom, 138px) !important;
+  }
+  body.oddi-fullscreen-home #chatbox.chatbox:has(#welcomeContainer) > #welcomeContainer {
+    width: min(840px, calc(100vw - 150px)) !important;
+  }
+  body.oddi-fullscreen-home #welcomeContainer h2 {
+    max-width: 740px !important;
+    margin-bottom: 8px !important;
+    font-size: clamp(32px, 2.7vw, 40px) !important;
+    line-height: 1.08 !important;
+  }
+  body.oddi-fullscreen-home #welcomeContainer > .oddi-home-subtitle {
+    padding: 13px 20px !important;
+    font-size: 14px !important;
+  }
+  body.oddi-fullscreen-home #oddiSuggestionCards {
+    width: min(820px, calc(100% - 18px)) !important;
+    margin-top: 18px !important;
+    gap: 10px !important;
+  }
+  body.oddi-fullscreen-home #oddiSuggestionCards .oddi-suggestion-card {
+    min-height: 64px !important;
+    padding: 11px 15px !important;
+  }
+  body.oddi-fullscreen-home #oddiLastMessageCard {
+    width: min(380px, calc(100% - 18px)) !important;
+    min-height: 60px !important;
+    margin-top: 10px !important;
+    padding: 10px 14px !important;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 769px) {
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(#welcomeContainer) { padding-top: 10px !important; }
+  body:not(.oddi-fullscreen-home) #oddiSuggestionCards { margin-top: 12px !important; gap: 7px !important; }
+  body:not(.oddi-fullscreen-home) #oddiSuggestionCards .oddi-suggestion-card { min-height: 56px !important; padding: 8px 11px !important; }
+  body:not(.oddi-fullscreen-home) #oddiLastMessageCard { min-height: 52px !important; margin-top: 8px !important; }
+  body.oddi-fullscreen-home #chatbox.chatbox:has(#welcomeContainer) { padding-top: 12px !important; }
+  body.oddi-fullscreen-home #oddiSuggestionCards { margin-top: 14px !important; gap: 8px !important; }
+  body.oddi-fullscreen-home #oddiSuggestionCards .oddi-suggestion-card { min-height: 58px !important; padding: 9px 13px !important; }
+}
+</style>
+<style id="oddi-file-preview-office-layout-v2">
+/* The file count and clear-all control duplicate the individual card controls. */
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-header {
+  display: none !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList {
+  height: 96px !important;
+  min-height: 96px !important;
+  max-height: 96px !important;
+}
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item,
+#oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card {
+  height: 92px !important;
+  min-height: 92px !important;
+  max-height: 92px !important;
+}
+.oddi-file-preview-body:has(.oddi-preview-workbook) {
+  display: block !important;
+}
+.oddi-preview-workbook {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.oddi-preview-sheet-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.oddi-preview-sheet-tabs button {
+  flex: 0 0 auto;
+  min-height: 34px;
+  max-width: 220px;
+  overflow: hidden;
+  padding: 0 12px;
+  border: 1px solid #ddd;
+  border-radius: 9px;
+  background: #fff;
+  color: #444;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.oddi-preview-sheet-tabs button[aria-selected="true"] {
+  border-color: #268a4b;
+  background: #eaf7ee;
+  color: #15592f;
+}
+.oddi-file-preview-table-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid #ddd;
+  border-radius: 9px;
+  background: #fff;
+}
+.oddi-file-preview-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #222;
+  font-size: 12px;
+}
+.oddi-file-preview-table th,
+.oddi-file-preview-table td {
+  min-width: 90px;
+  max-width: 360px;
+  padding: 8px 10px;
+  border-right: 1px solid #e7e7e7;
+  border-bottom: 1px solid #e7e7e7;
+  text-align: left;
+  vertical-align: top;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.oddi-file-preview-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f2f5f3;
+  font-weight: 700;
+}
+.oddi-preview-text-wrap {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.oddi-preview-text-wrap pre {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+}
+.oddi-preview-truncated-note {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  color: #777;
+  font-size: 11px;
+  text-align: center;
+}
+.oddi-preview-truncated-note[hidden] { display: none !important; }
+body.dark-mode .oddi-preview-sheet-tabs button,
+body.dark-mode .oddi-file-preview-table-scroll {
+  border-color: #393939;
+  background: #111;
+  color: #eee;
+}
+body.dark-mode .oddi-preview-sheet-tabs button[aria-selected="true"] {
+  border-color: #356a45;
+  background: #1c3022;
+  color: #d0f0d9;
+}
+body.dark-mode .oddi-file-preview-table { color: #eee; }
+body.dark-mode .oddi-file-preview-table th,
+body.dark-mode .oddi-file-preview-table td { border-color: #343434; }
+body.dark-mode .oddi-file-preview-table th { background: #202520; }
+body.dark-mode .oddi-preview-truncated-note { color: #aaa; }
+@media (max-width: 768px) {
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview #attachmentList {
+    height: 84px !important;
+    min-height: 84px !important;
+    max-height: 84px !important;
+  }
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview .attachment-item,
+  #oddiComposerShell.input-area.has-attachments > #attachmentPreview .pasted-image-card {
+    height: 80px !important;
+    min-height: 80px !important;
+    max-height: 80px !important;
+  }
+  .oddi-preview-workbook { padding: 7px; }
+  .oddi-file-preview-table th,
+  .oddi-file-preview-table td { min-width: 72px; padding: 7px 8px; }
+}
+</style>
+<style id="oddi-fullscreen-file-preview-v1">
+html.oddi-file-preview-lock,
+body.oddi-file-preview-lock {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+#oddiAttachmentPreviewModal {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  width: 100vw !important;
+  width: 100dvw !important;
+  height: 100vh !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  isolation: isolate !important;
+  background: #080808 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+#oddiAttachmentPreviewModal[hidden] { display: none !important; }
+#oddiAttachmentPreviewModal .oddi-file-preview-card {
+  position: relative !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  background: #111 !important;
+  color: #f2f2f2 !important;
+}
+#oddiAttachmentPreviewModal .oddi-file-preview-head {
+  position: relative !important;
+  z-index: 2 !important;
+  display: flex !important;
+  flex: 0 0 calc(58px + env(safe-area-inset-top, 0px)) !important;
+  align-items: center !important;
+  gap: 12px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: calc(58px + env(safe-area-inset-top, 0px)) !important;
+  padding: env(safe-area-inset-top, 0px) max(12px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)) !important;
+  border-bottom: 1px solid #303030 !important;
+  box-sizing: border-box !important;
+  background: #111 !important;
+}
+#oddiAttachmentPreviewModal .oddi-file-preview-head strong {
+  display: block !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  color: #f5f5f5 !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+#oddiAttachmentPreviewModal .oddi-file-preview-head button {
+  position: relative !important;
+  z-index: 3 !important;
+  display: inline-grid !important;
+  flex: 0 0 42px !important;
+  place-items: center !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  max-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid #414141 !important;
+  border-radius: 50% !important;
+  background: #252525 !important;
+  color: #fff !important;
+  font-family: inherit !important;
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  touch-action: manipulation !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+#oddiAttachmentPreviewModal .oddi-file-preview-body {
+  position: relative !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  background: #111 !important;
+}
+#oddiAttachmentPreviewModal .oddi-file-preview-body img {
+  display: block !important;
+  flex: 0 1 auto !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+}
+#oddiAttachmentPreviewModal .oddi-file-preview-body iframe {
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  background: #111 !important;
+}
+#oddiAttachmentPreviewModal .oddi-file-preview-body pre {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 16px max(16px, env(safe-area-inset-right, 0px)) 20px max(16px, env(safe-area-inset-left, 0px)) !important;
+  box-sizing: border-box !important;
+  overflow: auto !important;
+  color: #eee !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+}
+#oddiAttachmentPreviewModal .oddi-file-preview-empty { color: #aaa !important; }
+#chatbox.chatbox > .user-message,
+body.dark-mode #chatbox.chatbox > .user-message {
+  background: transparent !important;
+  border: 0 !important;
+  outline: 0 !important;
+  box-shadow: none !important;
+}
+.oddi-library-preview {
+  height: 30px;
+  min-width: 52px;
+  padding: 0 8px;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  background: #fff;
+  color: #222;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+}
+.oddi-library-preview:hover { background: #f1f1f1; border-color: #bcbcbc; }
+.oddi-library-preview:disabled { opacity: .55; cursor: wait; }
+body.dark-mode .oddi-library-preview { border-color: #333; background: #191919; color: #eee; }
+body.dark-mode .oddi-library-preview:hover { background: #242424; border-color: #4a4a4a; }
+.user-message,
+#chatbox.chatbox > .user-message {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.user-message::before,
+.user-message::after,
+.user-message > .user-bubble-main::before,
+.user-message > .user-bubble-main::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+.user-message > .user-attachments {
+  order: 0 !important;
+  display: flex !important;
+  flex: 0 1 auto !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 0 8px auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.user-message > .user-bubble-main {
+  order: 1 !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+.user-message > .user-actions-row { order: 2 !important; }
+.user-message .message-file {
+  position: relative !important;
+  display: flex !important;
+  flex: 0 0 118px !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: stretch !important;
+  width: 118px !important;
+  min-width: 0 !important;
+  max-width: 118px !important;
+  height: 118px !important;
+  min-height: 118px !important;
+  max-height: 118px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 13px !important;
+  background: #111 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+  color: #f4f4f4 !important;
+  text-align: left !important;
+  cursor: pointer !important;
+  -webkit-appearance: none !important;
+  appearance: none !important;
+}
+.user-message .message-file:disabled { cursor: default !important; opacity: .82 !important; }
+.user-message .message-file:focus-visible { outline: 2px solid #20c76b !important; outline-offset: 2px !important; }
+.user-message .message-file-preview {
+  position: relative !important;
+  display: grid !important;
+  flex: 1 1 auto !important;
+  place-items: center !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: #191919 !important;
+}
+.user-message .message-file-image {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: cover !important;
+}
+.user-message .message-file-image[hidden] { display: none !important; }
+.user-message .message-file-generic { display: grid; place-items: center; color: #e8e2eb; font-size: 25px; line-height: 1; }
+.user-message .message-file-type {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  max-width: calc(100% - 14px);
+  overflow: hidden;
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: rgba(0,0,0,.58);
+  color: #eee;
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.user-message .message-file-name {
+  display: block !important;
+  flex: 0 0 32px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  padding: 0 7px !important;
+  background: #090909 !important;
+  color: #f4f4f4 !important;
+  box-sizing: border-box !important;
+  font-size: 9px !important;
+  font-weight: 600 !important;
+  line-height: 32px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+.user-message .message-file.is-image .message-file-preview { flex: 1 1 100% !important; }
+.user-message .message-file.is-image .message-file-generic,
+.user-message .message-file.is-image .message-file-type,
+.user-message .message-file.is-image .message-file-name { display: none !important; }
+body.dark-mode .user-message > .user-bubble-main { background: transparent !important; }
+body.dark-mode .user-message .message-file { border-color: rgba(255,255,255,.14) !important; background: #111 !important; }
+body.dark-mode .user-message .message-file-name { background: #090909 !important; color: #f4f4f4 !important; }
+</style>
+<style id="oddi-user-message-single-bubble-fix">
+/* Keep one message surface: the bubble wrapper owns the fill, while its text
+   and Markdown paragraphs stay transparent inside it. */
+#chatbox.chatbox > .user-message > .user-bubble-main {
+  width: fit-content !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 16px 18px !important;
+  background: #f1f1f1 !important;
+  color: #111 !important;
+  border: 0 !important;
+  border-radius: 24px !important;
+  box-shadow: none !important;
+}
+#chatbox.chatbox > .user-message > .user-bubble-main > .user-text {
+  width: fit-content !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+#chatbox.chatbox > .user-message > .user-bubble-main > .user-text > p,
+#chatbox.chatbox > .user-message > .user-bubble-main > .user-text > p + p {
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+#chatbox.chatbox > .user-message > .user-bubble-main > .user-text.user-text-collapsible,
+#chatbox.chatbox > .user-message > .user-bubble-main > .user-text.user-text-expanded {
+  padding: 0 58px 42px 0 !important;
+}
+body.dark-mode #chatbox.chatbox > .user-message > .user-bubble-main {
+  background: #333 !important;
+  color: #f2f2f2 !important;
+}
+</style>
+<style id="oddi-chat-scroll-clearance-fix">
+#chatbox.chatbox {
+  scroll-behavior: auto !important;
+  overflow-anchor: none !important;
+  padding-bottom: var(--oddi-chat-bottom-clearance, 92px) !important;
+}
+</style>
+<script id="oddi-chat-scroll-clearance-fix-js">
+(function () {
+  const chatBox = document.getElementById("chatbox");
+  const composer = document.getElementById("oddiComposerShell") || document.querySelector(".input-area");
+  if (!chatBox) return;
+
+  let frame = 0;
+  function updateClearance() {
+    frame = 0;
+    if (!composer || !composer.isConnected) {
+      chatBox.style.setProperty("--oddi-chat-bottom-clearance", "16px");
+      return;
+    }
+    const chatRect = chatBox.getBoundingClientRect();
+    const composerRect = composer.getBoundingClientRect();
+    const overlap = Math.max(0, chatRect.bottom - composerRect.top);
+    const clearance = Math.ceil(overlap + 16);
+    chatBox.style.setProperty("--oddi-chat-bottom-clearance", clearance + "px");
+  }
+  function scheduleUpdate() {
+    if (!frame) frame = requestAnimationFrame(updateClearance);
+  }
+
+  scheduleUpdate();
+  window.addEventListener("resize", scheduleUpdate, { passive: true });
+  window.visualViewport?.addEventListener("resize", scheduleUpdate, { passive: true });
+  if (window.ResizeObserver) {
+    const observer = new ResizeObserver(scheduleUpdate);
+    observer.observe(chatBox);
+    if (composer) observer.observe(composer);
+  }
+})();
+</script>
+<style id="oddi-user-bubble-compact-polish-v1">
+#chatbox.chatbox > .user-message {
+  width: fit-content !important;
+  max-width: min(740px, calc(100% - 24px)) !important;
+  margin: 0 0 15px auto !important;
+}
+#chatbox.chatbox > .user-message > .user-bubble-main {
+  width: fit-content !important;
+  max-width: 100% !important;
+  padding: 11px 16px !important;
+  border-radius: 19px !important;
+  background: #ededed !important;
+  color: #111 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+}
+#chatbox.chatbox > .user-message > .user-bubble-main > .user-text {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 15px !important;
+  line-height: 1.5 !important;
+  overflow-wrap: anywhere !important;
+}
+#chatbox.chatbox > .user-message > .user-bubble-main > .user-text.user-text-collapsible,
+#chatbox.chatbox > .user-message > .user-bubble-main > .user-text.user-text-expanded {
+  padding: 0 48px 38px 0 !important;
+}
+body.dark-mode #chatbox.chatbox > .user-message > .user-bubble-main,
+body[data-theme="dark"] #chatbox.chatbox > .user-message > .user-bubble-main {
+  background: #292929 !important;
+  color: #f1f1f1 !important;
+}
+#chatbox.chatbox > .user-message > .user-actions-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 3px !important;
+  margin: 4px 2px 0 0 !important;
+}
+#chatbox.chatbox > .user-message > .user-actions-row .user-edit-btn,
+#chatbox.chatbox > .user-message > .user-actions-row .user-pin-btn,
+#chatbox.chatbox > .user-message > .user-actions-row .user-copy-btn {
+  width: auto !important;
+  min-width: 0 !important;
+  height: 25px !important;
+  min-height: 25px !important;
+  padding: 3px 7px !important;
+  border-radius: 7px !important;
+  font-size: 11px !important;
+}
+@media (hover: none), (pointer: coarse) {
+  #chatbox.chatbox > .user-message > .user-actions-row .user-edit-btn,
+  #chatbox.chatbox > .user-message > .user-actions-row .user-pin-btn,
+  #chatbox.chatbox > .user-message > .user-actions-row .user-copy-btn {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+  }
+}
+</style>
+<style id="oddi-hide-phone-bottom-tabs">
+@media (max-width: 768px) {
+  .oddi-mobile-bottom-tabs-hidden { display: none !important; }
+}
+</style>
+<script id="oddi-hide-phone-bottom-tabs-js">
+(() => {
+  const phone = window.matchMedia("(max-width: 768px)");
+  const hiddenClass = "oddi-mobile-bottom-tabs-hidden";
+  const navCandidates = 'nav,[role="navigation"],[role="tablist"],[class*="nav" i],[id*="nav" i],[class*="tab" i],[id*="tab" i],footer';
+  let frame = 0;
+
+  function restoreForDesktop() {
+    document.querySelectorAll(`.${hiddenClass}`).forEach(element => element.classList.remove(hiddenClass));
+  }
+
+  function hasAppTabLabels(element) {
+    const labels = [
+      element.innerText || "",
+      ...Array.from(element.querySelectorAll("button,a,[role=tab]"), control =>
+        `${control.getAttribute("aria-label") || ""} ${control.getAttribute("title") || ""}`
+      )
+    ].join(" ").toLocaleLowerCase();
+    const required = [
+      /\bhome\b/, /\bnew(?:\s+chat)?\b/, /\bchats?\b/,
+      /\bmemory\b/, /\blibrary\b/, /\bsettings\b/
+    ];
+    return required.filter(pattern => pattern.test(labels)).length >= 4;
+  }
+
+  function isBottomBar(element) {
+    const rect = element.getBoundingClientRect();
+    if (rect.width < window.innerWidth * .72 || rect.height < 22 || rect.height > 140) return false;
+    if (rect.bottom < window.innerHeight - 18) return false;
+    const position = getComputedStyle(element).position;
+    return position === "fixed" || position === "sticky";
+  }
+
+  function hidePhoneBottomTabs() {
+    frame = 0;
+    if (!phone.matches) {
+      restoreForDesktop();
+      return;
+    }
+
+    for (const candidate of document.querySelectorAll(navCandidates)) {
+      if (!hasAppTabLabels(candidate)) continue;
+      let element = candidate;
+      for (let depth = 0; element && depth < 4; depth++, element = element.parentElement) {
+        if (isBottomBar(element)) {
+          element.classList.add(hiddenClass);
+          return;
+        }
+      }
+    }
+  }
+
+  function scheduleScan() {
+    if (!frame) frame = requestAnimationFrame(hidePhoneBottomTabs);
+  }
+
+  new MutationObserver(scheduleScan).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener("resize", scheduleScan, { passive: true });
+  phone.addEventListener?.("change", scheduleScan);
+  scheduleScan();
+})();
+</script>
+<style id="oddi-phone-home-formal-polish-v1">
+/* A calmer, more legible home screen on phones; desktop layouts stay unchanged. */
+@media (max-width: 768px) and (pointer: coarse) {
+  #welcomeContainer {
+    width: min(100%, 390px) !important;
+    padding: max(40px, calc(env(safe-area-inset-top, 0px) + 28px)) 14px 58px !important;
+    box-sizing: border-box !important;
+    gap: 0 !important;
+  }
+  #welcomeContainer::before {
+    margin: 0 auto 8px !important;
+    color: #82d99f !important;
+    font-size: 9px !important;
+    letter-spacing: .14em !important;
+    text-shadow: none !important;
+  }
+  #welcomeContainer h2 {
+    max-width: min(310px, 100%) !important;
+    margin: 0 auto 9px !important;
+    font-size: clamp(24px, 7.2vw, 29px) !important;
+    line-height: 1.1 !important;
+    letter-spacing: -.55px !important;
+    text-wrap: balance !important;
+  }
+  #welcomeContainer .welcome-emoji { display: none !important; }
+  #welcomeContainer > .oddi-home-subtitle {
+    width: min(300px, 100%) !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #a4aaa5 !important;
+    font-size: 11.5px !important;
+    line-height: 1.45 !important;
+    text-wrap: balance !important;
+  }
+
+  #oddiSuggestionCards {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: stretch !important;
+    width: min(340px, calc(100vw - 36px)) !important;
+    margin: 15px auto 0 !important;
+    padding: 0 !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+  #oddiSuggestionCards .oddi-suggestion-card {
+    display: grid !important;
+    grid-template-columns: 28px minmax(0, 1fr) !important;
+    align-items: center !important;
+    column-gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 48px !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 7px 11px !important;
+    border: 1px solid rgba(128, 145, 133, .24) !important;
+    border-radius: 12px !important;
+    background: rgba(19, 22, 20, .9) !important;
+    color: #f1f3f1 !important;
+    box-shadow: 0 4px 13px rgba(0, 0, 0, .18) !important;
+    text-align: left !important;
+    transform: none !important;
+    backdrop-filter: blur(10px) saturate(1.04) !important;
+    -webkit-backdrop-filter: blur(10px) saturate(1.04) !important;
+  }
+  #oddiSuggestionCards .oddi-suggestion-card::before,
+  #oddiSuggestionCards .oddi-suggestion-card::after { display: none !important; }
+  #oddiSuggestionCards .oddi-suggestion-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 27px !important;
+    min-width: 27px !important;
+    height: 27px !important;
+    border: 1px solid rgba(112, 202, 143, .2) !important;
+    border-radius: 8px !important;
+    background: rgba(68, 145, 91, .13) !important;
+    color: #9adbad !important;
+    font-size: 14px !important;
+  }
+  #oddiSuggestionCards .oddi-suggestion-icon svg {
+    display: block !important;
+    width: 15px !important;
+    height: 15px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 1.7 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+  #oddiSuggestionCards .oddi-suggestion-copy {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+    gap: 3px !important;
+    text-align: left !important;
+  }
+  #oddiSuggestionCards .oddi-suggestion-copy strong {
+    overflow: hidden !important;
+    color: #f0f2f0 !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  #oddiSuggestionCards .oddi-suggestion-copy small {
+    overflow: hidden !important;
+    color: #aeb5b0 !important;
+    font-size: 10px !important;
+    font-weight: 450 !important;
+    line-height: 1.25 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+  #oddiSuggestionCards .oddi-suggestion-card:active {
+    transform: scale(.99) !important;
+    background: rgba(27, 33, 29, .96) !important;
+  }
+
+  #oddiLastMessageCard {
+    display: flex !important;
+    align-items: center !important;
+    width: min(340px, calc(100vw - 36px)) !important;
+    min-height: 50px !important;
+    height: auto !important;
+    margin: 5px auto 0 !important;
+    padding: 8px 11px !important;
+    border: 1px solid rgba(117, 180, 135, .3) !important;
+    border-radius: 12px !important;
+    background: rgba(25, 31, 27, .88) !important;
+    color: #eaf1ec !important;
+    box-shadow: 0 4px 13px rgba(0, 0, 0, .16) !important;
+  }
+  #oddiLastMessageCard .oddi-last-message-icon,
+  #oddiLastMessageCard .oddi-last-message-arrow {
+    color: #9adbad !important;
+  }
+  #oddiLastMessageCard .oddi-last-message-label {
+    color: #dce5de !important;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+  }
+
+  #oddiSayHello {
+    min-height: 34px !important;
+    padding: 7px 13px !important;
+    border: 1px solid rgba(88, 190, 121, .42) !important;
+    border-radius: 999px !important;
+    background: rgba(26, 93, 51, .22) !important;
+    color: #9de5b3 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    letter-spacing: .01em !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .16) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+  }
+
+  #oddiComposerShell.input-area {
+    min-height: 54px !important;
+    border-color: rgba(145, 153, 147, .28) !important;
+    border-radius: 20px !important;
+    background: rgba(16, 17, 16, .96) !important;
+    box-shadow: 0 7px 22px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .035) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+  #oddiComposerShell.input-area textarea#userInput {
+    font-size: 14px !important;
+    line-height: 1.45 !important;
+  }
+  #oddiComposerShell.input-area textarea#userInput::placeholder { color: #929792 !important; opacity: 1 !important; }
+  #oddiComposerShell.input-area .attach-btn,
+  #oddiComposerShell.input-area .dictation-btn,
+  #oddiComposerShell.input-area .voice-btn,
+  #oddiComposerShell.input-area .send-btn {
+    border-radius: 50% !important;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher,
+  .header-controls .header-more-btn,
+  .header-controls #themeBtn {
+    box-sizing: border-box !important;
+    width: 42px !important;
+    min-width: 44px !important;
+    height: 42px !important;
+    min-height: 44px !important;
+    border: 1px solid rgba(145, 153, 147, .28) !important;
+    border-radius: 13px !important;
+    background: rgba(17, 18, 17, .9) !important;
+    color: #f1f3f1 !important;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, .2) !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher { width: 44px !important; height: 44px !important; }
+  #oddiSparkLayer,
+  #oddiLightLayer,
+  #oddiPhoneDots { opacity: .2 !important; }
+
+  body:not(.dark-mode) #welcomeContainer > .oddi-home-subtitle { color: #626b65 !important; }
+  body:not(.dark-mode) #oddiSuggestionCards .oddi-suggestion-card {
+    border-color: rgba(77, 94, 82, .2) !important;
+    background: rgba(255, 255, 255, .94) !important;
+    color: #202722 !important;
+    box-shadow: 0 4px 13px rgba(0, 0, 0, .07) !important;
+  }
+  body:not(.dark-mode) #oddiSuggestionCards .oddi-suggestion-copy strong { color: #202722 !important; }
+  body:not(.dark-mode) #oddiSuggestionCards .oddi-suggestion-copy small { color: #626b65 !important; }
+  body:not(.dark-mode) #oddiLastMessageCard {
+    border-color: rgba(65, 126, 82, .24) !important;
+    background: rgba(255, 255, 255, .94) !important;
+    color: #26352a !important;
+  }
+  body:not(.dark-mode) #oddiLastMessageCard .oddi-last-message-label { color: #435649 !important; }
+  body:not(.dark-mode) #oddiComposerShell.input-area { background: rgba(255, 255, 255, .97) !important; }
+  body:not(.dark-mode) #oddiComposerShell.input-area textarea#userInput::placeholder { color: #68716b !important; }
+  body:not(.dark-mode) #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher,
+  body:not(.dark-mode) .header-controls .header-more-btn,
+  body:not(.dark-mode) .header-controls #themeBtn {
+    background: rgba(255, 255, 255, .96) !important;
+    color: #202722 !important;
+    border-color: rgba(77, 94, 82, .2) !important;
+  }
+}
+
+@media (max-width: 768px) and (pointer: coarse) and (max-height: 620px) {
+  #welcomeContainer { padding-top: max(30px, calc(env(safe-area-inset-top, 0px) + 20px)) !important; }
+  #oddiSuggestionCards { margin-top: 11px !important; gap: 6px !important; }
+  #oddiSuggestionCards .oddi-suggestion-card { min-height: 45px !important; }
+  #oddiLastMessageCard { min-height: 46px !important; }
+}
+</style>
 </body>
 </html>

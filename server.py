@@ -83,6 +83,7 @@ from app.database import (
     clear_memory,
     get_vector_store_id,
     enqueue_memory_message,
+    get_memory_extraction_status,
     clear_memory_extraction_queue,
     recover_stale_memory_claims,
 )
@@ -385,7 +386,47 @@ def _backfill_chat_summaries(user_id):
     finally:
         with _SUMMARY_BACKFILL_LOCK:
             _SUMMARY_BACKFILL_USERS.discard(str(user_id))
+
+
+def _enqueue_memory_message_if_enabled(user_id, event_id, message):
+    """Queue a quick-reply turn after sending only if account consent allows it."""
+    if (
+        ODDI_BROWSER_LOCAL_CHATS
+        or not memory_provider_keys_configured()
+        or memory_user_disabled(user_id)
+        or memory_user_opted_out(user_id)
+    ):
+        return
+    try:
+        settings = normalize_memory_settings(get_user_settings(user_id).get("memory"))
+        if settings["enabled"] and settings["auto_extract"]:
+            safe_message = message if is_safe_memory_message(message) else ""
+            enqueue_memory_message(str(user_id), event_id, safe_message)
+    except Exception:
+        logger.exception("Could not queue a quick chat turn for memory extraction")
 app.add_middleware(GZipMiddleware, minimum_size=1024)
+
+
+@app.middleware("http")
+async def identify_unhandled_chat_errors(request: Request, call_next):
+    """Give unexpected /chat failures a support reference and a traceback log."""
+    if request.url.path != "/chat":
+        return await call_next(request)
+    request_id = uuid.uuid4().hex[:12]
+    request.state.chat_request_id = request_id
+    try:
+        response = await call_next(request)
+    except Exception:
+        logger.exception("Unhandled /chat request failure request_id=%s", request_id)
+        response = JSONResponse(
+            {
+                "error": "The chat server could not complete this request. Please retry.",
+                "request_id": request_id,
+            },
+            status_code=500,
+        )
+    response.headers["X-Oddi-Request-ID"] = request_id
+    return response
 
 
 @app.middleware("http")
@@ -1966,9 +2007,34 @@ def api_get_memory(request: Request):
         logger.warning("Memory preference lookup failed while opening Memory (%s).", type(error).__name__)
         memory_settings = {"enabled": False, "auto_extract": False}
 
+    try:
+        queue_status = get_memory_extraction_status(user_id)
+    except Exception as error:
+        logger.warning("Memory queue status lookup failed (%s).", type(error).__name__)
+        queue_status = {
+            "queued_count": 0,
+            "processing_count": 0,
+            "next_available_at": None,
+            "last_activity": None,
+            "lookup_failed": True,
+        }
+    provider_configured = memory_provider_keys_configured()
+    memory_available = (
+        not ODDI_BROWSER_LOCAL_CHATS
+        and memory_settings.get("enabled") is True
+        and memory_settings.get("auto_extract") is True
+        and provider_configured
+    )
+
     return JSONResponse(
         {
             "memory_settings": memory_settings,
+            "auto_memory": {
+                "available": memory_available,
+                "browser_local_chats": ODDI_BROWSER_LOCAL_CHATS,
+                "provider_configured": provider_configured,
+                "queue": queue_status,
+            },
             "memories": [
                 {
                     "key": key,
@@ -2036,6 +2102,210 @@ async def api_delete_memory(request: Request):
 # =========================================================
 # FILES
 # =========================================================
+
+_PREVIEW_MAX_UPLOAD_BYTES = 20 * 1024 * 1024
+_PREVIEW_TEXT_EXTENSIONS = {
+    ".txt", ".md", ".markdown", ".log", ".json", ".xml", ".html", ".htm",
+    ".yaml", ".yml", ".py", ".js", ".ts", ".tsx", ".jsx", ".css", ".sql",
+    ".ini", ".cfg", ".toml", ".rtf", ".csv", ".tsv",
+}
+
+
+def _preview_cell_value(value):
+    if value is None:
+        return ""
+    if isinstance(value, (str, int, float, bool)):
+        return str(value)[:1000]
+    if hasattr(value, "isoformat"):
+        try:
+            return value.isoformat()
+        except (TypeError, ValueError):
+            pass
+    return str(value)[:1000]
+
+
+def _extract_upload_preview(filename, data, content_type=""):
+    """Read common office and text formats for the transient file-preview UI."""
+    import csv
+    import io
+    import os
+    import re
+    import zipfile
+
+    extension = os.path.splitext(filename)[1].casefold()
+    office_extensions = {
+        ".docx", ".xlsx", ".xlsm", ".xltx", ".xltm", ".xls", ".pptx",
+    }
+
+    if extension in office_extensions - {".xls"}:
+        try:
+            with zipfile.ZipFile(io.BytesIO(data)) as archive:
+                members = archive.infolist()
+                expanded_bytes = sum(member.file_size for member in members)
+                if len(members) > 5000 or expanded_bytes > 120 * 1024 * 1024:
+                    raise ValueError("This office file is too large to preview safely.")
+        except zipfile.BadZipFile as exc:
+            raise ValueError("This office file is damaged or has an unsupported format.") from exc
+
+    if extension == ".docx":
+        from docx import Document
+
+        document = Document(io.BytesIO(data))
+        blocks = []
+        for paragraph in document.paragraphs:
+            text = paragraph.text.strip()
+            if not text:
+                continue
+            style_name = str(getattr(paragraph.style, "name", ""))
+            if style_name.lower().startswith("heading"):
+                level = re.search(r"(\d+)$", style_name)
+                text = "#" * min(6, int(level.group(1)) if level else 2) + " " + text
+            blocks.append(text)
+        for table_index, table in enumerate(document.tables, start=1):
+            rows = []
+            for row_index, row in enumerate(table.rows):
+                if row_index >= 300:
+                    break
+                rows.append("\t".join(cell.text.replace("\n", " ").strip()[:500] for cell in row.cells[:30]))
+            if rows:
+                blocks.append(f"Table {table_index}\n" + "\n".join(rows))
+        content = "\n\n".join(blocks) or "This Word document has no readable text."
+        truncated = len(content) > 1_000_000
+        return {"kind": "text", "content": content[:1_000_000], "truncated": truncated}
+
+    if extension in {".xlsx", ".xlsm", ".xltx", ".xltm"}:
+        from openpyxl import load_workbook
+
+        workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+        sheets = []
+        try:
+            for worksheet in workbook.worksheets[:12]:
+                max_row = min(max(worksheet.max_row or 1, 1), 500)
+                max_column = min(max(worksheet.max_column or 1, 1), 30)
+                rows = [
+                    [_preview_cell_value(value) for value in row]
+                    for row in worksheet.iter_rows(
+                        max_row=max_row,
+                        max_col=max_column,
+                        values_only=True,
+                    )
+                ]
+                sheets.append({
+                    "name": worksheet.title,
+                    "rows": rows,
+                    "truncated": (worksheet.max_row or 0) > 500 or (worksheet.max_column or 0) > 30,
+                })
+        finally:
+            workbook.close()
+        return {"kind": "spreadsheet", "sheets": sheets}
+
+    if extension == ".xls":
+        import xlrd
+
+        workbook = xlrd.open_workbook(file_contents=data, on_demand=True)
+        sheets = []
+        try:
+            for worksheet in workbook.sheets()[:12]:
+                row_limit = min(worksheet.nrows, 500)
+                column_limit = min(worksheet.ncols, 30)
+                rows = [
+                    [_preview_cell_value(value) for value in worksheet.row_values(row_index, 0, column_limit)]
+                    for row_index in range(row_limit)
+                ]
+                sheets.append({
+                    "name": worksheet.name,
+                    "rows": rows,
+                    "truncated": worksheet.nrows > 500 or worksheet.ncols > 30,
+                })
+        finally:
+            workbook.release_resources()
+        return {"kind": "spreadsheet", "sheets": sheets}
+
+    if extension == ".pptx":
+        from pptx import Presentation
+
+        presentation = Presentation(io.BytesIO(data))
+        slides = []
+        for number, slide in enumerate(presentation.slides, start=1):
+            if number > 100:
+                break
+            lines = []
+            for shape in slide.shapes:
+                if getattr(shape, "has_text_frame", False):
+                    text = "\n".join(paragraph.text for paragraph in shape.text_frame.paragraphs).strip()
+                    if text:
+                        lines.append(text)
+                if getattr(shape, "has_table", False):
+                    for row_index, row in enumerate(shape.table.rows):
+                        if row_index >= 100:
+                            break
+                        lines.append("\t".join(cell.text.strip() for cell in row.cells[:30]))
+            slides.append(f"Slide {number}\n" + "\n".join(lines))
+        content = "\n\n".join(slides) or "This presentation has no readable slide text."
+        truncated = len(content) > 1_000_000 or len(presentation.slides) > 100
+        return {"kind": "text", "content": content[:1_000_000], "truncated": truncated}
+
+    if extension in _PREVIEW_TEXT_EXTENSIONS or str(content_type).casefold().startswith("text/"):
+        text = data[:2 * 1024 * 1024].decode("utf-8-sig", errors="replace")
+        truncated = len(data) > 2 * 1024 * 1024
+        if extension in {".csv", ".tsv"}:
+            delimiter = "\t" if extension == ".tsv" else ","
+            if extension == ".csv":
+                try:
+                    delimiter = csv.Sniffer().sniff(text[:8192], delimiters=",;\t|").delimiter
+                except csv.Error:
+                    pass
+            rows = []
+            for row in csv.reader(io.StringIO(text), delimiter=delimiter):
+                rows.append([str(cell)[:1000] for cell in row[:30]])
+                if len(rows) >= 500:
+                    truncated = True
+                    break
+            return {"kind": "spreadsheet", "sheets": [{"name": filename, "rows": rows, "truncated": truncated}]}
+        if extension == ".rtf":
+            text = re.sub(r"\\'[0-9a-fA-F]{2}", " ", text)
+            text = re.sub(r"\\(?:par|line)\b ?", "\n", text)
+            text = re.sub(r"\\[a-zA-Z]+-?\d* ?", "", text).replace("{", "").replace("}", "")
+        return {"kind": "text", "content": text[:1_000_000], "truncated": truncated or len(text) > 1_000_000}
+
+    raise ValueError("This file type cannot be previewed. It can still be attached to your message.")
+
+
+@app.post("/api/preview-file", name="api_preview_file")
+async def api_preview_file(request: Request):
+    require_user_id(request)
+    try:
+        content_length = int(request.headers.get("content-length") or 0)
+    except ValueError:
+        content_length = 0
+    if content_length > _PREVIEW_MAX_UPLOAD_BYTES + 256 * 1024:
+        return JSONResponse({"error": "Preview is limited to files up to 20 MB."}, status_code=413)
+    try:
+        form = await request.form()
+    except Exception:
+        return JSONResponse({"error": "The preview upload could not be read."}, status_code=400)
+    upload = form.get("file")
+    if upload is None or not hasattr(upload, "read"):
+        return JSONResponse({"error": "Choose a file to preview."}, status_code=400)
+
+    filename = os.path.basename(str(getattr(upload, "filename", "") or "attachment"))
+    content_type = str(getattr(upload, "content_type", "") or "")
+    try:
+        data = await upload.read(_PREVIEW_MAX_UPLOAD_BYTES + 1)
+        if len(data) > _PREVIEW_MAX_UPLOAD_BYTES:
+            return JSONResponse({"error": "Preview is limited to files up to 20 MB."}, status_code=413)
+        preview = await run_in_threadpool(_extract_upload_preview, filename, data, content_type)
+        return JSONResponse(preview)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=415)
+    except ImportError as exc:
+        logger.exception("File preview dependency is missing for %s", filename)
+        return JSONResponse({"error": f"Preview support for this format is unavailable: {exc.name or 'missing reader'}"}, status_code=503)
+    except Exception:
+        logger.exception("File preview failed for %s", filename)
+        return JSONResponse({"error": "This file could not be previewed. It can still be attached to your message."}, status_code=422)
+    finally:
+        await upload.close()
 
 @app.get("/api/files", name="api_get_files")
 def api_get_files(request: Request):
@@ -2230,6 +2500,7 @@ async def cancel_chat_generation(request: Request, generation_id: str):
 @app.post("/chat", name="chat")
 async def chat(request: Request, background_tasks: BackgroundTasks):
     generation_started = time.perf_counter()
+    chat_request_id = getattr(request.state, "chat_request_id", uuid.uuid4().hex[:12])
     form = await request.form()
 
     message = form.get("message")
@@ -2296,16 +2567,19 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = await require_user_id_async(request)
-    settings_loaded = True
-    try:
-        # Memory consent is server-authoritative, including for Drive-backed
-        # accounts. A failed lookup fails closed for memory while chat itself
-        # remains available.
-        user_settings = await run_in_threadpool(get_user_settings, user_id)
-    except Exception as error:
-        logger.warning("User settings lookup failed; memory is disabled for this turn (%s).", type(error).__name__)
-        user_settings = {}
-        settings_loaded = False
+    fast_reply = fast_response(memory_message) if not engine_files else None
+    settings_loaded = fast_reply is None
+    user_settings = {}
+    if settings_loaded:
+        try:
+            # Memory consent is server-authoritative, including for Drive-backed
+            # accounts. A failed lookup fails closed for memory while chat itself
+            # remains available.
+            user_settings = await run_in_threadpool(get_user_settings, user_id)
+        except Exception as error:
+            logger.warning("User settings lookup failed; memory is disabled for this turn (%s).", type(error).__name__)
+            user_settings = {}
+            settings_loaded = False
     server_memory = normalize_memory_settings(user_settings.get("memory"))
     memory_enabled = (
         settings_loaded
@@ -2319,25 +2593,10 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         and client_memory_auto_extract is not False
         and not memory_user_opted_out(user_id)
     )
-    if (
-        not ODDI_BROWSER_LOCAL_CHATS
-        and memory_provider_keys_configured()
-        and memory_auto_extract
-    ):
-        try:
-            # Mark activity at request start; the completed-turn queue task
-            # records it again so long replies also reset the quiet window.
-            await run_in_threadpool(
-                enqueue_memory_message,
-                str(user_id),
-                assistant_message_id,
-                "",
-            )
-        except Exception as error:
-            logger.warning("Memory activity timestamp failed (%s).", type(error).__name__)
     privacy_settings = user_settings.get("privacy", {}) if isinstance(user_settings, dict) else {}
     request_logging_enabled = (
         not ODDI_BROWSER_LOCAL_CHATS
+        and fast_reply is None
         and privacy_settings.get("request_logging", True) is not False
     )
 
@@ -2358,6 +2617,13 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             )
         except DriveStorageError:
             logger.warning("Google Drive chat lookup failed; generating without server-side deduplication.")
+            existing_conversation = None
+        except Exception:
+            logger.exception(
+                "Conversation lookup failed request_id=%s conversation=%s; continuing without server-side deduplication",
+                chat_request_id,
+                conversation_id,
+            )
             existing_conversation = None
         existing_reply = next(
             (
@@ -2527,12 +2793,6 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         # Match the original text the user typed before the frontend's
         # Library-recall instructions or other internal context can alter it.
         # Requests with attachments continue through the document-aware engine.
-        fast_reply = (
-            fast_response(memory_message)
-            if not engine_files
-            else None
-        )
-
         if fast_reply is not None:
             reply = fast_reply
         else:
@@ -2553,10 +2813,17 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             return PlainTextResponse("Generation stopped.", status_code=409)
     except Exception:
         logger.exception(
-            "Chat processing failed for user %s; uploaded Library files were left unchanged.",
+            "Chat processing failed request_id=%s user=%s; uploaded Library files were left unchanged.",
+            chat_request_id,
             user_id,
         )
-        raise
+        return JSONResponse(
+            {
+                "error": "The chat service could not complete this reply. Please retry.",
+                "request_id": chat_request_id,
+            },
+            status_code=503,
+        )
     finally:
         with _chat_generation_lock:
             _active_chat_generations.pop(generation_id, None)
@@ -2652,6 +2919,14 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             except DriveStorageError:
                 logger.warning("Google Drive save failed after reply generation; returning the reply for local recovery.")
                 saved_conversation = None
+            except Exception:
+                logger.exception(
+                    "Completed reply persistence failed request_id=%s conversation=%s user=%s; returning reply for local recovery",
+                    chat_request_id,
+                    conversation_id,
+                    user_id,
+                )
+                saved_conversation = None
             if not saved_conversation:
                 logger.warning(
                     "Completed chat response could not be saved conversation=%s user=%s",
@@ -2660,6 +2935,17 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 )
 
     if (
+        fast_reply is not None
+        and client_memory_enabled is not False
+        and client_memory_auto_extract is not False
+    ):
+        background_tasks.add_task(
+            _enqueue_memory_message_if_enabled,
+            str(user_id),
+            assistant_message_id,
+            memory_message,
+        )
+    elif (
         not ODDI_BROWSER_LOCAL_CHATS
         and memory_provider_keys_configured()
         and memory_enabled
