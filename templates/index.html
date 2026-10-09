@@ -35547,7 +35547,7 @@ body.oddi-system-theme #welcomeContainer > .oddi-home-subtitle {
 
 /* At very narrow phone widths the dedicated dictation mic crowds the text.
    Keep the attach and voice/send controls reachable and give the text a lane. */
-@media (max-width: 360px) and (pointer: coarse) {
+@media (max-width: 360px) {
   #oddiComposerShell .oddi-composer-field {
     grid-template-columns: 44px minmax(0, 1fr) 44px !important;
   }
@@ -37654,9 +37654,8 @@ body.oddi-system-theme.dark-mode #oddiComposerShell.input-area.has-attachments {
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
+  align-items: stretch !important;
   overflow: visible !important;
-  padding: 14px !important;
-  row-gap: 10px !important;
   border: 1px solid #303331 !important;
   border-radius: 30px !important;
   background: #1b1b1b !important;
@@ -37687,6 +37686,330 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > .oddi-composer-fi
 body.oddi-system-theme.dark-mode #oddiComposerShell.input-area.has-attachments > .oddi-composer-field:focus-within {
   border-color: transparent !important;
   box-shadow: none !important;
+}
+</style>
+
+<style id="oddi-mobile-home-cta-composer-final-fix">
+@media (max-width: 768px) {
+  /* The hello CTA belongs in the open space above the fixed phone composer,
+     not on top of the home heading. Override its script-measured desktop top. */
+  body:has(#chatbox #welcomeContainer) #oddiSayHello {
+    position: fixed !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: calc(max(16px, env(safe-area-inset-bottom, 0px) + 10px) + 78px) !important;
+    left: 50% !important;
+    z-index: 620 !important;
+    transform: translateX(-50%) !important;
+  }
+
+  /* Keep the right action buttons inside the composer grid's final column.
+     The 40px controls retain their existing dimensions within a 44px slot. */
+  #oddiComposerShell.input-area:not(.has-attachments),
+  #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field {
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) 44px 44px !important;
+    grid-template-rows: minmax(44px, auto) !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: 62px !important;
+    padding: 6px 12px 6px 6px !important;
+    gap: 4px !important;
+    overflow: visible !important;
+    border-radius: 999px !important;
+    box-sizing: border-box !important;
+  }
+
+  /* The phone theme selector is more specific than the generic composer
+     rules above, so mirror that selector here for a reliable cascade. */
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field {
+    min-height: 62px !important;
+    padding-right: 18px !important;
+    border-radius: 999px !important;
+  }
+
+  #oddiComposerShell.input-area:not(.has-attachments) {
+    left: max(10px, env(safe-area-inset-left, 0px)) !important;
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 66px !important;
+    height: auto !important;
+    border-radius: 999px !important;
+    box-sizing: border-box !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field > #attach-btn { grid-column: 1 !important; grid-row: 1 !important; }
+  #oddiComposerShell .oddi-composer-field > #userInput { grid-column: 2 !important; grid-row: 1 !important; }
+  #oddiComposerShell .oddi-composer-field > #dictation-btn { grid-column: 3 !important; grid-row: 1 !important; }
+  #oddiComposerShell .oddi-composer-field > .action-button-slot { grid-column: 4 !important; grid-row: 1 !important; }
+
+  body.dark-mode #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field,
+  body.oddi-system-theme.dark-mode #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field {
+    background: #1b1b1b !important;
+    border-color: #343735 !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .24) !important;
+  }
+
+  body.oddi-phone-controls-portaled.dark-mode:has(#chatbox #welcomeContainer) #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field,
+  body.oddi-phone-controls-portaled.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field {
+    background: #1b1b1b !important;
+    border-color: #343735 !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .24) !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field .action-button-slot {
+    position: relative !important;
+    display: grid !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    justify-self: center !important;
+    align-self: center !important;
+    inset: auto !important;
+    left: -10px !important;
+    right: auto !important;
+    transform: none !important;
+    overflow: visible !important;
+    border-radius: 50% !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field .action-button-slot > #voice-btn,
+  #oddiComposerShell .oddi-composer-field .action-button-slot > #send-btn {
+    inset: 2px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    box-sizing: border-box !important;
+  }
+
+  body.dark-mode #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field:focus-within,
+  body.oddi-system-theme.dark-mode #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field:focus-within {
+    background: #1b1b1b !important;
+    border-color: #484c49 !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .24) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field:focus-within {
+    background: #1b1b1b !important;
+    border-color: #484c49 !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .24) !important;
+  }
+
+  /* Keep focus styling on the complete composer surface; the textarea should
+     not draw a second green rectangle inside the rounded input field. */
+  #oddiComposerShell .oddi-composer-field #userInput,
+  #oddiComposerShell .oddi-composer-field #userInput:focus,
+  #oddiComposerShell .oddi-composer-field #userInput:focus-visible {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    appearance: none !important;
+    -webkit-appearance: none !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field #userInput,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field #userInput:focus,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field #userInput:focus-visible {
+    border: 0 !important;
+    outline: 0 !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSayHello {
+    min-height: 38px !important;
+    padding: 9px 15px !important;
+    font-size: 12px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field {
+    grid-template-columns: 44px minmax(0, 1fr) 44px !important;
+  }
+  #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field #dictation-btn {
+    display: none !important;
+  }
+  #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field .action-button-slot {
+    grid-column: 3 !important;
+  }
+}
+</style>
+
+<style id="oddi-phone-dark-palette-match-laptop">
+@media (max-width: 768px) {
+  /* Match the phone's Dark/System-Dark palette to the established laptop
+     palette; the mobile layout and control design stay as they are. */
+  body.dark-mode:has(#chatbox #welcomeContainer),
+  body.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) {
+    --oddi-home-canvas: #080909;
+    --oddi-home-surface: #111313;
+    --oddi-home-surface-elevated: #171918;
+    --oddi-home-border: #292d2b;
+    --oddi-home-text-primary: #f2f4f3;
+    --oddi-home-text-secondary: #a6aeaa;
+    --oddi-home-text-muted: #858d88;
+    --oddi-home-accent: #37c986;
+    --oddi-home-accent-soft: rgba(55, 201, 134, .12);
+    --oddi-home-accent-foreground: #05120b;
+    --oddi-home-focus: #37c986;
+    --oddi-home-card-shadow: 0 6px 18px rgba(0, 0, 0, .24);
+    --oddi-home-float-shadow: 0 12px 30px rgba(0, 0, 0, .38);
+    --oddi-home-blue: #37c986;
+    --oddi-home-purple: #37c986;
+    --oddi-home-orange: #37c986;
+  }
+
+  body.oddi-phone-controls-portaled.dark-mode:has(#chatbox #welcomeContainer) #chatbox.chatbox,
+  body.oddi-phone-controls-portaled.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) #chatbox.chatbox {
+    background: #080909 !important;
+    color: #f2f4f3 !important;
+  }
+
+  body.oddi-phone-controls-portaled.dark-mode:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card,
+  body.oddi-phone-controls-portaled.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+    background: #111313 !important;
+    border-color: #292d2b !important;
+    color: #f2f4f3 !important;
+  }
+
+  body.oddi-phone-controls-portaled.dark-mode:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon,
+  body.oddi-phone-controls-portaled.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon {
+    background: #171918 !important;
+    border-color: #292d2b !important;
+    color: #a6aeaa !important;
+  }
+
+  body.oddi-phone-controls-portaled.dark-mode:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard,
+  body.oddi-phone-controls-portaled.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    background: #171918 !important;
+    border-color: #292d2b !important;
+    color: #f2f4f3 !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .24) !important;
+  }
+
+  body.oddi-phone-controls-portaled.dark-mode:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-recent-heading,
+  body.oddi-phone-controls-portaled.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    border: 0 !important;
+    border-bottom: 1px solid #292d2b !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #858d88 !important;
+  }
+
+  body.oddi-phone-controls-portaled.dark-mode:has(#chatbox #welcomeContainer) #oddiComposerShell:not(.has-attachments) .oddi-composer-field,
+  body.oddi-phone-controls-portaled.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) #oddiComposerShell:not(.has-attachments) .oddi-composer-field {
+    background: #171918 !important;
+    border-color: #292d2b !important;
+    color: #f2f4f3 !important;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .38) !important;
+  }
+
+  body.oddi-phone-controls-portaled.dark-mode:has(#chatbox #welcomeContainer) #oddiComposerShell:not(.has-attachments) .oddi-composer-field:focus-within,
+  body.oddi-phone-controls-portaled.oddi-system-theme.dark-mode:has(#chatbox #welcomeContainer) #oddiComposerShell:not(.has-attachments) .oddi-composer-field:focus-within {
+    border-color: #37c986 !important;
+    box-shadow: 0 0 0 2px rgba(55, 201, 134, .12), 0 12px 30px rgba(0, 0, 0, .38) !important;
+  }
+}
+</style>
+
+<style id="oddi-light-attached-composer-solid-surface">
+/* In Bright and System-Light modes, keep the expanding attachment area on a
+   solid pale-gray surface like the supplied composer reference. */
+body:not(.dark-mode) .app > #oddiComposerShell.input-area.has-attachments,
+body.oddi-system-theme:not(.dark-mode) .app > #oddiComposerShell.input-area.has-attachments {
+    box-sizing: border-box !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    align-items: stretch !important;
+    overflow: visible !important;
+    opacity: 1 !important;
+    border: 1px solid #d7dfd9 !important;
+    border-radius: 30px !important;
+    background: #eef2ef !important;
+    background-color: #eef2ef !important;
+    box-shadow: 0 8px 24px rgba(30, 46, 36, .10) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body:not(.dark-mode) #oddiComposerShell.input-area.has-attachments > #attachmentPreview,
+body.oddi-system-theme:not(.dark-mode) #oddiComposerShell.input-area.has-attachments > #attachmentPreview {
+    opacity: 1 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+body:not(.dark-mode) #oddiComposerShell.input-area.has-attachments > .oddi-composer-field,
+body.oddi-system-theme:not(.dark-mode) #oddiComposerShell.input-area.has-attachments > .oddi-composer-field {
+    opacity: 1 !important;
+    border-color: transparent !important;
+    border-radius: 20px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+</style>
+
+<style id="oddi-explicit-bright-composer-reference-color">
+/* Explicit Bright mode uses the white composer shown in the latest reference.
+   System mode remains driven by the OS theme and keeps its own surface. */
+body:not(.dark-mode):not(.oddi-system-theme) #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field {
+  background: rgba(255, 255, 255, .78) !important;
+  border-color: #e5e8e5 !important;
+  color: #171d19 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .08) !important;
+  backdrop-filter: blur(10px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.12) !important;
+}
+
+body:not(.dark-mode):not(.oddi-system-theme) #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field:focus-within {
+  background: rgba(255, 255, 255, .78) !important;
+  border-color: #d5dad6 !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .09) !important;
+  backdrop-filter: blur(10px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.12) !important;
+}
+
+body:not(.dark-mode):not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field #userInput {
+  color: #171d19 !important;
+}
+
+body:not(.dark-mode):not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field #userInput::placeholder {
+  color: #858a86 !important;
+  opacity: 1 !important;
+}
+
+body:not(.dark-mode):not(.oddi-system-theme) .app > #oddiComposerShell.input-area.has-attachments {
+  border-color: #e5e8e5 !important;
+  background: rgba(255, 255, 255, .78) !important;
+  background-color: rgba(255, 255, 255, .78) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .08) !important;
+  backdrop-filter: blur(10px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(1.12) !important;
+}
+
+body:not(.dark-mode):not(.oddi-system-theme) #oddiComposerShell.input-area.has-attachments > .oddi-composer-field {
+  color: #171d19 !important;
 }
 </style>
 
