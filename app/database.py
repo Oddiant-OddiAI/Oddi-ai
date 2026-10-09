@@ -1219,8 +1219,11 @@ def get_conversation_summaries(user_id):
         for message in reversed(messages):
             if not isinstance(message, dict):
                 continue
-            preview = " ".join(str(message.get("text") or message.get("content") or "").split())
-            if preview:
+            message_text = " ".join(str(message.get("text") or message.get("content") or "").split())
+            if not message_text:
+                continue
+            if not preview:
+                preview = message_text
                 break
         try:
             size_bytes = len(json.dumps(conversation, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
@@ -1564,7 +1567,7 @@ def update_conversation_message(conversation_id, user_id, message_id, patch):
     for message in messages:
         if str(message.get("id")) == str(message_id):
             for key, value in (patch or {}).items():
-                if key in {"text", "content", "pinned", "feedback", "stopped", "resume_draft"}:
+                if key in {"text", "content", "pinned", "feedback", "stopped", "resume_draft", "document_workspace", "document_title"}:
                     message[key] = value
             found = True
             break

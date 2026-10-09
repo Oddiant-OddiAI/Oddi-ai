@@ -2518,6 +2518,8 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     assistant_message_id = str(form.get("assistant_message_id") or "").strip()
     if not assistant_message_id or len(assistant_message_id) > 128:
         assistant_message_id = str(uuid.uuid4())
+    document_workspace_requested = str(form.get("document_workspace") or "").strip().casefold() in {"1", "true", "yes", "on"}
+    document_title = str(form.get("document_title") or "").strip()[:120]
     generation_id = str(form.get("generation_id") or "").strip()
     if not generation_id or len(generation_id) > 128:
         generation_id = str(uuid.uuid4())
@@ -2637,6 +2639,8 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             response = response_from_engine(str(existing_reply.get("text") or existing_reply.get("content") or ""))
             response.headers["X-Oddi-Assistant-Message-Id"] = assistant_message_id
             response.headers["X-Oddi-Completed-At"] = str(existing_reply.get("completed_at") or datetime.now(timezone.utc).isoformat())
+            response.headers["X-Oddi-Conversation-Persisted"] = "1"
+            response.headers["X-Oddi-Conversation-Revision"] = str((existing_conversation or {}).get("revision") or 0)
             response_meta = existing_reply.get("response_meta") if isinstance(existing_reply.get("response_meta"), dict) else {}
             response.headers["X-Oddi-Provider"] = str(response_meta.get("provider") or "Auto routing")
             response.headers["X-Oddi-Latency-Ms"] = str(response_meta.get("latency_ms") or 0)
@@ -2884,6 +2888,8 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     completed_at = datetime.now(timezone.utc).isoformat()
     latency_ms = max(0, int((time.perf_counter() - generation_started) * 1000))
     token_estimate = max(1, (len(str(reply)) + 3) // 4) if isinstance(reply, str) else 0
+    assistant_saved_to_conversation = False
+    saved_conversation_revision = 0
     if conversation_id is not None and isinstance(reply, str):
         assistant_message = {
             "id": assistant_message_id,
@@ -2899,6 +2905,10 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 "provider": "Auto routing",
             },
         }
+        if document_workspace_requested:
+            assistant_message["document_workspace"] = True
+            if document_title:
+                assistant_message["document_title"] = document_title
         if ODDI_DRIVE_CHAT_STORAGE:
             # Return the answer immediately. The browser keeps a local recovery
             # copy and this best-effort Drive write runs after the HTTP reply.
@@ -2933,6 +2943,9 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                     conversation_id,
                     user_id,
                 )
+            else:
+                assistant_saved_to_conversation = True
+                saved_conversation_revision = int(saved_conversation.get("revision", 0) or 0)
 
     if (
         fast_reply is not None
@@ -2978,6 +2991,9 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     response.headers["X-Oddi-Provider"] = "Auto routing"
     response.headers["X-Oddi-Latency-Ms"] = str(latency_ms)
     response.headers["X-Oddi-Token-Estimate"] = str(token_estimate)
+    response.headers["X-Oddi-Conversation-Persisted"] = "1" if assistant_saved_to_conversation else "0"
+    if assistant_saved_to_conversation:
+        response.headers["X-Oddi-Conversation-Revision"] = str(saved_conversation_revision)
     planned_count = len(upload_library_plan.get("uploads") or [])
     replaced_count = min(planned_count, len(upload_library_plan.get("replace_file_ids") or []))
     response.headers["X-Oddi-Library-Added-Count"] = str(max(0, planned_count - replaced_count))

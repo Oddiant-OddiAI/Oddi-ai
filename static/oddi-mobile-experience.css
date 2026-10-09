@@ -1,0 +1,300 @@
+/* Mobile chat refinements. Keep the desktop layout and existing chat renderer intact. */
+@media (max-width: 768px) and (pointer: coarse) {
+    .app {
+        height: 100% !important;
+        min-height: 0 !important;
+        max-height: 100% !important;
+    }
+
+    #welcomeContainer {
+        min-height: 0 !important;
+    }
+
+    #oddiComposerShell.input-area {
+        bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+        z-index: 2147483000 !important;
+        border: 1px solid rgba(130, 145, 136, .3) !important;
+        backdrop-filter: blur(18px) saturate(135%) !important;
+        -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
+        transition: border-color .18s ease, box-shadow .18s ease !important;
+    }
+
+    #oddiComposerShell.input-area:focus-within {
+        border-color: rgba(32, 199, 107, .45) !important;
+        box-shadow: 0 0 0 2px rgba(32, 199, 107, .08), 0 12px 36px rgba(0, 0, 0, .24) !important;
+    }
+
+    #oddiComposerShell .attach-btn,
+    #oddiComposerShell .dictation-btn,
+    #oddiComposerShell .voice-btn,
+    #oddiComposerShell .send-btn {
+        min-width: 44px !important;
+        min-height: 44px !important;
+        touch-action: manipulation;
+    }
+
+    body:not(.oddi-composer-has-text) #oddiComposerShell .action-button-slot .voice-btn {
+        border: 1px solid rgba(32, 199, 107, .25) !important;
+        border-radius: 50% !important;
+        background: rgba(32, 199, 107, .11) !important;
+        color: #46d987 !important;
+    }
+
+    #oddiComposerShell .dictation-btn.listening,
+    #oddiComposerShell .voice-btn.listening,
+    #oddiComposerShell .voice-btn.mobile-voice-active {
+        border-color: rgba(32, 199, 107, .7) !important;
+        background: rgba(32, 199, 107, .2) !important;
+        color: #55e495 !important;
+        box-shadow: 0 0 0 4px rgba(32, 199, 107, .08), 0 0 20px rgba(32, 199, 107, .2) !important;
+        animation: oddi-mobile-voice-pulse 1.5s ease-in-out infinite;
+    }
+
+    #chatbox.chatbox {
+        scroll-padding-bottom: 120px;
+        overscroll-behavior-y: contain;
+    }
+
+    /* Reuse the four existing home actions as a compact, thumb-friendly chip row. */
+    #oddiSuggestionCards.oddi-suggestion-cards {
+        display: grid !important;
+        grid-template-columns: repeat(4, max-content) !important;
+        grid-auto-flow: row !important;
+        grid-auto-rows: max-content !important;
+        justify-content: start !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+        overflow-x: auto !important;
+        overflow-y: hidden !important;
+        padding: 3px 2px 9px !important;
+        scrollbar-width: none !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+        scroll-snap-type: x proximity;
+    }
+
+    #oddiSuggestionCards.oddi-suggestion-cards::-webkit-scrollbar { display: none !important; }
+
+    #oddiSuggestionCards .oddi-suggestion-card {
+        width: max-content !important;
+        min-width: max-content !important;
+        max-width: none !important;
+        min-height: 42px !important;
+        height: 42px !important;
+        padding: 0 13px !important;
+        border-radius: 999px !important;
+        gap: 8px !important;
+        white-space: nowrap !important;
+        scroll-snap-align: start;
+    }
+
+    #oddiSuggestionCards .oddi-suggestion-card br,
+    #oddiSuggestionCards .oddi-suggestion-card small { display: none !important; }
+
+    #oddiSuggestionCards .oddi-suggestion-copy {
+        display: flex !important;
+        align-items: center !important;
+        white-space: nowrap !important;
+    }
+
+    #oddiSuggestionCards .oddi-suggestion-card strong { font-size: 12px !important; }
+
+    #oddiSuggestionCards #oddiLastMessageCard {
+        grid-column: 1 / -1 !important;
+        justify-self: center !important;
+        width: min(290px, calc(100vw - 48px)) !important;
+        min-width: 0 !important;
+        min-height: 44px !important;
+        height: auto !important;
+        border-radius: 13px !important;
+    }
+
+    /* Existing Markdown/code/table renderers gain touch-friendly disclosure and controls. */
+    #chatbox .ai-code-wrap {
+        position: relative !important;
+        margin: 12px 0 !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(132, 146, 137, .28) !important;
+        border-radius: 13px !important;
+        background: rgba(17, 19, 18, .82) !important;
+    }
+
+    #chatbox .ai-code-wrap > pre {
+        max-width: 100% !important;
+        margin: 0 !important;
+        overflow: auto !important;
+        overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    #chatbox .ai-code-wrap .ai-code-copy {
+        min-width: 66px !important;
+        min-height: 34px !important;
+        margin: 7px !important;
+        border-radius: 9px !important;
+        touch-action: manipulation;
+    }
+
+    #chatbox .oddi-code-details { margin: 0 !important; }
+    #chatbox .oddi-code-details > summary {
+        min-height: 38px;
+        padding: 10px 13px;
+        color: #d6e6dc;
+        font: 600 12px/1.35 system-ui, sans-serif;
+        cursor: pointer;
+        user-select: none;
+    }
+    #chatbox .oddi-code-details[open] > summary { border-bottom: 1px solid rgba(132, 146, 137, .2); }
+    #chatbox .oddi-code-details > pre { border-radius: 0 !important; }
+    #chatbox .ai-content a { text-underline-offset: 3px; overflow-wrap: anywhere; }
+    #chatbox .ai-table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
+
+    #chatbox .user-message,
+    #chatbox .bot-message { touch-action: pan-y; }
+
+    #chatbox .oddi-mobile-swipe-hint {
+        outline: 2px solid rgba(32, 199, 107, .5) !important;
+        outline-offset: 3px;
+        transition: outline-color .18s ease, box-shadow .18s ease;
+    }
+
+    #chatbox .oddi-mobile-swipe-reply { box-shadow: -4px 0 0 rgba(54, 211, 123, .72) !important; }
+    #chatbox .oddi-mobile-swipe-pin { box-shadow: 4px 0 0 rgba(116, 174, 255, .72) !important; }
+
+    body.mobile-keyboard-open #chatbox.chatbox { scroll-behavior: auto !important; }
+
+    body.dark-mode #chatbox.chatbox,
+    body[data-theme="dark"] #chatbox.chatbox {
+        background: radial-gradient(ellipse at 50% 0%, rgba(40, 49, 44, .22), transparent 58%), #121214 !important;
+    }
+
+    body.dark-mode #oddiComposerShell.input-area,
+    body[data-theme="dark"] #oddiComposerShell.input-area {
+        background: rgba(24, 24, 27, .86) !important;
+        border-color: rgba(160, 173, 164, .25) !important;
+        box-shadow: 0 12px 38px rgba(0, 0, 0, .42), inset 0 1px 0 rgba(255, 255, 255, .045) !important;
+    }
+
+    body.dark-mode #oddiSuggestionCards .oddi-suggestion-card,
+    body[data-theme="dark"] #oddiSuggestionCards .oddi-suggestion-card {
+        background: rgba(30, 32, 34, .8) !important;
+        border-color: rgba(170, 184, 174, .19) !important;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045), 0 5px 16px rgba(0, 0, 0, .2) !important;
+        backdrop-filter: blur(10px) saturate(125%);
+        -webkit-backdrop-filter: blur(10px) saturate(125%);
+    }
+
+    body.dark-mode #oddiLastMessageCard,
+    body[data-theme="dark"] #oddiLastMessageCard {
+        background: rgba(24, 31, 27, .8) !important;
+        border-color: rgba(57, 201, 116, .26) !important;
+        backdrop-filter: blur(10px) saturate(125%);
+        -webkit-backdrop-filter: blur(10px) saturate(125%);
+    }
+
+    body.dark-mode .thinking-indicator .thinking-dot,
+    body[data-theme="dark"] .thinking-indicator .thinking-dot {
+        background: #d6ffe5 !important;
+        box-shadow: 0 0 9px rgba(49, 222, 122, .62), 0 0 18px rgba(49, 222, 122, .24) !important;
+        animation: oddi-mobile-thinking-wave .78s cubic-bezier(.36, .07, .19, .97) infinite !important;
+    }
+
+    body:not(.dark-mode):not([data-theme="dark"]) .thinking-indicator .thinking-dot {
+        background: #20b765 !important;
+        box-shadow: 0 0 9px rgba(32, 199, 107, .4) !important;
+        animation: oddi-mobile-thinking-wave .78s cubic-bezier(.36, .07, .19, .97) infinite !important;
+    }
+}
+
+.oddi-history-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    width: min(760px, calc(100% - 36px));
+    margin: clamp(32px, 9vh, 90px) auto 24px;
+    pointer-events: none;
+}
+
+.oddi-history-skeleton-bubble {
+    display: block;
+    height: 104px;
+    border: 1px solid rgba(130, 140, 134, .18);
+    border-radius: 18px;
+    background: linear-gradient(105deg, rgba(120, 130, 124, .09) 20%, rgba(175, 185, 179, .2) 38%, rgba(120, 130, 124, .09) 56%);
+    background-size: 220% 100%;
+    animation: oddi-mobile-skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+.oddi-skeleton-user { width: 68%; height: 76px; align-self: flex-end; }
+.oddi-skeleton-ai { width: 84%; height: 128px; align-self: flex-start; }
+.oddi-skeleton-user.short { width: 48%; height: 64px; }
+.oddi-skeleton-ai.medium { width: 72%; height: 96px; }
+
+body.dark-mode .oddi-history-skeleton-bubble {
+    border-color: rgba(171, 184, 175, .13);
+    background: linear-gradient(105deg, rgba(255,255,255,.035) 20%, rgba(255,255,255,.095) 38%, rgba(255,255,255,.035) 56%);
+    background-size: 220% 100%;
+}
+
+#oddiMobileGestureToast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    z-index: 2147483002;
+    max-width: calc(100vw - 32px);
+    padding: 9px 13px;
+    border: 1px solid rgba(154, 174, 161, .28);
+    border-radius: 999px;
+    background: rgba(25, 27, 26, .94);
+    color: #f3f5f3;
+    box-shadow: 0 8px 28px rgba(0,0,0,.28);
+    font: 600 12px/1.35 system-ui, sans-serif;
+    text-align: center;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, 7px);
+    transition: opacity .16s ease, transform .16s ease;
+}
+
+#oddiMobileGestureToast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+@keyframes oddi-mobile-thinking-wave {
+    0%, 100% { transform: translateY(0) scale(.88); opacity: .62; }
+    50% { transform: translateY(-5px) scale(1.1); opacity: 1; }
+}
+
+@keyframes oddi-mobile-voice-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(32, 199, 107, .06), 0 0 12px rgba(32, 199, 107, .14); }
+    50% { box-shadow: 0 0 0 6px rgba(32, 199, 107, .1), 0 0 20px rgba(32, 199, 107, .26); }
+}
+
+@keyframes oddi-mobile-skeleton-shimmer {
+    from { background-position: 100% 0; }
+    to { background-position: -120% 0; }
+}
+
+@media (max-width: 768px) and (pointer: coarse) {
+    #oddiComposerShell button:active,
+    #oddiSuggestionCards button:active,
+    #headerMorePanel button:active,
+    #chatbox .bot-actions button:active,
+    #chatbox .user-actions-row button:active {
+        transform: scale(.96) !important;
+        transition-duration: .08s !important;
+    }
+}
+
+@media (max-width: 420px) and (pointer: coarse) {
+    #oddiSuggestionCards.oddi-suggestion-cards { width: calc(100vw - 18px) !important; max-width: calc(100vw - 18px) !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .oddi-history-skeleton-bubble,
+    body .thinking-indicator .thinking-dot,
+    #oddiComposerShell .voice-btn.listening,
+    #oddiComposerShell .dictation-btn.listening { animation: none !important; }
+    #oddiMobileGestureToast { transition: none !important; }
+}

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -27,6 +27,7 @@
 <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="/static/oddi-document-intent.js"></script>
 <link rel="icon"
       type="image/png"
       href="/static/favicon2.png">
@@ -4528,7 +4529,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
                 </button>
             </div>
             <div class="theme-toggle">
-                <button id="themeBtn" title="Switch to Dark Mode">
+                <button id="themeBtn" type="button" title="Switch to Dark Mode" aria-label="Switch to Dark Mode">
                     🌙
                 </button>
             </div>
@@ -4605,34 +4606,40 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         <p class="oddi-home-subtitle">Understand, create, plan, and explore — all in one place.</p>
 
         <div id="oddiSuggestionCards" class="oddi-suggestion-cards" aria-label="Quick suggestions">
-            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5c3.1-.9 5.8-.4 8 1.2v13c-2.2-1.6-4.9-2.1-8-1.2z"/><path d="M20 5.5c-3.1-.9-5.8-.4-8 1.2v13c2.2-1.6 4.9-2.1 8-1.2z"/></svg></span><span class="oddi-suggestion-copy"><strong>Understand a topic</strong><br><small>Get a clear explanation of an idea or subject</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Draft or refine writing</strong><br><small>Create, refine, or polish your writing</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><br><small>Turn a goal into clear, actionable steps</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Analyze a document</strong><br><small>Extract key details and concise summaries</small></span></button>
-            <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-action="continue" aria-label="Continue where you left off">
-                <span class="oddi-last-message-icon" aria-hidden="true">ϟ</span>
+            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5c3.1-.9 5.8-.4 8 1.2v13c-2.2-1.6-4.9-2.1-8-1.2z"/><path d="M20 5.5c-3.1-.9-5.8-.4-8 1.2v13c2.2-1.6 4.9-2.1 8-1.2z"/></svg></span><span class="oddi-suggestion-copy"><strong>Learn a topic</strong><small>Clear, structured explanations</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Write something</strong><small>Draft, rewrite or polish</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><small>Turn ideas into clear next steps</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Analyze a file</strong><small>Find key details and summaries</small></span></button>
+        </div>
+        <section id="oddiRecentSection" class="oddi-recent-work" aria-label="Recent work" hidden>
+            <p id="oddiRecentHeadingText" class="oddi-recent-heading">RECENT WORK</p>
+            <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-action="continue" aria-label="Continue where you left off" aria-disabled="true" disabled>
+                <span class="oddi-last-message-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5 7.4 7.4 0 0 1-3.4-.8L4 20l1.5-4A7.4 7.4 0 0 1 4.7 12 7.5 7.5 0 0 1 12.2 4.5h.3A7.5 7.5 0 0 1 20 11.5Z"/><path d="M8.5 10h7M8.5 13.5h4.5"/></svg></span>
                 <span class="oddi-last-message-copy">
                     <span class="oddi-last-message-label">Continue where you left off</span>
+                    <strong class="oddi-last-message-title"></strong>
+                    <span class="oddi-last-message-preview"></span>
+                    <span class="oddi-last-message-meta" hidden></span>
                 </span>
                 <span class="oddi-last-message-arrow" aria-hidden="true">→</span>
             </button>
-        </div>
+        </section>
+        <button type="button" id="oddiSayHello" class="oddi-say-hello" aria-label="Get to know ODDI AI" hidden>Get to know ODDI AI</button>
     </div>
     </main>
-    <button type="button" id="oddiSayHello" class="oddi-say-hello" aria-label="Get to know ODDI AI" hidden>Get to know ODDI AI</button>
     <div id="oddiComposerShell" class="input-area">
         <div id="attachmentPreview" class="attachment-preview" style="display:none;">
             <div class="attachment-header">
-                <button id="attachmentToggle" class="attachment-toggle" type="button" aria-expanded="false" title="Show attached files">
+                <button id="attachmentToggle" class="attachment-toggle" type="button" aria-label="Toggle attached files" aria-expanded="false" title="Show attached files">
                     <span id="attachmentArrow">▴</span>
                 </button>
                 <span id="attachmentName"></span>
-                <button id="removeAttachment" type="button" title="Remove all files">✖</button>
+                <button id="removeAttachment" type="button" aria-label="Remove all attached files" title="Remove all files">✖</button>
             </div>
             <div id="attachmentList" class="attachment-list" style="display:none;"></div>
             <div id="pastedImagePreview" class="pasted-image-preview" aria-label="Pasted image preview" hidden></div>
         </div>
-        <button id="attach-btn" class="attach-btn">+</button>
+        <button id="attach-btn" class="attach-btn" type="button" aria-label="Attach files" title="Attach files">+</button>
         <input
             type="file"
             id="fileInput"
@@ -4651,8 +4658,9 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         <div class="action-button-slot">
             <button id="voice-btn"
                 class="voice-btn"
-                title="Start conversation"
-                aria-label="Start conversation">
+                title="Start a voice conversation"
+                aria-label="Start a voice conversation"
+                aria-pressed="false">
             <svg width="26" height="26" viewBox="0 0 24 24" 
                 xmlns="http://www.w3.org/2000/svg" 
                 fill="none" 
@@ -4675,10 +4683,10 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
 .oddi-say-hello{position:fixed;left:50%;bottom:91px;transform:translateX(-50%);z-index:599;border:1px solid rgba(32,199,107,.3);border-radius:999px;padding:8px 14px;background:rgba(32,199,107,.08);color:#16884a;font:600 13px/1.2 inherit;cursor:pointer;transition:background .16s ease,transform .16s ease,border-color .16s ease;}
 .oddi-say-hello:hover{background:rgba(32,199,107,.15);border-color:rgba(32,199,107,.55);transform:translateX(-50%) translateY(-1px)}
 body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);border-color:rgba(32,199,107,.28)}
-#chatbox:has(#welcomeContainer) ~ #oddiSayHello{display:block}
+#welcomeContainer > #oddiSayHello{display:block}
 @media(max-width:768px) and (pointer:coarse){.oddi-say-hello{bottom:65px;padding:7px 12px;font-size:12px}}
 .oddi-say-hello{display:none}
-#chatbox:has(#welcomeContainer) ~ #oddiSayHello{display:block}
+#welcomeContainer > #oddiSayHello{display:block}
 </style>
 <script id="oddi-say-hello-handler">
 (()=>{
@@ -4704,6 +4712,9 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
     if(!composer)return;
     const rect=composer.getBoundingClientRect();
     if(!rect.width||!rect.height)return;
+    // In a windowed desktop the CTA is in the home content flow, below Recent Work.
+    // Keep the measured floating placement for fullscreen and mobile only.
+    if(window.matchMedia?.('(min-width:769px)').matches && !document.body.classList.contains('oddi-fullscreen-home'))return;
     const halfWidth=(button.offsetWidth||180)/2;
     const viewportWidth=document.documentElement.clientWidth||window.innerWidth;
     const center=Math.min(Math.max(rect.left+rect.width/2,halfWidth+8),viewportWidth-halfWidth-8);
@@ -5709,6 +5720,8 @@ function stopGeneration() {
         conversationIndex >= 0
     ) {
         const partialText = activeGenerationPartialText.trim();
+        const documentMode = botMessage.dataset.documentWorkspace === "true";
+        const documentTitle = botMessage.dataset.documentTitle || "Document Draft";
 
         /* Store the stopped generation so it survives reloads. */
         const alreadySaved =
@@ -5716,7 +5729,18 @@ function stopGeneration() {
             conversation.messages[Number(botMessage.dataset.messageIndex)]?.stopped;
 
         if (!alreadySaved) {
-            if (partialText) {
+            if (documentMode) {
+                window.OddiDocumentWorkspace?.update(partialText, {
+                    status: partialText
+                        ? "Generation stopped. The partial draft is kept in the editor."
+                        : "Generation stopped before a draft arrived. Retry from the chat to continue.",
+                    generating: false,
+                    error: !partialText
+                });
+                activeTypingElement.textContent = partialText
+                    ? "Generation stopped. The partial document is in the editor."
+                    : "Generation stopped before the document arrived.";
+            } else if (partialText) {
                 renderRichContent(activeTypingElement, partialText, { final: true });
             } else {
                 activeTypingElement.textContent = 'Generation stopped.';
@@ -5727,12 +5751,16 @@ function stopGeneration() {
             const stoppedMessage = {
                 id: makeMessageId(),
                 role: 'assistant',
-                text: partialText || 'Generation stopped.',
+                text: documentMode ? partialText : (partialText || 'Generation stopped.'),
                 pinned: false,
                 feedback: null,
                 stopped: true,
                 response_meta: { elapsed_ms: elapsed }
             };
+            if (documentMode) {
+                stoppedMessage.document_workspace = true;
+                stoppedMessage.document_title = documentTitle;
+            }
 
             conversation.messages.push(stoppedMessage);
 
@@ -6459,6 +6487,7 @@ async function startVoiceMode() {
     createVoicePanel();
     input.blur();
     voiceModeActive = true;
+    voiceBtn.setAttribute("aria-pressed", "true");
 
     voicePanel.classList.add("show");
 
@@ -6473,6 +6502,7 @@ async function startVoiceMode() {
 function stopVoiceMode() {
 
     voiceModeActive = false;
+    voiceBtn.setAttribute("aria-pressed", "false");
     voiceResponseSpeaking = false;
 
     if (recognition) {
@@ -6511,6 +6541,7 @@ function stopVoiceMode() {
 
     voiceBtn.title =
         "Talk to Oddi";
+    voiceBtn.setAttribute("aria-label", "Start a voice conversation");
 
     if (voicePanel) {
         voicePanel.classList.remove(
@@ -7006,6 +7037,7 @@ if (SpeechRecognition) {
 
         voiceBtn.title =
             "Listening...";
+        voiceBtn.setAttribute("aria-label", "Stop voice conversation");
 
         updateVoiceStatus(
             "Listening...",
@@ -7135,6 +7167,7 @@ if (SpeechRecognition) {
 
             voiceBtn.title =
                 "Listening...";
+            voiceBtn.setAttribute("aria-label", "Stop voice conversation");
         }
     };
 
@@ -12433,6 +12466,32 @@ function oddiPostChatForm(formData, signal, onUploadProgress) {
     });
 }
 
+function getChatFailureMessage(error) {
+    const message = String(error?.message || "");
+    const status = Number(error?.httpStatus || error?.status || 0);
+    const requestId = String(error?.requestId || "").trim();
+    const networkFailure =
+        (typeof navigator !== "undefined" && navigator.onLine === false) ||
+        /failed to fetch|networkerror|network request failed|could not connect|connection.*lost|load failed/i.test(message);
+
+    if (networkFailure) {
+        return "Connection lost. Check your internet connection, then retry.";
+    }
+    if (status >= 500) {
+        return `The chat server could not complete this reply (HTTP ${status}).${requestId ? ` Reference: ${requestId}.` : ""} Please retry.`;
+    }
+    if (status === 429) {
+        return "The chat service is busy right now. Wait a moment, then retry.";
+    }
+    if (requestId) {
+        return `The chat request could not be completed. Reference: ${requestId}. Please retry.`;
+    }
+    if (status >= 400) {
+        return `The chat request could not be completed (HTTP ${status}). Check your message or retry.`;
+    }
+    return "ODDI-AI could not complete this reply. Please retry.";
+}
+
 async function sendMessage(
     displayMessage = null,
     voiceReply = false,
@@ -12470,6 +12529,42 @@ async function sendMessage(
         : displaySource;
 
     if (!message) return;
+
+    /* Keep a stable send snapshot while the visible composer resets. */
+    let outgoingFiles = Array.isArray(selectedFiles) ? selectedFiles.slice() : [];
+
+    if (
+        window.OddiDocumentWorkspace?.isEditing?.() &&
+        (isDocumentGenerationIntent(message) || isDocumentExportFollowup(message))
+    ) {
+        window.OddiDocumentWorkspace.notify("Save or cancel your current document edits before starting another document task.", true);
+        return false;
+    }
+
+    if (!skipUserMessage && !outgoingFiles.length && currentConversation !== null && isDocumentExportFollowup(message)) {
+        const existingConversation = conversations[currentConversation];
+        const existingMessages = Array.isArray(existingConversation?.messages) ? existingConversation.messages : [];
+        let existingDocument = null;
+        for (let index = existingMessages.length - 1; index >= 0; index -= 1) {
+            if (isDocumentOutputMessage(existingConversation, index)) {
+                existingDocument = existingMessages[index];
+                break;
+            }
+        }
+        if (existingDocument) {
+            const exportFormat = documentFormatFromPrompt(message);
+            input.value = "";
+            input.style.height = "auto";
+            window.__oddiClearDraft?.();
+            if (window.matchMedia("(max-width:768px) and (pointer:coarse)").matches) {
+                document.body.classList.remove("mobile-composer-typing");
+                input.dispatchEvent(new Event("input", {bubbles: true}));
+            }
+            updateActionButton();
+            appendLocalDocumentExportTurn(existingConversation, message, existingDocument, exportFormat);
+            return true;
+        }
+    }
 
     if (isLoggedIn && Array.isArray(selectedFiles) && selectedFiles.length) {
         try {
@@ -12543,6 +12638,7 @@ async function sendMessage(
        LOCK INPUT
     ----------------------------------------- */
 
+    outgoingFiles = Array.isArray(selectedFiles) ? selectedFiles.slice() : [];
     input.disabled = true;
     setGenerationUI(true);
     activeAbortController = new AbortController();
@@ -12594,6 +12690,35 @@ async function sendMessage(
     persistLastOpenConversation(targetConversation);
     const assistantMessageId = makeMessageId();
     const generationId = makeMessageId();
+    const documentMode = isDocumentGenerationIntent(message);
+    const documentTitle = documentTitleFromPrompt(message);
+
+    /* The local message and request now own this snapshot; clear the UI
+       before file persistence or Library lookup can hold the send path. */
+    input.value = "";
+    input.style.height = "auto";
+    if (!skipUserMessage) window.__oddiClearDraft?.();
+    selectedFiles = [];
+    fileInput.value = "";
+    const composerShell = document.getElementById("oddiComposerShell");
+    composerShell?.classList.remove("has-attachments", "has-message-overflow");
+    window.dispatchEvent(new Event("oddi:attachments-cleared"));
+    attachmentPreview.style.display = "none";
+    attachmentList.style.display = "none";
+    attachmentList.innerHTML = "";
+    attachmentName.textContent = "";
+    attachmentArrow.textContent = "▴";
+    attachmentToggle.setAttribute("aria-expanded", "false");
+    if (window.matchMedia("(max-width:768px) and (pointer:coarse)").matches) {
+        if (typeof window.__oddiResetMobileComposer === "function") {
+            window.__oddiResetMobileComposer();
+        } else {
+            document.body.classList.remove("mobile-composer-typing", "oddi-composer-has-text");
+            input.dispatchEvent(new Event("input", {bubbles: true}));
+        }
+    } else {
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+    }
 
     if (!Array.isArray(targetConversation.messages)) {
         targetConversation.messages = [];
@@ -12603,8 +12728,8 @@ async function sendMessage(
         let fileHTML = "";
         const fileRefs = [];
 
-        if (selectedFiles.length) {
-            for (const file of selectedFiles) {
+        if (outgoingFiles.length) {
+            for (const file of outgoingFiles) {
                 try {
                     const fileId = await storeOddiFile(file);
                     fileRefs.push({ id: fileId, name: file.name, type: file.type || "" });
@@ -12670,7 +12795,7 @@ async function sendMessage(
             role: "user",
             text: message,
             files:
-                selectedFiles.map(
+                outgoingFiles.map(
                     file => file.name
                 ),
             fileRefs,
@@ -12739,6 +12864,24 @@ async function sendMessage(
     `;
     const thinkingBubble = thinkingHost.firstElementChild;
     const typing = thinkingBubble.querySelector(".ai-content");
+    if (documentMode) {
+        thinkingBubble.dataset.documentWorkspace = "true";
+        thinkingBubble.dataset.documentTitle = documentTitle;
+        typing.textContent = "Preparing your document in the editor…";
+        window.OddiDocumentWorkspace?.open({
+            title: documentTitle,
+            markdown: "",
+            status: "Preparing your document…",
+            generating: true,
+            renderMarkdown: source => renderRichContentToHtml(source),
+            serializeMarkdown: root => resumeSectionMarkdown(root),
+            createPdfBlob: root => createResumePdfBlob(root),
+            createDocxBlob: html => {
+                if (!window.htmlDocx?.asBlob) throw new Error("Word export is unavailable right now.");
+                return window.htmlDocx.asBlob(html);
+            }
+        });
+    }
     const thinkingStartedAt = Date.now();
     thinkingBubble.dataset.thinkingStartedAt = String(thinkingStartedAt);
     const thinkingTimeLabel = thinkingBubble.querySelector(".oddi-thinking-time");
@@ -12767,7 +12910,7 @@ async function sendMessage(
         new FormData();
 
     const contextLimit = Math.max(5, Math.min(50, Number(window.__oddiChatPreferences?.context_window || 20)));
-    const libraryHistory = targetConversation.messages.slice(-contextLimit);
+    const libraryHistory = buildCompactModelHistory(targetConversation, contextLimit, message);
 
     /*
        Library recall happens at send time, after the normal composer
@@ -12785,7 +12928,7 @@ async function sendMessage(
             await oddiPrepareLibraryRecall(
                 message,
                 libraryHistory,
-                selectedFiles.length > 0
+                outgoingFiles.length > 0
             );
     } catch (libraryRecallError) {
         console.warn(
@@ -12829,8 +12972,12 @@ async function sendMessage(
     }
     formData.append("assistant_message_id", assistantMessageId);
     formData.append("generation_id", generationId);
+    if (documentMode) {
+        formData.append("document_workspace", "true");
+        formData.append("document_title", documentTitle);
+    }
 
-    selectedFiles.forEach((file, index) => {
+    outgoingFiles.forEach((file, index) => {
         formData.append("files", file);
         if (file?.oddiLibrarySourceId) {
             formData.append("library_source_indexes", String(index));
@@ -12847,10 +12994,10 @@ async function sendMessage(
             "files",
             libraryRecall.upload
         );
-        formData.append("library_source_indexes", String(selectedFiles.length));
+        formData.append("library_source_indexes", String(outgoingFiles.length));
     }
-    const uploadFileCount = selectedFiles.length + (libraryRecall.upload ? 1 : 0);
-    const librarySourceFileCount = selectedFiles.filter(file => !!file?.oddiLibrarySourceId).length + (libraryRecall.upload ? 1 : 0);
+    const uploadFileCount = outgoingFiles.length + (libraryRecall.upload ? 1 : 0);
+    const librarySourceFileCount = outgoingFiles.filter(file => !!file?.oddiLibrarySourceId).length + (libraryRecall.upload ? 1 : 0);
     const directUploadFileCount = uploadFileCount - librarySourceFileCount;
     const libraryReadLabel = `Reading ${librarySourceFileCount} file${librarySourceFileCount === 1 ? "" : "s"} from your Library…`;
 
@@ -12861,33 +13008,9 @@ async function sendMessage(
        leaves the uploaded-file preview visible.
     ----------------------------------------- */
 
-    input.value = "";
-    input.style.height = "auto";
-    if (!skipUserMessage) window.__oddiClearDraft?.();
-
-    /* Programmatic value changes do not fire "input", so explicitly
-       reset every mobile composer state immediately after Send. */
-    if (window.matchMedia("(max-width:768px) and (pointer:coarse)").matches) {
-        document.body.classList.remove("mobile-composer-typing");
-        input.dispatchEvent(new Event("input", { bubbles: true }));
-    }
-
-    selectedFiles = [];
-    fileInput.value = "";
-
     // The Library may have changed because this send contained a new upload.
     oddiLibraryRecallCache = null;
     oddiLibraryRecallCacheAt = 0;
-
-    attachmentPreview.style.display = "none";
-    attachmentList.style.display = "none";
-    attachmentList.innerHTML = "";
-    attachmentName.textContent = "";
-    attachmentArrow.textContent = "▴";
-    attachmentToggle.setAttribute(
-        "aria-expanded",
-        "false"
-    );
 
     updateActionButton();
 
@@ -12943,7 +13066,9 @@ async function sendMessage(
         const responseMeta = {
             latency_ms: Number(response.headers.get("X-Oddi-Latency-Ms") || 0),
             token_estimate: Number(response.headers.get("X-Oddi-Token-Estimate") || Math.ceil(reply.length / 4)),
-            provider: response.headers.get("X-Oddi-Provider") || "auto"
+            provider: response.headers.get("X-Oddi-Provider") || "auto",
+            conversation_persisted: response.headers.get("X-Oddi-Conversation-Persisted") === "1",
+            conversation_revision: Number(response.headers.get("X-Oddi-Conversation-Revision") || 0)
         };
         const persistedAssistantMessageId =
             response.headers.get("X-Oddi-Assistant-Message-Id") || assistantMessageId;
@@ -12964,10 +13089,19 @@ async function sendMessage(
         ----------------------------------------- */
 
         typing.innerHTML = "";
+        if (documentMode) typing.textContent = "Writing your document in the editor…";
 
-        if (!typingEnabled || window.__oddiChatPreferences?.stream_responses === false) {
+        if (documentMode || !typingEnabled || window.__oddiChatPreferences?.stream_responses === false) {
 
-            renderRichContent(typing, reply, { final: true });
+            if (documentMode) {
+                window.OddiDocumentWorkspace?.update(reply, {
+                    status: "Document ready. You can edit it or download a copy.",
+                    generating: false
+                });
+                typing.textContent = "Your document is ready in the editor.";
+            } else {
+                renderRichContent(typing, reply, { final: true });
+            }
 
             if (generationStopped) {
                 return;
@@ -12981,7 +13115,8 @@ async function sendMessage(
                 targetConversation,
                 persistedAssistantMessageId,
                 completedAt,
-                responseMeta
+                responseMeta,
+                documentMode ? {title: documentTitle} : null
             );
 
         } else {
@@ -13004,7 +13139,8 @@ async function sendMessage(
                 targetConversation,
                 persistedAssistantMessageId,
                 completedAt,
-                responseMeta
+                responseMeta,
+                documentMode ? {title: documentTitle} : null
             );
         }
 
@@ -13030,13 +13166,25 @@ async function sendMessage(
             const bubble = typing.closest(".bot-message");
             stopAssistantThinkingClock(bubble, "Reply unavailable");
 
+            if (documentMode) {
+                window.OddiDocumentWorkspace?.update(activeGenerationPartialText, {
+                    status: "Document generation failed. The current draft is kept here; retry from the chat when ready.",
+                    generating: false,
+                    error: true
+                });
+            }
+
             const failureMessage = String(error?.message || "");
             const fileLimitFailure = failureMessage.includes("Your Library is full (30 files)");
-            typing.textContent = fileLimitFailure
+            typing.textContent = documentMode && !fileLimitFailure
+                ? "Document generation failed. Your editor is still open; use Retry to try again."
+                : fileLimitFailure
                 ? failureMessage
-                : error?.requestId
-                    ? `The chat server returned an error (${error?.httpStatus || "request failed"}). Reference: ${error.requestId}. Please retry.`
-                    : "⚠️ Sorry! Something went wrong.";
+                : getChatFailureMessage(error);
+
+            if (!fileLimitFailure) {
+                window.__oddiAnnounce?.("ODDI-AI could not complete that reply. A Retry button is available.");
+            }
 
             if (!fileLimitFailure && bubble) {
                 bubble.querySelector(".thinking-actions")?.remove();
@@ -13057,6 +13205,7 @@ async function sendMessage(
                     if (retryButton.disabled || generationActive) return;
                     retryButton.disabled = true;
                     retryButton.textContent = "Retrying…";
+                    window.__oddiAnnounce?.("Retrying your message.");
 
                     generationStopped = false;
                     activeGenerationPartialText = "";
@@ -13077,7 +13226,24 @@ async function sendMessage(
                     bubble.__oddiThinkingInterval = setInterval(() => {
                         if (retryTimeLabel) retryTimeLabel.textContent = `Thinking ${formatAssistantElapsedTime(Date.now() - retryStartedAt)}`;
                     }, 1000);
-                    typing.innerHTML = '<span class="thinking-indicator" aria-label="Thinking" role="status"><span class="thinking-dot" aria-hidden="true"></span><span class="thinking-dot" aria-hidden="true"></span><span class="thinking-dot" aria-hidden="true"></span></span>';
+                    if (documentMode) {
+                        typing.textContent = "Preparing your document in the editor…";
+                        window.OddiDocumentWorkspace?.open({
+                            title: documentTitle,
+                            markdown: activeGenerationPartialText,
+                            status: "Retrying document generation…",
+                            generating: true,
+                            renderMarkdown: source => renderRichContentToHtml(source),
+                            serializeMarkdown: root => resumeSectionMarkdown(root),
+                            createPdfBlob: root => createResumePdfBlob(root),
+                            createDocxBlob: html => {
+                                if (!window.htmlDocx?.asBlob) throw new Error("Word export is unavailable right now.");
+                                return window.htmlDocx.asBlob(html);
+                            }
+                        });
+                    } else {
+                        typing.innerHTML = '<span class="thinking-indicator" aria-label="Thinking" role="status"><span class="thinking-dot" aria-hidden="true"></span><span class="thinking-dot" aria-hidden="true"></span><span class="thinking-dot" aria-hidden="true"></span></span>';
+                    }
 
                     const uploadStatus = bubble.querySelector(".oddi-upload-progress");
                     const uploadLabel = uploadStatus?.querySelector("small");
@@ -13119,20 +13285,30 @@ async function sendMessage(
                         const responseMeta = {
                             latency_ms: Number(retryResponse.headers.get("X-Oddi-Latency-Ms") || 0),
                             token_estimate: Number(retryResponse.headers.get("X-Oddi-Token-Estimate") || Math.ceil(reply.length / 4)),
-                            provider: retryResponse.headers.get("X-Oddi-Provider") || "auto"
+                            provider: retryResponse.headers.get("X-Oddi-Provider") || "auto",
+                            conversation_persisted: retryResponse.headers.get("X-Oddi-Conversation-Persisted") === "1",
+                            conversation_revision: Number(retryResponse.headers.get("X-Oddi-Conversation-Revision") || 0)
                         };
                         const persistedId = retryResponse.headers.get("X-Oddi-Assistant-Message-Id") || assistantMessageId;
                         const completedAt = retryResponse.headers.get("X-Oddi-Completed-At") || new Date().toISOString();
-                        typing.innerHTML = "";
-
-                        if (!typingEnabled || window.__oddiChatPreferences?.stream_responses === false) {
-                            renderRichContent(typing, reply, { final: true });
+                        if (documentMode) {
+                            typing.textContent = "Preparing your document in the editor…";
+                            window.OddiDocumentWorkspace?.update(reply, {
+                                status: "Document ready. You can edit it or download a copy.",
+                                generating: false
+                            });
+                            typing.textContent = "Your document is ready in the editor.";
                         } else {
-                            await typeAIResponse(reply, typing, targetConversation);
+                            typing.innerHTML = "";
+                            if (!typingEnabled || window.__oddiChatPreferences?.stream_responses === false) {
+                                renderRichContent(typing, reply, { final: true });
+                            } else {
+                                await typeAIResponse(reply, typing, targetConversation);
+                            }
                         }
 
                         if (generationStopped) return;
-                        await finishAIMessage(reply, message, typing, voiceReply, targetConversation, persistedId, completedAt, responseMeta);
+                        await finishAIMessage(reply, message, typing, voiceReply, targetConversation, persistedId, completedAt, responseMeta, documentMode ? {title: documentTitle} : null);
                         clearPendingGeneration(generationId);
                     } catch (retryError) {
                         if (generationStopped || retryError?.name === "AbortError") return;
@@ -13144,7 +13320,17 @@ async function sendMessage(
                             typing.textContent = retryFailure;
                             retryActions.remove();
                         } else {
-                            typing.textContent = "⚠️ Sorry! Something went wrong.";
+                            if (documentMode) {
+                                window.OddiDocumentWorkspace?.update(activeGenerationPartialText, {
+                                    status: "Document generation failed. Your current draft is kept here; try Retry again.",
+                                    generating: false,
+                                    error: true
+                                });
+                                typing.textContent = "Document generation failed. Your editor is still open; use Retry to try again.";
+                            } else {
+                                typing.textContent = getChatFailureMessage(retryError);
+                                window.__oddiAnnounce?.("Retry did not work. The Retry button is available again.");
+                            }
                             retryButton.disabled = false;
                             retryButton.textContent = "↻ Retry";
                         }
@@ -13241,16 +13427,16 @@ function typeAIResponse(
             /*
              * Calculate where we SHOULD be based on real elapsed time.
              *
-             * 12ms ~= previous typing speed.
+             * The response has already arrived from the server. Keep the
+             * type-in effect, but reduce the artificial delay to 4ms per char.
              */
             const elapsed =
                 performance.now() - startTime;
 
-            const targetIndex =
-                Math.min(
-                    text.length,
-                    Math.floor(elapsed / 12)
-                );
+            const targetIndex = Math.min(
+                text.length,
+                Math.floor(elapsed / 4)
+            );
 
             if (targetIndex !== i) {
 
@@ -13266,20 +13452,6 @@ function typeAIResponse(
                     text.substring(0, i),
                     { final: false }
                 );
-
-                /*
-                 * Highlight code blocks whenever they
-                 * become available.
-                 */
-                element
-                    .querySelectorAll("pre code")
-                    .forEach(block => {
-
-                        if (window.hljs) {
-                            hljs.highlightElement(block);
-                        }
-
-                    });
 
                 if (conversations[currentConversation] === targetConversation) {
                     oddiSmartScroll(false);
@@ -13304,23 +13476,187 @@ function typeAIResponse(
                 renderRichContent(element, text, { final: true });
                 activeGenerationPartialText = text;
 
-                element
-                    .querySelectorAll("pre code")
-                    .forEach(block => {
-
-                        if (window.hljs) {
-                            hljs.highlightElement(block);
-                        }
-
-                    });
-
                 oddiSmartScroll(false);
 
                 resolve();
             }
 
-        }, 30);
+        }, 40);
     });
+}
+
+function isDocumentGenerationIntent(text) {
+    const intent = window.OddiDocumentIntent;
+    if (!intent) return isResumeBuilderPrompt(text);
+    if (intent.isDocumentGenerationIntent(text)) return true;
+    return !intent.isEducationalQuestion(text) && isResumeBuilderPrompt(text);
+}
+
+function documentTitleFromPrompt(text) {
+    return window.OddiDocumentIntent?.documentTitleFromPrompt(text) || "Document Draft";
+}
+
+function precedingUserMessage(conversation, messageIndex) {
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    for (let index = Math.min(messageIndex - 1, messages.length - 1); index >= 0; index -= 1) {
+        if (messages[index]?.role === "user") return messages[index];
+    }
+    return null;
+}
+
+function isDocumentOutputMessage(conversation, messageIndex) {
+    const message = conversation?.messages?.[messageIndex];
+    if (!message || message.role !== "assistant") return false;
+    if (message.document_workspace === true) return true;
+    if (message.document_workspace === false) return false;
+    if (message.resume_draft) return true;
+    const userMessage = precedingUserMessage(conversation, messageIndex);
+    return String(message.text || "").trim().length > 240 && isDocumentGenerationIntent(userMessage?.text);
+}
+
+function isDocumentExportFollowup(text) {
+    return !!window.OddiDocumentIntent?.isDocumentExportFollowup(text);
+}
+
+function documentFormatFromPrompt(text) {
+    return window.OddiDocumentIntent?.documentFormatFromPrompt(text) || "pdf";
+}
+
+function shouldIncludeDocumentInModelHistory(prompt) {
+    return !!window.OddiDocumentIntent?.shouldIncludeDocumentInModelHistory(prompt);
+}
+
+function buildCompactModelHistory(conversation, limit, currentPrompt) {
+    const messages = Array.isArray(conversation?.messages) ? conversation.messages : [];
+    const start = Math.max(0, messages.length - limit);
+    const includeDocument = shouldIncludeDocumentInModelHistory(currentPrompt);
+    return messages.slice(start).map((message, offset) => {
+        const messageIndex = start + offset;
+        if (message?.role !== "assistant" || !isDocumentOutputMessage(conversation, messageIndex) || includeDocument) {
+            return message;
+        }
+        const title = String(message.document_title || documentTitleFromPrompt(precedingUserMessage(conversation, messageIndex)?.text) || "Document");
+        return {
+            role: "assistant",
+            text: `[Document prepared in the editor: ${title}. Full text stays in the editor and is omitted from model history.]`
+        };
+    });
+}
+
+function openDocumentMessage(conversationIndex, messageIndex, options = {}) {
+    const conversation = conversations[conversationIndex];
+    const message = conversation?.messages?.[messageIndex];
+    if (!message || !isDocumentOutputMessage(conversation, messageIndex) || !window.OddiDocumentWorkspace) return false;
+    const prompt = precedingUserMessage(conversation, messageIndex)?.text || "";
+    const title = String(message.document_title || documentTitleFromPrompt(prompt));
+    const sourceMarkdown = String(message.document_workspace === true ? (message.text || "") : (message.resume_draft || message.text || ""));
+    const workspace = window.OddiDocumentWorkspace;
+    workspace.open({
+        title,
+        markdown: sourceMarkdown,
+        format: options.format || "pdf",
+        status: options.status || (message.stopped ? "Generation stopped. The partial draft is available to edit or download." : "Ready to edit or download."),
+        renderMarkdown: source => renderRichContentToHtml(source),
+        serializeMarkdown: root => resumeSectionMarkdown(root),
+        createPdfBlob: root => createResumePdfBlob(root),
+        createDocxBlob: html => {
+            if (!window.htmlDocx?.asBlob) throw new Error("Word export is unavailable right now.");
+            return window.htmlDocx.asBlob(html);
+        },
+        onSave: async ({markdown}) => {
+            const patch = {text: markdown, document_workspace: true, document_title: title};
+            if (message.resume_draft) patch.resume_draft = markdown;
+            const saved = await updateConversationMessageRemote(conversation, message.id, patch);
+            if (saved) {
+                message.text = markdown;
+                if (message.resume_draft) message.resume_draft = markdown;
+                message.document_workspace = true;
+                message.document_title = title;
+                touchConversation(conversation);
+            }
+            return saved;
+        }
+    });
+    return true;
+}
+
+function addDocumentOpenControl(botMessage, conversation, messageIndex, conversationIndex = currentConversation) {
+    if (!botMessage || botMessage.querySelector(".oddi-open-document-btn") || !isDocumentOutputMessage(conversation, messageIndex)) return;
+    const actions = botMessage.querySelector(".bot-actions");
+    if (!actions) return;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "message-action-btn oddi-open-document-btn";
+    button.textContent = "Open in editor";
+    button.title = "Open this document in the editor";
+    button.setAttribute("aria-label", "Open generated document in editor");
+    button.addEventListener("click", () => openDocumentMessage(conversationIndex, messageIndex));
+    actions.prepend(button);
+}
+
+function appendLocalDocumentExportTurn(conversation, userText, sourceMessage, format) {
+    if (!conversation || !sourceMessage) return false;
+    const sourceIndex = conversation.messages.indexOf(sourceMessage);
+    const sourcePrompt = precedingUserMessage(conversation, sourceIndex)?.text || "";
+    const title = String(sourceMessage.document_title || documentTitleFromPrompt(sourcePrompt));
+    const userMessage = {id: makeMessageId(), role: "user", text: userText, files: [], fileRefs: [], pinned: false};
+    const assistantMessage = {
+        id: makeMessageId(),
+        role: "assistant",
+        text: `Your existing document is open in the editor with ${format.toUpperCase()} selected. Choose Download to save it.`,
+        pinned: false,
+        feedback: null,
+        document_workspace: false,
+        document_title: title
+    };
+    const userIndex = conversation.messages.length;
+    conversation.messages.push(userMessage, assistantMessage);
+    touchConversation(conversation);
+    void appendConversationMessage(conversation, userMessage);
+    void appendConversationMessage(conversation, assistantMessage);
+
+    if (conversations[currentConversation] === conversation) {
+        const userBubble = document.createElement("div");
+        userBubble.className = "user-message";
+        userBubble.dataset.messageIndex = String(userIndex);
+        userBubble.innerHTML = `<div class="user-bubble-main"><div class="user-text">${renderUserMessageHtml(userText)}</div></div><div class="user-actions-row"><button class="message-action-btn user-pin-btn" onclick="togglePinMessage(this)" title="Pin important message">📌 Pin</button><button class="message-action-btn user-edit-btn" onclick="editUserMessage(this)" title="Edit your message">✏️ Edit</button><button class="message-action-btn user-copy-btn" onclick="copyUserMessage(this)" title="Copy your message">📋 Copy</button></div>`;
+        chat.appendChild(userBubble);
+        const botBubble = document.createElement("div");
+        botBubble.className = "bot-message";
+        botBubble.dataset.messageIndex = String(userIndex + 1);
+        botBubble.innerHTML = `<div class="bot-header"><button class="message-sound-btn" onclick="speakAIMessage(this)" title="Read this AI message aloud" aria-label="Read this AI message aloud">🔊</button><b>ODDI-AI:</b><span class="oddi-thinking-time" hidden></span></div><div class="ai-content"></div><div class="odd-chat-meta" hidden></div>`;
+        botBubble.querySelector(".ai-content").textContent = assistantMessage.text;
+        chat.appendChild(botBubble);
+        addBotMessageActions(botBubble, userIndex + 1, currentConversation);
+        oddiSmartScroll(true);
+    }
+    window.OddiDocumentWorkspace?.open({
+        title,
+        markdown: String(sourceMessage.document_workspace === true ? (sourceMessage.text || "") : (sourceMessage.resume_draft || sourceMessage.text || "")),
+        format,
+        status: `Choose Download to export this document as ${format.toUpperCase()}. The conversion runs locally.`,
+        renderMarkdown: source => renderRichContentToHtml(source),
+        serializeMarkdown: root => resumeSectionMarkdown(root),
+        createPdfBlob: root => createResumePdfBlob(root),
+        createDocxBlob: html => {
+            if (!window.htmlDocx?.asBlob) throw new Error("Word export is unavailable right now.");
+            return window.htmlDocx.asBlob(html);
+        },
+        onSave: async ({markdown}) => {
+            const patch = {text: markdown, document_workspace: true, document_title: title};
+            if (sourceMessage.resume_draft) patch.resume_draft = markdown;
+            const saved = await updateConversationMessageRemote(conversation, sourceMessage.id, patch);
+            if (saved) {
+                sourceMessage.text = markdown;
+                sourceMessage.document_workspace = true;
+                sourceMessage.document_title = title;
+                if (sourceMessage.resume_draft) sourceMessage.resume_draft = markdown;
+            }
+            return saved;
+        }
+    });
+    renderHistory();
+    return true;
 }
 
 function isResumeBuilderPrompt(text) {
@@ -13758,7 +14094,7 @@ function addBotMessageActions(botMessage, messageIndex, conversationIndex = curr
     const feedback = message?.feedback || '';
     const pinned = !!message?.pinned;
 
-    if (message) {
+    if (message && !isDocumentOutputMessage(conversations[conversationIndex], messageIndex)) {
         addResumeExportControls(
             botMessage,
             conversations[conversationIndex],
@@ -13809,6 +14145,12 @@ function addBotMessageActions(botMessage, messageIndex, conversationIndex = curr
     `;
 
     botMessage.appendChild(actions);
+    addDocumentOpenControl(
+        botMessage,
+        conversations[conversationIndex],
+        messageIndex,
+        conversationIndex
+    );
 }
 
 /* 
@@ -13823,7 +14165,8 @@ async function finishAIMessage(
     targetConversation = activeGenerationConversation,
     assistantMessageId = null,
     completedAt = null,
-    responseMeta = {}
+    responseMeta = {},
+    documentMetadata = null
 ) {
 
     if (generationStopped) return;
@@ -13864,6 +14207,10 @@ async function finishAIMessage(
         completed_at: completedAt || new Date().toISOString(),
         response_meta: responseMeta
     };
+    if (documentMetadata?.title) {
+        newAssistantMessage.document_workspace = true;
+        newAssistantMessage.document_title = String(documentMetadata.title).slice(0, 120);
+    }
 
     const existingMessageIndex = conversation.messages.findIndex(
         item => String(item?.id || "") === String(newAssistantMessage.id)
@@ -13877,7 +14224,7 @@ async function finishAIMessage(
     }
 
     let conversationTitleChanged = false;
-    if (conversation.messages.length === 2) {
+    if (conversation.messages.length === 2 && !documentMetadata) {
         const existingTitle = String(conversation.title || "").trim();
         const originalPrompt = String(userMessage || "").trim();
         const looksAutoNamed = !existingTitle || existingTitle === "New Chat" || existingTitle === originalPrompt;
@@ -13911,7 +14258,13 @@ async function finishAIMessage(
     }
 
     touchConversation(conversation);
-    if (conversationTitleChanged) {
+    const serverAlreadySavedDocument = !!documentMetadata &&
+        responseMeta.conversation_persisted === true &&
+        conversation.id !== null && conversation.id !== undefined;
+    if (serverAlreadySavedDocument) {
+        const savedRevision = Number(responseMeta.conversation_revision || 0);
+        if (savedRevision > Number(conversation.revision || 0)) conversation.revision = savedRevision;
+    } else if (conversationTitleChanged) {
         await saveConversation(conversation);
     } else {
         await appendConversationMessage(conversation, newAssistantMessage);
@@ -14956,7 +15309,9 @@ function renderPinnedMessagesSection() {
         role.textContent=message.role === "user" ? "You" : "ODDI-AI";
         const text=document.createElement("div");
         text.className="oddi-pinned-message-text";
-        text.textContent=String(message.text ?? "");
+        text.textContent=isDocumentOutputMessage(conversation,index)
+            ? (message.stopped ? "Partial document in editor" : "Generated document in editor")
+            : String(message.text ?? "");
         item.append(role,text);
         item.addEventListener("click",()=>{
             const target=chat.querySelector(`.user-message[data-message-index="${index}"], .bot-message[data-message-index="${index}"]`);
@@ -15013,7 +15368,7 @@ async function openConversation(index) {
     persistLastOpenConversation(conversation);
 
     if (conversation.__summaryOnly && !browserLocalChatStorage) {
-        chat.innerHTML = '<div class="oddi-history-loading" role="status">Loading chat…</div>';
+        chat.innerHTML = '<div class="oddi-history-skeleton" role="status" aria-label="Loading conversation"><span class="oddi-history-skeleton-bubble oddi-skeleton-user"></span><span class="oddi-history-skeleton-bubble oddi-skeleton-ai"></span><span class="oddi-history-skeleton-bubble oddi-skeleton-user short"></span><span class="oddi-history-skeleton-bubble oddi-skeleton-ai medium"></span></div>';
         try {
             const fullConversation = await fetchConversationHistory(conversation.id);
             if (window.__oddiOpenConversationRequestId !== openRequestId || String(conversations[currentConversation]?.id) !== openingConversationId) return false;
@@ -15027,7 +15382,7 @@ async function openConversation(index) {
         } catch (error) {
             if (window.__oddiOpenConversationRequestId !== openRequestId || String(conversations[currentConversation]?.id) !== openingConversationId) return false;
             console.error("Could not load selected chat:", error);
-            chat.innerHTML = '<div class="oddi-history-loading" role="alert">This chat could not be loaded. Select it again to retry.</div>';
+            chat.innerHTML = '<div class="oddi-history-loading" role="alert">This chat could not be loaded. Select it again to retry, or start a new chat.</div>';
             return false;
         }
     }
@@ -15046,6 +15401,21 @@ async function openConversation(index) {
     chat.innerHTML = "";
     if (preservedSparkLayer) chat.appendChild(preservedSparkLayer);
     if (preservedLightLayer) chat.appendChild(preservedLightLayer);
+
+    /* An empty saved conversation is still a usable blank workspace on phones.
+       Keep the home actions visible instead of leaving only the composer. */
+    if (window.matchMedia("(max-width: 768px)").matches && conversation.messages.length === 0) {
+        const welcomeSource = window.__oddiWelcomeTemplate || document.getElementById("welcomeContainer");
+        if (welcomeSource) {
+            const welcome = welcomeSource.cloneNode(true);
+            welcome.querySelectorAll("[data-oddi-bound]").forEach(node => node.removeAttribute("data-oddi-bound"));
+            chat.appendChild(welcome);
+            document.querySelector(".app")?.classList.remove("chat-started");
+            chat.scrollTop = 0;
+            window.dispatchEvent(new CustomEvent("oddi:new-chat-ready"));
+            return true;
+        }
+    }
 
     let previousRenderedBotText = "";
     let previousWasBot = false;
@@ -15130,9 +15500,13 @@ async function openConversation(index) {
             } else {
 
                 const feedback = msg.feedback || "";
+                const isDocumentOutput = isDocumentOutputMessage(conversation, messageIndex);
+                const documentStatus = msg.stopped
+                    ? "Generation stopped. The partial document is in the editor."
+                    : "Your document is ready in the editor.";
 
                 chat.innerHTML += `
-                    <div class="bot-message ${msg.pinned ? "pinned-message" : ""} ${msg.stopped ? "stopped-message" : ""}"
+                    <div class="bot-message ${msg.pinned ? "pinned-message" : ""} ${msg.stopped ? "stopped-message" : ""} ${isDocumentOutput ? "document-output-message" : ""}"
                          data-message-index="${messageIndex}">
 
                         <div class="bot-header">
@@ -15151,7 +15525,7 @@ async function openConversation(index) {
                         </div>
 
                         <div class="ai-content">
-                            ${renderRichContentToHtml(msg.text)}
+                            ${isDocumentOutput ? documentStatus : renderRichContentToHtml(msg.text)}
                         </div>
 
                         <div class="odd-chat-meta" data-response-meta="${messageIndex}"></div>
@@ -15204,7 +15578,12 @@ async function openConversation(index) {
     conversation.messages.forEach((msg, messageIndex) => {
         if (msg?.role !== "assistant") return;
         const bubble = chat.querySelector(`.bot-message[data-message-index="${messageIndex}"]`);
-        if (bubble) addResumeExportControls(bubble, conversation, messageIndex);
+        if (!bubble) return;
+        if (isDocumentOutputMessage(conversation, messageIndex)) {
+            addDocumentOpenControl(bubble, conversation, messageIndex, currentConversation);
+        } else {
+            addResumeExportControls(bubble, conversation, messageIndex);
+        }
     });
 
     // Keep the live generation bubble attached when returning to its chat.
@@ -15491,9 +15870,13 @@ const ODDI_THEME_KEY = "oddi_theme_v1";
 function applyOddiTheme(theme) {
     const preference = theme === "system" ? "system" : (theme === "dark" ? "dark" : "light");
     const isDark = preference === "dark" || (preference === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const themeLabel = preference === "system"
+        ? "System theme active. Switch to light mode"
+        : (isDark ? "Switch to light mode" : "Switch to dark mode");
 
     document.body.classList.toggle("dark-mode", isDark);
     document.body.classList.toggle("oddi-system-theme", preference === "system");
+    themeBtn.setAttribute("aria-label", themeLabel);
 
     if (isDark) {
         themeBtn.innerHTML = preference === "system" ? "◐" : (isDark ? "☀️" : "🌙");
@@ -16201,7 +16584,7 @@ document.addEventListener("keydown", event => {
         return;
     }
 
-    if (mod && event.key.toLowerCase() === "k") {
+    if (mod && event.key.toLowerCase() === "k" && !editable) {
         event.preventDefault();
         chatSearchInput.focus();
         chatSearchInput.select();
@@ -16279,6 +16662,7 @@ document.addEventListener("keydown", event => {
         const key = chosen?.id;
         const item = key ? document.querySelector(`.history-item[data-conversation-id=\"${CSS.escape(String(key))}\"]`) : null;
         item?.classList.add("keyboard-selected");
+        item?.focus({ preventScroll: true });
         item?.scrollIntoView({ block: "nearest" });
         return;
     }
@@ -20166,11 +20550,19 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
      * Expose a tiny explicit reset hook for future send paths without
      * changing desktop behavior.
      */
-    window.__oddiResetMobileComposer = function () {
+    window.__oddiResetMobileComposer = function (options = {}) {
         input.value = "";
         input.style.height = "auto";
-        document.body.classList.remove("mobile-composer-typing");
+        document.body.classList.remove("mobile-composer-typing", "oddi-composer-has-text");
+        const composer = input.closest(".input-area");
+        composer?.classList.remove("has-message-overflow");
+        if (options.attachmentsCleared) {
+            composer?.classList.remove("has-attachments");
+            window.dispatchEvent(new Event("oddi:attachments-cleared"));
+        }
         input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.style.height = "44px";
+        window.__oddiSyncComposerAction?.();
     };
 })();
 </script>
@@ -26838,6 +27230,16 @@ body.dark-mode .quick-actions .action-card:hover{transform:translateY(-2px) !imp
       const id=row.dataset.shortcutId, keyEl=row.querySelector(".shortcut-key"); if(!keyEl)return;
       const sc=(editing?draftShortcuts:savedShortcuts)[id];
       const value=formatShortcut(sc);
+      if(editing){
+        const action=row.querySelector("span")?.textContent?.trim()||"Shortcut";
+        row.setAttribute("role","button");
+        row.tabIndex=0;
+        row.setAttribute("aria-label",`${action}. Current shortcut: ${value}. Press Enter or Space to change it.`);
+      }else{
+        row.removeAttribute("role");
+        row.tabIndex=-1;
+        row.removeAttribute("aria-label");
+      }
       const parts=value.split(" + ");
       const nodes=[];
       parts.forEach((part,index)=>{
@@ -26866,6 +27268,8 @@ body.dark-mode .quick-actions .action-card:hover{transform:translateY(-2px) !imp
     if(resetBtn) resetBtn.hidden=false;
     setStatus(editing?"Click any shortcut to change it.":"");
     renderShortcutKeys();
+    if(editing)shortcutGrid?.querySelector(".shortcut-row[data-shortcut-id].editable")?.focus();
+    else if(editBtn&&!editBtn.hidden)editBtn.focus();
   }
   function cancelEditing(){setEditing(false);setStatus("");}
   function conflictsWithDraft(id,sc){
@@ -26906,8 +27310,8 @@ body.dark-mode .quick-actions .action-card:hover{transform:translateY(-2px) !imp
   function executeShortcut(id,e){
     if(id==="focusSearchMod"||id==="focusSearchSlash"){e.preventDefault();const el=document.getElementById("chatSearchInput");el?.focus();el?.select();return true;}
     if(id==="newChat"){if(e.target?.matches?.("input,textarea,select,[contenteditable=\"true\"]"))return false;e.preventDefault();if(typeof newChat==="function")newChat();return true;}
-    if(id==="moveChats"){
-      if(e.target?.matches?.("input,textarea,select,[contenteditable=\"true\"]"))return false;e.preventDefault();const dir=e.key==="ArrowUp"?-1:1;const list=Array.isArray(conversations)?conversations.filter(c=>c&&!isConversationArchived(c)).sort((a,b)=>{const ap=isConversationPinned(a)?1:0,bp=isConversationPinned(b)?1:0;return ap!==bp?bp-ap:getConversationDate(b)-getConversationDate(a);}):[];if(!list.length)return true;let selected=Number.isInteger(window.__oddiKeyboardSelectedIndex)?window.__oddiKeyboardSelectedIndex:0;selected=dir>0?Math.min(list.length-1,selected+1):Math.max(0,selected-1);window.__oddiKeyboardSelectedIndex=selected;document.querySelectorAll(".history-item.keyboard-selected").forEach(el=>el.classList.remove("keyboard-selected"));const chosen=list[selected],key=chosen?.id,item=key?document.querySelector(`.history-item[data-conversation-id=\"${CSS.escape(String(key))}\"]`):null;item?.classList.add("keyboard-selected");item?.scrollIntoView({block:"nearest"});return true;
+      if(id==="moveChats"){
+       if(e.target?.matches?.("input,textarea,select,[contenteditable=\"true\"]"))return false;e.preventDefault();const dir=e.key==="ArrowUp"?-1:1;const list=Array.isArray(conversations)?conversations.filter(c=>c&&!isConversationArchived(c)).sort((a,b)=>{const ap=isConversationPinned(a)?1:0,bp=isConversationPinned(b)?1:0;return ap!==bp?bp-ap:getConversationDate(b)-getConversationDate(a);}):[];if(!list.length)return true;let selected=Number.isInteger(window.__oddiKeyboardSelectedIndex)?window.__oddiKeyboardSelectedIndex:0;selected=dir>0?Math.min(list.length-1,selected+1):Math.max(0,selected-1);window.__oddiKeyboardSelectedIndex=selected;document.querySelectorAll(".history-item.keyboard-selected").forEach(el=>el.classList.remove("keyboard-selected"));const chosen=list[selected],key=chosen?.id,item=key?document.querySelector(`.history-item[data-conversation-id=\"${CSS.escape(String(key))}\"]`):null;item?.classList.add("keyboard-selected");item?.focus({preventScroll:true});item?.scrollIntoView({block:"nearest"});return true;
     }
     if(id==="openSelected"){if(e.target?.matches?.("input,textarea,select,[contenteditable=\"true\"]"))return false;e.preventDefault();const list=Array.isArray(conversations)?conversations.filter(c=>c&&!isConversationArchived(c)).sort((a,b)=>{const ap=isConversationPinned(a)?1:0,bp=isConversationPinned(b)?1:0;return ap!==bp?bp-ap:getConversationDate(b)-getConversationDate(a);}):[];const selected=Number.isInteger(window.__oddiKeyboardSelectedIndex)?window.__oddiKeyboardSelectedIndex:0;if(list[selected]&&typeof window.__oddiOpenConversation==="function"){const actual=conversations.indexOf(list[selected]);if(actual>=0)window.__oddiOpenConversation(actual);}return true;}
     if(id==="memory"){e.preventDefault();document.getElementById("memoryBtn")?.click();return true;}
@@ -26921,7 +27325,14 @@ body.dark-mode .quick-actions .action-card:hover{transform:translateY(-2px) !imp
   }
   function isDefaultChanged(id){return !sameShortcut(savedShortcuts[id],shortcutDefaults[id]);}
 
-  shortcutGrid?.querySelectorAll(".shortcut-row[data-shortcut-id]").forEach(row=>row.addEventListener("click",()=>beginCapture(row)));
+  shortcutGrid?.querySelectorAll(".shortcut-row[data-shortcut-id]").forEach(row=>{
+    row.addEventListener("click",()=>beginCapture(row));
+    row.addEventListener("keydown",event=>{
+      if(!editing||!(event.key==="Enter"||event.key===" "))return;
+      event.preventDefault();
+      beginCapture(row);
+    });
+  });
   editBtn?.addEventListener("click",()=>setEditing(true));
   cancelBtn?.addEventListener("click",cancelEditing);
   resetBtn?.addEventListener("click",()=>{
@@ -27280,7 +27691,10 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
     var bestIndex = -1;
     var bestTime = -Infinity;
     list.forEach(function (conversation, index) {
-      if (!conversation || conversation.archived || conversation.deleted) return;
+      if (!conversation || conversation.archived || conversation.archived_at || conversation.deleted || conversation.deleted_at || conversation.is_archived || conversation.is_deleted) return;
+      var messageCount = Number(conversation.message_count || 0);
+      var hasMessages = messageCount > 0 || (Array.isArray(conversation.messages) && conversation.messages.length > 0);
+      if (!hasMessages) return;
       var raw = conversation.updated_at || conversation.updatedAt || conversation.created_at || conversation.createdAt;
       var time = raw ? Date.parse(raw) : NaN;
       if (!Number.isFinite(time)) time = index;
@@ -27292,15 +27706,52 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
     return bestIndex;
   }
 
+  function conversationText(value) {
+    if (value == null) return "";
+    if (typeof value === "object") value = value.text || value.content || value.message || "";
+    return String(value).replace(/\s+/g, " ").trim();
+  }
+
+  function conversationPreview(conversation) {
+    if (Array.isArray(conversation.messages)) {
+      for (var index = conversation.messages.length - 1; index >= 0; index -= 1) {
+        var message = conversationText(conversation.messages[index]);
+        if (message) return message;
+      }
+    }
+    return conversationText(conversation.preview || conversation.last_message || conversation.lastMessage || conversation.last_message_text);
+  }
+
   function syncContinueCard() {
     var card = document.getElementById("oddiLastMessageCard");
     if (!card) return;
+    var section = document.getElementById("oddiRecentSection");
     var index = getRecentConversationIndex();
     var hasRecent = index >= 0;
+    var conversation = hasRecent ? window.oddiConversations[index] : null;
+    var titleNode = card.querySelector(".oddi-last-message-title");
+    var previewNode = card.querySelector(".oddi-last-message-preview");
+    var metaNode = card.querySelector(".oddi-last-message-meta");
+    var preview = conversation ? conversationPreview(conversation) : "";
+    var rawTitle = conversation && (conversation.title || conversation.name || conversation.subject);
+    var title = conversationText(rawTitle);
+    if (/^(new chat|untitled|new conversation)$/i.test(title)) title = "";
+    if (!title) title = "Recent conversation";
     card.dataset.conversationIndex = hasRecent ? String(index) : "";
     card.disabled = !hasRecent;
     card.setAttribute("aria-disabled", hasRecent ? "false" : "true");
     card.classList.toggle("is-disabled", !hasRecent);
+    card.setAttribute("aria-label", hasRecent ? "Continue conversation: " + title : "Continue where you left off");
+    if (titleNode) titleNode.textContent = hasRecent ? title : "";
+    if (previewNode) {
+      previewNode.textContent = hasRecent ? preview : "";
+      previewNode.hidden = !hasRecent || !preview;
+    }
+    if (metaNode) {
+      metaNode.textContent = "";
+      metaNode.hidden = true;
+    }
+    if (section) section.hidden = !hasRecent;
   }
 
   function bindOddiSuggestionCards() {
@@ -27383,6 +27834,9 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
 
   window.addEventListener("oddi:new-chat-ready", function () {
     bindOddiSuggestionCards();
+  });
+  ["oddi:conversations-loaded", "oddi:conversations-changed", "oddi:history-updated", "oddi:conversation-opened"].forEach(function (eventName) {
+    window.addEventListener(eventName, syncContinueCard);
   });
 
   if (document.readyState === "loading") {
@@ -30177,6 +30631,38 @@ body.dark-mode .oddi-backup-reminder .oddi-backup-later{background:transparent;c
   const chatBox=document.getElementById("chatbox");
   if(!chatBox)return;
 
+  /* Surface browser connectivity changes without hiding the message-level
+     Retry action or attempting an automatic duplicate request. */
+  const networkStatus=document.createElement("div");
+  networkStatus.id="oddiNetworkStatus";
+  networkStatus.className="oddi-network-status";
+  networkStatus.setAttribute("role","status");
+  networkStatus.setAttribute("aria-live","polite");
+  networkStatus.setAttribute("aria-atomic","true");
+  networkStatus.hidden=true;
+  document.body.appendChild(networkStatus);
+  let networkWasOffline=navigator.onLine===false;
+  let networkStatusTimer=0;
+  function updateNetworkStatus(online){
+    window.clearTimeout(networkStatusTimer);
+    if(!online){
+      networkWasOffline=true;
+      networkStatus.classList.remove("is-restored");
+      networkStatus.textContent="You’re offline. Check your connection; failed replies can be retried from the message.";
+      networkStatus.hidden=false;
+      return;
+    }
+    if(!networkWasOffline)return;
+    networkWasOffline=false;
+    networkStatus.classList.add("is-restored");
+    networkStatus.textContent="Connection restored. You can retry any failed message.";
+    networkStatus.hidden=false;
+    networkStatusTimer=window.setTimeout(()=>{networkStatus.hidden=true;},6000);
+  }
+  window.addEventListener("offline",()=>updateNetworkStatus(false));
+  window.addEventListener("online",()=>updateNetworkStatus(true));
+  if(networkWasOffline)updateNetworkStatus(false);
+
   /* #2 Keep streaming from moving the reader's scroll position. Offer an
      explicit jump control when newer messages are below the current view. */
   const latestButton=document.createElement("button");
@@ -30447,10 +30933,28 @@ body.dark-mode .oddi-backup-reminder .oddi-backup-later{background:transparent;c
   window.__oddiRenderFollowups=renderFollowups;
 
   /* #14 Expose concise screen-reader updates without announcing every token. */
-  chatBox.setAttribute("role","log");chatBox.setAttribute("aria-label","Conversation messages");chatBox.setAttribute("aria-live","off");chatBox.setAttribute("aria-relevant","additions text");
+  /* Keep the native main landmark; announce concise state changes separately
+     so streaming tokens are not read aloud one fragment at a time. */
+  chatBox.removeAttribute("role");chatBox.removeAttribute("aria-relevant");chatBox.setAttribute("aria-label","ODDI-AI chat");chatBox.setAttribute("aria-live","off");
+  const suggestions=document.getElementById("oddiSuggestionCards");
+  if(suggestions){suggestions.setAttribute("role","group");suggestions.setAttribute("aria-label","Quick actions to get started");}
+  function labelChatMessages(root){
+    const nodes=[];
+    if(root?.nodeType===1&&root.matches?.(".user-message,.bot-message"))nodes.push(root);
+    const descendants=root?.querySelectorAll?.(".user-message,.bot-message");
+    descendants?.forEach(node=>nodes.push(node));
+    nodes.forEach(node=>{
+      if(!node.hasAttribute("role"))node.setAttribute("role","article");
+      if(!node.hasAttribute("aria-label"))node.setAttribute("aria-label",node.classList.contains("user-message")?"Your message":"ODDI-AI response");
+    });
+  }
+  labelChatMessages(chatBox);
+  const chatMessageLabelObserver=new MutationObserver(records=>records.forEach(record=>record.addedNodes.forEach(labelChatMessages)));
+  chatMessageLabelObserver.observe(chatBox,{childList:true,subtree:true});
   const liveStatus=document.createElement("div");liveStatus.id="oddiA11yStatus";liveStatus.setAttribute("role","status");liveStatus.setAttribute("aria-live","polite");liveStatus.setAttribute("aria-atomic","true");liveStatus.style.cssText="position:fixed;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;";document.body.appendChild(liveStatus);
   window.__oddiAnnounce=message=>{liveStatus.textContent="";requestAnimationFrame(()=>{liveStatus.textContent=String(message||"");});};
   document.getElementById("userInput")?.setAttribute("aria-label","Message ODDI-AI");
+  document.getElementById("chatSearchInput")?.setAttribute("aria-keyshortcuts","Control+K Meta+K");
 
   /* #11 Back up all chats locally; remind occasionally and let users snooze. */
   const reminder=document.createElement("aside");reminder.className="oddi-backup-reminder";reminder.hidden=true;reminder.setAttribute("aria-label","Chat backup reminder");
@@ -31082,8 +31586,7 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
   }
   #mobileToolMenu .mobile-tool-icon { width:34px !important; height:34px !important; flex:0 0 34px !important; font-size:17px !important; }
   .input-area {
-    bottom:calc(var(--oddi-mobile-keyboard-inset,0px) + max(6px,env(safe-area-inset-bottom))) !important;
-    transition:bottom .12s ease-out !important;
+    bottom:max(8px,env(safe-area-inset-bottom,0px)) !important;
   }
   body.oddi-mobile-keyboard-open .input-area { box-shadow:0 8px 30px rgba(0,0,0,.24) !important; }
   #oddiChatLatestButton {
@@ -31132,26 +31635,7 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
   const phone=window.matchMedia("(max-width:768px) and (pointer:coarse)");
   const chatbox=document.getElementById("chatbox");
   const composer=document.querySelector(".input-area");
-  const input=document.getElementById("userInput");
   if(!phone.matches)return;
-
-  // Keep the composer above the on-screen keyboard, using the visible viewport.
-  let viewportFrame=0;
-  const syncKeyboardViewport=()=>{
-    if(viewportFrame)return;
-    viewportFrame=requestAnimationFrame(()=>{
-      viewportFrame=0;
-      if(!composer)return;
-      const vv=window.visualViewport;
-      const focused=input===document.activeElement;
-      const keyboardInset=focused&&vv
-        ?Math.max(0,Math.round(window.innerHeight-(vv.height+vv.offsetTop)))
-        :0;
-      composer.style.setProperty("--oddi-mobile-keyboard-inset",`${Math.min(keyboardInset,window.innerHeight*.6)}px`);
-      document.body.classList.toggle("oddi-mobile-keyboard-open",keyboardInset>90);
-      syncFloatingControls();
-    });
-  };
 
   // The latest-message control follows the composer's real top edge on phones.
   const latestButton=document.getElementById("oddiChatLatestButton");
@@ -31165,14 +31649,8 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
       latestButton.style.top=`${Math.max(8,Math.round(rect.top-latestButton.offsetHeight-9))}px`;
     }
   }
-  if(composer){
-    input?.addEventListener("focus",syncKeyboardViewport);
-    input?.addEventListener("blur",()=>setTimeout(syncKeyboardViewport,60));
-    window.addEventListener("resize",syncKeyboardViewport,{passive:true});
-    window.visualViewport?.addEventListener("resize",syncKeyboardViewport,{passive:true});
-    window.visualViewport?.addEventListener("scroll",syncKeyboardViewport,{passive:true});
-    new ResizeObserver(syncKeyboardViewport).observe(composer);
-  }
+  window.addEventListener("oddi:mobile-viewport-adjusted",syncFloatingControls);
+  if(composer)new ResizeObserver(syncFloatingControls).observe(composer);
   chatbox?.addEventListener("scroll",syncFloatingControls,{passive:true});
   window.addEventListener("oddi:generation-state-changed",syncFloatingControls);
   if(latestButton){new MutationObserver(syncFloatingControls).observe(latestButton,{attributes:true,attributeFilter:["hidden"]});}
@@ -33257,6 +33735,7 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
     const input=document.getElementById("userInput");
     if(!composer||!field||!input)return false;
     const phone=window.matchMedia("(max-width:768px)");
+    const desktopFlow=window.matchMedia("(min-width:769px)");
     const chat=document.getElementById("chatbox");
     const greeting=document.getElementById("oddiSayHello");
     function alignComposerToChat(){
@@ -33264,7 +33743,7 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
       const rect=chat.getBoundingClientRect();
       if(rect.width){
         const gutter=phone.matches?8:24;
-        const widthLimit=document.body.classList.contains("oddi-fullscreen-home")?920:768;
+        const widthLimit=phone.matches?768:920;
         const width=Math.min(widthLimit,Math.max(0,rect.width-gutter*2));
         composer.style.setProperty("--oddi-composer-left",Math.round(rect.left+(rect.width-width)/2)+"px");
         composer.style.setProperty("--oddi-composer-width",Math.round(width)+"px");
@@ -33272,6 +33751,14 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
     }
     function syncHomeCentering(){
       alignComposerToChat();
+      if(desktopFlow.matches&&!document.body.classList.contains("oddi-fullscreen-home")&&chat){
+        const chatRect=chat.getBoundingClientRect();
+        const composerRect=composer.getBoundingClientRect();
+        if(chatRect.height&&composerRect.height){
+          chat.style.setProperty("--oddi-home-safe-bottom",Math.max(0,Math.ceil(chatRect.bottom-composerRect.top+16))+"px");
+        }
+        return;
+      }
       if(greeting&&!greeting.hidden){
         const composerRect=composer.getBoundingClientRect();
         const helloHeight=greeting.getBoundingClientRect().height||34;
@@ -33400,7 +33887,7 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
   #oddiComposerShell.input-area {
     position: fixed !important;
     top: auto !important;
-    bottom: calc(var(--oddi-mobile-keyboard-inset, 0px) + max(8px, env(safe-area-inset-bottom, 0px))) !important;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
     height: auto !important;
     max-height: none !important;
     box-sizing: border-box !important;
@@ -33833,11 +34320,23 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
     const input=document.getElementById("userInput");
     const greeting=document.getElementById("oddiSayHello");
     const chat=document.getElementById("chatbox");
+    const desktopFlow=window.matchMedia("(min-width:769px)");
     if(!composer||!input||!greeting||!chat)return false;
     const home=()=>!!chat.querySelector("#welcomeContainer");
     const sync=()=>{
       if(!home()){
-        chat.style.removeProperty("--oddi-home-safe-bottom");
+        if(desktopFlow.matches&&!document.body.classList.contains("oddi-fullscreen-home")){
+          requestAnimationFrame(()=>{
+            if(home())return;
+            const chatRect=chat.getBoundingClientRect();
+            const composerRect=composer.getBoundingClientRect();
+            if(chatRect.height&&composerRect.height){
+              chat.style.setProperty("--oddi-home-safe-bottom",Math.max(0,Math.ceil(chatRect.bottom-composerRect.top+16))+"px");
+            }
+          });
+        } else {
+          chat.style.removeProperty("--oddi-home-safe-bottom");
+        }
         return;
       }
       const active=!!input.value.trim()||composer.classList.contains("has-attachments");
@@ -33846,10 +34345,13 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
         if(!home())return;
         const chatRect=chat.getBoundingClientRect();
         const composerRect=composer.getBoundingClientRect();
-        const greetingRect=greeting.getBoundingClientRect();
-        const reserveFrom=(!active&&greetingRect.height)?greetingRect.top:composerRect.top;
+        // The home CTA now scrolls with the home content on windowed desktop,
+        // so reserve space only for the fixed composer overlay.
+        const reserveFrom=desktopFlow.matches&&!document.body.classList.contains("oddi-fullscreen-home")
+          ? composerRect.top
+          : ((!active&&greeting.getBoundingClientRect().height)?greeting.getBoundingClientRect().top:composerRect.top);
         if(chatRect.height&&Number.isFinite(reserveFrom)){
-          chat.style.setProperty("--oddi-home-safe-bottom",Math.max(0,Math.ceil(chatRect.bottom-reserveFrom+10))+"px");
+          chat.style.setProperty("--oddi-home-safe-bottom",Math.max(0,Math.ceil(chatRect.bottom-reserveFrom+16))+"px");
         }
       });
     };
@@ -34884,5 +35386,2309 @@ body[data-theme="dark"] #chatbox.chatbox > .user-message > .user-bubble-main {
   #oddiLastMessageCard { min-height: 46px !important; }
 }
 </style>
+<link rel="stylesheet" href="/static/oddi-document-workspace.css">
+<script src="/static/oddi-document-workspace.js"></script>
+<link rel="stylesheet" href="/static/oddi-mobile-experience.css">
+<script src="/static/oddi-mobile-experience.js"></script>
+<style id="oddi-generation-composer-normal-size-v1">
+body.oddi-generation-active #oddiComposerShell.input-area:not(.has-attachments) {
+  height: 62px !important;
+  min-height: 62px !important;
+  max-height: 62px !important;
+}
+body.oddi-generation-active #oddiComposerShell.input-area:not(.has-attachments) > #userInput {
+  height: 44px !important;
+  min-height: 42px !important;
+  max-height: 44px !important;
+}
+@media (max-width: 768px) and (pointer: coarse) {
+  body.oddi-generation-active #oddiComposerShell.input-area:not(.has-attachments) {
+    height: 50px !important;
+    min-height: 50px !important;
+    max-height: 50px !important;
+    grid-template-rows: 44px !important;
+  }
+  body.oddi-generation-active #oddiComposerShell.input-area:not(.has-attachments) > #userInput {
+    height: 40px !important;
+    min-height: 38px !important;
+    max-height: 40px !important;
+  }
+}
+</style>
+<style id="oddi-home-greeting-hierarchy-v1">
+#welcomeContainer::before {
+  position: relative !important;
+  top: -4px !important;
+  margin-bottom: 12px !important;
+  letter-spacing: .2em !important;
+}
+#welcomeContainer > h2 {
+  margin-bottom: 14px !important;
+}
+#welcomeContainer > .oddi-home-subtitle {
+  margin-top: 0 !important;
+  color: #59615c !important;
+  font-weight: 500 !important;
+}
+body.dark-mode #welcomeContainer > .oddi-home-subtitle,
+body[data-theme="dark"] #welcomeContainer > .oddi-home-subtitle {
+  color: #a6ada8 !important;
+}
+body.oddi-system-theme #welcomeContainer > .oddi-home-subtitle {
+  color: var(--os-muted) !important;
+}
+</style>
+<style id="oddi-phone-composer-single-surface-v1">
+/* On phones the outer wrapper was drawing a second capsule around the real
+   input row. Use one visible surface and reserve fixed columns for controls. */
+@media (max-width: 768px) and (pointer: coarse) {
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell.input-area:not(.has-attachments) {
+    min-height: 54px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    grid-template-rows: minmax(54px, auto) !important;
+  }
+
+  #oddiComposerShell.input-area:not(.has-attachments)::before { opacity: .28 !important; }
+
+  #oddiComposerShell .oddi-composer-field {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) 44px 44px !important;
+    grid-template-rows: minmax(44px, auto) !important;
+    align-items: center !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 54px !important;
+    padding: 4px 5px !important;
+    gap: 4px !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(145, 153, 147, .3) !important;
+    border-radius: 999px !important;
+    background: rgba(16, 17, 16, .97) !important;
+    box-shadow: 0 7px 22px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .035) !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field:focus-within {
+    border-color: rgba(32, 199, 107, .48) !important;
+    box-shadow: 0 0 0 2px rgba(32, 199, 107, .08), 0 10px 28px rgba(0, 0, 0, .28) !important;
+  }
+
+  #oddiComposerShell.input-area.has-attachments > .oddi-composer-field {
+    min-height: 50px !important;
+    border: 0 !important;
+    border-radius: 16px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field #attach-btn,
+  #oddiComposerShell .oddi-composer-field #dictation-btn,
+  #oddiComposerShell .oddi-composer-field .action-button-slot,
+  #oddiComposerShell .oddi-composer-field .action-button-slot #voice-btn,
+  #oddiComposerShell .oddi-composer-field .action-button-slot #send-btn {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-width: 44px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field #attach-btn { grid-column: 1; grid-row: 1; }
+  #oddiComposerShell .oddi-composer-field #userInput {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 8px 2px !important;
+    align-self: center !important;
+    box-sizing: border-box !important;
+  }
+  #oddiComposerShell .oddi-composer-field #dictation-btn { grid-column: 3; grid-row: 1; }
+  #oddiComposerShell .oddi-composer-field .action-button-slot {
+    grid-column: 4;
+    grid-row: 1;
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    overflow: visible !important;
+  }
+  #oddiComposerShell .oddi-composer-field .action-button-slot #voice-btn,
+  #oddiComposerShell .oddi-composer-field .action-button-slot #send-btn {
+    grid-area: 1 / 1 !important;
+  }
+
+  body:not(.dark-mode):not([data-theme="dark"]):not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field {
+    border-color: rgba(91, 107, 96, .3) !important;
+    background: rgba(255, 255, 255, .98) !important;
+    box-shadow: 0 7px 22px rgba(0, 0, 0, .08), inset 0 1px rgba(255, 255, 255, .8) !important;
+  }
+  body:not(.dark-mode):not([data-theme="dark"]):not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field:focus-within {
+    border-color: rgba(32, 156, 85, .52) !important;
+  }
+  body.dark-mode #oddiComposerShell .oddi-composer-field,
+  body[data-theme="dark"] #oddiComposerShell .oddi-composer-field {
+    border-color: rgba(145, 153, 147, .3) !important;
+    background: rgba(16, 17, 16, .97) !important;
+  }
+  body.oddi-system-theme #oddiComposerShell .oddi-composer-field {
+    border-color: color-mix(in srgb, var(--os-border) 60%, transparent) !important;
+    background: color-mix(in srgb, var(--os-surface) 98%, transparent) !important;
+  }
+}
+
+/* At very narrow phone widths the dedicated dictation mic crowds the text.
+   Keep the attach and voice/send controls reachable and give the text a lane. */
+@media (max-width: 360px) and (pointer: coarse) {
+  #oddiComposerShell .oddi-composer-field {
+    grid-template-columns: 44px minmax(0, 1fr) 44px !important;
+  }
+  #oddiComposerShell .oddi-composer-field #dictation-btn { display: none !important; }
+  #oddiComposerShell .oddi-composer-field .action-button-slot { grid-column: 3; }
+}
+</style>
+<style id="oddi-mobile-home-structure-v1">
+/* Set 1: keep the current chat/actions intact while giving the phone home a
+   clear header → welcome → actions → recent-work reading order. */
+@media (max-width: 768px) and (pointer: coarse) {
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header {
+    position: fixed !important;
+    inset: 0 0 auto 0 !important;
+    z-index: 2147483008 !important;
+    display: grid !important;
+    grid-template-columns: 48px minmax(0, 1fr) 48px !important;
+    align-items: center !important;
+    width: 100% !important;
+    height: calc(54px + env(safe-area-inset-top, 0px)) !important;
+    min-height: calc(54px + env(safe-area-inset-top, 0px)) !important;
+    max-height: calc(54px + env(safe-area-inset-top, 0px)) !important;
+    padding: env(safe-area-inset-top, 0px) 16px 0 !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    pointer-events: none !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header::before,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header::after,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header .logo-box {
+    display: none !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header .content-side {
+    grid-column: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header .title-box {
+    margin: 0 !important;
+    text-align: center !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header .logo-title {
+    margin: 0 !important;
+    font-size: 14px !important;
+    font-weight: 750 !important;
+    line-height: 1 !important;
+    letter-spacing: .11em !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header .logo-subtitle,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls .header-more {
+    display: none !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > :not(.theme-toggle) {
+    display: none !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls {
+    top: calc(env(safe-area-inset-top, 0px) + 5px) !important;
+    right: max(10px, env(safe-area-inset-right, 0px)) !important;
+    height: 44px !important;
+    gap: 0 !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls .theme-toggle,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #themeBtn {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher {
+    top: calc(env(safe-area-inset-top, 0px) + 5px) !important;
+    left: max(8px, env(safe-area-inset-left, 0px)) !important;
+  }
+
+  #chatbox.chatbox:has(#welcomeContainer) {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding: calc(58px + env(safe-area-inset-top, 0px)) 16px var(--oddi-home-safe-bottom, 128px) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain !important;
+    box-sizing: border-box !important;
+  }
+
+  #chatbox.chatbox:has(#welcomeContainer) > #welcomeContainer {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: min(100%, 460px) !important;
+    max-width: 460px !important;
+    margin: 0 auto !important;
+    padding: 12px 0 22px !important;
+    box-sizing: border-box !important;
+  }
+
+  #welcomeContainer::before { display: none !important; content: none !important; }
+
+  body:has(#chatbox #welcomeContainer) #welcomeContainer > h2 {
+    max-width: 100% !important;
+    margin: 0 auto 10px !important;
+    font-size: clamp(28px, 7.5vw, 32px) !important;
+    font-weight: 750 !important;
+    line-height: 1.08 !important;
+    letter-spacing: -.045em !important;
+    text-align: center !important;
+    text-wrap: balance !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    width: min(100%, 360px) !important;
+    margin: 0 auto !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.45 !important;
+    text-align: center !important;
+    text-wrap: balance !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 20px auto 0 !important;
+    padding: 0 !important;
+    gap: 10px !important;
+    overflow: visible !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+    display: grid !important;
+    grid-template-columns: 34px minmax(0, 1fr) !important;
+    align-content: center !important;
+    align-items: center !important;
+    column-gap: 10px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 82px !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 12px !important;
+    border-radius: 15px !important;
+    text-align: left !important;
+    white-space: normal !important;
+    touch-action: manipulation !important;
+    transition: transform .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease !important;
+  }
+
+  #oddiSuggestionCards .oddi-suggestion-icon {
+    width: 34px !important;
+    min-width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+  }
+
+  #oddiSuggestionCards .oddi-suggestion-icon svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  #oddiSuggestionCards .oddi-suggestion-copy {
+    display: flex !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+    gap: 5px !important;
+  }
+
+  #oddiSuggestionCards .oddi-suggestion-copy strong {
+    display: block !important;
+    overflow: hidden !important;
+    font-size: 14px !important;
+    font-weight: 650 !important;
+    line-height: 1.2 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  #oddiSuggestionCards .oddi-suggestion-copy small {
+    display: -webkit-box !important;
+    overflow: hidden !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
+  }
+
+  #oddiSuggestionCards .oddi-suggestion-card:focus-visible,
+  #oddiLastMessageCard:focus-visible {
+    outline: 2px solid currentColor !important;
+    outline-offset: 3px !important;
+  }
+
+  #oddiSuggestionCards .oddi-suggestion-card:active,
+  #oddiLastMessageCard:active { transform: scale(.985) !important; }
+
+  #oddiRecentSection {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 22px auto 0 !important;
+  }
+
+  #oddiRecentSection[hidden] { display: none !important; }
+
+  #oddiRecentSection .oddi-recent-heading {
+    margin: 0 2px 8px !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: .12em !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    opacity: .72 !important;
+  }
+
+  #oddiRecentSection #oddiLastMessageCard {
+    display: grid !important;
+    grid-template-columns: 38px minmax(0, 1fr) 32px !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 96px !important;
+    height: auto !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 13px 14px !important;
+    gap: 12px !important;
+    border-radius: 16px !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+  }
+
+  #oddiRecentSection #oddiLastMessageCard .oddi-last-message-icon {
+    display: grid !important;
+    place-items: center !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+    border-radius: 12px !important;
+  }
+
+  #oddiRecentSection #oddiLastMessageCard .oddi-last-message-icon svg {
+    width: 20px !important;
+    height: 20px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 1.7 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+
+  #oddiRecentSection #oddiLastMessageCard .oddi-last-message-copy {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    min-width: 0 !important;
+    gap: 3px !important;
+  }
+
+  #oddiRecentSection .oddi-last-message-label {
+    display: block !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+  }
+
+  #oddiRecentSection .oddi-last-message-title {
+    display: block !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    line-height: 1.25 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  #oddiRecentSection .oddi-last-message-preview {
+    display: -webkit-box !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+    opacity: .76 !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 1 !important;
+  }
+
+  #oddiRecentSection .oddi-last-message-preview[hidden],
+  #oddiRecentSection .oddi-last-message-meta[hidden] { display: none !important; }
+
+  #oddiRecentSection .oddi-last-message-meta {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    opacity: .66 !important;
+  }
+
+  #oddiRecentSection .oddi-last-message-arrow {
+    display: grid !important;
+    place-items: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px !important;
+    font-size: 20px !important;
+  }
+}
+
+@media (max-width: 379px) and (pointer: coarse) {
+  #oddiSuggestionCards { grid-template-columns: minmax(0, 1fr) !important; gap: 8px !important; }
+  #oddiSuggestionCards .oddi-suggestion-card { min-height: 68px !important; padding: 10px 12px !important; }
+}
+
+@media (max-width: 768px) and (pointer: coarse) and (max-height: 680px) {
+  #chatbox.chatbox:has(#welcomeContainer) { padding-top: calc(52px + env(safe-area-inset-top, 0px)) !important; }
+  #chatbox.chatbox:has(#welcomeContainer) > #welcomeContainer { padding-top: 6px !important; padding-bottom: 12px !important; }
+  #oddiSuggestionCards { margin-top: 14px !important; }
+  #oddiSuggestionCards .oddi-suggestion-card { min-height: 74px !important; }
+  #oddiRecentSection { margin-top: 16px !important; }
+  #oddiRecentSection #oddiLastMessageCard { min-height: 88px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #oddiSuggestionCards .oddi-suggestion-card,
+  #oddiRecentSection #oddiLastMessageCard { transition: none !important; }
+}
+</style>
+<style id="oddi-mobile-composer-set2-v1">
+@media (max-width: 768px) and (pointer: coarse) {
+  /* Keep the layout viewport steady; only the fixed composer follows the keyboard. */
+  .app {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100% !important;
+  }
+
+  #chatbox.chatbox {
+    flex: 1 1 auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+  }
+
+  #welcomeContainer { min-height: 0 !important; }
+
+  #oddiComposerShell.input-area {
+    position: fixed !important;
+    left: max(12px, env(safe-area-inset-left, 0px)) !important;
+    right: max(12px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    bottom: max(8px, env(safe-area-inset-bottom, 0px)) !important;
+    height: auto !important;
+    min-height: 58px !important;
+    max-height: none !important;
+    padding: 0 !important;
+    grid-template-rows: auto minmax(58px, auto) !important;
+    align-content: end !important;
+    transition: none !important;
+    box-sizing: border-box !important;
+  }
+
+  body.oddi-mobile-keyboard-open #oddiComposerShell.input-area {
+    bottom: calc(var(--oddi-mobile-keyboard-inset, 0px) + 8px) !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) 44px 44px !important;
+    grid-template-rows: minmax(44px, auto) !important;
+    align-items: center !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    min-height: 58px !important;
+    padding: 6px !important;
+    gap: 4px !important;
+    box-sizing: border-box !important;
+    border-radius: 29px !important;
+  }
+
+  #oddiComposerShell.input-area.has-attachments > .oddi-composer-field {
+    min-height: 58px !important;
+    border: 0 !important;
+    border-radius: 16px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field #attach-btn,
+  #oddiComposerShell .oddi-composer-field #dictation-btn,
+  #oddiComposerShell .oddi-composer-field .action-button-slot,
+  #oddiComposerShell .oddi-composer-field .action-button-slot #voice-btn,
+  #oddiComposerShell .oddi-composer-field .action-button-slot #send-btn {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-width: 44px !important;
+    flex: 0 0 44px !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    touch-action: manipulation !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field #attach-btn { grid-column: 1; grid-row: 1; }
+  #oddiComposerShell .oddi-composer-field #userInput {
+    grid-column: 2;
+    grid-row: 1;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+    min-height: 42px !important;
+    margin: 0 !important;
+    padding: 8px 2px !important;
+    align-self: center !important;
+    box-sizing: border-box !important;
+    font-size: 16px !important;
+    line-height: 1.35 !important;
+    scroll-margin-block: 12px !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field #dictation-btn { grid-column: 3; grid-row: 1; }
+  #oddiComposerShell .oddi-composer-field .action-button-slot {
+    grid-column: 4;
+    grid-row: 1;
+    position: relative !important;
+    display: grid !important;
+    place-items: center !important;
+    overflow: visible !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field .action-button-slot #voice-btn,
+  #oddiComposerShell .oddi-composer-field .action-button-slot #send-btn {
+    grid-area: 1 / 1 !important;
+  }
+
+  #oddiComposerShell #attachmentToggle,
+  #oddiComposerShell #removeAttachment {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    touch-action: manipulation !important;
+  }
+
+  #oddiComposerShell button:focus-visible,
+  #oddiComposerShell textarea:focus-visible {
+    outline: 2px solid var(--oddi-accent, #20c76b) !important;
+    outline-offset: 2px !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field button:active { transform: scale(.94) !important; }
+
+  body.oddi-generation-active #oddiComposerShell.input-area:not(.has-attachments) {
+    height: auto !important;
+    min-height: 58px !important;
+    max-height: none !important;
+    grid-template-rows: minmax(58px, auto) !important;
+  }
+
+  body.oddi-generation-active #oddiComposerShell .oddi-composer-field { min-height: 58px !important; }
+}
+
+@media (max-width: 360px) and (pointer: coarse) {
+  #oddiComposerShell .oddi-composer-field { grid-template-columns: 44px minmax(0, 1fr) 44px !important; }
+  #oddiComposerShell .oddi-composer-field #dictation-btn { display: none !important; }
+  #oddiComposerShell .oddi-composer-field .action-button-slot { grid-column: 3 !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #oddiComposerShell.input-area,
+  #oddiComposerShell .oddi-composer-field,
+  #oddiComposerShell .oddi-composer-field button { transition: none !important; }
+}
+</style>
+<style id="oddi-mobile-home-design-tokens-v1">
+/* The existing theme controller toggles .dark-mode and .oddi-system-theme.
+   Home components consume these semantic tokens instead of per-element colors. */
+body {
+  --oddi-home-space-1: 4px;
+  --oddi-home-space-2: 8px;
+  --oddi-home-space-3: 12px;
+  --oddi-home-space-4: 16px;
+  --oddi-home-space-5: 20px;
+  --oddi-home-space-6: 24px;
+  --oddi-home-space-7: 32px;
+  --oddi-home-space-8: 40px;
+  --oddi-home-space-9: 48px;
+
+  --oddi-home-canvas: #f7f8fa;
+  --oddi-home-surface: #ffffff;
+  --oddi-home-surface-elevated: #ffffff;
+  --oddi-home-text-primary: #171d19;
+  --oddi-home-text-secondary: #525d56;
+  --oddi-home-text-muted: #6b756f;
+  --oddi-home-border: #e1e6e2;
+  --oddi-home-accent: #16864a;
+  --oddi-home-accent-soft: rgba(22, 134, 74, .09);
+  --oddi-home-accent-foreground: #ffffff;
+  --oddi-home-focus: rgba(22, 134, 74, .48);
+  --oddi-home-card-shadow: 0 6px 20px rgba(19, 42, 27, .055);
+  --oddi-home-float-shadow: 0 10px 30px rgba(19, 42, 27, .11);
+  --oddi-home-blue: #2868bd;
+  --oddi-home-purple: #8050b5;
+  --oddi-home-orange: #ae5d16;
+}
+
+body.dark-mode {
+  --oddi-home-canvas: #0b0d0f;
+  --oddi-home-surface: #121519;
+  --oddi-home-surface-elevated: #181c21;
+  --oddi-home-text-primary: #f3f4f6;
+  --oddi-home-text-secondary: #b2b8c1;
+  --oddi-home-text-muted: #9199a3;
+  --oddi-home-border: #2a3036;
+  --oddi-home-accent: #32d477;
+  --oddi-home-accent-soft: rgba(50, 212, 119, .12);
+  --oddi-home-accent-foreground: #07130b;
+  --oddi-home-focus: rgba(73, 223, 137, .58);
+  --oddi-home-card-shadow: 0 8px 24px rgba(0, 0, 0, .22);
+  --oddi-home-float-shadow: 0 12px 34px rgba(0, 0, 0, .34);
+  --oddi-home-blue: #80b6ff;
+  --oddi-home-purple: #c3a0f1;
+  --oddi-home-orange: #efad70;
+}
+
+@media (max-width: 768px) and (pointer: coarse) {
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header {
+    padding-right: max(var(--oddi-home-space-4), env(safe-area-inset-right, 0px)) !important;
+    padding-left: max(var(--oddi-home-space-4), env(safe-area-inset-left, 0px)) !important;
+    color: var(--oddi-home-text-primary) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header .logo-title {
+    color: var(--oddi-home-text-primary) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #themeBtn {
+    color: var(--oddi-home-text-primary) !important;
+    background: var(--oddi-home-surface-elevated) !important;
+    border: 1px solid var(--oddi-home-border) !important;
+    box-shadow: var(--oddi-home-card-shadow) !important;
+  }
+
+  #chatbox.chatbox:has(#welcomeContainer) {
+    padding-right: var(--oddi-home-space-4) !important;
+    padding-left: var(--oddi-home-space-4) !important;
+    background: var(--oddi-home-canvas) !important;
+    color: var(--oddi-home-text-primary) !important;
+  }
+
+  #chatbox.chatbox:has(#welcomeContainer) > #welcomeContainer {
+    padding: var(--oddi-home-space-3) 0 var(--oddi-home-space-4) !important;
+  }
+
+  #welcomeContainer > h2 {
+    margin-bottom: var(--oddi-home-space-2) !important;
+    color: var(--oddi-home-text-primary) !important;
+    font-size: clamp(28px, 7.5vw, 32px) !important;
+    font-weight: 700 !important;
+    line-height: 1.12 !important;
+    letter-spacing: -.04em !important;
+  }
+
+  #welcomeContainer > .oddi-home-subtitle {
+    color: var(--oddi-home-text-secondary) !important;
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+  }
+
+  #oddiSuggestionCards {
+    margin-top: var(--oddi-home-space-6) !important;
+    gap: var(--oddi-home-space-3) !important;
+  }
+
+  #oddiSuggestionCards .oddi-suggestion-card {
+    padding: var(--oddi-home-space-4) !important;
+    column-gap: var(--oddi-home-space-3) !important;
+    border-color: var(--oddi-home-border) !important;
+    background: var(--oddi-home-surface) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-card-shadow) !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card:hover,
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card:focus-visible {
+    border-color: var(--oddi-home-focus) !important;
+    background: color-mix(in srgb, var(--oddi-home-surface), var(--oddi-home-accent) 4%) !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy strong {
+    color: var(--oddi-home-text-primary) !important;
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 1.25 !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy small {
+    color: var(--oddi-home-text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 400 !important;
+    line-height: 1.35 !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .suggestion-blue { --oddi-home-card-accent: var(--oddi-home-blue); }
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .suggestion-purple { --oddi-home-card-accent: var(--oddi-home-purple); }
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .suggestion-green { --oddi-home-card-accent: var(--oddi-home-accent); }
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .suggestion-orange { --oddi-home-card-accent: var(--oddi-home-orange); }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon {
+    border-color: color-mix(in srgb, var(--oddi-home-card-accent) 24%, var(--oddi-home-border)) !important;
+    background: color-mix(in srgb, var(--oddi-home-card-accent) 12%, var(--oddi-home-surface)) !important;
+    color: var(--oddi-home-card-accent) !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection {
+    margin-top: calc(var(--oddi-home-space-6) + var(--oddi-home-space-1)) !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    margin-bottom: var(--oddi-home-space-2) !important;
+    color: var(--oddi-home-text-muted) !important;
+    font-size: 11px !important;
+    font-weight: 650 !important;
+    letter-spacing: .11em !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    padding: var(--oddi-home-space-3) var(--oddi-home-space-4) !important;
+    gap: var(--oddi-home-space-3) !important;
+    border-color: var(--oddi-home-border) !important;
+    background: var(--oddi-home-surface-elevated) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-card-shadow) !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-last-message-label,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-last-message-meta { color: var(--oddi-home-text-muted) !important; }
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-last-message-title { color: var(--oddi-home-text-primary) !important; font-size: 15px !important; font-weight: 600 !important; }
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-last-message-preview { color: var(--oddi-home-text-secondary) !important; }
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-last-message-icon,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection .oddi-last-message-arrow {
+    background: var(--oddi-home-accent-soft) !important;
+    color: var(--oddi-home-accent) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell.input-area:not(.has-attachments) {
+    left: max(var(--oddi-home-space-4), env(safe-area-inset-left, 0px)) !important;
+    right: max(var(--oddi-home-space-4), env(safe-area-inset-right, 0px)) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell:not(.has-attachments) .oddi-composer-field {
+    border-color: var(--oddi-home-border) !important;
+    background: var(--oddi-home-surface-elevated) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-float-shadow) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field:focus-within {
+    border-color: var(--oddi-home-focus) !important;
+    box-shadow: 0 0 0 3px var(--oddi-home-accent-soft), var(--oddi-home-float-shadow) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field #userInput,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field #attach-btn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field #dictation-btn { color: var(--oddi-home-text-primary) !important; }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field #userInput::placeholder { color: var(--oddi-home-text-muted) !important; opacity: 1 !important; }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field .voice-btn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field .send-btn {
+    border: 0 !important;
+    background: var(--oddi-home-accent) !important;
+    color: var(--oddi-home-accent-foreground) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell button:focus-visible,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell textarea:focus-visible,
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card:focus-visible,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard:focus-visible {
+    outline: 2px solid var(--oddi-home-focus) !important;
+    outline-offset: 2px !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiSayHello {
+    border-color: var(--oddi-home-focus) !important;
+    background: var(--oddi-home-accent-soft) !important;
+    color: var(--oddi-home-accent) !important;
+  }
+
+  @media (max-width: 379px) {
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards { gap: var(--oddi-home-space-2) !important; }
+  }
+
+  @media (max-height: 680px) {
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards { margin-top: var(--oddi-home-space-4) !important; }
+    body:has(#chatbox #welcomeContainer) #oddiRecentSection { margin-top: var(--oddi-home-space-4) !important; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field,
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard { transition: none !important; }
+}
+</style>
+<style id="oddi-mobile-home-set4-polish">
+@media (max-width: 768px) and (pointer: coarse) {
+  body:has(#chatbox #welcomeContainer) #chatbox.chatbox { color-scheme: light; }
+  body.dark-mode:has(#chatbox #welcomeContainer) #chatbox.chatbox { color-scheme: dark; }
+
+  /* Keep one column where a narrow phone would make two cards cramped. */
+  @media (max-width: 379px) {
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards {
+      grid-template-columns: minmax(0, 1fr) !important;
+      gap: var(--oddi-home-space-2) !important;
+    }
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+      min-height: 76px !important;
+      padding: var(--oddi-home-space-3) !important;
+    }
+  }
+
+  /* At 390px, tighten only card internals so titles remain readable in 2 columns. */
+  @media (min-width: 380px) and (max-width: 419px) {
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: var(--oddi-home-space-2) !important;
+    }
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+      min-height: 82px !important;
+      padding: var(--oddi-home-space-3) !important;
+      grid-template-columns: 30px minmax(0, 1fr) !important;
+      column-gap: var(--oddi-home-space-2) !important;
+    }
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon {
+      width: 30px !important;
+      min-width: 30px !important;
+      height: 30px !important;
+    }
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy strong {
+      font-size: 14px !important;
+    }
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy small {
+      font-size: 11px !important;
+    }
+  }
+
+  /* Wider phones keep the same two-column layout with more breathing room. */
+  @media (min-width: 420px) {
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards {
+      width: min(100%, 460px) !important;
+      gap: var(--oddi-home-space-3) !important;
+    }
+    body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+      min-height: 86px !important;
+      grid-template-columns: 32px minmax(0, 1fr) !important;
+      column-gap: var(--oddi-home-space-3) !important;
+    }
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #themeBtn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #headerMoreBtn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field button {
+    transition: transform 140ms ease, background-color 140ms ease, border-color 140ms ease, box-shadow 140ms ease !important;
+  }
+
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card:active,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard:active {
+    transform: scale(.985) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #themeBtn:active,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #headerMoreBtn:active,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher:active,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field button:active {
+    transform: scale(.94) !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiSayHello {
+    min-height: 44px !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #themeBtn:focus-visible,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #headerMoreBtn:focus-visible,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher:focus-visible,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell button:focus-visible,
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card:focus-visible,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard:focus-visible,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiSayHello:focus-visible {
+    outline: 2px solid var(--oddi-home-focus) !important;
+    outline-offset: 3px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(#chatbox #welcomeContainer) #chatbox.chatbox { scroll-behavior: auto !important; }
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #themeBtn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #headerMoreBtn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field button,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiSayHello {
+    transition: none !important;
+    animation: none !important;
+  }
+  body:has(#chatbox #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card:active,
+  body:has(#chatbox #welcomeContainer) #oddiRecentSection #oddiLastMessageCard:active,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #themeBtn:active,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls #headerMoreBtn:active,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher:active,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field button:active {
+    transform: none !important;
+  }
+}
+</style>
+<style id="oddi-desktop-home-layout-set1">
+/* Desktop Set 1: let the home adapt to the actual main-pane width, including
+   when the existing chat sidebar is expanded. */
+@media (min-width: 769px) {
+  body:has(#chatbox > #welcomeContainer) .app {
+    min-width: 0 !important;
+    max-width: 100vw !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #chatbox.chatbox:has(> #welcomeContainer) {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+    padding-top: clamp(var(--oddi-home-space-3), 3vh, var(--oddi-home-space-8)) !important;
+    padding-right: clamp(var(--oddi-home-space-5), 3vw, var(--oddi-home-space-8)) !important;
+    padding-left: clamp(var(--oddi-home-space-5), 3vw, var(--oddi-home-space-8)) !important;
+    box-sizing: border-box !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #chatbox.chatbox > #welcomeContainer {
+    width: min(100%, 940px) !important;
+    max-width: 940px !important;
+    min-width: 0 !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+    padding: var(--oddi-home-space-3) 0 var(--oddi-home-space-6) !important;
+    box-sizing: border-box !important;
+  }
+
+  body.oddi-fullscreen-home:has(#chatbox > #welcomeContainer) #chatbox.chatbox > #welcomeContainer {
+    width: min(100%, 1080px) !important;
+    max-width: 1080px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 {
+    width: min(100%, 30ch) !important;
+    max-width: 30ch !important;
+    margin: 0 auto var(--oddi-home-space-3) !important;
+    font-size: clamp(34px, 2.8vw, 46px) !important;
+    line-height: 1.08 !important;
+    text-wrap: balance !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    width: min(100%, 68ch) !important;
+    max-width: 68ch !important;
+    margin: 0 auto !important;
+    padding: var(--oddi-home-space-3) var(--oddi-home-space-5) !important;
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+    text-wrap: balance !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 390px), 1fr)) !important;
+    align-items: stretch !important;
+    width: min(100%, 980px) !important;
+    max-width: 980px !important;
+    margin: var(--oddi-home-space-6) auto 0 !important;
+    gap: var(--oddi-home-space-4) !important;
+    min-width: 0 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+    min-width: 0 !important;
+    min-height: 82px !important;
+    padding: var(--oddi-home-space-4) !important;
+    grid-template-columns: 36px minmax(0, 1fr) !important;
+    column-gap: var(--oddi-home-space-3) !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon {
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    border-radius: 11px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy {
+    min-width: 0 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy strong {
+    font-size: 16px !important;
+    line-height: 1.25 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy small {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection {
+    width: min(100%, 980px) !important;
+    max-width: 980px !important;
+    margin: var(--oddi-home-space-7) auto 0 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    width: min(100%, 560px) !important;
+    min-width: 0 !important;
+    min-height: 76px !important;
+    margin: 0 !important;
+    padding: var(--oddi-home-space-4) var(--oddi-home-space-5) !important;
+    box-sizing: border-box !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-copy {
+    min-width: 0 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-title,
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-preview {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+  }
+}
+</style>
+<style id="oddi-desktop-content-set2">
+/* Desktop Set 2: readable prose, grouped home content, and semantic surfaces.
+   Theme state continues to come from the existing Light/Dark/System controller. */
+@media (min-width: 769px) {
+  body { color-scheme: light; }
+  body.dark-mode { color-scheme: dark; }
+
+  /* The current System palette is managed by applyOddiTheme() and follows
+     prefers-color-scheme changes. Map its values onto the home token roles. */
+  body.oddi-system-theme:has(#chatbox > #welcomeContainer) {
+    --oddi-home-canvas: var(--os-canvas);
+    --oddi-home-surface: var(--os-surface);
+    --oddi-home-surface-elevated: color-mix(in srgb, var(--os-surface) 76%, var(--os-sidebar));
+    --oddi-home-text-primary: var(--os-text);
+    --oddi-home-text-secondary: var(--os-muted);
+    --oddi-home-text-muted: var(--os-muted);
+    --oddi-home-border: var(--os-border);
+    --oddi-home-accent: var(--os-accent);
+    --oddi-home-accent-soft: color-mix(in srgb, var(--os-accent) 12%, transparent);
+    --oddi-home-accent-foreground: var(--os-canvas);
+    --oddi-home-focus: color-mix(in srgb, var(--os-accent) 58%, transparent);
+    --oddi-home-card-shadow: 0 6px 20px var(--os-shadow);
+    --oddi-home-float-shadow: 0 10px 30px var(--os-shadow);
+    --oddi-home-blue: var(--os-accent);
+    --oddi-home-purple: var(--os-accent);
+    --oddi-home-orange: var(--os-accent);
+  }
+
+  /* Keep the first-screen actions and recent item in one centered content
+     group, using the semantic palette shared with the mobile home. */
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 {
+    color: var(--oddi-home-text-primary) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    color: var(--oddi-home-text-secondary) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+    background: var(--oddi-home-surface) !important;
+    border-color: var(--oddi-home-border) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-card-shadow) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card:hover,
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card:focus-visible {
+    border-color: var(--oddi-home-focus) !important;
+    background: color-mix(in srgb, var(--oddi-home-surface), var(--oddi-home-accent) 5%) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy strong {
+    color: var(--oddi-home-text-primary) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy small {
+    color: var(--oddi-home-text-secondary) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon {
+    border-color: color-mix(in srgb, var(--oddi-home-accent) 24%, var(--oddi-home-border)) !important;
+    background: color-mix(in srgb, var(--oddi-home-accent) 12%, var(--oddi-home-surface)) !important;
+    color: var(--oddi-home-accent) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    color: var(--oddi-home-text-muted) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    background: var(--oddi-home-surface-elevated) !important;
+    border-color: var(--oddi-home-border) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-card-shadow) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-title {
+    color: var(--oddi-home-text-primary) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-preview,
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-meta {
+    color: var(--oddi-home-text-secondary) !important;
+  }
+
+  /* Center the conversation in the available pane and give prose a readable
+     line length. Rich code and data tables retain their existing local handling. */
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) {
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    padding-right: clamp(24px, 4vw, 64px) !important;
+    padding-left: clamp(24px, 4vw, 64px) !important;
+    box-sizing: border-box !important;
+  }
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message {
+    width: min(100%, 1040px) !important;
+    max-width: min(100%, 1040px) !important;
+    box-sizing: border-box !important;
+    margin-right: auto !important;
+    margin-left: auto !important;
+  }
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .ai-content {
+    width: min(100%, 80ch) !important;
+    max-width: 80ch !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    overflow-wrap: anywhere !important;
+  }
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .ai-content :is(
+    h1, h2, h3, h4, h5, h6, p, ul, ol, blockquote
+  ) {
+    max-width: 72ch !important;
+  }
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .ai-content :is(
+    .ai-code-wrap, .ai-table-wrap, table, img, video
+  ) {
+    max-width: 100% !important;
+  }
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .ai-content :is(th, td) {
+    overflow-wrap: anywhere !important;
+  }
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main {
+    max-width: min(820px, calc(100% - 8px)) !important;
+    box-sizing: border-box !important;
+  }
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main > .user-text {
+    max-width: min(72ch, 100%) !important;
+    overflow-wrap: anywhere !important;
+  }
+}
+</style>
+<style id="oddi-desktop-accessibility-set3">
+/* Desktop Set 3: comfortable targets, visible keyboard focus, and state clarity. */
+@media (min-width: 769px) {
+  #headerMoreBtn, #themeBtn, #oddiInChatFindButton, #oddiChatLatestButton,
+  #headerMoreClose, .utility-close, .header-more-close, .oddi-share-close,
+  #attachmentToggle, #removeAttachment,
+  #oddiInChatFindPanel .oddi-find-head button,
+  #oddiInChatFindPanel .oddi-find-nav button,
+  #oddiAttachmentPreviewModal [data-file-preview-close] {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+
+  #sidebar .new-chat-btn,
+  #sidebar .sidebar-nav-btn,
+  #sidebar .sidebar-bottom-btn,
+  #sidebar .sidebar-section-toggle,
+  #sidebar .history-item {
+    min-height: 44px !important;
+  }
+  #sidebar .history-actions button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  #chatSearchPanel .chat-search-input,
+  #oddiInChatQuery {
+    min-height: 44px !important;
+    box-sizing: border-box !important;
+  }
+  #chatbox.chatbox > .user-message .user-actions-row button,
+  .oddi-followups button {
+    min-height: 44px !important;
+  }
+  #chatbox.chatbox > .user-message .user-actions-row button {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+  }
+
+  :where(button, a, input, textarea, select, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 3px solid var(--oddi-home-focus, #20c76b) !important;
+    outline-offset: 3px !important;
+    z-index: 2;
+  }
+
+  #chatbox .oddi-history-skeleton {
+    width: min(760px, calc(100% - 48px)) !important;
+    gap: 20px !important;
+    margin: clamp(32px, 9vh, 90px) auto 24px !important;
+  }
+  #chatbox .oddi-history-skeleton-bubble {
+    max-width: 100% !important;
+    border-color: var(--oddi-home-border) !important;
+    background: linear-gradient(105deg,
+      color-mix(in srgb, var(--oddi-home-surface) 94%, var(--oddi-home-text-primary) 6%) 20%,
+      color-mix(in srgb, var(--oddi-home-surface) 86%, var(--oddi-home-text-primary) 14%) 38%,
+      color-mix(in srgb, var(--oddi-home-surface) 94%, var(--oddi-home-text-primary) 6%) 56%) !important;
+    background-size: 220% 100% !important;
+    animation: oddiDesktopHistoryShimmer 1.35s ease-in-out infinite !important;
+  }
+  @keyframes oddiDesktopHistoryShimmer {
+    to { background-position: -220% 0; }
+  }
+  #chatbox .oddi-history-loading[role="alert"] {
+    width: min(720px, calc(100% - 48px)) !important;
+    min-height: 64px !important;
+    margin: 32px auto !important;
+    padding: 18px 22px !important;
+    box-sizing: border-box !important;
+    border: 1px solid var(--oddi-home-border) !important;
+    border-inline-start: 4px solid var(--oddi-home-accent) !important;
+    border-radius: 14px !important;
+    background: var(--oddi-home-surface) !important;
+    color: var(--oddi-home-text-primary) !important;
+    line-height: 1.55 !important;
+  }
+  body.oddi-system-theme #chatbox .oddi-history-skeleton-bubble {
+    border-color: var(--os-border) !important;
+    background: linear-gradient(105deg,
+      color-mix(in srgb, var(--os-surface) 94%, var(--os-text) 6%) 20%,
+      color-mix(in srgb, var(--os-surface) 86%, var(--os-text) 14%) 38%,
+      color-mix(in srgb, var(--os-surface) 94%, var(--os-text) 6%) 56%) !important;
+    background-size: 220% 100% !important;
+  }
+  body.oddi-system-theme #chatbox .oddi-history-loading[role="alert"] {
+    border-color: var(--os-border) !important;
+    border-inline-start-color: var(--os-accent) !important;
+    background: var(--os-surface) !important;
+    color: var(--os-text) !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #chatbox .oddi-history-skeleton-bubble { animation: none !important; }
+}
+</style>
+<style id="oddi-desktop-polish-recovery-set4">
+/* Desktop Set 4: restrained feedback, and recoverable connection failures. */
+.oddi-network-status[hidden] { display: none !important; }
+.oddi-network-status {
+  position: fixed !important;
+  top: max(72px, calc(env(safe-area-inset-top, 0px) + 64px)) !important;
+  left: 50% !important;
+  z-index: 2147482900 !important;
+  width: min(660px, calc(100vw - 32px)) !important;
+  padding: 13px 18px !important;
+  box-sizing: border-box !important;
+  transform: translateX(-50%) !important;
+  border: 1px solid var(--os-border, var(--oddi-home-border, #dedede)) !important;
+  border-inline-start: 4px solid #c25a23 !important;
+  border-radius: 14px !important;
+  background: var(--os-surface, var(--oddi-home-surface, #fff)) !important;
+  color: var(--os-text, var(--oddi-home-text-primary, #222)) !important;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .18) !important;
+  font-size: 13px !important;
+  line-height: 1.45 !important;
+  text-align: center !important;
+}
+.oddi-network-status.is-restored { border-inline-start-color: #16864a !important; }
+
+@media (min-width: 769px) {
+  #oddiSuggestionCards .oddi-suggestion-card,
+  #oddiRecentSection #oddiLastMessageCard,
+  .oddi-followups button,
+  #sidebar .new-chat-btn,
+  #headerMoreBtn, #themeBtn, #oddiInChatFindButton,
+  #send-btn, .bot-actions.retry-actions .regenerate-btn {
+    transition: transform .15s ease, box-shadow .15s ease, background-color .15s ease, border-color .15s ease !important;
+  }
+  #oddiSuggestionCards .oddi-suggestion-card:active,
+  #oddiRecentSection #oddiLastMessageCard:active,
+  .oddi-followups button:active,
+  #sidebar .new-chat-btn:active,
+  #headerMoreBtn:active, #themeBtn:active, #oddiInChatFindButton:active,
+  #send-btn:active, .bot-actions.retry-actions .regenerate-btn:active {
+    transform: scale(.985) !important;
+  }
+  #sidebar .history-item { transition: background-color .14s ease, border-color .14s ease !important; }
+  .bot-actions.retry-actions .regenerate-btn {
+    min-height: 44px !important;
+    padding: 0 15px !important;
+    border-radius: 10px !important;
+  }
+  .bot-actions.retry-actions .regenerate-btn:hover:not(:disabled) {
+    box-shadow: 0 5px 16px rgba(22, 134, 74, .18) !important;
+  }
+}
+@media (max-width: 768px) {
+  .oddi-network-status { top: max(62px, calc(env(safe-area-inset-top, 0px) + 54px)) !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #oddiSuggestionCards .oddi-suggestion-card,
+  #oddiRecentSection #oddiLastMessageCard,
+  .oddi-followups button,
+  #sidebar .new-chat-btn,
+  #headerMoreBtn, #themeBtn, #oddiInChatFindButton,
+  #send-btn, .bot-actions.retry-actions .regenerate-btn,
+  #sidebar .history-item {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+</style>
+<style id="oddi-windowed-desktop-layout-repair-set1">
+/* Windowed desktop only: keep the home stack top-aligned while the composer
+   and its home CTA float over the same continuous chat surface. */
+@media (min-width: 769px) {
+  body:not(.oddi-fullscreen-home) .app {
+    min-height: 0 !important;
+    min-width: 0 !important;
+  }
+
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    padding-bottom: 96px !important;
+    box-sizing: border-box !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    padding-top: clamp(12px, 2.4vh, 24px) !important;
+    padding-bottom: var(--oddi-home-safe-bottom, 148px) !important;
+    scroll-padding-top: 16px !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox > #welcomeContainer {
+    flex: 0 0 auto !important;
+    margin: clamp(12px, 2.4vh, 24px) auto 0 !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSayHello[hidden] {
+    display: none !important;
+  }
+
+  body:not(.oddi-fullscreen-home) .app > #oddiComposerShell.input-area {
+    position: fixed !important;
+    top: auto !important;
+    bottom: max(14px, env(safe-area-inset-bottom, 0px)) !important;
+    left: var(--oddi-composer-left, max(24px, calc((100vw - 920px) / 2))) !important;
+    right: auto !important;
+    width: var(--oddi-composer-width, min(920px, calc(100vw - 64px))) !important;
+    max-width: var(--oddi-composer-width, min(920px, calc(100vw - 64px))) !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 610 !important;
+  }
+}
+</style>
+<style id="oddi-windowed-desktop-layout-repair-set2">
+/* Windowed desktop only: one predictable scroll region, consistent widths,
+   and responsive spacing/card sizing for narrow or short browser windows. */
+@media (min-width: 769px) {
+  body:not(.oddi-fullscreen-home) .app {
+    overflow: hidden !important;
+  }
+
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox {
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain !important;
+    scrollbar-gutter: stable !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    padding-top: clamp(12px, 2.2vh, 20px) !important;
+    padding-bottom: var(--oddi-home-safe-bottom, 148px) !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox > #welcomeContainer {
+    width: min(100%, 1040px) !important;
+    max-width: 1040px !important;
+    padding-bottom: 18px !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #welcomeContainer > h2 {
+    max-width: min(100%, 30ch) !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    max-width: min(100%, 68ch) !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSuggestionCards {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)) !important;
+    width: min(100%, 1040px) !important;
+    max-width: 1040px !important;
+    margin-top: clamp(16px, 2.5vh, 24px) !important;
+    gap: clamp(8px, 1.2vh, 12px) !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    align-self: stretch !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy {
+    min-width: 0 !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy strong,
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy small {
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiRecentSection {
+    width: min(100%, 1040px) !important;
+    max-width: 1040px !important;
+    margin-top: clamp(20px, 3vh, 28px) !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    width: min(100%, 640px) !important;
+    max-width: 100% !important;
+    height: auto !important;
+    align-items: center !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-copy {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-title,
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-preview,
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-meta {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+}
+
+@media (min-width: 769px) and (max-height: 680px) {
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    padding-top: 8px !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox > #welcomeContainer {
+    margin-top: 8px !important;
+    padding-bottom: 12px !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSuggestionCards {
+    margin-top: 12px !important;
+    gap: 7px !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+    min-height: 56px !important;
+    padding-block: 8px !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiRecentSection {
+    margin-top: 16px !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    min-height: 52px !important;
+    margin-top: 8px !important;
+    padding-block: 8px !important;
+  }
+}
+</style>
+<style id="oddi-windowed-desktop-layout-repair-set3">
+/* Keep keyboard focus comfortably inside the content viewport, while keeping
+   the header as a dedicated non-scrolling row in ordinary laptop windows. */
+@media (min-width: 769px) {
+  body:not(.oddi-fullscreen-home) .app > .header {
+    flex: 0 0 68px !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox {
+    scroll-padding-block: 18px !important;
+  }
+
+  body:not(.oddi-fullscreen-home) #chatbox :where(button, a, [tabindex]:not([tabindex="-1"])):focus-visible {
+    scroll-margin-block: 12px !important;
+  }
+
+  body:not(.oddi-fullscreen-home) .app > .header :where(button, a, [tabindex]:not([tabindex="-1"])):focus-visible {
+    scroll-margin-block: 8px !important;
+  }
+
+  /* Refined explicit Dark palette. System mode keeps using its existing OS tokens. */
+  body.dark-mode:not(.oddi-system-theme) {
+    --oddi-home-canvas: #101211;
+    --oddi-home-surface: #171a18;
+    --oddi-home-surface-elevated: #1d211f;
+    --oddi-home-text-primary: #f1f3f1;
+    --oddi-home-text-secondary: #b2bab5;
+    --oddi-home-text-muted: #929b95;
+    --oddi-home-border: #303733;
+    --oddi-home-card-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+    --oddi-home-float-shadow: 0 10px 28px rgba(0, 0, 0, .3);
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .app {
+    background: var(--oddi-home-canvas) !important;
+    color: var(--oddi-home-text-primary) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .app > .header {
+    background: var(--oddi-home-surface) !important;
+    border-bottom: 1px solid var(--oddi-home-border) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .025) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .app > .header .logo-title {
+    color: var(--oddi-home-text-primary) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .app > .header .logo-subtitle {
+    color: var(--oddi-home-text-secondary) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) #chatbox.chatbox {
+    color: var(--oddi-home-text-primary) !important;
+    background-color: var(--oddi-home-canvas) !important;
+    background-image:
+      linear-gradient(color-mix(in srgb, var(--oddi-home-canvas) 96%, transparent),
+                      color-mix(in srgb, var(--oddi-home-canvas) 96%, transparent)),
+      url("/static/Background-dark.png") !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+    background: var(--oddi-home-surface) !important;
+    border-color: var(--oddi-home-border) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-card-shadow) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    width: min(100%, 640px) !important;
+    margin: 0 0 10px !important;
+    padding: 0 0 8px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--oddi-home-border) !important;
+    background: transparent !important;
+    color: var(--oddi-home-text-muted) !important;
+    box-sizing: border-box !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme).oddi-fullscreen-home:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    width: min(100%, 760px) !important;
+    margin: 0 auto 10px !important;
+    text-align: center !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    background: var(--oddi-home-surface-elevated) !important;
+    border-color: var(--oddi-home-border) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-card-shadow) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .oddi-composer-field {
+    background: var(--oddi-home-surface-elevated) !important;
+    border-color: var(--oddi-home-border) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-float-shadow) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .oddi-composer-field:focus-within {
+    border-color: var(--oddi-home-focus) !important;
+    box-shadow: 0 0 0 3px var(--oddi-home-accent-soft), var(--oddi-home-float-shadow) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .oddi-composer-field #userInput {
+    color: var(--oddi-home-text-primary) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .oddi-composer-field #userInput::placeholder {
+    color: var(--oddi-home-text-muted) !important;
+    opacity: 1 !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) .oddi-composer-field > #attach-btn,
+  body.dark-mode:not(.oddi-system-theme) .oddi-composer-field > #dictation-btn {
+    color: var(--oddi-home-text-secondary) !important;
+  }
+}
+</style>
+<style id="oddi-windowed-desktop-layout-repair-set4">
+/* Desktop Set 4: accessible contrast, calm brand accents, and theme-safe focus. */
+@media (min-width: 769px) {
+  body.dark-mode:not(.oddi-system-theme) {
+    --oddi-home-accent: #42c77a;
+    --oddi-home-accent-soft: rgba(66, 199, 122, .13);
+    --oddi-home-accent-foreground: #08150c;
+    --oddi-home-focus: #42c77a;
+    --oddi-home-text-primary: #f1f3f1;
+    --oddi-home-text-secondary: #b2bab5;
+    --oddi-home-text-muted: #9ba49e;
+    --oddi-home-border: #303733;
+  }
+
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #welcomeContainer > h2,
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy strong,
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-title {
+    color: var(--oddi-home-text-primary) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle,
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy small,
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-preview {
+    color: var(--oddi-home-text-secondary) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading,
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-label,
+  body.dark-mode:not(.oddi-system-theme):has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-meta,
+  body.dark-mode:not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field #userInput::placeholder {
+    color: var(--oddi-home-text-muted) !important;
+    opacity: 1 !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) #oddiSayHello {
+    border-color: color-mix(in srgb, var(--oddi-home-accent) 48%, var(--oddi-home-border)) !important;
+    background: var(--oddi-home-accent-soft) !important;
+    color: var(--oddi-home-accent) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field > #attach-btn,
+  body.dark-mode:not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field > #dictation-btn,
+  body.dark-mode:not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field > .action-button-slot {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field .action-button-slot > #voice-btn,
+  body.dark-mode:not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field .action-button-slot > #send-btn:not(.stop-active) {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    border: 1px solid color-mix(in srgb, var(--oddi-home-accent) 78%, white) !important;
+    background: var(--oddi-home-accent) !important;
+    color: var(--oddi-home-accent-foreground) !important;
+    box-shadow: none !important;
+    animation: none !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field .action-button-slot > #voice-btn:hover,
+  body.dark-mode:not(.oddi-system-theme) #oddiComposerShell .oddi-composer-field .action-button-slot > #send-btn:not(.stop-active):hover {
+    background: color-mix(in srgb, var(--oddi-home-accent) 88%, white) !important;
+  }
+
+  body.dark-mode:not(.oddi-system-theme) :where(button, a, input, textarea, select, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 3px solid var(--oddi-home-focus) !important;
+    outline-offset: 3px !important;
+  }
+}
+</style>
+
+<style id="oddi-final-desktop-window-flow-and-black-theme">
+/* Normal desktop: float the pill composer above the shared chat canvas, like
+   the full-screen layout, and reserve the actual overlay height in the scroll pane. */
+@media (min-width: 769px) {
+  body:not(.oddi-fullscreen-home) .app {
+    min-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox {
+    flex: 1 1 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    padding-bottom: var(--oddi-home-safe-bottom, 148px) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior-y: contain !important;
+    scroll-padding-block: 16px !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    padding-top: clamp(12px, 1.8vh, 20px) !important;
+    padding-right: clamp(16px, 2.5vw, 32px) !important;
+    padding-left: clamp(16px, 2.5vw, 32px) !important;
+    padding-bottom: var(--oddi-home-safe-bottom, 170px) !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox > #welcomeContainer {
+    flex: 0 0 auto !important;
+    width: min(100%, 1040px) !important;
+    max-width: 1040px !important;
+    margin: 0 auto !important;
+    padding-bottom: 0 !important;
+  }
+
+  /* Keep the secondary greeting in normal flow after Recent Work. The composer
+     remains fixed, with its clearance reserved by the scroll area. */
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSayHello {
+    position: static !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    align-self: center !important;
+    min-height: 40px !important;
+    margin: 14px auto 6px !important;
+    transform: none !important;
+  }
+
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSayHello:hover {
+    transform: translateY(-1px) !important;
+  }
+
+  body:not(.oddi-fullscreen-home) .app > #oddiComposerShell.input-area {
+    position: fixed !important;
+    inset: auto !important;
+    top: auto !important;
+    right: auto !important;
+    bottom: max(14px, env(safe-area-inset-bottom, 0px)) !important;
+    left: var(--oddi-composer-left, max(24px, calc((100vw - 920px) / 2))) !important;
+    width: var(--oddi-composer-width, min(920px, calc(100% - 48px))) !important;
+    max-width: var(--oddi-composer-width, min(920px, calc(100% - 48px))) !important;
+    margin: 0 !important;
+    transform: none !important;
+    z-index: 610 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body:not(.oddi-fullscreen-home) .app > #oddiComposerShell.input-area::before,
+  body:not(.oddi-fullscreen-home) .app > #oddiComposerShell.input-area::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  /* Explicitly separate the card's title and supporting copy at desktop sizes. */
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-card {
+    align-items: center !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy > strong,
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy > small {
+    display: block !important;
+    width: auto !important;
+    max-width: 100% !important;
+    text-align: left !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection {
+    width: min(100%, 1040px) !important;
+    max-width: 1040px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 0 10px !important;
+    padding: 0 0 8px !important;
+    text-align: left !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    width: min(100%, 560px) !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    min-height: 68px !important;
+    margin: 0 auto !important;
+    align-items: center !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-copy {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-title,
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-preview {
+    display: -webkit-box !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    overflow-wrap: anywhere !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 1 !important;
+    white-space: normal !important;
+  }
+
+  /* Keep the earlier centered Recent Work treatment in fullscreen. */
+  body.oddi-fullscreen-home:has(#chatbox > #welcomeContainer) #oddiRecentSection {
+    width: min(100%, 980px) !important;
+    margin-inline: auto !important;
+  }
+
+  body.oddi-fullscreen-home:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    width: min(100%, 760px) !important;
+    margin: 0 auto 10px !important;
+    text-align: center !important;
+  }
+
+  body.oddi-fullscreen-home:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    width: min(100%, 560px) !important;
+    margin-inline: auto !important;
+  }
+
+  /* Laptop Dark/System-Dark use a neutral black palette; Light is untouched. */
+  body.dark-mode:not(.oddi-system-theme) {
+    --oddi-home-canvas: #080909;
+    --oddi-home-surface: #111313;
+    --oddi-home-surface-elevated: #171918;
+    --oddi-home-border: #292d2b;
+    --oddi-home-text-primary: #f2f4f3;
+    --oddi-home-text-secondary: #a6aeaa;
+    --oddi-home-text-muted: #858d88;
+    --oddi-home-accent: #37c986;
+    --oddi-home-accent-soft: rgba(55, 201, 134, .12);
+    --oddi-home-accent-foreground: #05120b;
+    --oddi-home-focus: #37c986;
+    --oddi-home-card-shadow: 0 6px 18px rgba(0, 0, 0, .24);
+    --oddi-home-float-shadow: 0 12px 30px rgba(0, 0, 0, .38);
+  }
+
+  body.oddi-system-theme.dark-mode {
+    --os-canvas: #080909;
+    --os-sidebar: #0c0e0d;
+    --os-surface: #111313;
+    --os-text: #f2f4f3;
+    --os-muted: #a6aeaa;
+    --os-accent: #37c986;
+    --os-border: #292d2b;
+    --os-shadow: rgba(0, 0, 0, .38);
+  }
+
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) {
+    --oddi-home-canvas: var(--os-canvas);
+    --oddi-home-surface: var(--os-surface);
+    --oddi-home-surface-elevated: #171918;
+    --oddi-home-border: var(--os-border);
+    --oddi-home-text-primary: var(--os-text);
+    --oddi-home-text-secondary: var(--os-muted);
+    --oddi-home-text-muted: #858d88;
+    --oddi-home-accent: var(--os-accent);
+    --oddi-home-accent-soft: rgba(55, 201, 134, .12);
+    --oddi-home-accent-foreground: #05120b;
+    --oddi-home-focus: #37c986;
+    --oddi-home-card-shadow: 0 6px 18px rgba(0, 0, 0, .24);
+    --oddi-home-float-shadow: 0 12px 30px rgba(0, 0, 0, .38);
+  }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer) .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) .oddi-suggestion-icon {
+    border-color: var(--oddi-home-border) !important;
+    background: var(--oddi-home-surface-elevated) !important;
+    color: var(--oddi-home-text-secondary) !important;
+  }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    border: 0 !important;
+    border-bottom: 1px solid var(--oddi-home-border) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: var(--oddi-home-text-muted) !important;
+  }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    background: var(--oddi-home-surface-elevated) !important;
+    border-color: var(--oddi-home-border) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-card-shadow) !important;
+  }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-arrow,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-last-message-arrow {
+    background: color-mix(in srgb, var(--oddi-home-accent) 10%, var(--oddi-home-surface)) !important;
+    color: var(--oddi-home-accent) !important;
+  }
+
+  body.dark-mode #oddiSayHello,
+  body.oddi-system-theme.dark-mode #oddiSayHello {
+    border-color: color-mix(in srgb, var(--oddi-home-accent) 48%, var(--oddi-home-border)) !important;
+    background: var(--oddi-home-accent-soft) !important;
+    color: var(--oddi-home-accent) !important;
+  }
+
+  body.dark-mode .oddi-composer-field,
+  body.oddi-system-theme.dark-mode .oddi-composer-field {
+    background: var(--oddi-home-surface-elevated) !important;
+    border-color: var(--oddi-home-border) !important;
+    color: var(--oddi-home-text-primary) !important;
+    box-shadow: var(--oddi-home-float-shadow) !important;
+  }
+
+  body.dark-mode .oddi-composer-field #userInput,
+  body.oddi-system-theme.dark-mode .oddi-composer-field #userInput {
+    color: var(--oddi-home-text-primary) !important;
+  }
+
+  body.dark-mode .oddi-composer-field #userInput::placeholder,
+  body.oddi-system-theme.dark-mode .oddi-composer-field #userInput::placeholder {
+    color: var(--oddi-home-text-muted) !important;
+    opacity: 1 !important;
+  }
+
+  body.dark-mode #oddiComposerShell .action-button-slot > #voice-btn,
+  body.dark-mode #oddiComposerShell .action-button-slot > #send-btn:not(.stop-active),
+  body.oddi-system-theme.dark-mode #oddiComposerShell .action-button-slot > #voice-btn,
+  body.oddi-system-theme.dark-mode #oddiComposerShell .action-button-slot > #send-btn:not(.stop-active) {
+    border-color: var(--oddi-home-accent) !important;
+    background: var(--oddi-home-accent) !important;
+    color: var(--oddi-home-accent-foreground) !important;
+    box-shadow: none !important;
+  }
+
+  /* Let the dark header fade into the canvas: no solid band, divider, or shadow.
+     Its controls and the existing soft fade remain. Light mode is untouched. */
+  body.dark-mode:not(.oddi-system-theme) .app > .header,
+  body.oddi-system-theme.dark-mode .app > .header {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: 0 !important;
+    border-bottom-color: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* The shared header fade is a fixed, high-z overlay and was washing out the
+     first home-screen line. Header controls stay visible above the page. */
+  body:has(#chatbox > #welcomeContainer) .app > .header::before,
+  body:has(#chatbox > #welcomeContainer) .app > .header::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  body.dark-mode :where(button, a, input, textarea, select, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible,
+  body.oddi-system-theme.dark-mode :where(button, a, input, textarea, select, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 3px solid var(--oddi-home-focus) !important;
+    outline-offset: 3px !important;
+  }
+}
+
+/* Keep laptop home decoration out of the canvas and give Dark mode a true
+   black header backplate that blends into the page without a divider. */
+@media (min-width: 769px) {
+  body:has(#chatbox > #welcomeContainer) #chatbox.chatbox::before,
+  body:has(#chatbox > #welcomeContainer) #chatbox.chatbox::after {
+    display: none !important;
+    content: none !important;
+    animation: none !important;
+    background: none !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #chatbox > #oddiSparkLayer,
+  body:has(#chatbox > #welcomeContainer) #chatbox > #oddiLightLayer,
+  body:has(#chatbox > #welcomeContainer) #chatbox > #oddiPhoneDots {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    animation: none !important;
+  }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer) #chatbox.chatbox,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    background-color: var(--oddi-home-canvas, #080909) !important;
+    background-image: none !important;
+  }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer) .app > .header,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) .app > .header {
+    background: var(--oddi-home-canvas, #080909) !important;
+    background-color: var(--oddi-home-canvas, #080909) !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (min-width: 769px) and (prefers-reduced-motion: reduce) {
+  body:has(#chatbox > #welcomeContainer) *,
+  body:has(#chatbox > #welcomeContainer) *::before,
+  body:has(#chatbox > #welcomeContainer) *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+</style>
+
+<script id="oddi-desktop-neutral-browser-frame">
+(() => {
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  const app = document.querySelector('.app');
+  const desktop = window.matchMedia?.('(min-width: 769px)');
+  const systemTheme = window.matchMedia?.('(prefers-color-scheme: dark)');
+  if (!themeMeta) return;
+
+  const syncBrowserFrame = () => {
+    if (!(desktop?.matches ?? window.innerWidth >= 769)) {
+      themeMeta.content = '#20c76b';
+      return;
+    }
+    const appColor = app ? getComputedStyle(app).backgroundColor : '';
+    const bodyColor = getComputedStyle(document.body).backgroundColor;
+    const fallback = document.body.classList.contains('dark-mode') ? '#080909' : '#ffffff';
+    const color = appColor && appColor !== 'rgba(0, 0, 0, 0)'
+      ? appColor
+      : (bodyColor && bodyColor !== 'rgba(0, 0, 0, 0)' ? bodyColor : fallback);
+    if (color) themeMeta.content = color;
+  };
+
+  syncBrowserFrame();
+  window.addEventListener('resize', syncBrowserFrame, { passive: true });
+  systemTheme?.addEventListener?.('change', syncBrowserFrame);
+  if (window.MutationObserver) {
+    new window.MutationObserver(syncBrowserFrame).observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class']
+    });
+  }
+})();
+</script>
+
+<style id="oddi-mobile-composer-header-polish">
+@media (max-width: 768px) and (pointer: coarse) {
+  /* Restore the existing More menu beside the theme control on phones. */
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+    width: auto !important;
+    height: 44px !important;
+    pointer-events: auto !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .header-more,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .theme-toggle {
+    position: static !important;
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    flex: 0 0 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    pointer-events: auto !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .header-more,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .theme-toggle {
+    margin: 0 !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .header-more > #headerMoreBtn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .theme-toggle > #themeBtn {
+    display: inline-flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Remove the input's green glow/rectangle; keep a restrained neutral focus
+     state on the whole composer so keyboard focus remains visible. */
+  #oddiComposerShell.input-area::before,
+  #oddiComposerShell.input-area::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field:focus-within,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell .oddi-composer-field:focus-within {
+    border-color: var(--oddi-home-text-muted, #6b756f) !important;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .22) !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field #userInput,
+  #oddiComposerShell .oddi-composer-field #userInput:focus,
+  #oddiComposerShell .oddi-composer-field #userInput:focus-visible {
+    border: 0 !important;
+    outline: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  /* Give the send/voice control an inset hit area so its circle stays inside
+     the pill at narrow phone widths, with no animated halo beyond the edge. */
+  #oddiComposerShell .oddi-composer-field .action-button-slot {
+    min-width: 44px !important;
+    width: 44px !important;
+    max-width: 44px !important;
+    overflow: visible !important;
+  }
+
+  #oddiComposerShell .oddi-composer-field .action-button-slot > #voice-btn,
+  #oddiComposerShell .oddi-composer-field .action-button-slot > #send-btn {
+    inset: 2px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    max-height: 40px !important;
+    animation: none !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+  }
+
+  #oddiComposerShell.input-area {
+    left: max(16px, env(safe-area-inset-left, 0px)) !important;
+    right: max(16px, env(safe-area-inset-right, 0px)) !important;
+    width: auto !important;
+    max-width: none !important;
+    bottom: max(16px, calc(env(safe-area-inset-bottom, 0px) + 10px)) !important;
+  }
+
+  body.oddi-mobile-keyboard-open #oddiComposerShell.input-area {
+    bottom: calc(var(--oddi-mobile-keyboard-inset, 0px) + 12px) !important;
+  }
+}
+</style>
+
+
+<style id="oddi-dark-attached-composer-panel">
+/* Keep attachment previews and controls at their established sizes. When files
+   are attached, let their existing rail and the growing editor sit inside one
+   calm, expanded dark composer surface. */
+body.dark-mode #oddiComposerShell.input-area.has-attachments,
+body.oddi-system-theme.dark-mode #oddiComposerShell.input-area.has-attachments {
+  box-sizing: border-box !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: visible !important;
+  padding: 14px !important;
+  row-gap: 10px !important;
+  border: 1px solid #303331 !important;
+  border-radius: 30px !important;
+  background: #1b1b1b !important;
+  box-shadow: 0 8px 26px rgba(0, 0, 0, .28) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Override the normal-window transparent shell only in this attachment state. */
+@media (min-width: 769px) {
+  body.dark-mode:not(.oddi-fullscreen-home) .app > #oddiComposerShell.input-area.has-attachments,
+  body.oddi-system-theme.dark-mode:not(.oddi-fullscreen-home) .app > #oddiComposerShell.input-area.has-attachments {
+    background: #1b1b1b !important;
+    border: 1px solid #303331 !important;
+    border-radius: 30px !important;
+    box-shadow: 0 8px 26px rgba(0, 0, 0, .28) !important;
+  }
+}
+
+body.dark-mode #oddiComposerShell.input-area.has-attachments > .oddi-composer-field,
+body.oddi-system-theme.dark-mode #oddiComposerShell.input-area.has-attachments > .oddi-composer-field {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+
+body.dark-mode #oddiComposerShell.input-area.has-attachments > .oddi-composer-field:focus-within,
+body.oddi-system-theme.dark-mode #oddiComposerShell.input-area.has-attachments > .oddi-composer-field:focus-within {
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+</style>
+
 </body>
 </html>

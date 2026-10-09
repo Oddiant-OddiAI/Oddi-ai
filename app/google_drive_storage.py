@@ -592,8 +592,11 @@ def _conversation_app_properties(conversation):
     for message in reversed(messages):
         if not isinstance(message, dict):
             continue
-        preview = " ".join(str(message.get("text") or message.get("content") or "").split())
-        if preview:
+        message_text = " ".join(str(message.get("text") or message.get("content") or "").split())
+        if not message_text:
+            continue
+        if not preview:
+            preview = message_text
             break
     return {
         "t": _short_drive_property(conversation.get("title") or "New Chat"),
@@ -1132,7 +1135,7 @@ def update_conversation_message(conversation_id, user_id, message_id, patch):
     for message in conversation["messages"]:
         if str(message.get("id")) == str(message_id):
             for key, value in (patch or {}).items():
-                if key in {"text", "content", "pinned", "feedback", "stopped", "resume_draft"}:
+                if key in {"text", "content", "pinned", "feedback", "stopped", "resume_draft", "document_workspace", "document_title"}:
                     message[key] = value
             return update_conversation(
                 conversation_id, user_id, conversation["title"], conversation["messages"],
