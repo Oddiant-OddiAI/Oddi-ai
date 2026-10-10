@@ -152,18 +152,6 @@
     #chatbox .ai-content a { text-underline-offset: 3px; overflow-wrap: anywhere; }
     #chatbox .ai-table-wrap { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; }
 
-    #chatbox .user-message,
-    #chatbox .bot-message { touch-action: pan-y; }
-
-    #chatbox .oddi-mobile-swipe-hint {
-        outline: 2px solid rgba(32, 199, 107, .5) !important;
-        outline-offset: 3px;
-        transition: outline-color .18s ease, box-shadow .18s ease;
-    }
-
-    #chatbox .oddi-mobile-swipe-reply { box-shadow: -4px 0 0 rgba(54, 211, 123, .72) !important; }
-    #chatbox .oddi-mobile-swipe-pin { box-shadow: 4px 0 0 rgba(116, 174, 255, .72) !important; }
-
     body.mobile-keyboard-open #chatbox.chatbox { scroll-behavior: auto !important; }
 
     body.dark-mode #chatbox.chatbox,
@@ -239,28 +227,6 @@ body.dark-mode .oddi-history-skeleton-bubble {
     background-size: 220% 100%;
 }
 
-#oddiMobileGestureToast {
-    position: fixed;
-    left: 50%;
-    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
-    z-index: 2147483002;
-    max-width: calc(100vw - 32px);
-    padding: 9px 13px;
-    border: 1px solid rgba(154, 174, 161, .28);
-    border-radius: 999px;
-    background: rgba(25, 27, 26, .94);
-    color: #f3f5f3;
-    box-shadow: 0 8px 28px rgba(0,0,0,.28);
-    font: 600 12px/1.35 system-ui, sans-serif;
-    text-align: center;
-    opacity: 0;
-    pointer-events: none;
-    transform: translate(-50%, 7px);
-    transition: opacity .16s ease, transform .16s ease;
-}
-
-#oddiMobileGestureToast.is-visible { opacity: 1; transform: translate(-50%, 0); }
-
 @keyframes oddi-mobile-thinking-wave {
     0%, 100% { transform: translateY(0) scale(.88); opacity: .62; }
     50% { transform: translateY(-5px) scale(1.1); opacity: 1; }
@@ -296,5 +262,4 @@ body.dark-mode .oddi-history-skeleton-bubble {
     body .thinking-indicator .thinking-dot,
     #oddiComposerShell .voice-btn.listening,
     #oddiComposerShell .dictation-btn.listening { animation: none !important; }
-    #oddiMobileGestureToast { transition: none !important; }
 }

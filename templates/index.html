@@ -24799,6 +24799,13 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
       const dx=t.clientX-edgeTouch.x;
       const dy=t.clientY-edgeTouch.y;
 
+      /* A moving finger is a scroll unless the long-press has already armed. */
+      if(touchGesture && !touchGesture.active && !touchGesture.ready &&
+         Math.hypot(dx,dy)>=DOWN_TRIGGER){
+        touchGesture.moved=true;
+        finishChatGesture(false);
+      }
+
       /* A vertical drag belongs to the chat navigator, not the sidebar. */
       if(!edgeTouch.triggered && Math.abs(dy)>=DOWN_TRIGGER && Math.abs(dy)>Math.abs(dx)*1.15){
         edgeTouch=null;
@@ -24834,6 +24841,11 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
     state.lastY=current.clientY;
 
     if(!state.active){
+      if(!state.ready && Math.hypot(dx,dy)>=DOWN_TRIGGER){
+        state.moved=true;
+        finishChatGesture(false);
+        return;
+      }
       if(Math.hypot(dx,dy)>14 && Math.abs(dx)>Math.abs(dy)*1.25){
         finishChatGesture(false);
         return;
@@ -24942,6 +24954,10 @@ body.dark-mode .memory-grid-fixed .memory-add-box:hover {
     const dx=e.clientX-mouseGesture.startX, dy=e.clientY-mouseGesture.startY;
     mouseGesture.lastY=e.clientY;
     if(!mouseGesture.active){
+      if(!mouseGesture.ready && Math.hypot(dx,dy)>=DOWN_TRIGGER){
+        finishChatGesture(false);
+        return;
+      }
       if(mouseGesture.ready && Math.abs(dy)>=DOWN_TRIGGER && Math.abs(dy)>Math.abs(dx)*1.15){
         mouseGesture.dragDirection=dy<0?"up":"down";
         touchGesture=mouseGesture;
@@ -37776,7 +37792,7 @@ body.oddi-system-theme.dark-mode #oddiComposerShell.input-area.has-attachments >
     justify-self: center !important;
     align-self: center !important;
     inset: auto !important;
-    left: -10px !important;
+    left: -16px !important;
     right: auto !important;
     transform: none !important;
     overflow: visible !important;
@@ -37797,12 +37813,6 @@ body.oddi-system-theme.dark-mode #oddiComposerShell.input-area.has-attachments >
 
   body.dark-mode #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field:focus-within,
   body.oddi-system-theme.dark-mode #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field:focus-within {
-    background: #1b1b1b !important;
-    border-color: #484c49 !important;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, .24) !important;
-  }
-
-  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddiComposerShell.input-area:not(.has-attachments) > .oddi-composer-field:focus-within {
     background: #1b1b1b !important;
     border-color: #484c49 !important;
     box-shadow: 0 6px 20px rgba(0, 0, 0, .24) !important;
