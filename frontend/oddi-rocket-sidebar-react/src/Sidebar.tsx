@@ -214,6 +214,7 @@ export default function Sidebar() {
   const pressTimerRef = useRef<number | null>(null);
   const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
   const longPressHandledRef = useRef(false);
+  const chatPointerMovedRef = useRef(false);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     try {
@@ -674,6 +675,7 @@ export default function Sidebar() {
     if ((event.pointerType === 'mouse' && event.button !== 0) || (event.target as HTMLElement).closest('button, a, input')) return;
     if (pressTimerRef.current !== null) window.clearTimeout(pressTimerRef.current);
     longPressHandledRef.current = false;
+    chatPointerMovedRef.current = false;
     pressOriginRef.current = { x: event.clientX, y: event.clientY };
     const row = event.currentTarget;
     pressTimerRef.current = window.setTimeout(() => {
@@ -687,7 +689,10 @@ export default function Sidebar() {
 
   function onChatPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
     const origin = pressOriginRef.current;
-    if (origin && (Math.abs(event.clientX - origin.x) > 12 || Math.abs(event.clientY - origin.y) > 12) && pressTimerRef.current !== null) {
+    if (origin && (Math.abs(event.clientX - origin.x) > 12 || Math.abs(event.clientY - origin.y) > 12)) {
+      chatPointerMovedRef.current = true;
+    }
+    if (chatPointerMovedRef.current && pressTimerRef.current !== null) {
       window.clearTimeout(pressTimerRef.current);
       pressTimerRef.current = null;
     }
@@ -703,6 +708,12 @@ export default function Sidebar() {
   }
 
   function onChatClick(c: Conversation, event: ReactMouseEvent<HTMLDivElement>) {
+    if (chatPointerMovedRef.current) {
+      chatPointerMovedRef.current = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     if (longPressHandledRef.current) {
       longPressHandledRef.current = false;
       event.preventDefault();
