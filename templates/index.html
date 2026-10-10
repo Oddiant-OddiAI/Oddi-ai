@@ -35484,7 +35484,8 @@ body.oddi-system-theme #welcomeContainer > .oddi-home-subtitle {
     box-sizing: border-box !important;
     border: 1px solid rgba(145, 153, 147, .3) !important;
     border-radius: 999px !important;
-    background: rgba(16, 17, 16, .97) !important;
+    /* Light-safe fallback; the explicit dark and System palettes follow below. */
+    background: rgba(255, 255, 255, .98) !important;
     box-shadow: 0 7px 22px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .035) !important;
   }
 
@@ -35557,6 +35558,7 @@ body.oddi-system-theme #welcomeContainer > .oddi-home-subtitle {
   }
   body.oddi-system-theme #oddiComposerShell .oddi-composer-field {
     border-color: color-mix(in srgb, var(--os-border) 60%, transparent) !important;
+    background: var(--os-surface, #f5f7f4) !important;
     background: color-mix(in srgb, var(--os-surface) 98%, transparent) !important;
   }
 }
