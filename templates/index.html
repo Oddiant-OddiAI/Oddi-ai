@@ -5745,6 +5745,13 @@ function notifyUnseenBackgroundResponses(conversationList) {
 function setGenerationUI(active) {
     generationActive = active;
     document.body.classList.toggle("oddi-generation-active", !!active);
+    const previewOnly = document.body.classList.contains("oddi-archived-preview");
+    if (input) {
+        input.disabled = previewOnly;
+        input.readOnly = previewOnly;
+        if (previewOnly) input.setAttribute("aria-disabled", "true");
+        else input.removeAttribute("aria-disabled");
+    }
     if (!active) {
         oddiChatManualFollowLock = false;
         oddiUpdateChatFollowState();
@@ -14867,6 +14874,12 @@ input.addEventListener(
 
         const enterSends = window.__oddiChatPreferences?.enter_to_send !== false;
         const shouldSend = event.key === "Enter" && (enterSends ? !event.shiftKey : (event.ctrlKey || event.metaKey));
+        // Keep Enter from starting a second reply while one is running, but
+        // leave the composer editable (Shift+Enter can still add a new line).
+        if (generationActive) {
+            if (shouldSend) event.preventDefault();
+            return;
+        }
         if (shouldSend) {
 
             event.preventDefault();
@@ -17330,7 +17343,7 @@ loadConversations();
     const storageKey = "oddi_personal_colors_v1";
     const defaults = {
         userLight: "#f1f1f1",
-        userDark: "#171717",
+        userDark: "#262626",
         dotsLight: "#111111",
         dotsDark: "#ffffff",
         dotsMatchUser: false,
@@ -31754,7 +31767,7 @@ body.dark-mode .oddi-backup-reminder .oddi-backup-later{background:transparent;c
     if(!bubble||bubble.classList.contains("stopped-message")||bubble.querySelector(".thinking-indicator"))return;
     const suggestions=["Give a practical example","Summarize this briefly","What should I do next?"];
     const row=document.createElement("div");row.className="oddi-followups";row.setAttribute("role","group");row.setAttribute("aria-label","Suggested follow-up questions");
-    suggestions.forEach(text=>{const button=document.createElement("button");button.type="button";button.textContent=text;button.addEventListener("click",()=>{const input=document.getElementById("userInput");if(!input||document.body.classList.contains("oddi-archived-preview"))return;input.value=text;input.dispatchEvent(new Event("input",{bubbles:true}));window.sendMessage?.();});row.appendChild(button);});
+    suggestions.forEach(text=>{const button=document.createElement("button");button.type="button";button.textContent=text;button.addEventListener("click",()=>{const input=document.getElementById("userInput");if(!input||generationActive||document.body.classList.contains("oddi-archived-preview"))return;input.value=text;input.dispatchEvent(new Event("input",{bubbles:true}));window.sendMessage?.();});row.appendChild(button);});
     bubble.appendChild(row);
   }
   window.__oddiRenderFollowups=renderFollowups;
@@ -38833,6 +38846,91 @@ body:not(.dark-mode):not(.oddi-system-theme) .app > #oddiComposerShell.input-are
 
 body:not(.dark-mode):not(.oddi-system-theme) #oddiComposerShell.input-area.has-attachments > .oddi-composer-field {
   color: #171d19 !important;
+}
+</style>
+
+<style id="oddi-user-bubble-reference-shape-v1">
+/* Match the compact, content-sized user bubbles in the supplied references. */
+#chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message {
+  width: min(100%, 820px) !important;
+  max-width: min(100%, 820px) !important;
+  align-self: center !important;
+  margin: 0 auto 18px !important;
+  box-sizing: border-box !important;
+}
+#chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main {
+  width: fit-content !important;
+  max-width: min(64ch, 100%) !important;
+  min-width: min(82px, 100%) !important;
+  padding: 18px 22px !important;
+  border: 0 !important;
+  border-radius: 30px !important;
+  background: #262626 !important;
+  color: #f4f4f4 !important;
+  box-shadow: none !important;
+  box-sizing: border-box !important;
+}
+#chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main > .user-text {
+  width: fit-content !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  font-size: 16px !important;
+  line-height: 1.5 !important;
+  text-align: left !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere !important;
+  box-sizing: border-box !important;
+}
+body:not(.dark-mode):not(.oddi-system-theme) #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main {
+  background: var(--oddi-user-bg-light, #ededed) !important;
+  color: var(--oddi-user-text-light, #171717) !important;
+}
+body.dark-mode #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main,
+body[data-theme="dark"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main {
+  background: var(--oddi-user-bg-dark, #262626) !important;
+  color: var(--oddi-user-text-dark, #f4f4f4) !important;
+}
+body.oddi-system-theme:not(.dark-mode) #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main {
+  background: var(--oddi-user-bg-light, var(--os-surface, #ededed)) !important;
+  color: var(--oddi-user-text-light, var(--os-text, #171717)) !important;
+}
+body.oddi-system-theme.dark-mode #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main {
+  background: var(--oddi-user-bg-dark, var(--os-surface, #262626)) !important;
+  color: var(--oddi-user-text-dark, var(--os-text, #f4f4f4)) !important;
+}
+@media (max-width: 768px) {
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main {
+    max-width: min(64ch, calc(100vw - 48px)) !important;
+    padding: 16px 18px !important;
+    border-radius: 27px !important;
+  }
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main > .user-text {
+    font-size: 15px !important;
+  }
+}
+</style>
+
+<style id="oddi-composer-editable-while-generating-v1">
+body.oddi-generation-active #oddiComposerShell,
+body.oddi-generation-active #oddiComposerShell .oddi-composer-field,
+body.oddi-generation-active #oddiComposerShell #userInput {
+  pointer-events: auto !important;
+}
+body.oddi-generation-active #oddiComposerShell #userInput {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  touch-action: pan-y !important;
+  caret-color: currentColor !important;
 }
 </style>
 

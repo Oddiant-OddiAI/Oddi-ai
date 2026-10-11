@@ -25,12 +25,14 @@ IDs may differ without mixing account histories. Existing laptop chat files
 are uploaded during sync; Drive-created accounts and conversations are copied
 to the laptop.
 
-The laptop app writes chats to its SSD first and mirrors changes to Drive.
+The laptop app commits chat changes to its SSD first, then queues the Drive
+mirror in the background so a slow Drive request does not delay a chat reply.
 The public Render site writes to Drive so it can serve every device whether
 the laptop is on or off. When the laptop app is running, it pulls new Drive
 chats to the SSD in the background (about every 30 seconds) and before local
-login or registration. Drive is the shared sync source; the laptop keeps its
-own per-account copy.
+login or registration. If the app closes before a queued mirror finishes, the
+local copy remains safe and the next sync pass uploads it. Drive is the shared
+sync source; the laptop keeps its own per-account copy.
 
 ## Google Drive setup
 

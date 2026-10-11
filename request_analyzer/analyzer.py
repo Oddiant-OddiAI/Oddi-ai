@@ -64,10 +64,6 @@ class RequestAnalyzer:
                 result["intent"] = "job_search"
                 result["actions"].append("search")
                 result["requires_web"] = True
-                result["requires_platform_action"] = True
-                result["required_capabilities"].append(
-                    "jobs.search"
-                )
 
             if any(word in text for word in (
                 "apply",
@@ -278,7 +274,10 @@ class RequestAnalyzer:
 
         if re.search(
             r"\b(?:latest|current|today|recent|news|price|weather)\b"
+            r"|\b(?:forecast|temperature|air\s+quality|aqi|sunrise|sunset)\b"
             r"|\b(?:live\s+(?:updates?|scores?|results?|news|data|weather|prices?))\b"
+            r"|\b(?:search\s+(?:the\s+)?(?:web|internet|online)|search\s+(?:for|about)|"
+            r"look\s+up|browse\s+the\s+web|research\s+online)\b"
             r"|\bright\s+now\b",
             text,
         ):

@@ -2,6 +2,7 @@ import json
 import json
 import logging
 import os
+import queue
 import secrets
 import sqlite3
 import threading
@@ -15,6 +16,10 @@ logger = logging.getLogger("oddi.persistence")
 USER_FILE_LIMIT = 30
 MEMORY_EXTRACTION_BATCH_SIZE = 5
 _MEMORY_QUEUE_LOCK = threading.Lock()
+_LOCAL_DRIVE_MIRROR_QUEUE = queue.Queue(maxsize=100)
+_LOCAL_DRIVE_MIRROR_QUEUE_LOCK = threading.Lock()
+_LOCAL_DRIVE_MIRROR_PENDING = set()
+_LOCAL_DRIVE_MIRROR_WORKER = None
 DEFAULT_MEMORY_SETTINGS = {"enabled": True, "auto_extract": True}
 
 
@@ -1060,6 +1065,96 @@ def _mirror_local_chat_deletion_to_drive(user_id, conversation_id, deleted_at=No
         logger.exception("Could not mirror local chat deletion to Google Drive user=%s", user_id)
 
 
+def _local_drive_mirror_worker():
+    """Mirror durable laptop chat changes without holding up API responses."""
+    while True:
+        task = _LOCAL_DRIVE_MIRROR_QUEUE.get()
+        key, kind, user_id, conversation_id, deleted_at = task
+        with _LOCAL_DRIVE_MIRROR_QUEUE_LOCK:
+            _LOCAL_DRIVE_MIRROR_PENDING.discard(key)
+        try:
+            if kind == "conversation":
+                # Read the newest committed local snapshot when the worker runs.
+                # Several rapid updates to one chat can then share one Drive write.
+                conversation = _chat_file_store().get_conversation(
+                    conversation_id,
+                    user_id,
+                )
+                _mirror_local_conversation_to_drive(user_id, conversation)
+            elif kind == "deletion":
+                _mirror_local_chat_deletion_to_drive(
+                    user_id,
+                    conversation_id,
+                    deleted_at,
+                )
+        except Exception:
+            logger.exception(
+                "Queued laptop-to-Drive chat mirror failed user=%s conversation=%s",
+                user_id,
+                conversation_id,
+            )
+        finally:
+            _LOCAL_DRIVE_MIRROR_QUEUE.task_done()
+
+
+def _queue_local_drive_mirror(kind, user_id, conversation_id, deleted_at=None):
+    """Queue a best-effort mirror after the local JSON write has completed."""
+    global _LOCAL_DRIVE_MIRROR_WORKER
+    if not ODDI_CHAT_FILES_STORAGE or not google_drive_storage.is_configured():
+        return
+    if conversation_id is None:
+        return
+
+    conversation_key = str(conversation_id)
+    key = (kind, str(user_id), conversation_key, str(deleted_at or ""))
+    with _LOCAL_DRIVE_MIRROR_QUEUE_LOCK:
+        if key in _LOCAL_DRIVE_MIRROR_PENDING:
+            return
+        try:
+            _LOCAL_DRIVE_MIRROR_QUEUE.put_nowait(
+                (key, kind, user_id, conversation_id, deleted_at)
+            )
+        except queue.Full:
+            # The local JSON file remains the source of truth. The startup and
+            # 30-second sync pass will pick up this change if the fast queue is full.
+            logger.warning(
+                "Laptop-to-Drive mirror queue is full; periodic sync will retry user=%s conversation=%s",
+                user_id,
+                conversation_id,
+            )
+            return
+        _LOCAL_DRIVE_MIRROR_PENDING.add(key)
+        if (
+            _LOCAL_DRIVE_MIRROR_WORKER is None
+            or not _LOCAL_DRIVE_MIRROR_WORKER.is_alive()
+        ):
+            _LOCAL_DRIVE_MIRROR_WORKER = threading.Thread(
+                target=_local_drive_mirror_worker,
+                name="oddi-drive-mirror",
+                daemon=True,
+            )
+            _LOCAL_DRIVE_MIRROR_WORKER.start()
+
+
+def _queue_local_conversation_drive_mirror(user_id, conversation):
+    if not isinstance(conversation, dict):
+        return
+    _queue_local_drive_mirror(
+        "conversation",
+        user_id,
+        conversation.get("id"),
+    )
+
+
+def _queue_local_chat_deletion_drive_mirror(user_id, conversation_id, deleted_at=None):
+    _queue_local_drive_mirror(
+        "deletion",
+        user_id,
+        conversation_id,
+        deleted_at,
+    )
+
+
 def _chat_conversation_select():
     return """
         SELECT id, user_id, title, messages, created_at, updated_at,
@@ -1079,7 +1174,7 @@ def _archive_conversation_select():
 def create_conversation(user_id, title="New Chat"):
     if ODDI_CHAT_JSON_STORAGE:
         conversation_id = _chat_file_store().create_conversation(user_id, title)
-        _mirror_local_conversation_to_drive(
+        _queue_local_conversation_drive_mirror(
             user_id,
             _chat_file_store().get_conversation(conversation_id, user_id),
         )
@@ -1128,7 +1223,7 @@ def import_local_conversation(user_id, source_id, conversation):
     if ODDI_CHAT_JSON_STORAGE:
         imported = _chat_file_store().import_local_conversation(user_id, source_id, conversation)
         imported_chat = imported if isinstance(imported, dict) else _chat_file_store().get_conversation(imported, user_id)
-        _mirror_local_conversation_to_drive(user_id, imported_chat)
+        _queue_local_conversation_drive_mirror(user_id, imported_chat)
         return imported
 
     messages = conversation.get("messages")
@@ -1536,7 +1631,7 @@ def update_conversation(conversation_id, user_id, title, messages, expected_revi
             conversation_id, user_id, title, messages, expected_revision
         )
         if result.get("ok"):
-            _mirror_local_conversation_to_drive(user_id, result.get("conversation"))
+            _queue_local_conversation_drive_mirror(user_id, result.get("conversation"))
         return result
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=False)
     if not conversation:
@@ -1575,7 +1670,7 @@ def update_conversation(conversation_id, user_id, title, messages, expected_revi
 def append_conversation_message(conversation_id, user_id, message):
     if ODDI_CHAT_JSON_STORAGE:
         conversation = _chat_file_store().append_conversation_message(conversation_id, user_id, message)
-        _mirror_local_conversation_to_drive(user_id, conversation)
+        _queue_local_conversation_drive_mirror(user_id, conversation)
         return conversation
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=False)
     if not conversation:
@@ -1603,7 +1698,7 @@ def update_conversation_message(conversation_id, user_id, message_id, patch):
         conversation = _chat_file_store().update_conversation_message(
             conversation_id, user_id, message_id, patch
         )
-        _mirror_local_conversation_to_drive(user_id, conversation)
+        _queue_local_conversation_drive_mirror(user_id, conversation)
         return conversation
     conversation = get_conversation(conversation_id, user_id)
     if not conversation or conversation.get("deleted"):
@@ -1634,7 +1729,7 @@ def delete_conversation_message(conversation_id, user_id, message_id):
         conversation = _chat_file_store().delete_conversation_message(
             conversation_id, user_id, message_id
         )
-        _mirror_local_conversation_to_drive(user_id, conversation)
+        _queue_local_conversation_drive_mirror(user_id, conversation)
         return conversation
     conversation = get_conversation(conversation_id, user_id)
     if not conversation or conversation.get("deleted"):
@@ -1660,7 +1755,7 @@ def update_conversation_metadata(conversation_id, user_id, pinned=None, archived
         conversation = _chat_file_store().update_conversation_metadata(
             conversation_id, user_id, pinned=pinned, archived=archived, deleted=deleted, title=title
         )
-        _mirror_local_conversation_to_drive(user_id, conversation)
+        _queue_local_conversation_drive_mirror(user_id, conversation)
         return conversation
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=True)
     if not conversation:
@@ -1738,7 +1833,7 @@ def delete_conversation(conversation_id, user_id):
     if ODDI_CHAT_JSON_STORAGE:
         deleted = _chat_file_store().delete_conversation(conversation_id, user_id)
         if deleted:
-            _mirror_local_chat_deletion_to_drive(user_id, conversation_id)
+            _queue_local_chat_deletion_drive_mirror(user_id, conversation_id)
         return deleted
     owner, conversation = _find_conversation(conversation_id, user_id, include_deleted=True)
     if not conversation:
@@ -1762,7 +1857,7 @@ def delete_all_conversations(user_id):
         chats = _chat_file_store().get_all_conversations(user_id)
         deleted = _chat_file_store().delete_all_conversations(user_id)
         for conversation in chats:
-            _mirror_local_chat_deletion_to_drive(user_id, conversation["id"])
+            _queue_local_chat_deletion_drive_mirror(user_id, conversation["id"])
         return deleted
     # Clear active chats and archived/bin chats. Memory is intentionally not
     # touched; "clear chats" must not erase long-term user memory.

@@ -2,8 +2,8 @@ import base64
 import re
 from app.fast_responses import fast_response, is_job_context_question
 from app.memory_handler import recall_memory
-from app.chatbot import get_response
 from request_analyzer.analyzer import analyze_request
+from app.web_research import WebResearchError, retrieve_web_context
 from providers.adapters import execute_route, ProviderAdapterError
 from routing.engine import route_request
 from quota.manager import quota_manager
@@ -241,6 +241,15 @@ def add_file_to_knowledge_base(
 PROVIDER_UNAVAILABLE_RESPONSE = (
     "⚠️ ODDI-AI providers are unavailable right now."
 )
+
+
+class _SourcedReply(str):
+    """Plain response text carrying verified, clickable source metadata."""
+
+    def __new__(cls, text, sources=None):
+        instance = super().__new__(cls, str(text or ""))
+        instance.sources = list(sources or [])
+        return instance
 
 
 def _build_routing_prompt(chat_history, documents=""):
@@ -993,8 +1002,8 @@ def process_message(
     # Gemini Key 1 is explicitly preferred, then Gemini Key 2,
     # followed by the remaining provider fallback chain.
     #
-    # Image/video/audio/web requests that need provider-native
-    # capabilities remain on the existing specialized path for now.
+    # Live web evidence is gathered by the app before provider routing, so
+    # web requests can use the same configured model as ordinary responses.
     #
     request_for_routing = analyze_request(
         user_message,
@@ -1033,28 +1042,30 @@ def process_message(
         len(item.get("bytes") or b"") for item in audios
     )
 
-    # Only web search still depends on the legacy tool-enabled response path.
-    # Attachments now travel through capability-aware routed provider adapters.
-    requires_special_provider_capability = bool(
-        request_for_routing.get("requires_web", False)
-    )
+    web_context = ""
+    web_sources = []
+    if request_for_routing.get("requires_web", False):
+        try:
+            web_context, web_sources = retrieve_web_context(
+                user_message,
+                request_for_routing,
+            )
+        except WebResearchError as search_error:
+            print("⚠️ Live web retrieval failed:", search_error)
+            return str(search_error)
 
-    if requires_special_provider_capability:
-        print(
-            "⚠️ Specialized capability request: "
-            "using existing capability handler."
-        )
-
-        response = get_response(
-            chat_history,
-            vector_store_id,
-            user_role=user_context.get("user_role", "user"),
-            user_id=user_id,
-            is_host=user_context.get("is_host", False),
-            quota_exempt=user_context.get("quota_exempt", False),
-        )
-
-        return response
+        # The source material is already attached to the provider-neutral
+        # prompt; do not filter eligible models by native web-tool support.
+        request_for_routing["requires_web"] = False
+        if web_context:
+            estimated_input_tokens += (len(web_context.encode("utf-8")) + 3) // 4
+            request_for_routing["estimated_tokens"] = estimated_input_tokens
+            phase6_quota = _phase6_user_quota_gate(
+                user_context=user_context,
+                estimated_tokens=estimated_input_tokens,
+            )
+            if not phase6_quota["allowed"]:
+                return _phase6_quota_rejection(phase6_quota)
 
     platform_context = platform_help_context(user_message)
 
@@ -1129,6 +1140,9 @@ def process_message(
                 documents=documents,
             )
         )
+
+        if web_context:
+            provider_prompt += "\n\n" + web_context
 
         if platform_context:
             provider_prompt += "\n\n" + platform_context
@@ -1228,7 +1242,7 @@ def process_message(
                 f"{execution['capacity_id']}"
             )
 
-        return response
+        return _SourcedReply(response, sources=web_sources) if web_sources else response
 
     except Exception as routing_error:
         # Do not silently jump back to OpenAI. OpenAI is not part of
@@ -1247,6 +1261,8 @@ def process_message(
                     documents=documents,
                 )
             )
+            if web_context:
+                fallback_prompt += "\n\n" + web_context
             if platform_context:
                 fallback_prompt += "\n\n" + platform_context
             if documents or images or audios:
@@ -1294,7 +1310,7 @@ def process_message(
 
             print("✅ Using Groq final fallback.")
 
-            return response
+            return _SourcedReply(response, sources=web_sources) if web_sources else response
 
         except Exception as groq_error:
             print("❌ Groq final fallback failed:", groq_error)
