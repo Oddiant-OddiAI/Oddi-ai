@@ -8,9 +8,16 @@ laptop sync worker pulls Drive changes back to the SSD when it is online.
 ## Storage layout
 
 - Laptop chats: `%LOCALAPPDATA%\OddiAI\ChatHistory\account-<local-id>\<chat-id>.json`
+- Laptop Library blobs: `%LOCALAPPDATA%\OddiAI\files\user_<local-id>\<storage-key>`
+- Laptop account and Library metadata: `%LOCALAPPDATA%\OddiAI\users.db`
 - Drive chats: `accounts/account-<stable-account-id>/chat-<chat-id>.json`
-- Account login records on the laptop: ignored `users.db`
 - Account login records in Drive: the matching account's `account.json`
+
+The laptop launcher keeps chats, Library files, and the local database under the
+same `%LOCALAPPDATA%\OddiAI` data folder. On first startup after this change,
+files from the former `C:\ODDI_STORAGE\files` folder are copied into the new
+Library folder. The old copies are retained as a recovery fallback; deleting a
+Library item through ODDI removes both copies.
 
 Account folders use a stable ID derived from the normalized account email on
 Drive. Sync maps that folder to the laptop's local account ID, so local numeric

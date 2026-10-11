@@ -6,6 +6,7 @@ import secrets
 import sqlite3
 import threading
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 from app import google_drive_storage, local_chat_files
 
@@ -202,10 +203,54 @@ else:
 
 USE_POSTGRES = bool(CHAT_DATABASE_URL or FILES_DATABASE_URL or ARCHIVE_MEMORY_DATABASE_URL)
 
-DATABASE = os.path.join(
+_PROJECT_DATABASE = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
     "users.db",
 )
+
+
+def _local_database_path():
+    local_data = Path(
+        os.getenv("LOCALAPPDATA")
+        or (Path.home() / "AppData" / "Local")
+    ) / "OddiAI"
+    local_data.mkdir(parents=True, exist_ok=True)
+    database_path = local_data / "users.db"
+
+    # Move the existing laptop account/Library metadata into the durable
+    # per-user data folder using SQLite's backup API (safe with WAL databases).
+    if not database_path.exists() and os.path.isfile(_PROJECT_DATABASE):
+        temporary_path = local_data / f"users.db.{secrets.token_hex(8)}.migrating"
+        source = None
+        destination = None
+        try:
+            source_uri = Path(_PROJECT_DATABASE).resolve().as_uri() + "?mode=ro"
+            source = sqlite3.connect(source_uri, uri=True, timeout=10)
+            destination = sqlite3.connect(str(temporary_path), timeout=10)
+            source.backup(destination)
+            destination.close()
+            destination = None
+            source.close()
+            source = None
+            os.replace(temporary_path, database_path)
+            logger.info("Copied the existing laptop database into the persistent ODDI data folder.")
+        except Exception as exc:
+            if destination is not None:
+                destination.close()
+            if source is not None:
+                source.close()
+            try:
+                temporary_path.unlink(missing_ok=True)
+            except OSError:
+                logger.warning("Could not remove an interrupted local database migration file.")
+            raise RuntimeError(
+                "Could not move the laptop account and Library database into LocalAppData."
+            ) from exc
+
+    return str(database_path)
+
+
+DATABASE = _local_database_path() if ODDI_LOCAL_ONLY_STORAGE else _PROJECT_DATABASE
 
 
 def _database_url(kind):

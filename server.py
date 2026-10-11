@@ -166,6 +166,22 @@ def _library_filename_key(filename):
     return value.strip().casefold() or "unnamed-file"
 
 
+def _unique_library_filename(filename, occupied_names):
+    """Keep older same-named Library files by giving each new version a label."""
+    filename = str(filename or "unnamed-file")
+    if _library_filename_key(filename) not in occupied_names:
+        return filename
+
+    stem, extension = os.path.splitext(filename)
+    stem = stem or filename
+    version = 2
+    while True:
+        candidate = f"{stem} ({version}){extension}"
+        if _library_filename_key(candidate) not in occupied_names:
+            return candidate
+        version += 1
+
+
 def _read_library_file_bytes(user_id, record):
     storage_key = record.get("storage_key")
     if storage_key:
@@ -220,14 +236,14 @@ def _library_record_content_details(user_id, record):
 
 
 def _plan_chat_library_uploads(user_id, file_payloads):
-    """Plan content deduplication and same-name replacement without writing."""
+    """Plan content deduplication while preserving distinct same-named files."""
     library_records = get_files(user_id, include_content_hash=True)
     library_hashes = set()
     library_file_ids_by_hash = {}
-    library_assets = []
+    occupied_names = set()
 
     for record in library_records:
-        digest, physical_size = _library_record_content_details(user_id, record)
+        digest, _ = _library_record_content_details(user_id, record)
         if digest:
             library_hashes.add(digest)
             library_file_ids_by_hash[digest] = record.get("id")
@@ -236,83 +252,55 @@ def _plan_chat_library_uploads(user_id, file_payloads):
                     update_file_record(record.get("id"), user_id, content_hash=digest)
                 except Exception:
                     logger.debug("Could not cache content hash for Library file %s", record.get("id"))
-        library_assets.append({
-            "record": record,
-            "filename_key": _library_filename_key(record.get("filename")),
-            "digest": digest,
-            "stored_size": physical_size,
-        })
-
-    # If a single send contains several files with the same name, keep only
-    # the last selected version for the Library. The engine still gets every
-    # uploaded stream exactly as sent.
-    latest_by_name = {}
-    for upload_index, (uploaded_file, file_bytes) in enumerate(file_payloads):
-        filename = uploaded_file.filename or "unnamed-file"
-        latest_by_name[_library_filename_key(filename)] = {
-            "uploaded_file": uploaded_file,
-            "file_bytes": file_bytes,
-            "filename": filename,
-            "filename_key": _library_filename_key(filename),
-            "digest": hashlib.sha256(file_bytes).hexdigest(),
-            "upload_index": upload_index,
-        }
+        occupied_names.add(_library_filename_key(record.get("filename")))
 
     planned_uploads = []
     already_exists_count = 0
     already_existing_files = []
+    duplicate_uploads = []
+    planned_upload_index_by_hash = {}
     seen_hashes = set(library_hashes)
-    for entry in latest_by_name.values():
-        if entry["digest"] in seen_hashes:
-            if entry["digest"] in library_hashes:
-                already_exists_count += 1
-                existing_file_id = library_file_ids_by_hash.get(entry["digest"])
+    for upload_index, (uploaded_file, file_bytes) in enumerate(file_payloads):
+        original_filename = uploaded_file.filename or "unnamed-file"
+        digest = hashlib.sha256(file_bytes).hexdigest()
+        if digest in seen_hashes:
+            already_exists_count += 1
+            if digest in library_hashes:
+                existing_file_id = library_file_ids_by_hash.get(digest)
                 if existing_file_id is not None:
                     already_existing_files.append({
-                        "upload_index": entry["upload_index"],
+                        "upload_index": upload_index,
                         "file_id": existing_file_id,
                     })
+            else:
+                planned_upload_index = planned_upload_index_by_hash.get(digest)
+                if planned_upload_index is not None:
+                    duplicate_uploads.append({
+                        "upload_index": upload_index,
+                        "planned_upload_index": planned_upload_index,
+                    })
             continue
-        seen_hashes.add(entry["digest"])
-        planned_uploads.append(entry)
 
-    replacement_names = {entry["filename_key"] for entry in planned_uploads}
-    replaced_assets = [
-        asset for asset in library_assets
-        if asset["filename_key"] in replacement_names
-    ]
-    replace_file_ids = [asset["record"].get("id") for asset in replaced_assets]
-    replace_ids_set = {str(file_id) for file_id in replace_file_ids if file_id is not None}
-
-    # Credit the old physical bytes against the quota while writing the new
-    # version. Old files remain untouched until the new metadata transaction
-    # succeeds, so a failed AI or storage request cannot destroy the old copy.
-    replace_keys = []
-    quota_credit_bytes = 0
-    seen_storage_keys = set()
-    for asset in replaced_assets:
-        record = asset["record"]
-        storage_key = record.get("storage_key")
-        if not storage_key or storage_key in seen_storage_keys:
-            continue
-        seen_storage_keys.add(storage_key)
-        is_shared = any(
-            str(other["record"].get("id")) not in replace_ids_set
-            and other["record"].get("storage_key") == storage_key
-            for other in library_assets
-        )
-        if is_shared:
-            continue
-        replace_keys.append(storage_key)
-        quota_credit_bytes += int(asset["stored_size"] or 0)
+        seen_hashes.add(digest)
+        filename = _unique_library_filename(original_filename, occupied_names)
+        occupied_names.add(_library_filename_key(filename))
+        planned_upload_index_by_hash[digest] = upload_index
+        planned_uploads.append({
+            "uploaded_file": uploaded_file,
+            "file_bytes": file_bytes,
+            "filename": filename,
+            "digest": digest,
+            "upload_index": upload_index,
+        })
 
     return {
         "uploads": planned_uploads,
-        "replace_file_ids": replace_file_ids,
-        "replace_storage_keys": replace_keys,
-        "quota_credit_bytes": quota_credit_bytes,
+        "replace_file_ids": [],
+        "replace_storage_keys": [],
+        "quota_credit_bytes": 0,
         "already_exists_count": already_exists_count,
         "already_existing_files": already_existing_files,
+        "duplicate_uploads": duplicate_uploads,
     }
 
 
@@ -357,20 +345,8 @@ def _persist_chat_library_uploads(user_id, conversation_id, plan):
         rollback_stored_files(user_id, stored_keys)
         raise
 
-    # The database now points only at the new version. Remove replaced blobs
-    # after commit; cleanup failure must not roll back the valid new record.
-    for storage_key in plan.get("replace_storage_keys", []):
-        try:
-            storage_router.delete_file(user_id, storage_key)
-        except StorageFileNotFound:
-            pass
-        except Exception as error:
-            logger.exception(
-                "Could not remove replaced Library file %s for user %s: %s",
-                storage_key,
-                user_id,
-                error,
-            )
+    # Distinct uploads are saved as separate records, even when their
+    # original filenames match an older Library file.
     return new_record_ids
 
 _chat_generation_lock = threading.Lock()
@@ -3032,12 +3008,22 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 
     # Keep the exact source set with the assistant message so retry and chat
     # history can render the same citations after a reload.
-    library_file_mappings = [
-        [int(entry.get("upload_index", index)), int(file_record_id)]
-        for index, (entry, file_record_id) in enumerate(
-            zip(upload_library_plan.get("uploads") or [], file_record_ids)
+    library_file_mappings = []
+    planned_file_ids_by_upload_index = {}
+    for index, (entry, file_record_id) in enumerate(
+        zip(upload_library_plan.get("uploads") or [], file_record_ids)
+    ):
+        upload_index = int(entry.get("upload_index", index))
+        file_id = int(file_record_id)
+        planned_file_ids_by_upload_index[upload_index] = file_id
+        library_file_mappings.append([upload_index, file_id])
+    for entry in upload_library_plan.get("duplicate_uploads") or []:
+        upload_index = int(entry.get("upload_index", -1))
+        file_id = planned_file_ids_by_upload_index.get(
+            int(entry.get("planned_upload_index", -1))
         )
-    ]
+        if upload_index >= 0 and file_id is not None:
+            library_file_mappings.append([upload_index, file_id])
     library_file_mappings.extend(
         [int(entry.get("upload_index", 0)), int(entry["file_id"])]
         for entry in upload_library_plan.get("already_existing_files") or []

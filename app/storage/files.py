@@ -3,7 +3,10 @@ from __future__ import annotations
 import os
 import shutil
 import uuid
+import logging
 from pathlib import Path
+
+logger = logging.getLogger("oddi.file_storage")
 
 
 class FileStorageError(Exception):
@@ -22,17 +25,47 @@ class FileStorage:
     DEFAULT_QUOTA_BYTES = 1 * 1024 * 1024 * 1024
 
     def __init__(self, root=None, quota_bytes=None):
+        local_only = os.getenv("ODDI_LOCAL_ONLY_STORAGE", "").strip().lower() in {
+            "1", "true", "yes", "on",
+        }
+        self.legacy_files_root = None
+
         if root:
             storage_root = Path(root)
         else:
-            storage_root = Path(
-                os.getenv(
-                    "ODDI_STORAGE_ROOT",
-                    r"C:\ODDI_STORAGE"
-                    if os.name == "nt"
-                    else "/tmp/oddi_storage",
+            file_storage_override = os.getenv("ODDI_FILE_STORAGE_ROOT", "").strip()
+            old_storage_override = os.getenv("ODDI_STORAGE_ROOT", "").strip()
+            if file_storage_override:
+                storage_root = Path(file_storage_override).expanduser()
+            elif local_only:
+                local_data = Path(
+                    os.getenv("LOCALAPPDATA")
+                    or (Path.home() / "AppData" / "Local")
                 )
-            )
+                storage_root = local_data / "OddiAI"
+            else:
+                storage_root = Path(
+                    old_storage_override
+                    or (
+                        r"C:\ODDI_STORAGE"
+                        if os.name == "nt"
+                        else "/tmp/oddi_storage"
+                    )
+                ).expanduser()
+
+            if local_only:
+                previous_root = Path(
+                    old_storage_override
+                    or (
+                        r"C:\ODDI_STORAGE"
+                        if os.name == "nt"
+                        else "/tmp/oddi_storage"
+                    )
+                ).expanduser().resolve()
+                next_files_root = (storage_root.resolve() / "files")
+                previous_files_root = previous_root / "files"
+                if previous_files_root != next_files_root:
+                    self.legacy_files_root = previous_files_root
 
         self.root = storage_root.resolve()
         self.files_root = self.root / "files"
@@ -45,6 +78,48 @@ class FileStorage:
             )
         )
         self.files_root.mkdir(parents=True, exist_ok=True)
+        if self.legacy_files_root:
+            self._migrate_legacy_files()
+
+    def _migrate_legacy_files(self):
+        """Copy legacy laptop Library blobs beside the persistent chat data."""
+        legacy_root = self.legacy_files_root
+        if not legacy_root or not legacy_root.is_dir():
+            return
+
+        copied = 0
+        failures = 0
+        for source in legacy_root.rglob("*"):
+            if not source.is_file() or source.name.startswith(".") or source.suffix == ".tmp":
+                continue
+            try:
+                relative = source.relative_to(legacy_root)
+                target = self.files_root / relative
+                target.resolve().relative_to(self.files_root.resolve())
+                if target.exists():
+                    continue
+                target.parent.mkdir(parents=True, exist_ok=True)
+                temporary = target.with_name(f".{target.name}.{uuid.uuid4().hex}.migration")
+                try:
+                    shutil.copy2(source, temporary)
+                    if target.exists():
+                        temporary.unlink()
+                    else:
+                        temporary.replace(target)
+                        copied += 1
+                finally:
+                    if temporary.exists():
+                        temporary.unlink()
+            except (OSError, ValueError):
+                failures += 1
+                logger.exception("Could not migrate a legacy Library file into %s", self.files_root)
+
+        if copied or failures:
+            logger.info(
+                "Legacy Library file migration finished (copied=%s, failures=%s)",
+                copied,
+                failures,
+            )
 
     def user_directory(self, user_id):
         user_dir = self.files_root / f"user_{int(user_id)}"
@@ -69,6 +144,18 @@ class FileStorage:
                     total += path.stat().st_size
                 except OSError:
                     continue
+        if self.legacy_files_root:
+            legacy_user_dir = self.legacy_files_root / f"user_{int(user_id)}"
+            if legacy_user_dir.is_dir():
+                for path in legacy_user_dir.rglob("*"):
+                    if not path.is_file():
+                        continue
+                    try:
+                        relative = path.relative_to(legacy_user_dir)
+                        if not (user_dir / relative).exists():
+                            total += path.stat().st_size
+                    except OSError:
+                        continue
         return total
 
     def get_quota(self, user_id):
@@ -154,30 +241,55 @@ class FileStorage:
 
     def get_path(self, user_id, storage_key):
         path = self._safe_path(user_id, storage_key)
-        if not path.is_file():
-            raise FileNotFound(
-                f"Stored file does not exist: {storage_key}"
-            )
-        return path
+        if path.is_file():
+            return path
+
+        if self.legacy_files_root:
+            legacy_user_dir = (self.legacy_files_root / f"user_{int(user_id)}").resolve()
+            legacy_path = (legacy_user_dir / str(storage_key)).resolve()
+            try:
+                legacy_path.relative_to(legacy_user_dir)
+            except ValueError as exc:
+                raise FileStorageError("Invalid storage path.") from exc
+            if legacy_path.is_file():
+                return legacy_path
+
+        raise FileNotFound(f"Stored file does not exist: {storage_key}")
 
     def read_bytes(self, user_id, storage_key):
         path = self.get_path(user_id, storage_key)
         return path.read_bytes()
 
     def delete(self, user_id, storage_key):
-        path = self._safe_path(user_id, storage_key)
-        if not path.exists():
-            return False
-        if not path.is_file():
-            raise FileStorageError(
-                "Storage key does not point to a file."
-            )
-        path.unlink()
-        return True
+        paths = [self._safe_path(user_id, storage_key)]
+        if self.legacy_files_root:
+            legacy_user_dir = (self.legacy_files_root / f"user_{int(user_id)}").resolve()
+            legacy_path = (legacy_user_dir / str(storage_key)).resolve()
+            try:
+                legacy_path.relative_to(legacy_user_dir)
+            except ValueError as exc:
+                raise FileStorageError("Invalid storage path.") from exc
+            paths.append(legacy_path)
+
+        deleted = False
+        for path in paths:
+            if not path.exists():
+                continue
+            if not path.is_file():
+                raise FileStorageError("Storage key does not point to a file.")
+            path.unlink()
+            deleted = True
+        return deleted
 
     def delete_user_storage(self, user_id):
-        user_dir = self.user_directory(user_id)
-        if not user_dir.exists():
-            return False
-        shutil.rmtree(user_dir)
-        return True
+        user_dir = self.files_root / f"user_{int(user_id)}"
+        directories = [user_dir]
+        if self.legacy_files_root:
+            directories.append(self.legacy_files_root / f"user_{int(user_id)}")
+
+        deleted = False
+        for directory in directories:
+            if directory.is_dir():
+                shutil.rmtree(directory)
+                deleted = True
+        return deleted

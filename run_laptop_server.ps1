@@ -23,6 +23,7 @@ if (-not (Test-Path -LiteralPath $oddiSecretPath -PathType Leaf)) {
 $env:ODDI_LOCAL_ONLY_STORAGE = "1"
 $env:ODDI_SECURE_COOKIES = "1"
 $env:ODDI_CHAT_FILES_DIR = $oddiChatRoot
+$env:ODDI_FILE_STORAGE_ROOT = $oddiDataRoot
 $env:FLASK_SECRET_KEY = [System.IO.File]::ReadAllText($oddiSecretPath).Trim()
 
 python server.py
