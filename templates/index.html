@@ -4689,7 +4689,7 @@ body:not(.oddi-archived-preview) #oddiComposerShell{translate:0 -3px !important}
 #oddiAccuracyNote{position:fixed;z-index:598;top:0;left:50%;width:min(680px,calc(100vw - 32px));transform:translateX(-50%);color:rgba(80,88,83,.68);font:400 10px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;pointer-events:none;white-space:normal}
 #oddiAccuracyNote[hidden]{display:none !important}
 body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyNote{color:rgba(205,214,207,.58)}
-@media(max-width:600px){#oddiAccuracyNote{width:calc(100vw - 38px);font-size:9px}}
+@media(max-width:600px){ #oddiAccuracyNote{width:calc(100vw - 38px);font-size:9px}}
 @media(max-width:768px) and (pointer:coarse){.oddi-say-hello{bottom:65px;padding:7px 12px;font-size:12px}}
 .oddi-say-hello{display:none}
 #welcomeContainer > #oddiSayHello{display:block}
@@ -26212,7 +26212,7 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
     body.dark-mode .oddi-source-row,body.oddi-system-theme.dark-mode .oddi-source-row{border-color:#343a35;background:rgba(255,255,255,.035)}
     body.dark-mode .oddi-source-row:hover,body.oddi-system-theme.dark-mode .oddi-source-row:hover{background:rgba(32,199,107,.11);border-color:rgba(32,199,107,.32)}
     body.dark-mode .oddi-source-row-detail,body.oddi-system-theme.dark-mode .oddi-source-row-detail{color:#a6afa8}
-    @media(max-width:600px){#oddiSourcesModal{align-items:flex-end;padding:10px}.oddi-sources-box{width:100%;max-height:min(72vh,620px);max-height:min(72dvh,620px);border-radius:18px}}
+    @media(max-width:600px){ #oddiSourcesModal{align-items:flex-end;padding:10px}.oddi-sources-box{width:100%;max-height:min(72vh,620px);max-height:min(72dvh,620px);border-radius:18px}}
   `;
   document.head.appendChild(sourcesStyle);
   function closeSources(){sourcesModal.classList.remove("show");sourcesModal.setAttribute("aria-hidden","true");}
