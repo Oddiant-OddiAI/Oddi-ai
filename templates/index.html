@@ -4678,12 +4678,18 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
             </button>
         </div>
     </div>
+    <div id="oddiAccuracyNote" role="note">ODDI-AI can make mistakes. Please double-check important information.</div>
 </div>
 <style id="oddi-say-hello-style">
 .oddi-say-hello{position:fixed;left:50%;bottom:91px;transform:translateX(-50%);z-index:599;border:1px solid rgba(32,199,107,.3);border-radius:999px;padding:8px 14px;background:rgba(32,199,107,.08);color:#16884a;font:600 13px/1.2 inherit;cursor:pointer;transition:background .16s ease,transform .16s ease,border-color .16s ease;}
 .oddi-say-hello:hover{background:rgba(32,199,107,.15);border-color:rgba(32,199,107,.55);transform:translateX(-50%) translateY(-1px)}
 body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);border-color:rgba(32,199,107,.28)}
 #welcomeContainer > #oddiSayHello{display:block}
+body:not(.oddi-archived-preview) #oddiComposerShell{translate:0 -3px !important}
+#oddiAccuracyNote{position:fixed;z-index:598;top:0;left:50%;width:min(680px,calc(100vw - 32px));transform:translateX(-50%);color:rgba(80,88,83,.68);font:400 10px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;pointer-events:none;white-space:normal}
+#oddiAccuracyNote[hidden]{display:none !important}
+body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyNote{color:rgba(205,214,207,.58)}
+@media(max-width:600px){#oddiAccuracyNote{width:calc(100vw - 38px);font-size:9px}}
 @media(max-width:768px) and (pointer:coarse){.oddi-say-hello{bottom:65px;padding:7px 12px;font-size:12px}}
 .oddi-say-hello{display:none}
 #welcomeContainer > #oddiSayHello{display:block}
@@ -4718,7 +4724,7 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
     const halfWidth=(button.offsetWidth||180)/2;
     const viewportWidth=document.documentElement.clientWidth||window.innerWidth;
     const center=Math.min(Math.max(rect.left+rect.width/2,halfWidth+8),viewportWidth-halfWidth-8);
-    const top=Math.max(8,Math.round(rect.top-(button.offsetHeight||34)-18));
+    const top=Math.max(8,Math.round(rect.top-(button.offsetHeight||34)-40));
     button.style.setProperty('--oddi-say-hello-left',Math.round(center)+'px');
     button.style.setProperty('--oddi-say-hello-top',top+'px');
   };
@@ -4740,6 +4746,39 @@ body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);bord
     if(app)positionObserver.observe(app);
   }
   new MutationObserver(placeAboveComposer).observe(document.body,{attributes:true,attributeFilter:['class']});
+})();
+</script>
+<script id="oddi-accuracy-note-position">
+(()=>{
+  const note=document.getElementById("oddiAccuracyNote");
+  const composer=document.getElementById("oddiComposerShell");
+  if(!note||!composer)return;
+  document.body.appendChild(note);
+  let frame=0;
+  const sync=()=>{
+    cancelAnimationFrame(frame);
+    frame=requestAnimationFrame(()=>{
+      const rect=composer.getBoundingClientRect();
+      const visible=rect.width>0&&rect.height>0&&!composer.hidden;
+      note.hidden=!visible;
+      if(!visible)return;
+      note.style.left=`${Math.round(rect.left+rect.width/2)}px`;
+      note.style.top=`${Math.max(2,Math.round(rect.top-note.offsetHeight-7))}px`;
+    });
+  };
+  sync();
+  window.addEventListener("resize",sync,{passive:true});
+  window.addEventListener("orientationchange",sync,{passive:true});
+  window.addEventListener("scroll",sync,{passive:true,capture:true});
+  window.visualViewport?.addEventListener("resize",sync,{passive:true});
+  window.visualViewport?.addEventListener("scroll",sync,{passive:true});
+  window.addEventListener("oddi:sidebar-open",sync);
+  window.addEventListener("oddi:sidebar-close",sync);
+  window.addEventListener("oddi:attachments-changed",sync);
+  window.addEventListener("oddi:attachments-cleared",sync);
+  if(window.ResizeObserver){const observer=new ResizeObserver(sync);observer.observe(composer);observer.observe(note);}
+  new MutationObserver(sync).observe(composer,{attributes:true,attributeFilter:["class","style","hidden"]});
+  new MutationObserver(sync).observe(document.body,{attributes:true,attributeFilter:["class"]});
 })();
 </script>
 <div id="binModal" class="utility-modal" aria-hidden="true">
@@ -12421,8 +12460,18 @@ function oddiLibraryRecallInstruction(file) {
         "Treat the retrieved attachment as the user's existing " +
         "Library file, not as a newly uploaded file.\n" +
         "If asked whether the file exists, answer clearly that " +
-        "ODDI has it in the user's Library.\n"
+        "I have it in your Library.\n"
     );
+}
+
+function oddiLibraryCitationSource(file) {
+    if (!file?.id) return null;
+    return {
+        type: "file",
+        storage: "server",
+        id: String(file.id),
+        name: String(file.filename || file.name || "Library file")
+    };
 }
 
 async function oddiPrepareLibraryRecall(
@@ -12434,7 +12483,8 @@ async function oddiPrepareLibraryRecall(
         return {
             file: null,
             upload: null,
-            instruction: ""
+            instruction: "",
+            sources: []
         };
     }
 
@@ -12443,12 +12493,13 @@ async function oddiPrepareLibraryRecall(
         return {
             file: null,
             upload: null,
-            instruction: oddiLibraryInventoryInstruction(files)
+            instruction: oddiLibraryInventoryInstruction(files),
+            sources: Array.isArray(files) ? files.map(oddiLibraryCitationSource).filter(Boolean) : []
         };
     }
 
     if (hasUserAttachments) {
-        return {file: null, upload: null, instruction: ""};
+        return {file: null, upload: null, instruction: "", sources: []};
     }
 
     const file =
@@ -12466,13 +12517,15 @@ async function oddiPrepareLibraryRecall(
                 file: null,
                 upload: null,
                 instruction: oddiLibraryInventoryInstruction(files) +
-                    "\nThe requested filename was not matched to an available Library entry. Say that clearly and ask which listed file the user means; do not guess."
+                    "\nThe requested filename was not matched to an available Library entry. Say that clearly and ask which listed file the user means; do not guess.",
+                sources: Array.isArray(files) ? files.map(oddiLibraryCitationSource).filter(Boolean) : []
             };
         }
         return {
             file: null,
             upload: null,
-            instruction: ""
+            instruction: "",
+            sources: []
         };
     }
 
@@ -12490,7 +12543,8 @@ async function oddiPrepareLibraryRecall(
         return {
             file,
             upload: null,
-            instruction: oddiLibraryRecallInstruction(file)
+            instruction: oddiLibraryRecallInstruction(file),
+            sources: [oddiLibraryCitationSource(file)].filter(Boolean)
         };
     }
 
@@ -12507,7 +12561,8 @@ async function oddiPrepareLibraryRecall(
             file,
             upload: null,
             instruction: oddiLibraryRecallInstruction(file) +
-                "The file's existence is confirmed, but its stored contents could not be retrieved for this request. Be transparent and do not guess what it contains."
+                "The file's existence is confirmed, but its stored contents could not be retrieved for this request. Be transparent and do not guess what it contains.",
+            sources: [oddiLibraryCitationSource(file)].filter(Boolean)
         };
     }
 
@@ -12515,8 +12570,110 @@ async function oddiPrepareLibraryRecall(
         file,
         upload,
         instruction:
-            oddiLibraryRecallInstruction(file)
+            oddiLibraryRecallInstruction(file),
+        sources: [oddiLibraryCitationSource(file)].filter(Boolean)
     };
+}
+
+function oddiNormalizeCitationSource(source) {
+    if (!source || typeof source !== "object") return null;
+    if (source.type === "web") {
+        let url;
+        try {
+            url = new URL(String(source.url || ""));
+        } catch (_) {
+            return null;
+        }
+        if (!["http:", "https:"].includes(url.protocol)) return null;
+        return {type: "web", title: String(source.title || source.name || url.hostname).slice(0, 240), url: url.href};
+    }
+    if (source.type === "file" && (source.id || source.localId)) {
+        return {
+            type: "file",
+            storage: source.storage === "local" || source.localId ? "local" : "server",
+            id: String(source.localId || source.id),
+            name: String(source.name || source.filename || "Uploaded file").slice(0, 240)
+        };
+    }
+    return null;
+}
+
+function oddiMergeCitationSources(...groups) {
+    const merged = [];
+    const seen = new Set();
+    groups.flat().forEach(raw => {
+        const source = oddiNormalizeCitationSource(raw);
+        if (!source) return;
+        const key = source.type === "web"
+            ? `web:${source.url.replace(/\/$/, "").toLowerCase()}`
+            : `file:${source.storage}:${source.id}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        merged.push(source);
+    });
+    return merged.slice(0, 48);
+}
+
+function oddiResponseCitationSources(response, librarySources = [], outgoingFiles = [], fileRefs = []) {
+    let serverSources = [];
+    try {
+        const raw = response?.headers?.get?.("X-Oddi-Sources");
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(parsed)) serverSources = parsed;
+    } catch (error) {
+        console.warn("Could not parse source metadata from the chat response:", error);
+    }
+    const knownFiles = new Set(oddiMergeCitationSources(serverSources, librarySources)
+        .filter(source => source.type === "file")
+        .map(source => source.name.trim().toLowerCase()));
+    const localFiles = [];
+    (Array.isArray(outgoingFiles) ? outgoingFiles : []).forEach((file, index) => {
+        if (file?.oddiLibrarySourceId) return;
+        const ref = fileRefs[index];
+        const name = String(file?.name || ref?.name || "Uploaded file");
+        if (!ref?.id || knownFiles.has(name.trim().toLowerCase())) return;
+        localFiles.push({type: "file", storage: "local", id: String(ref.id), name});
+    });
+    return oddiMergeCitationSources(serverSources, librarySources, localFiles);
+}
+
+function oddiRenderMessageSources(bubble, rawSources) {
+    if (!bubble) return;
+    bubble.querySelector(".oddi-message-sources")?.remove();
+    const sources = oddiMergeCitationSources(rawSources || []);
+    if (!sources.length) return;
+
+    const host = document.createElement("div");
+    host.className = "oddi-message-sources";
+    host.setAttribute("aria-label", "Sources used for this answer");
+    const single = sources.length === 1 ? sources[0] : null;
+    if (single?.type === "web") {
+        const link = document.createElement("a");
+        link.href = single.url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = `(${single.title})`;
+        link.title = single.url;
+        host.appendChild(link);
+    } else {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "oddi-source-open";
+        button.textContent = single ? `(${single.name})` : "(Sources)";
+        button.addEventListener("click", event => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (single) {
+                window.dispatchEvent(new CustomEvent("oddi:open-source-file", {detail: {source: single, trigger: button}}));
+            } else {
+                window.dispatchEvent(new CustomEvent("oddi:open-sources", {detail: {sources, trigger: button}}));
+            }
+        });
+        host.appendChild(button);
+    }
+    const anchor = bubble.querySelector(".odd-chat-meta") || bubble.querySelector(".bot-actions");
+    if (anchor) bubble.insertBefore(host, anchor);
+    else bubble.appendChild(host);
 }
 
 function oddiPostChatForm(formData, signal, onUploadProgress) {
@@ -12827,6 +12984,7 @@ async function sendMessage(
         targetConversation.messages = [];
     }
 
+    let outgoingFileRefs = [];
     if (!skipUserMessage) {
         let fileHTML = "";
         const fileRefs = [];
@@ -12904,6 +13062,7 @@ async function sendMessage(
             fileRefs,
             pinned: false
         };
+        outgoingFileRefs = fileRefs;
 
         targetConversation.messages.push(newUserMessage);
 
@@ -12932,6 +13091,9 @@ async function sendMessage(
         if (!browserLocalChatStorage) {
             void saveExplicitMemoryFromUserMessage(message).catch(error => console.warn("Could not save the explicit memory request:", error));
         }
+    } else {
+        const previousUserMessage = [...targetConversation.messages].reverse().find(item => item?.role === "user");
+        outgoingFileRefs = Array.isArray(previousUserMessage?.fileRefs) ? previousUserMessage.fileRefs : [];
     }
 
 
@@ -13023,7 +13185,8 @@ async function sendMessage(
     let libraryRecall = {
         file: null,
         upload: null,
-        instruction: ""
+        instruction: "",
+        sources: []
     };
 
     try {
@@ -13069,6 +13232,12 @@ async function sendMessage(
         "history",
         JSON.stringify(libraryHistory)
     );
+
+    const sourceFileIds = new Set([
+        ...(Array.isArray(libraryRecall.sources) ? libraryRecall.sources : []).map(source => source?.id),
+        ...outgoingFiles.map(file => file?.oddiLibrarySourceId)
+    ].map(id => String(id || "").trim()).filter(Boolean));
+    sourceFileIds.forEach(id => formData.append("source_file_ids", id));
 
     if (targetConversationId !== null) {
         formData.append("conversation_id", String(targetConversationId));
@@ -13166,6 +13335,7 @@ async function sendMessage(
 
         const reply = await response.text();
         showLibraryUploadResult(response, outgoingFiles);
+        const messageSources = oddiResponseCitationSources(response, libraryRecall.sources, outgoingFiles, outgoingFileRefs);
         const responseMeta = {
             latency_ms: Number(response.headers.get("X-Oddi-Latency-Ms") || 0),
             token_estimate: Number(response.headers.get("X-Oddi-Token-Estimate") || Math.ceil(reply.length / 4)),
@@ -13219,7 +13389,8 @@ async function sendMessage(
                 persistedAssistantMessageId,
                 completedAt,
                 responseMeta,
-                documentMode ? {title: documentTitle} : null
+                documentMode ? {title: documentTitle} : null,
+                messageSources
             );
 
         } else {
@@ -13243,7 +13414,8 @@ async function sendMessage(
                 persistedAssistantMessageId,
                 completedAt,
                 responseMeta,
-                documentMode ? {title: documentTitle} : null
+                documentMode ? {title: documentTitle} : null,
+                messageSources
             );
         }
 
@@ -14269,7 +14441,8 @@ async function finishAIMessage(
     assistantMessageId = null,
     completedAt = null,
     responseMeta = {},
-    documentMetadata = null
+    documentMetadata = null,
+    sources = []
 ) {
 
     if (generationStopped) return;
@@ -14300,6 +14473,7 @@ async function finishAIMessage(
         `Took ${formatAssistantElapsedTime(responseMeta.elapsed_ms)}`
     );
 
+    const normalizedSources = oddiMergeCitationSources(sources || []);
     const newAssistantMessage = {
         id: assistantMessageId || makeMessageId(),
         role: "assistant",
@@ -14308,7 +14482,8 @@ async function finishAIMessage(
         feedback: null,
         background_completion: true,
         completed_at: completedAt || new Date().toISOString(),
-        response_meta: responseMeta
+        response_meta: responseMeta,
+        sources: normalizedSources
     };
     if (documentMetadata?.title) {
         newAssistantMessage.document_workspace = true;
@@ -14344,6 +14519,7 @@ async function finishAIMessage(
 
     if (botMessage && botMessage.isConnected && conversationIndex >= 0 && conversations[currentConversation] === conversation) {
         botMessage.dataset.messageIndex = assistantIndex;
+        oddiRenderMessageSources(botMessage, normalizedSources);
         const metaHost = botMessage.querySelector(".odd-chat-meta");
         const prefs = window.__oddiChatPreferences || {};
         if (metaHost) {
@@ -15682,6 +15858,7 @@ async function openConversation(index) {
         if (msg?.role !== "assistant") return;
         const bubble = chat.querySelector(`.bot-message[data-message-index="${messageIndex}"]`);
         if (!bubble) return;
+        oddiRenderMessageSources(bubble, msg.sources);
         if (isDocumentOutputMessage(conversation, messageIndex)) {
             addDocumentOpenControl(bubble, conversation, messageIndex, currentConversation);
         } else {
@@ -25746,6 +25923,11 @@ body.oddi-chat-active .chatbox{overflow-y:auto !important;touch-action:pan-y !im
 .oddi-library-detail{margin-top:3px;font-size:10px;color:#777;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .oddi-library-empty{grid-column:1/-1;padding:42px 18px;text-align:center;color:#888;font-size:13px;}
 body.dark-mode #oddiLibraryModal{background:rgba(0,0,0,.62);}
+.oddi-message-sources{display:flex;align-items:center;gap:4px;margin:5px 0 2px;padding:0;color:#68766d;font-size:12px;line-height:1.45;}
+.oddi-message-sources a,.oddi-message-sources .oddi-source-open{max-width:100%;overflow:hidden;border:0;background:transparent;color:#16884a;font:inherit;text-decoration:underline;text-decoration-color:rgba(22,136,74,.42);text-underline-offset:2px;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+.oddi-message-sources a:hover,.oddi-message-sources .oddi-source-open:hover{color:#0b6f39;text-decoration-color:currentColor;}
+body.dark-mode .oddi-message-sources,body.oddi-system-theme.dark-mode .oddi-message-sources{color:#9ba99f;}
+body.dark-mode .oddi-message-sources a,body.dark-mode .oddi-message-sources .oddi-source-open,body.oddi-system-theme.dark-mode .oddi-message-sources a,body.oddi-system-theme.dark-mode .oddi-message-sources .oddi-source-open{color:#72d998;}
 body.dark-mode .oddi-library-box{background:#111;color:#eee;border-color:#2a2a2a;box-shadow:0 28px 90px rgba(0,0,0,.55);}
 body.dark-mode .oddi-library-head,.dark-mode .oddi-library-toolbar{border-color:#292929;}
 body.dark-mode .oddi-library-sub,.dark-mode .oddi-library-detail{color:#888;}
@@ -25995,6 +26177,96 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       <div id="oddiLibraryList" class="oddi-library-list"><div class="oddi-library-empty">Loading Library…</div></div>
     </section>`;
   document.body.appendChild(libraryModal);
+
+  const sourcesModal=document.createElement("div");
+  sourcesModal.id="oddiSourcesModal";
+  sourcesModal.setAttribute("aria-hidden","true");
+  sourcesModal.innerHTML=`
+    <section class="oddi-sources-box" role="dialog" aria-modal="true" aria-labelledby="oddiSourcesTitle">
+      <header class="oddi-sources-head">
+        <h3 id="oddiSourcesTitle">Sources</h3>
+        <button type="button" class="oddi-sources-close" aria-label="Close sources">×</button>
+      </header>
+      <div class="oddi-sources-list"></div>
+    </section>`;
+  document.body.appendChild(sourcesModal);
+  const sourcesList=sourcesModal.querySelector(".oddi-sources-list");
+  const sourcesStyle=document.createElement("style");
+  sourcesStyle.textContent=`
+    #oddiSourcesModal{position:fixed;inset:0;z-index:2147482998;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.46);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
+    #oddiSourcesModal.show{display:flex}
+    .oddi-sources-box{width:min(560px,calc(100vw - 28px));max-height:min(72vh,620px);max-height:min(72dvh,620px);display:flex;flex-direction:column;overflow:hidden;border:1px solid rgba(0,0,0,.12);border-radius:18px;background:#fff;color:#172019;box-shadow:0 28px 90px rgba(0,0,0,.27)}
+    .oddi-sources-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(0,0,0,.09)}
+    .oddi-sources-head h3{margin:0;font-size:17px;font-weight:700}
+    .oddi-sources-close{margin-left:auto;width:34px;height:34px;border:0;border-radius:50%;background:rgba(127,127,127,.12);color:inherit;font-size:21px;line-height:1;cursor:pointer}
+    .oddi-sources-list{overflow:auto;padding:10px;display:grid;gap:7px}
+    .oddi-source-row{width:100%;min-width:0;display:flex;align-items:center;gap:11px;padding:12px;border:1px solid rgba(127,127,127,.20);border-radius:11px;background:rgba(127,127,127,.045);color:inherit;text-align:left;text-decoration:none;font:inherit;cursor:pointer}
+    .oddi-source-row:hover{background:rgba(32,199,107,.09);border-color:rgba(32,199,107,.3)}
+    .oddi-source-row-icon{flex:0 0 22px;text-align:center;font-size:17px}
+    .oddi-source-row-copy{min-width:0;display:grid;gap:3px}
+    .oddi-source-row-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:650}
+    .oddi-source-row-detail{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#777;font-size:11px}
+    body.dark-mode .oddi-sources-box,body.oddi-system-theme.dark-mode .oddi-sources-box{background:#151715;color:#edf4ef;border-color:#333;box-shadow:0 28px 90px rgba(0,0,0,.6)}
+    body.dark-mode .oddi-sources-head,body.oddi-system-theme.dark-mode .oddi-sources-head{border-color:#303530}
+    body.dark-mode .oddi-sources-close,body.oddi-system-theme.dark-mode .oddi-sources-close{background:#252925;color:#eee}
+    body.dark-mode .oddi-source-row,body.oddi-system-theme.dark-mode .oddi-source-row{border-color:#343a35;background:rgba(255,255,255,.035)}
+    body.dark-mode .oddi-source-row:hover,body.oddi-system-theme.dark-mode .oddi-source-row:hover{background:rgba(32,199,107,.11);border-color:rgba(32,199,107,.32)}
+    body.dark-mode .oddi-source-row-detail,body.oddi-system-theme.dark-mode .oddi-source-row-detail{color:#a6afa8}
+    @media(max-width:600px){#oddiSourcesModal{align-items:flex-end;padding:10px}.oddi-sources-box{width:100%;max-height:min(72vh,620px);max-height:min(72dvh,620px);border-radius:18px}}
+  `;
+  document.head.appendChild(sourcesStyle);
+  function closeSources(){sourcesModal.classList.remove("show");sourcesModal.setAttribute("aria-hidden","true");}
+  async function openSourceFile(source,trigger){
+    const normalized=oddiNormalizeCitationSource(source);
+    if(!normalized||normalized.type!=="file")return;
+    closeSources();
+    try{
+      if(normalized.storage==="local"){
+        await openOddiUploadedFile(normalized.id,trigger);
+        return;
+      }
+      const response=await fetch(`/api/files/${encodeURIComponent(normalized.id)}`,{
+        credentials:"same-origin",headers:{Accept:"*/*"},cache:"no-store"
+      });
+      if(!response.ok)throw new Error(response.status===404?"This Library file is no longer available.":`Could not open this Library file (${response.status}).`);
+      const blob=await response.blob();
+      const filename=normalized.name||"Library file";
+      const upload=new File([blob],filename,{type:blob.type||"application/octet-stream",lastModified:Date.now()});
+      try{await storeOddiLibraryFile(normalized.id,blob,{name:filename,type:upload.type});}catch(error){console.warn("Source file opened but could not be cached locally:",error);}
+      if(typeof window.__oddiPreviewAttachment!=="function")throw new Error("The file preview is not ready yet.");
+      window.__oddiPreviewAttachment(upload,trigger);
+    }catch(error){
+      console.error("Could not open cited source file:",error);
+      window.showOddiToast?.(error.message||"Could not open this source file.","error");
+    }
+  }
+  function showSources(rawSources){
+    const sources=oddiMergeCitationSources(Array.isArray(rawSources)?rawSources:[]);
+    sourcesList.replaceChildren();
+    sources.forEach(source=>{
+      const row=source.type==="web"?document.createElement("a"):document.createElement("button");
+      row.className="oddi-source-row";
+      if(source.type==="web"){
+        row.href=source.url;row.target="_blank";row.rel="noopener noreferrer";
+      }else{
+        row.type="button";
+        row.addEventListener("click",()=>openSourceFile(source,row));
+      }
+      const icon=document.createElement("span");icon.className="oddi-source-row-icon";icon.textContent=source.type==="web"?"↗":"📄";icon.setAttribute("aria-hidden","true");
+      const copy=document.createElement("span");copy.className="oddi-source-row-copy";
+      const name=document.createElement("span");name.className="oddi-source-row-name";name.textContent=source.type==="web"?source.title:source.name;
+      const detail=document.createElement("span");detail.className="oddi-source-row-detail";detail.textContent=source.type==="web"?new URL(source.url).hostname:"Library file";
+      copy.append(name,detail);row.append(icon,copy);sourcesList.appendChild(row);
+    });
+    if(!sources.length){const empty=document.createElement("div");empty.className="oddi-source-row-detail";empty.textContent="No sources were attached to this answer.";sourcesList.appendChild(empty);}
+    sourcesModal.classList.add("show");sourcesModal.setAttribute("aria-hidden","false");
+    sourcesModal.querySelector(".oddi-sources-close")?.focus();
+  }
+  sourcesModal.querySelector(".oddi-sources-close")?.addEventListener("click",closeSources);
+  sourcesModal.addEventListener("click",event=>{if(event.target===sourcesModal)closeSources();});
+  window.addEventListener("oddi:open-sources",event=>showSources(event.detail?.sources));
+  window.addEventListener("oddi:open-source-file",event=>openSourceFile(event.detail?.source,event.detail?.trigger));
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&sourcesModal.classList.contains("show"))closeSources();});
 
   const libraryList=document.getElementById("oddiLibraryList");
   const librarySearch=document.getElementById("oddiLibrarySearch");
@@ -34046,7 +34318,7 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
           const halfWidth=(greeting.offsetWidth||180)/2;
           const viewportWidth=document.documentElement.clientWidth||window.innerWidth;
           const center=Math.min(Math.max(composerRect.left+composerRect.width/2,halfWidth+8),viewportWidth-halfWidth-8);
-          const top=Math.max(8,Math.round(composerRect.top-helloHeight-18));
+          const top=Math.max(8,Math.round(composerRect.top-helloHeight-40));
           greeting.style.setProperty("--oddi-say-hello-left",Math.round(center)+"px");
           greeting.style.setProperty("--oddi-say-hello-top",top+"px");
         }

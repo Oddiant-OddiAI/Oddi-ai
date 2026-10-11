@@ -2690,10 +2690,27 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             library_source_indexes.add(int(raw_index))
         except (TypeError, ValueError):
             continue
+    requested_source_file_ids = list(dict.fromkeys(
+        str(raw_id).strip()
+        for raw_id in form.getlist("source_file_ids")
+        if str(raw_id).strip() and len(str(raw_id).strip()) <= 128
+    ))
+    requested_source_file_id_set = set(requested_source_file_ids)
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = await require_user_id_async(request)
     persist_library_uploads = not is_temporary_browser_account(request)
+    verified_library_records = {}
+    if requested_source_file_ids:
+        try:
+            verified_library_records = {
+                str(record.get("id")): record
+                for record in get_files(user_id)
+                if record.get("id") is not None
+                and str(record.get("id")) in requested_source_file_id_set
+            }
+        except Exception as source_lookup_error:
+            logger.warning("Could not verify cited Library files for user %s: %s", user_id, type(source_lookup_error).__name__)
     fast_reply = fast_response(memory_message) if not engine_files else None
     settings_loaded = fast_reply is None
     user_settings = {}
@@ -2770,6 +2787,9 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             response.headers["X-Oddi-Provider"] = str(response_meta.get("provider") or "Auto routing")
             response.headers["X-Oddi-Latency-Ms"] = str(response_meta.get("latency_ms") or 0)
             response.headers["X-Oddi-Token-Estimate"] = str(response_meta.get("token_estimate") or 0)
+            existing_sources = existing_reply.get("sources") if isinstance(existing_reply.get("sources"), list) else []
+            if existing_sources:
+                response.headers["X-Oddi-Sources"] = json.dumps(existing_sources[:48], separators=(",", ":"))
             return response
 
     # Plan Library persistence before generation, but commit only after the
@@ -3010,16 +3030,118 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             upload_fingerprint,
         )
 
+    # Keep the exact source set with the assistant message so retry and chat
+    # history can render the same citations after a reload.
+    library_file_mappings = [
+        [int(entry.get("upload_index", index)), int(file_record_id)]
+        for index, (entry, file_record_id) in enumerate(
+            zip(upload_library_plan.get("uploads") or [], file_record_ids)
+        )
+    ]
+    library_file_mappings.extend(
+        [int(entry.get("upload_index", 0)), int(entry["file_id"])]
+        for entry in upload_library_plan.get("already_existing_files") or []
+        if entry.get("file_id") is not None
+    )
+    library_file_ids_by_index = {
+        int(upload_index): int(file_id)
+        for upload_index, file_id in library_file_mappings
+    }
+    direct_engine_files = [
+        uploaded_file for upload_index, uploaded_file in enumerate(engine_files)
+        if upload_index not in library_source_indexes
+    ]
+    capability_sources = getattr(reply, "sources", []) or []
+    has_file_search_citations = any(
+        isinstance(source, dict) and source.get("type") == "file_reference"
+        for source in capability_sources
+    )
+    if file_record_ids or library_file_ids_by_index or has_file_search_citations:
+        try:
+            all_library_records = get_files(user_id)
+            verified_library_records.update({
+                str(record.get("id")): record
+                for record in all_library_records
+                if record.get("id") is not None
+            })
+        except Exception as source_lookup_error:
+            logger.warning("Could not load Library filenames for citations for user %s: %s", user_id, type(source_lookup_error).__name__)
+
+    response_sources = []
+    seen_source_keys = set()
+
+    def add_response_source(source):
+        if not isinstance(source, dict):
+            return
+        if source.get("type") == "web":
+            url = str(source.get("url") or "").strip()
+            if not url.startswith(("https://", "http://")):
+                return
+            key = ("web", url.rstrip("/").casefold())
+            normalized = {"type": "web", "title": str(source.get("title") or url)[:240], "url": url[:1800]}
+        elif source.get("type") == "file":
+            file_id = str(source.get("id") or "").strip()
+            filename = str(source.get("name") or source.get("filename") or "").strip()
+            if not file_id or not filename:
+                return
+            key = ("file", file_id)
+            normalized = {"type": "file", "storage": "server", "id": file_id, "name": filename[:240]}
+        else:
+            return
+        if key in seen_source_keys:
+            return
+        seen_source_keys.add(key)
+        if len(response_sources) < 48:
+            response_sources.append(normalized)
+
+    for file_id in requested_source_file_ids:
+        record = verified_library_records.get(file_id)
+        if record:
+            add_response_source({
+                "type": "file",
+                "id": file_id,
+                "name": record.get("filename") or record.get("name") or "Library file",
+            })
+
+    for upload_index, file_id in library_file_ids_by_index.items():
+        record = verified_library_records.get(str(file_id))
+        uploaded_name = ""
+        if 0 <= upload_index < len(direct_engine_files):
+            uploaded_name = str(direct_engine_files[upload_index].filename or "")
+        add_response_source({
+            "type": "file",
+            "id": str(file_id),
+            "name": (record or {}).get("filename") or (record or {}).get("name") or uploaded_name or "Library file",
+        })
+
+    for source in capability_sources:
+        if isinstance(source, dict) and source.get("type") == "file_reference":
+            cited_name = str(source.get("name") or "").strip().casefold()
+            matched_record = next((
+                record for record in verified_library_records.values()
+                if str(record.get("filename") or record.get("name") or "").strip().casefold() == cited_name
+            ), None)
+            if matched_record:
+                add_response_source({
+                    "type": "file",
+                    "id": str(matched_record.get("id")),
+                    "name": matched_record.get("filename") or matched_record.get("name") or source.get("name"),
+                })
+            continue
+        add_response_source(source)
+
     completed_at = datetime.now(timezone.utc).isoformat()
     latency_ms = max(0, int((time.perf_counter() - generation_started) * 1000))
-    token_estimate = max(1, (len(str(reply)) + 3) // 4) if isinstance(reply, str) else 0
+    reply_text = str(reply)
+    token_estimate = max(1, (len(reply_text) + 3) // 4) if isinstance(reply, str) else 0
     assistant_saved_to_conversation = False
     saved_conversation_revision = 0
     if conversation_id is not None and isinstance(reply, str):
         assistant_message = {
             "id": assistant_message_id,
             "role": "assistant",
-            "text": reply,
+            "text": reply_text,
+            "sources": response_sources,
             "pinned": False,
             "feedback": None,
             "background_completion": True,
@@ -3119,22 +3241,13 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     response.headers["X-Oddi-Conversation-Persisted"] = "1" if assistant_saved_to_conversation else "0"
     if assistant_saved_to_conversation:
         response.headers["X-Oddi-Conversation-Revision"] = str(saved_conversation_revision)
+    if response_sources:
+        response.headers["X-Oddi-Sources"] = json.dumps(response_sources, separators=(",", ":"))
     planned_count = len(upload_library_plan.get("uploads") or [])
     replaced_count = min(planned_count, len(upload_library_plan.get("replace_file_ids") or []))
     response.headers["X-Oddi-Library-Added-Count"] = str(max(0, planned_count - replaced_count))
     response.headers["X-Oddi-Library-Updated-Count"] = str(replaced_count)
     response.headers["X-Oddi-Library-Existing-Count"] = str(int(upload_library_plan.get("already_exists_count") or 0))
-    library_file_mappings = [
-        [int(entry.get("upload_index", index)), int(file_record_id)]
-        for index, (entry, file_record_id) in enumerate(
-            zip(upload_library_plan.get("uploads") or [], file_record_ids)
-        )
-    ]
-    library_file_mappings.extend(
-        [int(entry.get("upload_index", 0)), int(entry["file_id"])]
-        for entry in upload_library_plan.get("already_existing_files") or []
-        if entry.get("file_id") is not None
-    )
     if library_file_mappings:
         response.headers["X-Oddi-Library-File-Indexes"] = json.dumps(
             library_file_mappings,

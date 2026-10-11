@@ -294,6 +294,61 @@ def _check_user_quota(
 # SPECIAL-CAPABILITY OPENAI / GROQ PATH
 # ==========================================
 
+class _CapabilityReply(str):
+    """Text plus citations returned by a Responses API capability call."""
+
+    def __new__(cls, text, sources=None):
+        instance = super().__new__(cls, str(text or ""))
+        instance.sources = list(sources or [])
+        return instance
+
+
+def _response_citations(response):
+    """Collect actual URL and file citations without inventing sources."""
+    citations = []
+    seen_urls = set()
+
+    def value(item, key, default=None):
+        return item.get(key, default) if isinstance(item, dict) else getattr(item, key, default)
+
+    for output_item in value(response, "output", []) or []:
+        for content_item in value(output_item, "content", []) or []:
+            for annotation in value(content_item, "annotations", []) or []:
+                annotation_type = str(value(annotation, "type", ""))
+                if annotation_type == "file_citation":
+                    filename = str(value(annotation, "filename", "") or "").strip()
+                    file_id = str(value(annotation, "file_id", "") or "").strip()
+                    if filename:
+                        key = ("file", filename.casefold())
+                        if key not in seen_urls:
+                            seen_urls.add(key)
+                            citations.append({
+                                "type": "file_reference",
+                                "name": filename[:240],
+                                "file_search_id": file_id[:240],
+                            })
+                    if len(citations) >= 12:
+                        return citations
+                    continue
+                if annotation_type != "url_citation":
+                    continue
+                url = str(value(annotation, "url", "") or "").strip()
+                if not url.startswith(("https://", "http://")):
+                    continue
+                key = ("web", url.rstrip("/").casefold())
+                if key in seen_urls:
+                    continue
+                seen_urls.add(key)
+                title = str(value(annotation, "title", "") or "").strip()
+                citations.append({
+                    "type": "web",
+                    "title": title[:240] or url,
+                    "url": url[:1800],
+                })
+                if len(citations) >= 12:
+                    return citations
+    return citations
+
 def _special_capability_response(
     chat_history,
     vector_store_id=None,
@@ -334,7 +389,10 @@ def _special_capability_response(
             tools=tools,
         )
 
-        return response.output_text
+        return _CapabilityReply(
+            response.output_text,
+            sources=_response_citations(response),
+        )
 
     except Exception as openai_error:
 
