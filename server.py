@@ -46,6 +46,7 @@ from app.database import (
     ODDI_CHAT_FILES_STORAGE,
     ODDI_DRIVE_CHAT_STORAGE,
     ODDI_RENDER_LAPTOP_REDIRECT,
+    MEMORY_EXTRACTION_BATCH_SIZE,
     create_tables,
     create_user,
     get_user_by_email,
@@ -94,6 +95,7 @@ from app.google_drive_storage import (
 )
 
 from app.engine import process_message
+from app.attachments import MAX_UPLOAD_BYTES
 from app.config import client
 from app.fast_responses import fast_response
 from identity.identity import create_identity
@@ -221,12 +223,14 @@ def _plan_chat_library_uploads(user_id, file_payloads):
     """Plan content deduplication and same-name replacement without writing."""
     library_records = get_files(user_id, include_content_hash=True)
     library_hashes = set()
+    library_file_ids_by_hash = {}
     library_assets = []
 
     for record in library_records:
         digest, physical_size = _library_record_content_details(user_id, record)
         if digest:
             library_hashes.add(digest)
+            library_file_ids_by_hash[digest] = record.get("id")
             if str(record.get("content_hash") or "").lower() != digest:
                 try:
                     update_file_record(record.get("id"), user_id, content_hash=digest)
@@ -243,7 +247,7 @@ def _plan_chat_library_uploads(user_id, file_payloads):
     # the last selected version for the Library. The engine still gets every
     # uploaded stream exactly as sent.
     latest_by_name = {}
-    for uploaded_file, file_bytes in file_payloads:
+    for upload_index, (uploaded_file, file_bytes) in enumerate(file_payloads):
         filename = uploaded_file.filename or "unnamed-file"
         latest_by_name[_library_filename_key(filename)] = {
             "uploaded_file": uploaded_file,
@@ -251,15 +255,23 @@ def _plan_chat_library_uploads(user_id, file_payloads):
             "filename": filename,
             "filename_key": _library_filename_key(filename),
             "digest": hashlib.sha256(file_bytes).hexdigest(),
+            "upload_index": upload_index,
         }
 
     planned_uploads = []
     already_exists_count = 0
+    already_existing_files = []
     seen_hashes = set(library_hashes)
     for entry in latest_by_name.values():
         if entry["digest"] in seen_hashes:
             if entry["digest"] in library_hashes:
                 already_exists_count += 1
+                existing_file_id = library_file_ids_by_hash.get(entry["digest"])
+                if existing_file_id is not None:
+                    already_existing_files.append({
+                        "upload_index": entry["upload_index"],
+                        "file_id": existing_file_id,
+                    })
             continue
         seen_hashes.add(entry["digest"])
         planned_uploads.append(entry)
@@ -300,6 +312,7 @@ def _plan_chat_library_uploads(user_id, file_payloads):
         "replace_storage_keys": replace_keys,
         "quota_credit_bytes": quota_credit_bytes,
         "already_exists_count": already_exists_count,
+        "already_existing_files": already_existing_files,
     }
 
 
@@ -737,6 +750,8 @@ def set_user_session(request: Request, user, auth_provider=None):
 
     if auth_provider:
         request.session["auth_provider"] = auth_provider
+    else:
+        request.session.pop("auth_provider", None)
 
 
 def _trusted_drive_session_user(request: Request):
@@ -855,6 +870,13 @@ def require_user_id(request: Request):
         request.session.clear()
         raise HTTPException(status_code=401, detail="This account is no longer available. Sign in again.")
     return user["id"] if ODDI_LOCAL_ONLY_STORAGE else user_id
+
+
+def is_temporary_browser_account(request: Request):
+    """Return true for the throwaway browser identity that cannot sync across devices."""
+    provider = str(request.session.get("auth_provider") or "").strip().casefold()
+    email = str(request.session.get("email") or "").strip().casefold()
+    return provider == "browser-local" or email.endswith("@local.oddi.invalid")
 
 
 async def require_user_id_async(request: Request):
@@ -1012,6 +1034,7 @@ def home(request: Request):
         username=request.session.get("username"),
         user_id=request.session.get("user_id"),
         browser_local_chats=ODDI_BROWSER_LOCAL_CHATS,
+        library_sync_enabled=not is_temporary_browser_account(request),
     )
 
     # Preserve Flask's no-cache behavior for the live conversation-sync page.
@@ -2031,6 +2054,7 @@ def api_get_memory(request: Request):
             "memory_settings": memory_settings,
             "auto_memory": {
                 "available": memory_available,
+                "batch_size": MEMORY_EXTRACTION_BATCH_SIZE,
                 "browser_local_chats": ODDI_BROWSER_LOCAL_CHATS,
                 "provider_configured": provider_configured,
                 "queue": queue_status,
@@ -2331,6 +2355,106 @@ def api_get_files(request: Request):
     )
 
 
+@app.post("/api/files/import", name="api_import_library_file")
+async def api_import_library_file(request: Request):
+    user_id = await require_user_id_async(request)
+    if is_temporary_browser_account(request):
+        return JSONResponse(
+            {"error": "Sign in to an account to sync Library files across devices."},
+            status_code=403,
+        )
+
+    try:
+        form = await request.form()
+    except Exception:
+        return JSONResponse({"error": "The uploaded file could not be read."}, status_code=400)
+    upload = form.get("file")
+    if not hasattr(upload, "file") or not hasattr(upload, "filename"):
+        return JSONResponse({"error": "Choose a file to add to your Library."}, status_code=400)
+
+    adapted_upload = adapt_uploaded_files([upload])[0]
+    adapted_upload.filename = os.path.basename(str(adapted_upload.filename or "").replace("\\", "/")) or "uploaded-file"
+    file_bytes = await upload.read(MAX_UPLOAD_BYTES + 1)
+    if len(file_bytes) > MAX_UPLOAD_BYTES:
+        await upload.close()
+        return JSONResponse(
+            {"error": "This file is larger than the 64 MB upload limit."},
+            status_code=413,
+        )
+    await upload.close()
+
+    plan = await run_in_threadpool(
+        _plan_chat_library_uploads,
+        user_id,
+        [(adapted_upload, file_bytes)],
+    )
+    existing_file_ids = [
+        int(entry["file_id"])
+        for entry in plan.get("already_existing_files") or []
+        if entry.get("file_id") is not None
+    ]
+    if not plan.get("uploads"):
+        existing_record = (
+            await run_in_threadpool(get_file, existing_file_ids[0], user_id)
+            if existing_file_ids else None
+        )
+        return JSONResponse({
+            "success": True,
+            "file_ids": existing_file_ids,
+            "filename": (existing_record or {}).get("filename"),
+            "added_count": 0,
+        })
+
+    try:
+        current_count = await run_in_threadpool(count_files, user_id)
+        replacement_count = len(plan.get("replace_file_ids") or [])
+        planned_count = len(plan.get("uploads") or [])
+        if current_count - replacement_count + planned_count > USER_FILE_LIMIT:
+            return JSONResponse(
+                {"error": "Your Library is full (30 files). Delete an older file from Library before uploading more."},
+                status_code=413,
+            )
+
+        planned_bytes = sum(len(entry.get("file_bytes") or b"") for entry in plan["uploads"])
+        if planned_bytes:
+            quota = await run_in_threadpool(storage_router.get_file_quota, user_id)
+            if planned_bytes > int(quota.get("remaining_bytes", 0) or 0) + int(plan.get("quota_credit_bytes") or 0):
+                return JSONResponse(
+                    {"error": "File storage quota exceeded.", "storage": quota},
+                    status_code=413,
+                )
+
+        file_ids = await run_in_threadpool(
+            _persist_chat_library_uploads,
+            user_id,
+            None,
+            plan,
+        )
+    except FileLimitExceeded as error:
+        return JSONResponse({"error": str(error)}, status_code=413)
+    except StorageQuotaExceeded as error:
+        logger.info("Local Library file import exceeded quota for user %s: %s", user_id, error)
+        return JSONResponse(
+            {"error": "File storage quota exceeded.", "storage": storage_router.get_file_quota(user_id)},
+            status_code=413,
+        )
+    except Exception:
+        logger.exception("Local Library file import failed for user %s", user_id)
+        return JSONResponse({"error": "This file could not be synced to your Library."}, status_code=500)
+
+    synced_file_ids = [int(file_id) for file_id in file_ids] + existing_file_ids
+    synced_record = (
+        await run_in_threadpool(get_file, synced_file_ids[0], user_id)
+        if synced_file_ids else None
+    )
+    return JSONResponse({
+        "success": True,
+        "file_ids": synced_file_ids,
+        "filename": (synced_record or {}).get("filename"),
+        "added_count": len(file_ids),
+    })
+
+
 @app.get("/api/storage", name="api_storage_info")
 def api_storage_info(request: Request):
     """
@@ -2569,6 +2693,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = await require_user_id_async(request)
+    persist_library_uploads = not is_temporary_browser_account(request)
     fast_reply = fast_response(memory_message) if not engine_files else None
     settings_loaded = fast_reply is None
     user_settings = {}
@@ -2660,7 +2785,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         "already_exists_count": 0,
     }
 
-    if engine_files and not ODDI_BROWSER_LOCAL_CHATS:
+    if engine_files and persist_library_uploads:
         file_payloads = []
 
         try:
@@ -2878,7 +3003,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 status_code=500,
             )
 
-    if engine_files and not ODDI_BROWSER_LOCAL_CHATS:
+    if engine_files and persist_library_uploads:
         _remember_chat_upload_retry_fingerprint(
             user_id,
             generation_id,
@@ -2999,6 +3124,22 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     response.headers["X-Oddi-Library-Added-Count"] = str(max(0, planned_count - replaced_count))
     response.headers["X-Oddi-Library-Updated-Count"] = str(replaced_count)
     response.headers["X-Oddi-Library-Existing-Count"] = str(int(upload_library_plan.get("already_exists_count") or 0))
+    library_file_mappings = [
+        [int(entry.get("upload_index", index)), int(file_record_id)]
+        for index, (entry, file_record_id) in enumerate(
+            zip(upload_library_plan.get("uploads") or [], file_record_ids)
+        )
+    ]
+    library_file_mappings.extend(
+        [int(entry.get("upload_index", 0)), int(entry["file_id"])]
+        for entry in upload_library_plan.get("already_existing_files") or []
+        if entry.get("file_id") is not None
+    )
+    if library_file_mappings:
+        response.headers["X-Oddi-Library-File-Indexes"] = json.dumps(
+            library_file_mappings,
+            separators=(",", ":"),
+        )
     return response
 
 

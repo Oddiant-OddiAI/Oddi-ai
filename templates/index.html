@@ -4092,7 +4092,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
 </style>
 
 </head>
-<body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}" data-browser-local-chats="{{ 'true' if browser_local_chats else 'false' }}">
+<body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}" data-browser-local-chats="{{ 'true' if browser_local_chats else 'false' }}" data-library-sync-enabled="{{ 'true' if library_sync_enabled else 'false' }}">
 <!-- ODDI-AI Video Splash Screen -->
 <div id="oddi-video-splash" class="oddi-video-splash" aria-hidden="false">
     <video
@@ -5331,7 +5331,10 @@ function openOddiFileDB() {
             }
         };
 
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+            request.result.onversionchange = () => request.result.close();
+            resolve(request.result);
+        };
         request.onerror = () => reject(request.error);
     });
 }
@@ -5368,6 +5371,77 @@ async function getOddiStoredFile(id) {
             reject(request.error);
         };
     });
+}
+
+function oddiLibraryCacheKey(fileId) {
+    const accountId = String(document.body?.dataset?.userId || "account");
+    return `oddi-library:${accountId}:${String(fileId)}`;
+}
+
+function oddiLibraryDownloadMarkerKey(fileId) {
+    return `${ODDI_FILE_DB}:downloaded:${oddiLibraryCacheKey(fileId)}`;
+}
+
+async function storeOddiLibraryFile(fileId, file, metadata = {}) {
+    if (!file?.size && file?.size !== 0) throw new Error("The file content is unavailable.");
+    const id = oddiLibraryCacheKey(fileId);
+    const name = String(metadata.name || metadata.filename || file.name || file.filename || "library-file");
+    const type = String(metadata.type || metadata.mime_type || file.type || file.mime_type || "application/octet-stream");
+    const db = await openOddiFileDB();
+    try {
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(ODDI_FILE_STORE, "readwrite");
+            tx.objectStore(ODDI_FILE_STORE).put({ id, name, type, blob: file, libraryFileId: String(fileId) });
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error || new Error("Could not cache the file on this device."));
+            tx.onabort = () => reject(tx.error || new Error("Could not cache the file on this device."));
+        });
+    } finally {
+        db.close();
+    }
+    try {
+        localStorage.setItem(oddiLibraryDownloadMarkerKey(fileId), JSON.stringify({ cachedAt: Date.now(), size: Number(file.size || 0) }));
+    } catch (error) {
+        await deleteOddiLibraryCachedFile({ id: fileId }).catch(() => {});
+        throw new Error("The file was downloaded, but this browser could not save its local availability status.", { cause: error });
+    }
+    return id;
+}
+
+async function getOddiLibraryDownloadStates(files) {
+    const states = new Map();
+    if (!Array.isArray(files) || !files.length) return states;
+    files.forEach(file => {
+        let downloaded = false;
+        try { downloaded = !!localStorage.getItem(oddiLibraryDownloadMarkerKey(file.id)); } catch (_) {}
+        states.set(String(file.id), downloaded);
+    });
+    return states;
+}
+
+async function getOddiLibraryCachedFile(file) {
+    const cached = await getOddiStoredFile(oddiLibraryCacheKey(file.id));
+    if (cached?.blob) return cached;
+    await deleteOddiLibraryCachedFile(file).catch(() => {});
+    return null;
+}
+
+async function deleteOddiLibraryCachedFile(file) {
+    if (!file?.id) return;
+    const id = oddiLibraryCacheKey(file.id);
+    const db = await openOddiFileDB();
+    try {
+        await new Promise((resolve, reject) => {
+            const tx = db.transaction(ODDI_FILE_STORE, "readwrite");
+            tx.objectStore(ODDI_FILE_STORE).delete(id);
+            tx.oncomplete = resolve;
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error || new Error("Could not clear the local file cache."));
+        });
+    } finally {
+        db.close();
+    }
+    try { localStorage.removeItem(oddiLibraryDownloadMarkerKey(file.id)); } catch (_) {}
 }
 
 async function openOddiUploadedFile(fileId, trigger = null) {
@@ -12074,10 +12148,12 @@ function oddiProjectedLibraryFileCount(libraryFiles, incomingFiles) {
     return stored.length + newNames;
 }
 
-function showLibraryUploadResult(response) {
+async function showLibraryUploadResult(response, uploadedFiles = []) {
     const added = Number(response?.headers?.get?.("X-Oddi-Library-Added-Count") || 0);
     const updated = Number(response?.headers?.get?.("X-Oddi-Library-Updated-Count") || 0);
     const existing = Number(response?.headers?.get?.("X-Oddi-Library-Existing-Count") || 0);
+    const directFiles = (Array.isArray(uploadedFiles) ? uploadedFiles : [])
+        .filter(file => !file?.oddiLibrarySourceId);
     if (updated) {
         const message = `Updated ${updated} file${updated === 1 ? "" : "s"} in your Library${added ? ` · saved ${added} new` : ""}.`;
         showOddiToast(message, "success");
@@ -12085,6 +12161,33 @@ function showLibraryUploadResult(response) {
         showOddiToast(`${added} file${added === 1 ? "" : "s"} saved to your Library.`, "success");
     } else if (existing) {
         showOddiToast(`${existing === 1 ? "This file is" : `${existing} files are`} already in your Library.`, "success");
+    } else if (directFiles.length) {
+        const canSyncLibrary = document.body.dataset.librarySyncEnabled === "true";
+        showOddiToast(
+            canSyncLibrary
+                ? "The file was sent, but saving it to your Library was not confirmed. Refresh Library to check."
+                : "The file was sent in chat. Sign in to save files to a Library that syncs across devices.",
+            canSyncLibrary ? "error" : "info"
+        );
+    }
+
+    const indexHeader = response?.headers?.get?.("X-Oddi-Library-File-Indexes");
+    if (!indexHeader) return;
+    try {
+        const mappings = JSON.parse(indexHeader);
+        await Promise.all((Array.isArray(mappings) ? mappings : []).map(async mapping => {
+            const uploadIndex = Number(mapping?.[0]);
+            const fileId = mapping?.[1];
+            const file = Number.isInteger(uploadIndex) ? directFiles[uploadIndex] : null;
+            if (!file || fileId == null) return;
+            try {
+                await storeOddiLibraryFile(fileId, file);
+            } catch (error) {
+                console.warn("Uploaded Library file could not be cached on this device:", error);
+            }
+        }));
+    } catch (error) {
+        console.warn("Could not associate uploaded files with their Library entries:", error);
     }
 }
 
@@ -13062,7 +13165,7 @@ async function sendMessage(
         }
 
         const reply = await response.text();
-        showLibraryUploadResult(response);
+        showLibraryUploadResult(response, outgoingFiles);
         const responseMeta = {
             latency_ms: Number(response.headers.get("X-Oddi-Latency-Ms") || 0),
             token_estimate: Number(response.headers.get("X-Oddi-Token-Estimate") || Math.ceil(reply.length / 4)),
@@ -13280,7 +13383,7 @@ async function sendMessage(
                         }
 
                         const reply = await retryResponse.text();
-                        showLibraryUploadResult(retryResponse);
+                        showLibraryUploadResult(retryResponse, outgoingFiles);
                         if (generationStopped) return;
                         const responseMeta = {
                             latency_ms: Number(retryResponse.headers.get("X-Oddi-Latency-Ms") || 0),
@@ -19753,11 +19856,17 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
         } else if (processingCount > 0) {
           memoryAutoStatus.textContent = "Automatic memory extraction is processing recent conversation details. Refresh shortly to see saved facts.";
         } else if (pendingCount > 0) {
-          const next = queue.next_available_at ? new Date(queue.next_available_at) : null;
-          const nextText = next && !Number.isNaN(next.getTime()) ? `, eligible around ${next.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}` : "";
-          memoryAutoStatus.textContent = `${pendingCount} conversation update${pendingCount === 1 ? " is" : "s are"} waiting for 30 minutes of inactivity${nextText}.`;
+          const batchSize = Math.max(1, Number(autoMemory.batch_size) || 5);
+          if (pendingCount < batchSize) {
+            const remaining = batchSize - pendingCount;
+            memoryAutoStatus.textContent = `${pendingCount}/${batchSize} user messages queued. ${remaining} more ${remaining === 1 ? "message" : "messages"} will start Memory AI.`;
+          } else {
+            const next = queue.next_available_at ? new Date(queue.next_available_at) : null;
+            const nextText = next && !Number.isNaN(next.getTime()) && next.getTime() > Date.now() ? ` It will retry around ${next.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})}.` : " Memory AI will process it shortly.";
+            memoryAutoStatus.textContent = `${pendingCount} user messages are queued.${nextText}`;
+          }
         } else {
-          memoryAutoStatus.textContent = "No conversation updates are waiting. Refresh after the 30-minute quiet period to check whether new facts were saved below.";
+          memoryAutoStatus.textContent = "No conversation updates are waiting. Memory AI reviews every five user messages and saves useful facts.";
         }
       }
       allMemories = normalizeMemories(payload).map(normalizeMemory).filter(x => x.memory);
@@ -25874,6 +25983,8 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       </header>
       <div class="oddi-library-toolbar">
         <input id="oddiLibrarySearch" class="oddi-library-search" type="search" placeholder="Search files..." autocomplete="off">
+        <input id="oddiLibraryUploadInput" type="file" multiple hidden>
+        <button type="button" class="oddi-library-refresh" id="oddiLibraryAdd">Add files</button>
         <button type="button" class="oddi-library-refresh" id="oddiLibraryRefresh">Refresh</button>
       </div>
       <div class="oddi-library-filters">
@@ -25920,13 +26031,74 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
     if(["zip","rar","7z","tar","gz"].includes(ext))return "archive";
     return "other";
   }
+  async function syncLegacyLocalLibraryFiles(serverFiles){
+    if(document.body.dataset.librarySyncEnabled!=="true")return false;
+    const conversations=Array.isArray(window.oddiConversations)?window.oddiConversations:[];
+    const latestByName=new Map();
+    const seenIds=new Set();
+    conversations.forEach(conversation=>(Array.isArray(conversation?.messages)?conversation.messages:[]).forEach(message=>
+      (Array.isArray(message?.fileRefs)?message.fileRefs:[]).forEach(ref=>{
+        const id=String(ref?.id||"");
+        const name=String(ref?.name||"").replace(/[\\/]+/g,"/").split("/").pop().trim();
+        const key=name.toLowerCase();
+        if(!id||!name||seenIds.has(id))return;
+        seenIds.add(id);
+        latestByName.set(key,{id,name});
+      })
+    ));
+    const serverNames=new Set((Array.isArray(serverFiles)?serverFiles:[])
+      .map(file=>String(file?.filename||file?.name||"").replace(/[\\/]+/g,"/").split("/").pop().trim().toLowerCase())
+      .filter(Boolean));
+    const candidates=[...latestByName.entries()].filter(([key])=>!serverNames.has(key));
+    if(!candidates.length)return false;
+
+    showOddiToast(`Syncing ${candidates.length} older upload${candidates.length===1?"":"s"} to your Library…`,"info");
+    let imported=0;
+    for(const [nameKey,ref] of candidates){
+      try{
+        const stored=await getOddiStoredFile(ref.id);
+        if(!stored?.blob||Number(stored.blob.size||0)>64*1024*1024)continue;
+        const formData=new FormData();
+        formData.append("file",stored.blob,stored.name||ref.name);
+        const response=await fetch("/api/files/import",{
+          method:"POST",credentials:"same-origin",body:formData
+        });
+        const result=await response.json().catch(()=>({}));
+        if(!response.ok){
+          console.warn("Could not sync an older local Library upload:",result?.error||response.status);
+          if(response.status===401||response.status===403)break;
+          continue;
+        }
+        const fileId=Array.isArray(result?.file_ids)?result.file_ids[0]:null;
+        if(fileId!=null){
+          await storeOddiLibraryFile(fileId,stored.blob,{name:result.filename||stored.name||ref.name,type:stored.type||stored.blob.type});
+          serverNames.add(nameKey);
+          imported+=1;
+        }
+      }catch(error){
+        console.warn("Could not migrate an older local Library upload:",error);
+      }
+    }
+    if(imported)showOddiToast(`${imported} older file${imported===1?"":"s"} synced to your account Library.`,"success");
+    return imported>0;
+  }
   async function collectLibraryFiles(){
     try{
       const r=await fetch("/api/files",{credentials:"same-origin",headers:{Accept:"application/json"},cache:"no-store"});
       if(!r.ok) throw new Error(`Library request failed (${r.status})`);
       const data=await r.json();
-      const rows=Array.isArray(data)?data:(Array.isArray(data?.files)?data.files:[]);
-      return rows.map(f=>({...f,source:"server"}));
+      let rows=Array.isArray(data)?data:(Array.isArray(data?.files)?data.files:[]);
+      if(await syncLegacyLocalLibraryFiles(rows)){
+        const refreshed=await fetch("/api/files",{credentials:"same-origin",headers:{Accept:"application/json"},cache:"no-store"});
+        if(refreshed.ok){
+          const refreshedData=await refreshed.json();
+          rows=Array.isArray(refreshedData)?refreshedData:(Array.isArray(refreshedData?.files)?refreshedData.files:[]);
+        }
+      }
+      let downloaded=new Map();
+      try{downloaded=await getOddiLibraryDownloadStates(rows);}
+      catch(error){console.warn("Could not read local Library download state:",error);}
+      return rows.map(f=>({...f,source:"server",downloadedOnDevice:downloaded.get(String(f.id))===true}));
     }catch(e){
       console.warn("ODDI Library metadata fetch failed:",e);
       /* Only use legacy local refs when the server itself is unavailable. */
@@ -25939,7 +26111,7 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
             const id=String(ref?.id||"");
             if(id&&!seen.has(id)){
               seen.add(id);
-              fallback.push({id,name:ref?.name||"Uploaded file",filename:ref?.name||"Uploaded file",source:"local"});
+              fallback.push({id,name:ref?.name||"Uploaded file",filename:ref?.name||"Uploaded file",source:"local",downloadedOnDevice:true});
             }
           })
         ));
@@ -25967,6 +26139,7 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
         });
         const data=await r.json().catch(()=>({}));
         if(!r.ok) throw new Error(data?.error||`Delete failed (${r.status})`);
+        await deleteOddiLibraryCachedFile(file).catch(error=>console.warn("Could not clear the deleted Library file from this device:",error));
       }else return false;
       libraryCache=libraryCache.filter(f=>String(f.id)!==String(file.id));
       renderLibrary(libraryCache);
@@ -25982,7 +26155,15 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
     if(!file?.id) throw new Error("This file is not available for chat upload.");
     if(document.body.classList.contains("oddi-archived-preview")) throw new Error("Restore this archived chat or open a new chat before attaching a file.");
     let upload=null;
-    if(file.source==="server") upload=await oddiRetrieveLibraryFileAsUpload(file);
+    if(file.source==="server"){
+      const stored=await getOddiLibraryCachedFile(file);
+      if(stored?.blob) upload=new File([stored.blob],stored.name||file.filename||file.name||"library-file",{type:stored.type||stored.blob.type||"application/octet-stream",lastModified:Date.now()});
+      else{
+        file.downloadedOnDevice=false;
+        renderLibrary(libraryCache);
+        throw new Error("Download this file to this device before attaching it.");
+      }
+    }
     else if(file.source==="local" && typeof getOddiStoredFile==="function"){
       const stored=await getOddiStoredFile(file.id);
       if(stored?.blob) upload=new File([stored.blob],stored.name||file.filename||file.name||"library-file",{type:stored.type||stored.blob.type||"application/octet-stream",lastModified:Date.now()});
@@ -26008,6 +26189,12 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       });
       if(!response.ok) throw new Error(`Download failed (${response.status}).`);
       blob=await response.blob();
+      try{
+        await storeOddiLibraryFile(file.id,blob,file);
+        file.downloadedOnDevice=true;
+      }catch(cacheError){
+        console.warn("Downloaded Library file could not be kept in this device's local cache:",cacheError);
+      }
     }else{
       const stored=await getOddiStoredFile(file.id);
       if(!stored?.blob) throw new Error("This file is no longer available on this device.");
@@ -26019,13 +26206,25 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
     link.download=String(file.filename||file.name||"download").replace(/[\\/:*?"<>|]/g,"_");
     document.body.appendChild(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),30000);
+    if(file.source==="server"){
+      renderLibrary(libraryCache);
+      if(!file.downloadedOnDevice) showOddiToast("File downloaded, but this browser could not keep an ODDI copy for Open or Attach.","info");
+    }
   }
   function escapeLibraryText(value){
     return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
   }
   async function previewLibraryFile(file,trigger){
     let upload=null;
-    if(file?.source==="server") upload=await oddiRetrieveLibraryFileAsUpload(file);
+    if(file?.source==="server"){
+      const stored=await getOddiLibraryCachedFile(file);
+      if(stored?.blob) upload=new File([stored.blob],stored.name||file.filename||file.name||"library-file",{type:stored.type||stored.blob.type||"application/octet-stream",lastModified:Date.now()});
+      else{
+        file.downloadedOnDevice=false;
+        renderLibrary(libraryCache);
+        throw new Error("Download this file to this device before opening it.");
+      }
+    }
     else if(file?.source==="local"&&typeof getOddiStoredFile==="function"){
       const stored=await getOddiStoredFile(file.id);
       if(stored?.blob) upload=new File([stored.blob],stored.name||file.filename||file.name||"library-file",{type:stored.type||stored.blob.type||"application/octet-stream",lastModified:Date.now()});
@@ -26050,43 +26249,107 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
     if(!rows.length){libraryList.innerHTML='<div class="oddi-library-empty">No files found.</div>';return;}
     libraryList.innerHTML=rows.map((f,i)=>{
       const name=escapeLibraryText(f.filename||f.name||"Unnamed file");
+      const needsDownload=f.source==="server"&&!f.downloadedOnDevice;
       const detail=escapeLibraryText([formatBytes(f.size_bytes||f.size),f.mime_type||f.type||"",f.status||""].filter(Boolean).join(" · ") || "Uploaded file");
       return `<div class="oddi-library-item" data-lib-index="${i}">
         <span class="oddi-library-icon">${fileIcon(name,f.mime_type||f.type)}</span>
-        <div class="oddi-library-meta"><div class="oddi-library-name" title="${name}">${name}</div><div class="oddi-library-detail">${detail}</div></div>
+        <div class="oddi-library-meta"><div class="oddi-library-name" title="${name}">${name}</div><div class="oddi-library-detail">${detail}<span class="oddi-library-device-state">&middot; ${needsDownload?"Download to this device to open or attach":"On this device"}</span></div></div>
         <div class="oddi-library-actions">
-          <button type="button" class="oddi-library-preview" title="Preview this file">Preview</button>
+          ${needsDownload?`<button type="button" class="oddi-library-download is-remote" title="Download ${name} to this device">Download</button>`:`<button type="button" class="oddi-library-preview" title="Open this file">Open</button>
           <button type="button" class="oddi-library-upload" title="Attach this Library file to the current chat">Attach</button>
+          <button type="button" class="oddi-library-download" title="Download ${name}" aria-label="Download ${name}">&#11015;</button>`}
           <button type="button" class="oddi-library-delete" title="Delete file">Delete</button>
-          <button type="button" class="oddi-library-download" title="Download ${name}" aria-label="Download ${name}">&#11015;</button>
         </div>
       </div>`;
     }).join("");
+    const fileForButton=btn=>rows[Number(btn.closest(".oddi-library-item")?.dataset.libIndex)];
     libraryList.querySelectorAll(".oddi-library-preview").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
       btn.disabled=true;
-      try{await previewLibraryFile(rows[idx],btn);}
+      try{await previewLibraryFile(fileForButton(btn),btn);}
       catch(e){showOddiToast(e.message||"Could not preview this file.","error");}
       finally{btn.disabled=false;}
     }));
     libraryList.querySelectorAll(".oddi-library-delete").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
       btn.disabled=true;
-      await deleteLibraryFile(rows[idx]);
+      await deleteLibraryFile(fileForButton(btn));
       btn.disabled=false;
     }));
     libraryList.querySelectorAll(".oddi-library-upload").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
       btn.disabled=true;
-      try{await attachLibraryFileToChat(rows[idx]);}
+      try{await attachLibraryFileToChat(fileForButton(btn));}
       catch(e){alert(e.message||"Could not attach this file.");}
       finally{btn.disabled=false;}
     }));
     libraryList.querySelectorAll(".oddi-library-download").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
       btn.disabled=true;
-      try{await downloadLibraryFile(rows[idx]);}
+      try{await downloadLibraryFile(fileForButton(btn));}
       catch(e){alert(e.message||"Could not download this file.");}
       finally{btn.disabled=false;}
     }));
   }
   let libraryCache=[];
+  const libraryUploadInput=document.getElementById("oddiLibraryUploadInput");
+  const libraryAddButton=document.getElementById("oddiLibraryAdd");
+  libraryAddButton?.addEventListener("click",()=>{
+    if(document.body.dataset.librarySyncEnabled!=="true"){
+      showOddiToast("Sign in to save files to your synced Library.","error");
+      return;
+    }
+    libraryUploadInput?.click();
+  });
+  libraryUploadInput?.addEventListener("change",async()=>{
+    const uploads=Array.from(libraryUploadInput.files||[]);
+    if(!uploads.length)return;
+    const buttonLabel=libraryAddButton?.textContent||"Add files";
+    let added=0;
+    let existing=0;
+    const failures=[];
+    if(libraryAddButton)libraryAddButton.disabled=true;
+    try{
+      for(let index=0;index<uploads.length;index++){
+        const file=uploads[index];
+        if(libraryAddButton)libraryAddButton.textContent=uploads.length>1?`Saving ${index+1}/${uploads.length}...`:"Saving...";
+        const body=new FormData();
+        body.append("file",file,file.name);
+        let response;
+        let result={};
+        try{
+          response=await fetch("/api/files/import",{method:"POST",credentials:"same-origin",body});
+          result=await response.json().catch(()=>({}));
+        }catch(error){
+          failures.push({name:file.name,message:error?.message||"Network error while saving the file."});
+          break;
+        }
+        if(!response.ok){
+          failures.push({name:file.name,message:result?.error||`Upload failed (${response.status}).`});
+          if(response.status===401||response.status===403)break;
+          continue;
+        }
+        const fileId=Array.isArray(result?.file_ids)?result.file_ids[0]:null;
+        if(fileId!=null){
+          try{await storeOddiLibraryFile(fileId,file,{name:result.filename||file.name,type:file.type});}
+          catch(error){console.warn("Saved Library file could not be cached on this device:",error);}
+        }
+        if(Number(result?.added_count||0)>0)added+=1;
+        else existing+=1;
+      }
+      libraryCache=await collectLibraryFiles();
+      renderLibrary(libraryCache);
+      if(added)showOddiToast(`${added} file${added===1?"":"s"} saved to your Library.`,"success");
+      if(existing)showOddiToast(`${existing===1?"This file is":"These files are"} already in your Library.`,"info");
+      if(failures.length){
+        const first=failures[0];
+        const extra=failures.length>1?` (+${failures.length-1} more)`:"";
+        showOddiToast(`${first.name}: ${first.message}${extra}`,"error");
+      }
+    }catch(error){
+      console.error("Could not save files to the ODDI Library:",error);
+      showOddiToast(error?.message||"Could not refresh the Library. Try again.","error");
+    }finally{
+      libraryUploadInput.value="";
+      if(libraryAddButton){libraryAddButton.disabled=false;libraryAddButton.textContent=buttonLabel;}
+    }
+  });
   async function openLibrary(){
     document.body.classList.remove("oddi-react-sidebar-open","oddi-react-sidebar-collapsed");
     document.getElementById("oddi-react-sidebar-root")?.classList.remove("is-open","is-collapsed");
@@ -30449,6 +30712,7 @@ body.oddi-generation-active .oddi-composer-field .send-btn.stop-active{
 }
 .oddi-library-upload:hover,.oddi-library-download:hover{background:#f1f1f1;border-color:#bcbcbc;}
 .oddi-library-download{width:30px;padding:0;font-size:16px;}
+.oddi-library-download.is-remote{width:auto;min-width:72px;padding:0 10px;font-size:11px;white-space:nowrap;}
 .oddi-library-upload:disabled,.oddi-library-download:disabled{opacity:.55;cursor:wait;}
 body.dark-mode .oddi-library-upload,body.dark-mode .oddi-library-download{background:#191919;color:#eee;border-color:#333;}
 body.dark-mode .oddi-library-upload:hover,body.dark-mode .oddi-library-download:hover{background:#242424;border-color:#4a4a4a;}

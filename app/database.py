@@ -12,6 +12,7 @@ from app import google_drive_storage, local_chat_files
 logger = logging.getLogger("oddi.persistence")
 
 USER_FILE_LIMIT = 30
+MEMORY_EXTRACTION_BATCH_SIZE = 5
 _MEMORY_QUEUE_LOCK = threading.Lock()
 DEFAULT_MEMORY_SETTINGS = {"enabled": True, "auto_extract": True}
 
@@ -1830,7 +1831,7 @@ def clear_memory(user_id):
 
 
 def enqueue_memory_message(user_id, event_id, message):
-    """Record account activity and queue safe text until 30 minutes of inactivity."""
+    """Queue one safe user turn; extraction becomes eligible every five turns."""
     user_id = str(user_id or "").strip()
     event_id = str(event_id or "").strip()[:128]
     message = str(message or "").strip()[:24000]
@@ -1839,7 +1840,7 @@ def enqueue_memory_message(user_id, event_id, message):
 
     now = datetime.now(timezone.utc)
     created_at = now.isoformat(timespec="seconds")
-    available_at = (now + timedelta(minutes=30)).isoformat(timespec="seconds")
+    available_at = created_at
     conn = get_db("archive_memory")
     try:
         inserted = False
@@ -1867,27 +1868,16 @@ def enqueue_memory_message(user_id, event_id, message):
             """,
             (user_id, created_at),
         )
-        activity_row = _fetchone(
-            conn,
-            "SELECT last_activity FROM memory_extraction_activity WHERE user_id = ?",
-            (user_id,),
-        )
-        last_activity = datetime.fromisoformat(str(activity_row["last_activity"]))
-        if last_activity.tzinfo is None:
-            last_activity = last_activity.replace(tzinfo=timezone.utc)
-        available_at = (last_activity + timedelta(minutes=30)).isoformat(timespec="seconds")
-        # Every user turn restarts the account-wide quiet window. Preserve
-        # genuine provider backoff, but migrate old daily-scheduled rows to it.
+        # Wake all never-attempted turns immediately. The claimant holds them
+        # until this account has a complete five-message batch; provider
+        # retries retain their explicit backoff.
         conn.execute(
             """
             UPDATE memory_extraction_queue
-            SET available_at = CASE
-                WHEN attempts > 0 AND available_at > ? THEN available_at
-                ELSE ?
-            END
-            WHERE user_id = ? AND status = 'pending'
+            SET available_at = ?
+            WHERE user_id = ? AND status = 'pending' AND attempts = 0
             """,
-            (available_at, available_at, user_id),
+            (created_at, user_id),
         )
         conn.commit()
         return inserted
@@ -1918,7 +1908,7 @@ def get_memory_extraction_status(user_id):
             SELECT
                 SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) AS queued_count,
                 SUM(CASE WHEN status = 'processing' THEN 1 ELSE 0 END) AS processing_count,
-                MIN(CASE WHEN status = 'pending' THEN available_at END) AS next_available_at
+                MIN(CASE WHEN status = 'pending' AND attempts > 0 THEN available_at END) AS next_available_at
             FROM memory_extraction_queue
             WHERE user_id = ?
             """,
@@ -1959,12 +1949,12 @@ def recover_stale_memory_claims(stale_after_seconds=600):
         conn.close()
 
 
-def claim_memory_message_batch(max_messages=1000, max_characters=80000):
-    """Atomically claim the oldest ready user's new messages for one extraction."""
+def claim_memory_message_batch(max_messages=MEMORY_EXTRACTION_BATCH_SIZE, max_characters=120000):
+    """Claim a ready batch only after five eligible user turns are queued."""
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     claim_token = secrets.token_urlsafe(24)
-    max_messages = max(1, min(1000, int(max_messages)))
-    max_characters = max(1000, min(80000, int(max_characters)))
+    max_messages = max(MEMORY_EXTRACTION_BATCH_SIZE, min(1000, int(max_messages)))
+    max_characters = max(1000, min(120000, int(max_characters)))
 
     with _MEMORY_QUEUE_LOCK:
         conn = get_db("archive_memory")
@@ -1975,18 +1965,27 @@ def claim_memory_message_batch(max_messages=1000, max_characters=80000):
             user_row = _fetchone(
                 conn,
                 """
-                SELECT user_id
-                FROM memory_extraction_queue
-                WHERE status = 'pending' AND available_at <= ?
+                SELECT queued.user_id
+                FROM memory_extraction_queue queued
+                WHERE queued.status = 'pending'
+                  AND (queued.available_at <= ? OR queued.attempts = 0)
                   AND NOT EXISTS (
                       SELECT 1 FROM memory_extraction_queue active
-                      WHERE active.user_id = memory_extraction_queue.user_id
+                      WHERE active.user_id = queued.user_id
                         AND active.status = 'processing'
                   )
-                ORDER BY created_at, id
+                  AND EXISTS (
+                      SELECT 1 FROM memory_extraction_queue fifth
+                      WHERE fifth.user_id = queued.user_id
+                        AND fifth.status = 'pending'
+                        AND (fifth.available_at <= ? OR fifth.attempts = 0)
+                      ORDER BY fifth.created_at, fifth.id
+                      LIMIT 1 OFFSET 4
+                  )
+                ORDER BY queued.created_at, queued.id
                 LIMIT 1
                 """ + (" FOR UPDATE SKIP LOCKED" if _use_postgres("archive_memory") else ""),
-                (now,),
+                (now, now),
             )
             if not user_row:
                 conn.commit()
@@ -1998,7 +1997,8 @@ def claim_memory_message_batch(max_messages=1000, max_characters=80000):
                 """
                 SELECT id, event_id, message, attempts
                 FROM memory_extraction_queue
-                WHERE user_id = ? AND status = 'pending' AND available_at <= ?
+                WHERE user_id = ? AND status = 'pending'
+                  AND (available_at <= ? OR attempts = 0)
                 ORDER BY created_at, id
                 LIMIT ?
                 """ + (" FOR UPDATE SKIP LOCKED" if _use_postgres("archive_memory") else ""),

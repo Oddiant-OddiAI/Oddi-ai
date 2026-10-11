@@ -286,6 +286,16 @@ def _build_routing_prompt(chat_history, documents=""):
     return "\n".join(lines)
 
 
+def _estimate_routed_input_tokens(chat_history, documents="", attachment_tokens=0):
+    """Estimate the full system, history, and document prompt before quota checks."""
+    prompt = SYSTEM_PROMPT + "\n\n" + _build_routing_prompt(chat_history, documents)
+    try:
+        attachment_tokens = max(0, int(attachment_tokens or 0))
+    except (TypeError, ValueError):
+        attachment_tokens = 0
+    return max(1, (len(prompt.encode("utf-8")) + 3) // 4) + attachment_tokens
+
+
 def _is_resume_export_followup(user_message, conversation_history):
     """Recognize copy/download follow-ups to a resume already in the chat."""
     text = str(user_message or "").strip().lower()
@@ -503,32 +513,39 @@ def _phase6_user_quota_gate(
 def _phase6_quota_rejection(quota_result):
     """Build the user-facing Phase 6 quota rejection."""
 
-    status = quota_result.get(
-        "status",
-        {},
-    )
-
-    exhausted = status.get(
-        "exhausted_dimensions",
-        [],
-    )
-
+    status = quota_result.get("status", {})
+    exhausted = status.get("exhausted_dimensions", [])
     if exhausted:
-        dimensions = ", ".join(
-            str(item)
-            for item in exhausted
-        )
+        dimensions = ", ".join(str(item) for item in exhausted)
         return (
-            "⚠️ **ODDI-AI usage limit reached.**\n\n"
+            "\u26a0\ufe0f **ODDI-AI usage limit reached.**\n\n"
             f"Limit reached: `{dimensions}`.\n\n"
             "Please try again after the applicable limit resets."
         )
-
     return (
-        "⚠️ **ODDI-AI usage limit reached.**\n\n"
+        "\u26a0\ufe0f **ODDI-AI usage limit reached.**\n\n"
         "Your current AI request allowance is exhausted. "
         "Please try again after the applicable limit resets."
     )
+
+
+def _quota_blocked_by_projected_tokens(quota_result, estimated_tokens):
+    """Tell whether trimming old chat context can clear this quota rejection."""
+    status = quota_result.get("status") or {}
+    exhausted = set(status.get("exhausted_dimensions") or [])
+    if exhausted.intersection({"rpd", "rpm"}):
+        return False
+
+    token_budgets = []
+    for key in ("tokens_remaining", "tpm_remaining"):
+        value = status.get(key)
+        if value is not None:
+            try:
+                token_budgets.append(max(0, int(value)))
+            except (TypeError, ValueError):
+                continue
+
+    return bool(token_budgets) and int(estimated_tokens or 0) > min(token_budgets)
 
 
 def _phase6_record_success(
@@ -911,9 +928,6 @@ def process_message(
     chat_history = chat_history[-100:]
 
     print("Chat history created")
-    print("Messages in memory:", len(chat_history))
-    print("Images:", len(images))
-    print("Documents:", len(documents))
 
     # ==========================================================
     # PHASE 6 — USER QUOTA GATE
@@ -926,15 +940,39 @@ def process_message(
         (len(images) * 900)
         + sum((len(item.get("bytes") or b"") + 1023) // 1024 for item in audios)
     )
-    estimated_input_tokens = (
-        (len(str(user_message or "")) + len(documents) + 3) // 4
-        + attachment_token_estimate
+    estimated_input_tokens = _estimate_routed_input_tokens(
+        chat_history,
+        documents,
+        attachment_token_estimate,
     )
 
     phase6_quota = _phase6_user_quota_gate(
         user_context=user_context,
         estimated_tokens=estimated_input_tokens,
     )
+
+    # Keep the current question and any attachments, but trim the oldest
+    # conversation turns when the projected prompt cannot fit the user's
+    # remaining token allowance. Request-rate limits are left untouched.
+    while (
+        not phase6_quota["allowed"]
+        and _quota_blocked_by_projected_tokens(phase6_quota, estimated_input_tokens)
+        and len(chat_history) > 1
+    ):
+        chat_history = chat_history[2:] if len(chat_history) > 2 else chat_history[1:]
+        estimated_input_tokens = _estimate_routed_input_tokens(
+            chat_history,
+            documents,
+            attachment_token_estimate,
+        )
+        phase6_quota = _phase6_user_quota_gate(
+            user_context=user_context,
+            estimated_tokens=estimated_input_tokens,
+        )
+
+    print("Messages in memory:", len(chat_history))
+    print("Images:", len(images))
+    print("Documents:", len(documents))
 
     if not phase6_quota["allowed"]:
         print(
