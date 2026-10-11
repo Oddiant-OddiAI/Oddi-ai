@@ -5817,6 +5817,39 @@ function stopGeneration() {
     const elapsed = botMessage?.dataset.thinkingStartedAt
         ? Date.now() - Number(botMessage.dataset.thinkingStartedAt)
         : 0;
+    const stagedAssistantIndex = Array.isArray(conversation?.messages)
+        ? conversation.messages.findIndex(item => String(item?.id || "") === String(activeGenerationAssistantMessageId || ""))
+        : -1;
+    const stagedAssistantMessage = stagedAssistantIndex >= 0 ? conversation.messages[stagedAssistantIndex] : null;
+    if (stagedAssistantMessage && botMessage && activeTypingElement) {
+        stopAssistantThinkingClock(
+            botMessage,
+            `Took ${formatAssistantElapsedTime(stagedAssistantMessage.response_meta?.elapsed_ms || elapsed)}`
+        );
+        botMessage.classList.remove('stopped-message');
+        botMessage.querySelector('.thinking-indicator')?.remove();
+        botMessage.querySelector('.thinking-actions')?.remove();
+        botMessage.dataset.messageIndex = String(stagedAssistantIndex);
+        if (stagedAssistantMessage.document_workspace) {
+            window.OddiDocumentWorkspace?.update(stagedAssistantMessage.text || "", {
+                status: "Document ready. You can edit it or download a copy.",
+                generating: false
+            });
+            activeTypingElement.textContent = "Your document is ready in the editor.";
+        } else {
+            renderRichContent(activeTypingElement, stagedAssistantMessage.text || "", { final: true });
+        }
+        oddiRenderMessageSources(botMessage, stagedAssistantMessage.sources || []);
+        addBotMessageActions(botMessage, stagedAssistantIndex, conversationIndex);
+        renderHistory();
+        publishConversationDataReady();
+        if (conversations[currentConversation] === conversation) {
+            window.__oddiRenderFollowups?.(conversation);
+            oddiSmartScroll(false);
+        }
+        setGenerationUI(false);
+        return;
+    }
     stopAssistantThinkingClock(
         botMessage,
         elapsed ? `Stopped after ${formatAssistantElapsedTime(elapsed)}` : "Stopped"
@@ -7524,7 +7557,7 @@ function getOddiChatRecoveryKey(conversationId) {
 }
 
 function backupOddiConversation(conversation) {
-    if (!conversation?.id) return;
+    if (!conversation?.id) return false;
     try {
         normalizeConversationObject(conversation);
         localStorage.setItem(getOddiChatRecoveryKey(conversation.id), JSON.stringify({
@@ -7533,8 +7566,10 @@ function backupOddiConversation(conversation) {
             __recoverySavedAt: Date.now(),
             __recoveryDirty: true
         }));
+        return true;
     } catch (error) {
         console.warn("Could not create local chat recovery copy:", error);
+        return false;
     }
 }
 
@@ -7599,6 +7634,7 @@ function oddiLocalChatBelongsToCurrentAccount(conversation, scopedBackupIds) {
     const ownerId = String(conversation?.__ownerUserId || "").trim();
     const currentUserId = String(document.body?.dataset?.userId || "").trim();
     if (ownerId) return isLoggedIn && ownerId === currentUserId;
+    if (!isLoggedIn) return true;
     return scopedBackupIds.has(String(conversation?.id ?? ""));
 }
 
@@ -7625,6 +7661,20 @@ function mergeConversationForRetry(localConversation, serverConversation) {
         title: localConversation.title || serverConversation.title || "New Chat",
         messages: result,
         revision: Number(serverConversation.revision || 0)
+    });
+}
+
+function serverConversationContainsLocalState(localConversation, serverConversation) {
+    if (!localConversation || !serverConversation) return false;
+    if (String(localConversation.title || "New Chat") !== String(serverConversation.title || "New Chat")) return false;
+    const serverMessages = Array.isArray(serverConversation.messages) ? serverConversation.messages : [];
+    const serverById = new Map(serverMessages
+        .filter(message => message?.id)
+        .map(message => [String(message.id), message]));
+    const localMessages = Array.isArray(localConversation.messages) ? localConversation.messages : [];
+    return localMessages.every(localMessage => {
+        const savedMessage = serverById.get(String(localMessage?.id || ""));
+        return !!savedMessage && String(savedMessage.text || "") === String(localMessage.text || "");
     });
 }
 
@@ -7675,12 +7725,33 @@ async function importBrowserLocalChatToAccount(conversation) {
     } finally {
         if (localChatImportInFlight.get(sourceId) === pendingImport) localChatImportInFlight.delete(sourceId);
     }
-    Object.assign(conversation, normalizeConversationObject(importedConversation));
+    const importedStateContainsLatestLocal = serverConversationContainsLocalState(conversation, importedConversation);
+    const mergedImportedConversation = mergeConversationForRetry(conversation, importedConversation);
+    Object.assign(conversation, mergedImportedConversation);
+    let completeCloudCopyExists = importedStateContainsLatestLocal;
+    let preserveSourceCopy = false;
+    if (!importedStateContainsLatestLocal) {
+        const importedId = String(conversation.id || "");
+        conversationDirtyLocal.add(importedId);
+        const recoverySaved = backupOddiConversation(conversation);
+        const synced = await saveConversation(conversation);
+        completeCloudCopyExists = synced && !conversationDirtyLocal.has(importedId);
+        if (!completeCloudCopyExists && !recoverySaved) {
+            // Keep the source-ID IndexedDB copy if both localStorage recovery
+            // and the follow-up account save are unavailable.
+            const sourceCopy = { ...conversation, id: sourceId, __localMigrationPending: true };
+            await putOddiBrowserChat(sourceCopy);
+            backupOddiConversation(sourceCopy);
+            preserveSourceCopy = true;
+        }
+    }
     conversationDirtyLocal.delete(sourceId);
     conversation.__localMigrationPending = false;
-    conversation.__recoveredLocally = false;
-    await deleteOddiBrowserChat(sourceId);
-    removeAllOddiConversationBackups(sourceId);
+    conversation.__recoveredLocally = !completeCloudCopyExists;
+    if (!preserveSourceCopy) {
+        await deleteOddiBrowserChat(sourceId);
+        removeAllOddiConversationBackups(sourceId);
+    }
     window.dispatchEvent(new CustomEvent("oddi:conversations-changed"));
     return true;
 }
@@ -7779,7 +7850,12 @@ async function loadConversations() {
             // Recover earlier local-only backups into the device database.
             for (const backup of scopedBackups) {
                 const id = String(backup.id);
-                if (!byId.has(id)) byId.set(id, normalizeConversationObject({ ...backup, id }));
+                const existing = byId.get(id);
+                if (!existing) {
+                    byId.set(id, normalizeConversationObject({ ...backup, id }));
+                } else if (backup.__recoveryDirty === true) {
+                    byId.set(id, mergeConversationForRetry(backup, existing));
+                }
             }
             const retentionMs = 7 * 24 * 60 * 60 * 1000;
             const now = Date.now();
@@ -7790,7 +7866,13 @@ async function loadConversations() {
             });
             window.__oddiServerTrash = allChats.filter(item => !!item.deleted);
             conversations = allChats.filter(item => !item.deleted);
-            for (const item of allChats) await putOddiBrowserChat(item);
+            for (const item of allChats) {
+                const saved = await putOddiBrowserChat(item);
+                const recovery = getOddiLocalChatBackups().find(backup => String(backup?.id) === String(item.id));
+                if (saved && recovery && conversationDataIsSame(recovery, item)) {
+                    removeOddiConversationBackup(item.id);
+                }
+            }
             for (const [id] of byId) {
                 if (!allChats.some(item => String(item.id) === id)) {
                     await deleteOddiBrowserChat(id);
@@ -7845,7 +7927,10 @@ async function loadConversations() {
             }
             for (const item of scopedBackups) {
                 const id = String(item?.id || "");
-                if (id.startsWith("local-") && !pendingLocalChats.has(id)) pendingLocalChats.set(id, item);
+                if (!id.startsWith("local-")) continue;
+                const existing = pendingLocalChats.get(id);
+                if (!existing) pendingLocalChats.set(id, item);
+                else if (item.__recoveryDirty === true) pendingLocalChats.set(id, mergeConversationForRetry(item, existing));
             }
             for (const [id, item] of pendingLocalChats) {
                 if (!serverById.has(id) && !conversations.some(chat => String(chat?.id) === id)) {
@@ -7862,19 +7947,38 @@ async function loadConversations() {
         for (const backup of getOddiLocalChatBackups()) {
             const id = String(backup.id);
             const serverConversation = serverById.get(id);
-            if (conversations.some(conversation => String(conversation?.id) === id)) continue;
+            const existingIndex = conversations.findIndex(conversation => String(conversation?.id) === id);
+            const existingConversation = existingIndex >= 0 ? conversations[existingIndex] : null;
             const isDirtyThisSession = conversationDirtyLocal.has(id);
+            const hasUnconfirmedRecovery = backup.__recoveryDirty === true;
             // localStorage is recovery-only: never let a stale device copy overwrite
-            // an existing server conversation. Merge only changes made in this session.
+            // an existing server conversation. Merge only explicit pending changes.
             if (!serverConversation) {
                 conversationDirtyLocal.add(id);
-                conversations.push({ ...backup, __recoveredLocally: true });
+                const recovered = existingConversation
+                    ? mergeConversationForRetry(backup, existingConversation)
+                    : { ...backup, __recoveredLocally: true };
+                delete recovered.__summaryOnly;
+                if (existingIndex >= 0) conversations[existingIndex] = recovered;
+                else conversations.push(recovered);
                 continue;
             }
-            if (isDirtyThisSession && !conversationDataIsSame(backup, serverConversation)) {
-                const merged = mergeConversationForRetry(backup, serverConversation);
-                const index = conversations.findIndex(c => String(c.id) === id);
-                if (index >= 0) conversations[index] = merged;
+            if ((isDirtyThisSession || hasUnconfirmedRecovery) && !conversationDataIsSame(backup, serverConversation)) {
+                let latestServerConversation = serverConversation;
+                try {
+                    latestServerConversation = await fetchConversationHistory(id);
+                } catch (historyError) {
+                    console.warn("Could not load the latest chat before recovery; the revision-checked save will retry safely:", historyError);
+                }
+                const mergeBase = existingConversation && !existingConversation.__summaryOnly
+                    ? existingConversation
+                    : latestServerConversation;
+                const merged = mergeConversationForRetry(backup, mergeBase);
+                delete merged.__summaryOnly;
+                if (existingIndex >= 0) conversations[existingIndex] = merged;
+                else conversations.push(merged);
+                conversationDirtyLocal.add(id);
+                backupOddiConversation(merged);
                 saveConversation(merged).catch(() => {});
             } else {
                 removeOddiConversationBackup(id);
@@ -7956,10 +8060,27 @@ async function saveConversationNow(conversation) {
     const conversationId = String(conversation.id);
     conversationDirtyLocal.add(conversationId);
     if (browserLocalChatStorage) {
-        const saved = await putOddiBrowserChat(conversation);
-        if (!saved) backupOddiConversation(conversation);
-        else removeOddiConversationBackup(conversationId);
-        conversationDirtyLocal.delete(conversationId);
+        backupOddiConversation(conversation);
+        const localSnapshot = JSON.parse(JSON.stringify(conversation));
+        const saved = await putOddiBrowserChat(localSnapshot);
+        if (!saved) {
+            backupOddiConversation(conversation);
+        } else {
+            const recovery = getOddiLocalChatBackups().find(item => String(item?.id) === conversationId);
+            const currentStateIsSaved = conversationDataIsSame(conversation, localSnapshot);
+            if (currentStateIsSaved && (!recovery || conversationDataIsSame(recovery, localSnapshot))) {
+                removeOddiConversationBackup(conversationId);
+                conversationDirtyLocal.delete(conversationId);
+            } else {
+                if (recovery && !conversationDataIsSame(recovery, localSnapshot)) {
+                    const latest = mergeConversationForRetry(recovery, conversation);
+                    Object.assign(conversation, latest);
+                }
+                conversationDirtyLocal.add(conversationId);
+                backupOddiConversation(conversation);
+                void saveConversation(conversation).catch(error => console.warn("Could not finish the local chat save yet:", error));
+            }
+        }
         conversation.__recoveredLocally = !saved;
         if (!saved && !window.__oddiLocalChatSaveWarningShown) {
             window.__oddiLocalChatSaveWarningShown = true;
@@ -7983,13 +8104,21 @@ async function saveConversationNow(conversation) {
             });
             if (response.ok) {
                 const data = await response.json();
+                const savedConversation = data?.conversation || null;
+                const latestStateWasSaved = serverConversationContainsLocalState(working, savedConversation);
                 if (data?.conversation) {
                     const merged = mergeConversationForRetry(working, data.conversation);
                     Object.assign(working, merged);
                 }
-                conversationDirtyLocal.delete(conversationId);
-                removeOddiConversationBackup(conversationId);
-                working.__recoveredLocally = false;
+                if (latestStateWasSaved) {
+                    conversationDirtyLocal.delete(conversationId);
+                    removeOddiConversationBackup(conversationId);
+                    working.__recoveredLocally = false;
+                } else {
+                    conversationDirtyLocal.add(conversationId);
+                    backupOddiConversation(working);
+                    working.__recoveredLocally = true;
+                }
                 return true;
             }
             if (response.status === 404 && await recoverMissingCloudConversation(working)) return true;
@@ -8041,7 +8170,7 @@ async function saveConversation(conversation) {
     if (!conversation?.id) return false;
     const localId = String(conversation.id);
     if (isLoggedIn && localId.startsWith("local-")) {
-        return saveConversationNow(conversation);
+        return queueConversationMutation(localId, () => saveConversationNow(conversation));
     }
     if (!await ensureAccountConversationId(conversation)) return false;
     const conversationId = String(conversation.id);
@@ -8081,13 +8210,20 @@ async function appendConversationMessage(conversation, message) {
             if (response.status === 404 && await recoverMissingCloudConversation(conversation)) return true;
             if (!response.ok) throw new Error(`Append message failed (${response.status})`);
             const data = await response.json();
+            const latestStateWasSaved = serverConversationContainsLocalState(conversation, data?.conversation);
             if (data?.conversation) {
                 const merged = mergeConversationForRetry(conversation, data.conversation);
                 Object.assign(conversation, merged);
             }
-            conversationDirtyLocal.delete(conversationId);
-            removeOddiConversationBackup(conversationId);
-            conversation.__recoveredLocally = false;
+            if (latestStateWasSaved) {
+                conversationDirtyLocal.delete(conversationId);
+                removeOddiConversationBackup(conversationId);
+                conversation.__recoveredLocally = false;
+            } else {
+                conversationDirtyLocal.add(conversationId);
+                backupOddiConversation(conversation);
+                conversation.__recoveredLocally = true;
+            }
             return true;
         } catch (error) {
             console.error("Append conversation message error:", error);
@@ -8119,13 +8255,20 @@ async function updateConversationMessageRemote(conversation, messageId, patch) {
             });
             if (!response.ok) throw new Error(`Update message failed (${response.status})`);
             const data = await response.json();
+            const latestStateWasSaved = serverConversationContainsLocalState(conversation, data?.conversation);
             if (data?.conversation) {
                 const merged = mergeConversationForRetry(conversation, data.conversation);
                 Object.assign(conversation, merged);
             }
-            conversationDirtyLocal.delete(conversationId);
-            removeOddiConversationBackup(conversationId);
-            conversation.__recoveredLocally = false;
+            if (latestStateWasSaved) {
+                conversationDirtyLocal.delete(conversationId);
+                removeOddiConversationBackup(conversationId);
+                conversation.__recoveredLocally = false;
+            } else {
+                conversationDirtyLocal.add(conversationId);
+                backupOddiConversation(conversation);
+                conversation.__recoveredLocally = true;
+            }
             return true;
         } catch (error) {
             console.error("Update conversation message error:", error);
@@ -8151,13 +8294,20 @@ async function deleteConversationMessageRemote(conversation, messageId) {
             const response = await fetch(`/api/conversations/${conversation.id}/messages/${encodeURIComponent(messageId)}`, { method: "DELETE", credentials: "same-origin" });
             if (!response.ok) throw new Error(`Delete message failed (${response.status})`);
             const data = await response.json();
+            const latestStateWasSaved = serverConversationContainsLocalState(conversation, data?.conversation);
             if (data?.conversation) {
                 const merged = mergeConversationForRetry(conversation, data.conversation);
                 Object.assign(conversation, merged);
             }
-            conversationDirtyLocal.delete(conversationId);
-            removeOddiConversationBackup(conversationId);
-            conversation.__recoveredLocally = false;
+            if (latestStateWasSaved) {
+                conversationDirtyLocal.delete(conversationId);
+                removeOddiConversationBackup(conversationId);
+                conversation.__recoveredLocally = false;
+            } else {
+                conversationDirtyLocal.add(conversationId);
+                backupOddiConversation(conversation);
+                conversation.__recoveredLocally = true;
+            }
             return true;
         } catch (error) {
             console.error("Delete conversation message error:", error);
@@ -12760,16 +12910,14 @@ async function sendMessage(
     if (document.body.classList.contains("oddi-archived-preview")) {
         return false;
     }
+    // While ODDI is responding, keep the draft editable but block a second
+    // send. The composer button has its own explicit Stop action below.
+    if (generationActive) return false;
+
     /* Sending from a fresh-chat workspace intentionally exits the
        fresh-chat guard and creates/uses the new conversation path below. */
     window.__oddiFreshChatActive = false;
     window.__oddiFreshChatLockUntil = 0;
-
-
-    if (generationActive) {
-        stopGeneration();
-        return;
-    }
 
     const skipUserMessage = !!options.skipUserMessage;
 
@@ -12885,9 +13033,11 @@ async function sendMessage(
         } else {
 
             conversations = [{
-                id: null,
+                id: browserLocalChatStorage ? `local-${makeMessageId()}` : null,
                 title: conversationTitle,
-                messages: []
+                messages: [],
+                revision: 0,
+                __ownerUserId: String(document.body?.dataset?.userId || "")
             }];
 
             currentConversation = 0;
@@ -12899,7 +13049,7 @@ async function sendMessage(
     ----------------------------------------- */
 
     outgoingFiles = Array.isArray(selectedFiles) ? selectedFiles.slice() : [];
-    input.disabled = true;
+    input.disabled = false;
     setGenerationUI(true);
     activeAbortController = new AbortController();
 
@@ -13352,6 +13502,27 @@ async function sendMessage(
             return;
         }
 
+        const stagedAssistantMessage = buildAssistantMessageRecord(
+            reply,
+            persistedAssistantMessageId,
+            completedAt,
+            responseMeta,
+            documentMode ? {title: documentTitle} : null,
+            messageSources
+        );
+        const assistantPersistenceHandled = await checkpointAssistantResponse(
+            targetConversation,
+            message,
+            stagedAssistantMessage,
+            responseMeta,
+            documentMode ? {title: documentTitle} : null
+        );
+        if (generationStopped) return;
+        const stagedAssistantIndex = targetConversation.messages.findIndex(
+            item => String(item?.id || "") === String(stagedAssistantMessage.id)
+        );
+        if (stagedAssistantIndex >= 0) thinkingBubble.dataset.messageIndex = String(stagedAssistantIndex);
+
         /* -----------------------------------------
            COMPOSER WAS ALREADY CLEARED BEFORE FETCH.
            Do not restore the sent draft or attachments.
@@ -13390,7 +13561,8 @@ async function sendMessage(
                 completedAt,
                 responseMeta,
                 documentMode ? {title: documentTitle} : null,
-                messageSources
+                messageSources,
+                assistantPersistenceHandled
             );
 
         } else {
@@ -13415,7 +13587,8 @@ async function sendMessage(
                 completedAt,
                 responseMeta,
                 documentMode ? {title: documentTitle} : null,
-                messageSources
+                messageSources,
+                assistantPersistenceHandled
             );
         }
 
@@ -13484,7 +13657,7 @@ async function sendMessage(
 
                     generationStopped = false;
                     activeGenerationPartialText = "";
-                    input.disabled = true;
+                    input.disabled = false;
                     setGenerationUI(true);
                     activeAbortController = new AbortController();
                     activeTypingElement = typing;
@@ -13566,6 +13739,26 @@ async function sendMessage(
                         };
                         const persistedId = retryResponse.headers.get("X-Oddi-Assistant-Message-Id") || assistantMessageId;
                         const completedAt = retryResponse.headers.get("X-Oddi-Completed-At") || new Date().toISOString();
+                        const stagedAssistantMessage = buildAssistantMessageRecord(
+                            reply,
+                            persistedId,
+                            completedAt,
+                            responseMeta,
+                            documentMode ? {title: documentTitle} : null,
+                            []
+                        );
+                        const assistantPersistenceHandled = await checkpointAssistantResponse(
+                            targetConversation,
+                            message,
+                            stagedAssistantMessage,
+                            responseMeta,
+                            documentMode ? {title: documentTitle} : null
+                        );
+                        if (generationStopped) return;
+                        const stagedAssistantIndex = targetConversation.messages.findIndex(
+                            item => String(item?.id || "") === String(stagedAssistantMessage.id)
+                        );
+                        if (stagedAssistantIndex >= 0) bubble.dataset.messageIndex = String(stagedAssistantIndex);
                         if (documentMode) {
                             typing.textContent = "Preparing your document in the editor…";
                             window.OddiDocumentWorkspace?.update(reply, {
@@ -13583,7 +13776,7 @@ async function sendMessage(
                         }
 
                         if (generationStopped) return;
-                        await finishAIMessage(reply, message, typing, voiceReply, targetConversation, persistedId, completedAt, responseMeta, documentMode ? {title: documentTitle} : null);
+                        await finishAIMessage(reply, message, typing, voiceReply, targetConversation, persistedId, completedAt, responseMeta, documentMode ? {title: documentTitle} : null, [], assistantPersistenceHandled);
                         clearPendingGeneration(generationId);
                     } catch (retryError) {
                         if (generationStopped || retryError?.name === "AbortError") return;
@@ -13703,14 +13896,14 @@ function typeAIResponse(
              * Calculate where we SHOULD be based on real elapsed time.
              *
              * The response has already arrived from the server. Keep the
-             * type-in effect, but reduce the artificial delay to 4ms per char.
+             * type-in effect, but keep the artificial delay to 3ms per char.
              */
             const elapsed =
                 performance.now() - startTime;
 
             const targetIndex = Math.min(
                 text.length,
-                Math.floor(elapsed / 4)
+                Math.floor(elapsed / 3)
             );
 
             if (targetIndex !== i) {
@@ -14432,6 +14625,101 @@ function addBotMessageActions(botMessage, messageIndex, conversationIndex = curr
    FINISH AI MESSAGE
  */
 
+function buildAssistantMessageRecord(reply, assistantMessageId, completedAt, responseMeta, documentMetadata, sources) {
+    const message = {
+        id: assistantMessageId || makeMessageId(),
+        role: "assistant",
+        text: reply,
+        pinned: false,
+        feedback: null,
+        background_completion: true,
+        completed_at: completedAt || new Date().toISOString(),
+        response_meta: responseMeta || {},
+        sources: oddiMergeCitationSources(sources || [])
+    };
+    if (documentMetadata?.title) {
+        message.document_workspace = true;
+        message.document_title = String(documentMetadata.title).slice(0, 120);
+    }
+    return message;
+}
+
+function updateConversationTitleFromReply(conversation, userMessage, documentMetadata) {
+    if (!Array.isArray(conversation?.messages) || conversation.messages.length !== 2 || documentMetadata) return false;
+    const existingTitle = String(conversation.title || "").trim();
+    const originalPrompt = String(userMessage || "").trim();
+    const looksAutoNamed = !existingTitle || existingTitle === "New Chat" || existingTitle === originalPrompt;
+    if (!looksAutoNamed) return false;
+    const improvedTitle = buildConversationTitle(originalPrompt);
+    if (!improvedTitle || improvedTitle === existingTitle) return false;
+    conversation.title = improvedTitle;
+    return true;
+}
+
+async function checkpointAssistantResponse(conversation, userMessage, assistantMessage, responseMeta, documentMetadata) {
+    if (!conversation || !assistantMessage) return false;
+    if (!Array.isArray(conversation.messages)) conversation.messages = [];
+    const existingIndex = conversation.messages.findIndex(item => String(item?.id || "") === String(assistantMessage.id));
+    if (existingIndex >= 0) Object.assign(conversation.messages[existingIndex], assistantMessage);
+    else conversation.messages.push(assistantMessage);
+    const titleChanged = updateConversationTitleFromReply(conversation, userMessage, documentMetadata);
+    touchConversation(conversation);
+
+    const conversationId = conversation.id === null || conversation.id === undefined
+        ? ""
+        : String(conversation.id);
+    if (responseMeta?.conversation_persisted === true && conversationId) {
+        const savedRevision = Number(responseMeta.conversation_revision || 0);
+        if (savedRevision > Number(conversation.revision || 0)) conversation.revision = savedRevision;
+        if (titleChanged && isLoggedIn) {
+            backupOddiConversation(conversation);
+            void saveConversation(conversation).catch(error => console.warn("Could not sync the updated chat title yet:", error));
+        }
+        return true;
+    }
+
+    // Synchronously write a recovery snapshot before any server request. If
+    // the tab closes during the type-in effect, this complete reply can be
+    // restored and its cloud sync can resume on the next app load.
+    const recoverySaved = backupOddiConversation(conversation);
+    if (!conversationId) return false;
+
+    if (browserLocalChatStorage) {
+        const localWrite = saveConversation(conversation).catch(error => {
+            console.warn("Could not update the local chat database yet:", error);
+            return false;
+        });
+        if (recoverySaved) {
+            void localWrite;
+            return true;
+        }
+        return await localWrite;
+    }
+
+    if (isLoggedIn && conversationId.startsWith("local-")) {
+        conversationDirtyLocal.add(conversationId);
+        const localWrite = saveConversation(conversation).catch(error => {
+            console.warn("Could not update the local chat database yet:", error);
+            return false;
+        });
+        if (recoverySaved) {
+            void localWrite;
+            return true;
+        }
+        // Local-ID chats are imported by the existing background migration.
+        return await localWrite;
+    }
+
+    if (isLoggedIn) {
+        conversationDirtyLocal.add(conversationId);
+        void appendConversationMessage(conversation, assistantMessage)
+            .catch(error => console.warn("Could not sync the saved assistant reply yet:", error));
+        return true;
+    }
+
+    return recoverySaved;
+}
+
 async function finishAIMessage(
     reply,
     userMessage,
@@ -14442,7 +14730,8 @@ async function finishAIMessage(
     completedAt = null,
     responseMeta = {},
     documentMetadata = null,
-    sources = []
+    sources = [],
+    persistenceHandled = false
 ) {
 
     if (generationStopped) return;
@@ -14474,21 +14763,9 @@ async function finishAIMessage(
     );
 
     const normalizedSources = oddiMergeCitationSources(sources || []);
-    const newAssistantMessage = {
-        id: assistantMessageId || makeMessageId(),
-        role: "assistant",
-        text: reply,
-        pinned: false,
-        feedback: null,
-        background_completion: true,
-        completed_at: completedAt || new Date().toISOString(),
-        response_meta: responseMeta,
-        sources: normalizedSources
-    };
-    if (documentMetadata?.title) {
-        newAssistantMessage.document_workspace = true;
-        newAssistantMessage.document_title = String(documentMetadata.title).slice(0, 120);
-    }
+    const newAssistantMessage = buildAssistantMessageRecord(
+        reply, assistantMessageId, completedAt, responseMeta, documentMetadata, normalizedSources
+    );
 
     const existingMessageIndex = conversation.messages.findIndex(
         item => String(item?.id || "") === String(newAssistantMessage.id)
@@ -14501,19 +14778,7 @@ async function finishAIMessage(
         conversation.messages.push(newAssistantMessage);
     }
 
-    let conversationTitleChanged = false;
-    if (conversation.messages.length === 2 && !documentMetadata) {
-        const existingTitle = String(conversation.title || "").trim();
-        const originalPrompt = String(userMessage || "").trim();
-        const looksAutoNamed = !existingTitle || existingTitle === "New Chat" || existingTitle === originalPrompt;
-        if (looksAutoNamed) {
-            const improvedTitle = buildConversationTitle(originalPrompt);
-            if (improvedTitle && improvedTitle !== existingTitle) {
-                conversation.title = improvedTitle;
-                conversationTitleChanged = true;
-            }
-        }
-    }
+    const conversationTitleChanged = updateConversationTitleFromReply(conversation, userMessage, documentMetadata);
 
     const botMessage = activeBubble;
 
@@ -14537,12 +14802,16 @@ async function finishAIMessage(
     }
 
     touchConversation(conversation);
-    const serverAlreadySavedDocument = !!documentMetadata &&
-        responseMeta.conversation_persisted === true &&
+    const serverAlreadySaved = responseMeta.conversation_persisted === true &&
         conversation.id !== null && conversation.id !== undefined;
-    if (serverAlreadySavedDocument) {
+    if (serverAlreadySaved) {
         const savedRevision = Number(responseMeta.conversation_revision || 0);
         if (savedRevision > Number(conversation.revision || 0)) conversation.revision = savedRevision;
+    } else if (persistenceHandled) {
+        if (conversationTitleChanged && conversation.id !== null && conversation.id !== undefined) {
+            backupOddiConversation(conversation);
+            void saveConversation(conversation).catch(error => console.warn("Could not sync the updated chat title yet:", error));
+        }
     } else if (conversationTitleChanged) {
         await saveConversation(conversation);
     } else {
@@ -14583,7 +14852,13 @@ async function finishAIMessage(
 
 button.addEventListener(
     "click",
-    () => sendMessage()
+    () => {
+        if (generationActive) {
+            stopGeneration();
+            return;
+        }
+        sendMessage();
+    }
 );
 
 input.addEventListener(
@@ -15318,7 +15593,7 @@ function setArchivedPreviewState(archived) {
     }
 
     const composerInput = document.getElementById("userInput");
-    if (composerInput) composerInput.disabled = previewOnly || !!generationActive;
+    if (composerInput) composerInput.disabled = previewOnly;
 }
 
 function getArchivedChatIds() {
