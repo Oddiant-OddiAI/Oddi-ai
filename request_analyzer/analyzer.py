@@ -273,11 +273,15 @@ class RequestAnalyzer:
         # -----------------------------------------
 
         if re.search(
-            r"\b(?:latest|current|today|recent|news|price|weather)\b"
+            r"\b(?:latest|current|today(?:'s|s)?|recent|news|price|weather)\b"
             r"|\b(?:forecast|temperature|air\s+quality|aqi|sunrise|sunset)\b"
             r"|\b(?:live\s+(?:updates?|scores?|results?|news|data|weather|prices?))\b"
             r"|\b(?:search\s+(?:the\s+)?(?:web|internet|online)|search\s+(?:for|about)|"
             r"look\s+up|browse\s+the\s+web|research\s+online)\b"
+            r"|\bweb\s+search\s+(?!(?:why|how|what|can|is|kyu|kyon|kya|nahi|nahin|not)\b)[\w]"
+            r"|\b(?:internet|web)\s+par\s+(?:search|dhund\w*|dekho|check)\b"
+            r"|\bgoogle\s+(?:search|for|karke|kar(?:\s+ke)?)\b"
+            r"|\b(?:internet|online)\s+search\s+(?:karke|kar(?:\s+ke)?|for|about)\b"
             r"|\bright\s+now\b",
             text,
         ):

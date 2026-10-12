@@ -1,5 +1,6 @@
 import string
 import re
+from datetime import datetime
 from app.platform_knowledge import is_platform_help_question
 from app.job_fast_responses import (
     JOB_FAST_RESPONSES,
@@ -466,6 +467,26 @@ def fast_response(message, history=None):
     # generic fast-response string.
     if is_platform_help_question(message):
         return None
+
+    # Answer direct current-date questions from the machine's local clock.
+    # A provider model has no reliable clock unless the app supplies one.
+    date_question = re.sub(r"^(?:(?:bhai|bro|yaar)\s+)+", "", text)
+    date_question = re.sub(r"(?:\s+(?:bhai|bro|please))+$", "", date_question)
+    if re.fullmatch(
+        r"(?:(?:(?:what(?:\s+is|s)?|tell me|can you tell me|please tell me)\s+)?"
+        r"(?:the\s+)?(?:current|todays?)\s+date"
+        r"|(?:(?:what(?:\s+is|s)?|tell me|can you tell me|please tell me)\s+)"
+        r"(?:the\s+)?date(?:\s+today)?"
+        r"|what\s+date\s+is\s+it(?:\s+today)?"
+        r"|what\s+day\s+is\s+(?:it|today)"
+        r"|date\s+today"
+        r"|aaj(?:\s+ki)?\s+(?:date|tareekh)(?:\s+kya\s+hai)?",
+        date_question,
+    ):
+        now = datetime.now().astimezone()
+        if re.search(r"\b(?:aaj|kya\s+hai)\b", date_question):
+            return f"Aaj {now.day} {now.strftime('%B')} {now.year} hai."
+        return f"Today is {now.strftime('%A, %B')} {now.day}, {now.year}."
 
     global LAST_JOB_CONTEXT
     history_context = get_job_context_from_history(history)
