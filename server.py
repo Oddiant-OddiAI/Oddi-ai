@@ -496,11 +496,29 @@ async def start_bin_retention_cleanup():
         if google_drive_storage.is_configured():
             async def sync_laptop_chats():
                 from app.drive_sync import sync_laptop_once
+                retry_delay = 30
+                auth_failure_reported = False
                 while True:
                     try:
                         await run_in_threadpool(sync_laptop_once)
+                    except google_drive_storage.DriveStorageError as error:
+                        message = str(error).casefold()
+                        if "refresh token" in message or "oauth" in message:
+                            if not auth_failure_reported:
+                                logger.error(
+                                    "Google Drive sync is paused because its authorization was rejected. "
+                                    "Local chats remain saved on this laptop; reconnect at /auth/google/drive."
+                                )
+                                auth_failure_reported = True
+                            await asyncio.sleep(retry_delay)
+                            retry_delay = min(retry_delay * 2, 300)
+                            continue
+                        logger.exception("Laptop to Google Drive chat sync failed; it will retry")
                     except Exception:
                         logger.exception("Laptop to Google Drive chat sync failed; it will retry")
+                    else:
+                        auth_failure_reported = False
+                        retry_delay = 30
                     await asyncio.sleep(30)
 
             app.state.drive_sync_task = asyncio.create_task(sync_laptop_chats())
