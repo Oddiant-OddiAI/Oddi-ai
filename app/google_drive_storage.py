@@ -79,6 +79,49 @@ def is_configured():
     return not any(marker in lowered for marker in ("your-project", "your_google", "your-private-key", "replace-me"))
 
 
+def validate_access_token(access_token):
+    """Confirm a newly authorized token can access this app's Drive folder."""
+    folder_id = _clean_env("GOOGLE_DRIVE_FOLDER_ID")
+    if not folder_id:
+        raise DriveStorageError("Google Drive folder is not configured.")
+    try:
+        import requests
+
+        response = requests.get(
+            f"https://www.googleapis.com/drive/v3/files/{folder_id}",
+            headers={"Authorization": f"Bearer {str(access_token or '').strip()}"},
+            params={"fields": "id,mimeType", "supportsAllDrives": "true"},
+            timeout=(10, 30),
+        )
+    except Exception as exc:
+        raise DriveStorageError(
+            "Google Drive authorization could not be checked. Please retry."
+        ) from exc
+
+    try:
+        if response.status_code in {401, 403}:
+            raise DriveStorageError(
+                "The new Google authorization cannot access the configured Drive folder."
+            )
+        if response.status_code == 404:
+            raise DriveStorageError(
+                "The configured Google Drive folder was not found or is not shared with this account."
+            )
+        if not response.ok:
+            raise DriveStorageError(
+                "Google Drive authorization could not be checked. Please retry."
+            )
+        try:
+            metadata = response.json()
+        except (TypeError, ValueError):
+            metadata = {}
+        if metadata.get("mimeType") != _FOLDER_MIME:
+            raise DriveStorageError("GOOGLE_DRIVE_FOLDER_ID must point to a folder.")
+        return True
+    finally:
+        response.close()
+
+
 def _lock_for(account_id):
     with _LOCK_GUARD:
         return _ACCOUNT_LOCKS.setdefault(str(account_id), threading.RLock())
@@ -115,8 +158,12 @@ def _chat_key(conversation_id):
 
 
 def _service():
+    config_fingerprint = tuple(_clean_env(key) for key in _CONFIG_KEYS)
     service = getattr(_SERVICE_LOCAL, "service", None)
-    if service is not None:
+    if (
+        service is not None
+        and getattr(_SERVICE_LOCAL, "config_fingerprint", None) == config_fingerprint
+    ):
         return service
     if not is_configured():
         raise DriveStorageError(
@@ -158,6 +205,7 @@ def _service():
             requestBuilder=build_request,
         )
         _SERVICE_LOCAL.service = service
+        _SERVICE_LOCAL.config_fingerprint = config_fingerprint
         return service
     except ImportError as exc:
         raise DriveStorageError(

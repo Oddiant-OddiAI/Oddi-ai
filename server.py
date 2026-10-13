@@ -15,7 +15,7 @@ from urllib.parse import quote
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.gzip import GZipMiddleware
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 
 # Load local configuration before importing app modules. app.database reads
 # DATABASE_URL_* at import time, so loading dotenv below those imports left it
@@ -1224,12 +1224,42 @@ async def google_login(request: Request):
     )
 
 
+@app.get("/auth/google/drive", name="google_drive_reauthorize")
+async def google_drive_reauthorize(request: Request):
+    """Refresh the laptop's Drive grant without exposing its token."""
+    if not ODDI_LOCAL_ONLY_STORAGE:
+        return PlainTextResponse("Drive reconnection is available from the laptop only.", status_code=404)
+    if not _get_session_user(request):
+        return RedirectResponse(url="/login", status_code=303)
+    if not google_client_id or not google_client_secret:
+        return PlainTextResponse("Google sign-in is not configured on this laptop.", status_code=503)
+
+    current_user = _get_session_user(request)
+    request.session["drive_reauthorization_pending"] = True
+    redirect_uri = str(request.url_for("google_callback"))
+    return await oauth.google.authorize_redirect(
+        request,
+        redirect_uri,
+        scope="openid profile email https://www.googleapis.com/auth/drive",
+        access_type="offline",
+        prompt="consent",
+        login_hint=str(current_user.get("email") or ""),
+    )
+
+
 @app.get("/auth/google/callback", name="google_callback")
 async def google_callback(request: Request):
+    drive_reauthorization = bool(request.session.pop("drive_reauthorization_pending", False))
     try:
         token = await oauth.google.authorize_access_token(request)
     except OAuthError as error:
         logger.warning("Google OAuth failed: %s", error)
+        if drive_reauthorization:
+            return HTMLResponse(
+                "<main><h1>Drive was not reconnected</h1><p>Your chats are still saved on this laptop. "
+                "Please retry Google Drive reconnection from this laptop.</p></main>",
+                status_code=400,
+            )
         return RedirectResponse(url="/login", status_code=303)
 
     userinfo = token.get("userinfo")
@@ -1246,6 +1276,82 @@ async def google_callback(request: Request):
                 "Google account information could not be retrieved.",
                 status_code=502,
             )
+
+    if drive_reauthorization:
+        if not ODDI_LOCAL_ONLY_STORAGE or not _get_session_user(request):
+            return PlainTextResponse("Drive reconnection must start from a signed-in laptop session.", status_code=403)
+        refresh_token = str(token.get("refresh_token") or "").strip()
+        if not refresh_token:
+            return HTMLResponse(
+                "<main><h1>Google did not issue a Drive refresh token</h1><p>Your chats are still saved on this laptop. "
+                "Retry Drive reconnection and approve offline Drive access.</p></main>",
+                status_code=400,
+            )
+        granted_scopes = set(str(token.get("scope") or "").split())
+        drive_scope = "https://www.googleapis.com/auth/drive"
+        if granted_scopes and drive_scope not in granted_scopes:
+            return HTMLResponse(
+                "<main><h1>Drive access was not granted</h1><p>Your chats are still saved on this laptop. "
+                "Retry and approve the requested Google Drive access.</p></main>",
+                status_code=403,
+            )
+
+        from app import google_drive_storage
+
+        try:
+            await run_in_threadpool(
+                google_drive_storage.validate_access_token,
+                token.get("access_token"),
+            )
+            dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+            saved, _, _ = set_key(
+                dotenv_path,
+                "GOOGLE_REFRESH_TOKEN",
+                refresh_token,
+                quote_mode="always",
+            )
+            if not saved:
+                raise OSError("Could not save the refreshed Google Drive credential.")
+            os.environ["GOOGLE_REFRESH_TOKEN"] = refresh_token
+        except Exception as error:
+            logger.warning(
+                "Could not save the renewed local Google Drive grant (error_type=%s)",
+                type(error).__name__,
+            )
+            message = (
+                str(error)
+                if isinstance(error, DriveStorageError)
+                else "The renewed Google Drive credential could not be saved on this laptop."
+            )
+            return HTMLResponse(
+                f"<main><h1>Drive reconnection could not finish</h1><p>{message}</p>"
+                "<p>Your existing laptop chats are untouched.</p></main>",
+                status_code=503,
+            )
+
+        try:
+            from app.drive_sync import sync_laptop_once
+
+            sync_result = await run_in_threadpool(sync_laptop_once)
+        except Exception:
+            logger.exception("Initial laptop-to-Drive sync failed after Drive reauthorization; retrying in background")
+            return HTMLResponse(
+                "<main><h1>Drive reconnected on this laptop</h1><p>The credential was saved securely. "
+                "Chat sync will retry automatically; your laptop copies remain safe.</p>"
+                "<p>To restore the public website, update GOOGLE_REFRESH_TOKEN in the ODDI web service's "
+                "Render Environment settings with the renewed value from this laptop's .env, then redeploy.</p></main>",
+                status_code=503,
+            )
+
+        checked_chats = int(sync_result.get("chats", 0) or 0)
+        return HTMLResponse(
+            "<main><h1>Drive reconnected on this laptop</h1>"
+            f"<p>Initial sync completed; {checked_chats} chat records were checked.</p>"
+            "<p>To restore the public website, update GOOGLE_REFRESH_TOKEN in the ODDI web service's "
+            "Render Environment settings with the renewed value from this laptop's .env, then redeploy. "
+            "The token was saved in this laptop's local .env file and was not shown on this page.</p>"
+            "<p><a href='/'>Return to ODDI</a></p></main>"
+        )
 
     email = str(userinfo.get("email") or "").strip().lower()
     name = str(userinfo.get("name") or "").strip()
