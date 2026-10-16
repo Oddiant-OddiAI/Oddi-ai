@@ -480,7 +480,7 @@ def fast_response(message, history=None):
         r"|what\s+date\s+is\s+it(?:\s+today)?"
         r"|what\s+day\s+is\s+(?:it|today)"
         r"|date\s+today"
-        r"|aaj(?:\s+ki)?\s+(?:date|tareekh)(?:\s+kya\s+hai)?",
+        r"|aaj(?:\s+ki)?\s+(?:date|tareekh)(?:\s+kya\s+hai)?)",
         date_question,
     ):
         now = datetime.now().astimezone()

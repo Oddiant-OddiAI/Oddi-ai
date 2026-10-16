@@ -1261,7 +1261,7 @@ async def google_drive_reauthorize(request: Request):
         scope="openid profile email https://www.googleapis.com/auth/drive",
         access_type="offline",
         prompt="consent",
-        login_hint=str(current_user.get("email") or ""),
+        login_hint=str(current_user["email"] or ""),
     )
 
 
