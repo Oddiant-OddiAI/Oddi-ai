@@ -420,7 +420,7 @@ def _run_laptop_drive_sync():
                 "last_result": {
                     key: int(value or 0)
                     for key, value in result.items()
-                    if key in {"accounts", "chats", "uploaded_chats", "downloaded_chats"}
+                    if key in {"accounts", "chats", "uploaded_chats", "downloaded_chats", "memories"}
                 },
             })
             status.pop("last_error_at", None)
@@ -1807,7 +1807,7 @@ def api_export_account_data(request: Request):
         "user": {"id": str(user_id), "name": request.session.get("username"), "email": request.session.get("email")},
         "conversations": get_conversations(user_id),
         "deleted_conversations": get_deleted_conversations(user_id),
-        "memories": get_memory(user_id) or {},
+        "memories": get_memory(user_id, sync_drive=ODDI_LOCAL_ONLY_STORAGE) or {},
         "files": get_files(user_id),
         "settings": get_user_settings(user_id),
     }
@@ -2246,7 +2246,7 @@ def _memory_category_label(category, all_categories):
 @app.get("/api/memory", name="api_get_memory")
 def api_get_memory(request: Request):
     user_id = require_user_id(request)
-    memories = get_memory(user_id) or {}
+    memories = get_memory(user_id, sync_drive=ODDI_LOCAL_ONLY_STORAGE) or {}
     try:
         memory_settings = normalize_memory_settings(get_user_settings(user_id).get("memory"))
     except Exception as error:

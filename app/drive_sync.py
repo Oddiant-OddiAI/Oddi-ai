@@ -1,4 +1,4 @@
-"""Best-effort two-way mirror between laptop chat files and Google Drive."""
+"""Best-effort two-way mirror between laptop chats, memories, and Google Drive."""
 
 import logging
 import threading
@@ -113,6 +113,7 @@ def _sync_laptop_once_locked():
     synced_chats = 0
     uploaded_chats = 0
     downloaded_chats = 0
+    synced_memories = 0
 
     for email, local_user in local_by_email.items():
         if not email:
@@ -126,6 +127,11 @@ def _sync_laptop_once_locked():
         _sync_account_settings(database, local_user, cloud_account)
         remote_id = int(cloud_account["id"])
         local_id = int(local_user["id"])
+        memory_records = database.sync_memory_records(local_id, remote_id)
+        synced_memories += sum(
+            record.get("deleted_at") is None and bool(str(record.get("value") or "").strip())
+            for record in memory_records.values()
+        )
 
         local_tombstones = local_chat_files.get_tombstones(local_id)
         remote_tombstones = google_drive_storage.get_tombstones(remote_id)
@@ -207,4 +213,5 @@ def _sync_laptop_once_locked():
         "chats": synced_chats,
         "uploaded_chats": uploaded_chats,
         "downloaded_chats": downloaded_chats,
+        "memories": synced_memories,
     }

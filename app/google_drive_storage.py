@@ -26,6 +26,7 @@ _CONFIG_KEYS = (
 )
 _CHAT_NAME_RE = re.compile(r"^chat-([1-9][0-9]*)\.json$")
 _DELETED_ACCOUNT_FILE = "_deleted-account.json"
+_MEMORY_FILE = "memories.json"
 _LOCK_GUARD = threading.Lock()
 _ACCOUNT_LOCKS = {}
 _SERVICE_LOCAL = threading.local()
@@ -983,6 +984,86 @@ def update_account_settings(user_id, settings):
     _write_json_file(folder_id, "account.json", account)
     _invalidate_account_cache(user_id)
     return True
+
+
+def _memory_timestamp(value):
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+        except (TypeError, ValueError, OverflowError):
+            parsed = datetime.min.replace(tzinfo=timezone.utc)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _normalize_memory_records(value):
+    records = value.get("memories") if isinstance(value, dict) else None
+    if not isinstance(records, dict):
+        return {}
+    normalized = {}
+    for key, record in records.items():
+        key = str(key or "").strip()
+        if not key or not isinstance(record, dict):
+            continue
+        updated_at = _memory_iso_timestamp(record.get("updated_at"))
+        deleted_at = record.get("deleted_at")
+        normalized[key] = {
+            "value": str(record.get("value") or ""),
+            "updated_at": updated_at,
+            "deleted_at": _memory_iso_timestamp(deleted_at) if deleted_at else None,
+        }
+    return normalized
+
+
+def _memory_iso_timestamp(value=None):
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+        except (TypeError, ValueError, OverflowError):
+            parsed = datetime.now(timezone.utc)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat(timespec="microseconds")
+
+
+def get_memory_records(user_id):
+    """Read shared long-term memory records, including deletion markers."""
+    folder_id = _account_folder(user_id)
+    if not folder_id:
+        return {}
+    return _normalize_memory_records(_read_json_file(folder_id, _MEMORY_FILE))
+
+
+def merge_memory_records(user_id, incoming_records):
+    """Merge account memories by per-key update time and return the shared set."""
+    folder_id = _account_folder(user_id, create=True)
+    if not folder_id:
+        raise DriveStorageError("The Google Drive account folder could not be created.")
+
+    with _lock_for(user_id):
+        stored = _read_json_file(folder_id, _MEMORY_FILE)
+        current = _normalize_memory_records(stored)
+        for key, record in (incoming_records.items() if isinstance(incoming_records, dict) else []):
+            key = str(key or "").strip()
+            if not key or not isinstance(record, dict):
+                continue
+            candidate = {
+                "value": str(record.get("value") or ""),
+                "updated_at": _memory_iso_timestamp(record.get("updated_at")),
+                "deleted_at": _memory_iso_timestamp(record.get("deleted_at")) if record.get("deleted_at") else None,
+            }
+            existing = current.get(key)
+            if existing is None or _memory_timestamp(candidate["updated_at"]) > _memory_timestamp(existing["updated_at"]):
+                current[key] = candidate
+
+        if current != _normalize_memory_records(stored):
+            _write_json_file(folder_id, _MEMORY_FILE, {"version": 1, "memories": current})
+        return deepcopy(current)
 
 
 def update_account_profile(user_id, username):

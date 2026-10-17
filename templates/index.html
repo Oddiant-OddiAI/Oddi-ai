@@ -39122,15 +39122,15 @@ body.dark-mode .oddi-storage-sync-badge[data-state="retrying"],body.dark-mode .o
 
     if (data.storage_mode === 'laptop') {
       mode.textContent = data.drive_configured
-        ? 'Chats are saved on this laptop SSD first, then mirrored to Google Drive.'
-        : 'Chats are saved on this laptop SSD. Google Drive sync is not configured here.';
+        ? 'Chats and memories are saved on this laptop SSD first, then mirrored to Google Drive.'
+        : 'Chats and memories are saved on this laptop SSD. Google Drive sync is not configured here.';
       localLabel.textContent = 'Chats on this laptop SSD';
       pendingMetric.hidden = false;
       pendingCount.textContent = data.pending_known
         ? Number(data.pending_chat_count || 0).toLocaleString() + ' chats · ' + Number(data.pending_delete_count || 0).toLocaleString() + ' deletes'
         : 'Checking';
     } else if (data.storage_mode === 'drive') {
-      mode.textContent = 'This site uses shared Google Drive storage; laptop SSD sync runs in the laptop app.';
+      mode.textContent = 'This site uses shared Google Drive storage for chats and memories; laptop SSD sync runs in the laptop app.';
       localLabel.textContent = 'Chats available in Drive';
       pendingMetric.hidden = true;
     } else {
@@ -39146,8 +39146,8 @@ body.dark-mode .oddi-storage-sync-badge[data-state="retrying"],body.dark-mode .o
       syncing: 'ODDI is checking local chats against Drive and syncing changes now.',
       pending: 'Some changes are waiting to reach Drive. ODDI will keep retrying in the background.',
       checking: 'ODDI is checking the laptop and Drive copies for new changes.',
-      synced: 'The laptop chat files and their Drive mirror are up to date.',
-      cloud: 'The shared Drive copy is active for this website. The laptop downloads changes when its app is online.',
+      synced: 'The laptop chat files, memories, and their Drive mirror are up to date.',
+      cloud: 'The shared Drive copy for chats and memories is active for this website. The laptop syncs changes when its app is online.',
       server_storage: 'This deployment is using its configured server storage.'
     };
     message.textContent = messages[state] || messages.checking;

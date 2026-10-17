@@ -577,9 +577,11 @@ def _create_archive_memory_tables():
                     memory_value TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    deleted_at TIMESTAMP NULL,
                     UNIQUE(user_id, memory_key)
                 )
             """)
+            conn.execute("ALTER TABLE memories ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP NULL")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS memory_extraction_queue (
                     id BIGSERIAL PRIMARY KEY,
@@ -636,9 +638,13 @@ def _create_archive_memory_tables():
                     memory_value TEXT NOT NULL,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    deleted_at TIMESTAMP NULL,
                     UNIQUE(user_id, memory_key)
                 )
             """)
+            memory_columns = {row[1] for row in conn.execute("PRAGMA table_info(memories)").fetchall()}
+            if "deleted_at" not in memory_columns:
+                conn.execute("ALTER TABLE memories ADD COLUMN deleted_at TIMESTAMP NULL")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS memory_extraction_queue (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1901,57 +1907,185 @@ def _get_legacy_memory(user_id, key=None):
         conn.close()
 
 
-def get_memory(user_id, key=None):
+def _memory_timestamp(value=None):
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(value or "").replace("Z", "+00:00"))
+        except (TypeError, ValueError, OverflowError):
+            parsed = datetime.now(timezone.utc)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat(timespec="microseconds")
+
+
+def _read_local_memory_records(user_id):
     conn = get_db("archive_memory")
     try:
-        if key:
-            row = _fetchone(
-                conn,
-                "SELECT memory_key, memory_value FROM memories WHERE user_id = ? AND memory_key = ?",
-                (user_id, key),
-            )
-            if row:
-                return row["memory_value"]
-        else:
-            rows = _fetchall(conn, "SELECT memory_key, memory_value FROM memories WHERE user_id = ?", (user_id,))
-            result = {row["memory_key"]: row["memory_value"] for row in rows}
-            if result:
-                return result
+        rows = _fetchall(
+            conn,
+            "SELECT memory_key, memory_value, updated_at, deleted_at FROM memories WHERE user_id = ?",
+            (user_id,),
+        )
+        return {
+            str(row["memory_key"]): {
+                "value": str(row["memory_value"] or ""),
+                "updated_at": _memory_timestamp(row["updated_at"]),
+                "deleted_at": _memory_timestamp(row["deleted_at"]) if row["deleted_at"] else None,
+            }
+            for row in rows
+        }
     finally:
         conn.close()
 
-    legacy = _get_legacy_memory(user_id, key)
-    if key:
-        if legacy:
-            save_memory(user_id, key, legacy)
-        return legacy
-    if legacy:
-        for legacy_key, legacy_value in legacy.items():
-            save_memory(user_id, legacy_key, legacy_value)
-    return legacy or {}
 
-
-def save_memory(user_id, key, value):
+def _upsert_local_memory_record(user_id, key, record):
     conn = get_db("archive_memory")
     try:
         conn.execute(
             """
-            INSERT INTO memories (user_id, memory_key, memory_value)
-            VALUES (?, ?, ?)
+            INSERT INTO memories (user_id, memory_key, memory_value, updated_at, deleted_at)
+            VALUES (?, ?, ?, ?, ?)
             ON CONFLICT(user_id, memory_key)
-            DO UPDATE SET memory_value = excluded.memory_value, updated_at = CURRENT_TIMESTAMP
+            DO UPDATE SET memory_value = excluded.memory_value,
+                          updated_at = excluded.updated_at,
+                          deleted_at = excluded.deleted_at
             """,
-            (user_id, key, value),
+            (
+                user_id,
+                key,
+                str(record.get("value") or ""),
+                _memory_timestamp(record.get("updated_at")),
+                _memory_timestamp(record.get("deleted_at")) if record.get("deleted_at") else None,
+            ),
         )
         conn.commit()
     finally:
         conn.close()
 
 
+def _drive_memory_user_id(user_id):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return int(user_id)
+    if not ODDI_LOCAL_ONLY_STORAGE or not google_drive_storage.is_configured():
+        return None
+    local_user = get_user_by_id(user_id)
+    email = _row_value(local_user, "email") if local_user else None
+    if not email:
+        return None
+    return google_drive_storage.user_id_for_email(email)
+
+
+def get_memory_records(user_id, sync_drive=False):
+    """Return memory values and deletion markers used by cross-device sync."""
+    if ODDI_DRIVE_CHAT_STORAGE:
+        # Before memories were Drive-backed, the hosted site wrote them to its
+        # local archive database. Import any surviving rows once so a deploy
+        # does not strand that account's older memories on Render's filesystem.
+        legacy_records = _read_local_memory_records(user_id)
+        if legacy_records:
+            shared_records = google_drive_storage.merge_memory_records(user_id, legacy_records)
+            conn = get_db("archive_memory")
+            try:
+                conn.execute("DELETE FROM memories WHERE user_id = ?", (user_id,))
+                conn.commit()
+            finally:
+                conn.close()
+            return shared_records
+        return google_drive_storage.get_memory_records(user_id)
+
+    records = _read_local_memory_records(user_id)
+    if not records:
+        legacy = _get_legacy_memory(user_id) or {}
+        now = _memory_timestamp()
+        records = {
+            str(key): {"value": str(value or ""), "updated_at": now, "deleted_at": None}
+            for key, value in legacy.items()
+            if str(key or "").strip()
+        }
+        for key, record in records.items():
+            _upsert_local_memory_record(user_id, key, record)
+
+    if sync_drive and ODDI_LOCAL_ONLY_STORAGE:
+        try:
+            return sync_memory_records(user_id)
+        except Exception as error:
+            logger.warning("Shared memory sync failed; local memory remains available (%s).", type(error).__name__)
+    return records
+
+
+def sync_memory_records(user_id, drive_user_id=None):
+    """Merge the laptop's local memory cache with its stable Drive account."""
+    if not ODDI_LOCAL_ONLY_STORAGE or not google_drive_storage.is_configured():
+        return _read_local_memory_records(user_id)
+    drive_user_id = drive_user_id or _drive_memory_user_id(user_id)
+    if not drive_user_id:
+        return _read_local_memory_records(user_id)
+
+    local_records = get_memory_records(user_id, sync_drive=False)
+    merged = google_drive_storage.merge_memory_records(drive_user_id, local_records)
+    for key, record in merged.items():
+        if local_records.get(key) != record:
+            _upsert_local_memory_record(user_id, key, record)
+    return merged
+
+
+def get_memory(user_id, key=None, sync_drive=False):
+    records = get_memory_records(user_id, sync_drive=sync_drive)
+    memories = {
+        memory_key: record["value"]
+        for memory_key, record in records.items()
+        if record.get("deleted_at") is None and str(record.get("value") or "").strip()
+    }
+    return memories.get(str(key)) if key else memories
+
+
+def save_memory(user_id, key, value):
+    key = str(key or "").strip()
+    record = {
+        "value": str(value or ""),
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="microseconds"),
+        "deleted_at": None,
+    }
+    if ODDI_DRIVE_CHAT_STORAGE:
+        google_drive_storage.merge_memory_records(user_id, {key: record})
+        return
+
+    _upsert_local_memory_record(user_id, key, record)
+    if ODDI_LOCAL_ONLY_STORAGE:
+        try:
+            drive_user_id = _drive_memory_user_id(user_id)
+            if drive_user_id:
+                google_drive_storage.merge_memory_records(drive_user_id, {key: record})
+        except Exception as error:
+            logger.warning("Memory was saved locally; Drive mirror will retry (%s).", type(error).__name__)
+
+
 def delete_memory(user_id, key):
+    key = str(key or "").strip()
+    current = get_memory_records(user_id, sync_drive=ODDI_LOCAL_ONLY_STORAGE).get(key)
+    if current is None:
+        return
+    tombstone = {
+        "value": "",
+        "updated_at": datetime.now(timezone.utc).isoformat(timespec="microseconds"),
+        "deleted_at": datetime.now(timezone.utc).isoformat(timespec="microseconds"),
+    }
+    if ODDI_DRIVE_CHAT_STORAGE:
+        google_drive_storage.merge_memory_records(user_id, {key: tombstone})
+    else:
+        _upsert_local_memory_record(user_id, key, tombstone)
+        if ODDI_LOCAL_ONLY_STORAGE:
+            try:
+                drive_user_id = _drive_memory_user_id(user_id)
+                if drive_user_id:
+                    google_drive_storage.merge_memory_records(drive_user_id, {key: tombstone})
+            except Exception as error:
+                logger.warning("Memory deletion is saved locally; Drive mirror will retry (%s).", type(error).__name__)
+
     conn = get_db("archive_memory")
     try:
-        conn.execute("DELETE FROM memories WHERE user_id = ? AND memory_key = ?", (user_id, key))
         conn.execute("DELETE FROM memory_extraction_queue WHERE user_id = ?", (str(user_id),))
         conn.execute("DELETE FROM memory_extraction_activity WHERE user_id = ?", (str(user_id),))
         conn.commit()
@@ -1960,9 +2094,29 @@ def delete_memory(user_id, key):
 
 
 def clear_memory(user_id):
+    records = get_memory_records(user_id, sync_drive=ODDI_LOCAL_ONLY_STORAGE)
+    now = datetime.now(timezone.utc).isoformat(timespec="microseconds")
+    tombstones = {
+        key: {"value": "", "updated_at": now, "deleted_at": now}
+        for key, record in records.items()
+        if record.get("deleted_at") is None
+    }
+    if ODDI_DRIVE_CHAT_STORAGE:
+        if tombstones:
+            google_drive_storage.merge_memory_records(user_id, tombstones)
+    else:
+        for key, record in tombstones.items():
+            _upsert_local_memory_record(user_id, key, record)
+        if tombstones and ODDI_LOCAL_ONLY_STORAGE:
+            try:
+                drive_user_id = _drive_memory_user_id(user_id)
+                if drive_user_id:
+                    google_drive_storage.merge_memory_records(drive_user_id, tombstones)
+            except Exception as error:
+                logger.warning("Memory clear is saved locally; Drive mirror will retry (%s).", type(error).__name__)
+
     conn = get_db("archive_memory")
     try:
-        conn.execute("DELETE FROM memories WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM memory_extraction_queue WHERE user_id = ?", (str(user_id),))
         conn.execute("DELETE FROM memory_extraction_activity WHERE user_id = ?", (str(user_id),))
         conn.commit()
