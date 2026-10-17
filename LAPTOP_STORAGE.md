@@ -71,3 +71,9 @@ LocalAppData folder. Keep `users.db` and the chat folder private and backed up.
 The app starts even if Drive is temporarily unreachable; sync retries in the
 background. A successful sync requires the laptop to be online and the Drive
 credentials and folder permissions to be valid.
+
+The Data tab in Settings shows the local chat count, queued chat changes and
+deletions, the last successful sync, and the current Drive connection state. It
+also offers a manual sync and, when OAuth authorization has expired, a Drive
+reconnect link. Pending-change counts are saved in the local account chat index
+so restarting the laptop app does not hide queued work.

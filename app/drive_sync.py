@@ -111,6 +111,8 @@ def _sync_laptop_once_locked():
         for account in cloud_accounts
     }
     synced_chats = 0
+    uploaded_chats = 0
+    downloaded_chats = 0
 
     for email, local_user in local_by_email.items():
         if not email:
@@ -128,6 +130,7 @@ def _sync_laptop_once_locked():
         local_tombstones = local_chat_files.get_tombstones(local_id)
         remote_tombstones = google_drive_storage.get_tombstones(remote_id)
         tombstoned = set(local_tombstones) | set(remote_tombstones)
+        synced_tombstone_versions = {**remote_tombstones, **local_tombstones}
 
         for conversation_id, deleted_at in local_tombstones.items():
             google_drive_storage.apply_permanent_tombstone(remote_id, conversation_id, deleted_at)
@@ -142,6 +145,10 @@ def _sync_laptop_once_locked():
             str(chat["id"]): chat
             for chat in google_drive_storage.get_all_conversations(remote_id)
         }
+        synced_local_versions = {}
+        account_uploaded = 0
+        account_downloaded = 0
+        account_synced = 0
 
         for conversation_id in set(local_chats) | set(remote_chats):
             if conversation_id in tombstoned:
@@ -153,22 +160,51 @@ def _sync_laptop_once_locked():
                     copy = dict(local_chat)
                     copy["user_id"] = remote_id
                     google_drive_storage.import_conversation(remote_id, copy)
+                    account_uploaded += 1
+                    synced_local_versions[conversation_id] = local_chat
                 elif _is_newer(remote_chat, local_chat):
                     copy = dict(remote_chat)
                     copy["user_id"] = local_id
                     local_chat_files.import_conversation(local_id, copy)
+                    account_downloaded += 1
+                    synced_local_versions[conversation_id] = remote_chat
+                else:
+                    synced_local_versions[conversation_id] = local_chat
             elif local_chat:
                 copy = dict(local_chat)
                 copy["user_id"] = remote_id
                 google_drive_storage.import_conversation(remote_id, copy)
+                account_uploaded += 1
+                synced_local_versions[conversation_id] = local_chat
             elif remote_chat:
                 copy = dict(remote_chat)
                 copy["user_id"] = local_id
                 local_chat_files.import_conversation(local_id, copy)
+                account_downloaded += 1
+                synced_local_versions[conversation_id] = remote_chat
             synced_chats += 1
+            account_synced += 1
 
         if tombstoned:
             local_chat_files.clear_tombstones(local_id, tombstoned)
             google_drive_storage.clear_tombstones(remote_id, tombstoned)
 
-    return {"accounts": len(local_by_email), "chats": synced_chats}
+        uploaded_chats += account_uploaded
+        downloaded_chats += account_downloaded
+        local_chat_files.record_sync_success(
+            local_id,
+            synced_local_versions,
+            synced_tombstone_versions,
+            {
+                "uploaded_chats": account_uploaded,
+                "downloaded_chats": account_downloaded,
+                "chats": account_synced,
+            },
+        )
+
+    return {
+        "accounts": len(local_by_email),
+        "chats": synced_chats,
+        "uploaded_chats": uploaded_chats,
+        "downloaded_chats": downloaded_chats,
+    }

@@ -5198,6 +5198,19 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
 
         <section class="oddi-settings-section oddi-settings-tab" data-settings-panel="data">
           <div class="oddi-settings-content-heading"><h4>Data</h4><p>Manage your conversations and stored data</p></div>
+          <div class="oddi-pref-card oddi-storage-sync-card" id="oddiStorageSyncCard" aria-live="polite">
+            <div class="oddi-storage-sync-heading"><div><strong>Storage &amp; Sync</strong><small id="oddiStorageSyncMode">Checking where your chats are stored&hellip;</small></div><span id="oddiStorageSyncBadge" class="oddi-storage-sync-badge" data-state="checking">Checking</span></div>
+            <div class="oddi-storage-sync-metrics">
+              <div><small id="oddiStorageLocalLabel">Chats saved on this laptop</small><strong id="oddiStorageLocalCount">&mdash;</strong></div>
+              <div><small>Chat changes waiting for Drive</small><strong id="oddiStoragePendingCount">&mdash;</strong></div>
+            </div>
+            <p id="oddiStorageSyncMessage" class="oddi-storage-sync-message">Checking your local chat files and Drive mirror.</p>
+            <small id="oddiStorageLastSync" class="oddi-storage-sync-last"></small>
+            <div class="oddi-storage-sync-actions">
+              <button id="oddiStorageSyncNow" type="button" class="oddi-pref-action">Sync now</button>
+              <a id="oddiStorageReconnect" class="oddi-pref-action" href="/auth/google/drive" hidden>Reconnect Google Drive</a>
+            </div>
+          </div>
           <div class="oddi-settings-group">
             <button id="clearChatBtn" class="oddi-danger-action" type="button"><span class="oddi-setting-icon">🗑</span><span class="oddi-setting-copy"><strong>Move all chats to Bin</strong><small>All conversations will be moved to Recently Deleted. You can restore them from the Bin.</small></span><span class="oddi-setting-arrow">→</span></button>
           </div>
@@ -38955,6 +38968,232 @@ body.oddi-generation-active #oddiComposerShell #userInput {
   caret-color: currentColor !important;
 }
 </style>
+
+<style id="oddi-settings-lower-panels-flow-fix">
+/* Keep the long-form settings panels in normal document flow at every width. */
+#settingsModal.oddi-settings-page-modal .oddi-settings-page-content {
+  min-height: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  align-items: flex-start !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="privacy"],
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="account"],
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="chat-preferences"],
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="data"] {
+  display: flex !important;
+  flex: 0 0 auto !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 14px !important;
+  width: min(100%, 960px) !important;
+  max-width: 960px !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  padding: 0 0 32px !important;
+  box-sizing: border-box !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="privacy"] > :not([hidden]),
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="account"] > :not([hidden]),
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="chat-preferences"] > :not([hidden]),
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="data"] > :not([hidden]) {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  float: none !important;
+  grid-column: auto !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="privacy"] > .oddi-pref-card,
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="account"] > .oddi-pref-card,
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="chat-preferences"] > .oddi-pref-card,
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="data"] > .oddi-pref-card {
+  width: 100% !important;
+  margin: 0 !important;
+}
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="privacy"] > .oddi-settings-content-heading,
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="account"] > .oddi-settings-content-heading,
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="chat-preferences"] > .oddi-settings-content-heading,
+#settingsModal.oddi-settings-page-modal .oddi-settings-tab.is-active[data-settings-panel="data"] > .oddi-settings-content-heading {
+  margin: 0 0 2px !important;
+}
+#settingsModal.oddi-settings-page-modal #oddiSavePrivacy,
+#settingsModal.oddi-settings-page-modal #oddiSaveChatPrefs {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+#settingsModal.oddi-settings-page-modal [data-settings-panel="account"] > .oddi-lock-card {
+  overflow: visible !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+#settingsModal.oddi-settings-page-modal #oddiAppLockMount {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+#settingsModal.oddi-settings-page-modal #oddiAppLockMount .app-lock-settings-card,
+#settingsModal.oddi-settings-page-modal #oddiAppLockMount .app-lock-change-card {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
+}
+</style>
+
+<style id="oddi-storage-sync-status-ui">
+#settingsModal.oddi-settings-page-modal [data-settings-panel="data"] > #oddiStorageSyncCard{grid-column:1/-1;width:100%;box-sizing:border-box;padding:18px;display:grid;gap:13px;}
+.oddi-storage-sync-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+.oddi-storage-sync-heading>div{display:grid;gap:4px;min-width:0;}
+.oddi-storage-sync-heading>div>strong{font-size:15px;}
+.oddi-storage-sync-heading small,.oddi-storage-sync-message,.oddi-storage-sync-last{color:var(--settings-muted,#747887);font-size:12px;line-height:1.5;}
+.oddi-storage-sync-badge{flex:0 0 auto;padding:5px 10px;border:1px solid #b9c0c8;border-radius:999px;background:rgba(110,120,130,.1);font-size:11px;font-weight:700;}
+.oddi-storage-sync-badge[data-state="synced"],.oddi-storage-sync-badge[data-state="cloud"]{color:#14864b;border-color:rgba(32,199,107,.4);background:rgba(32,199,107,.1);}
+.oddi-storage-sync-badge[data-state="pending"],.oddi-storage-sync-badge[data-state="syncing"],.oddi-storage-sync-badge[data-state="checking"]{color:#a36d00;border-color:rgba(240,180,40,.4);background:rgba(240,180,40,.1);}
+.oddi-storage-sync-badge[data-state="retrying"],.oddi-storage-sync-badge[data-state="authorization_required"],.oddi-storage-sync-badge[data-state="not_configured"]{color:#bd3f48;border-color:rgba(220,66,75,.4);background:rgba(220,66,75,.1);}
+body.dark-mode .oddi-storage-sync-badge[data-state="synced"],body.dark-mode .oddi-storage-sync-badge[data-state="cloud"]{color:#67dda0;}
+body.dark-mode .oddi-storage-sync-badge[data-state="pending"],body.dark-mode .oddi-storage-sync-badge[data-state="syncing"],body.dark-mode .oddi-storage-sync-badge[data-state="checking"]{color:#f2c66d;}
+body.dark-mode .oddi-storage-sync-badge[data-state="retrying"],body.dark-mode .oddi-storage-sync-badge[data-state="authorization_required"],body.dark-mode .oddi-storage-sync-badge[data-state="not_configured"]{color:#ff858c;}
+.oddi-storage-sync-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.oddi-storage-sync-metrics>div{min-width:0;padding:11px 12px;border:1px solid var(--settings-card-border,#dedfe5);border-radius:12px;background:rgba(127,127,127,.05);display:grid;gap:4px;}
+.oddi-storage-sync-metrics>div[hidden]{display:none!important;}
+.oddi-storage-sync-metrics small{color:var(--settings-muted,#747887);font-size:11px;}
+.oddi-storage-sync-metrics strong{font-size:20px;line-height:1.2;}
+.oddi-storage-sync-message{margin:0;}
+.oddi-storage-sync-actions{display:flex;flex-wrap:wrap;gap:8px;}
+.oddi-storage-sync-actions [hidden]{display:none!important;}
+.oddi-storage-sync-actions .oddi-pref-action{margin-top:0;text-decoration:none;}
+.oddi-storage-sync-actions button:disabled{opacity:.6;cursor:wait;}
+@media(max-width:560px){.oddi-storage-sync-heading{align-items:flex-start}.oddi-storage-sync-metrics{grid-template-columns:1fr}.oddi-storage-sync-card{padding:14px!important}}
+</style>
+
+<script id="oddi-storage-sync-status-handler">
+(() => {
+  const card = document.getElementById('oddiStorageSyncCard');
+  if (!card) return;
+  const badge = document.getElementById('oddiStorageSyncBadge');
+  const mode = document.getElementById('oddiStorageSyncMode');
+  const localLabel = document.getElementById('oddiStorageLocalLabel');
+  const localCount = document.getElementById('oddiStorageLocalCount');
+  const pendingCount = document.getElementById('oddiStoragePendingCount');
+  const message = document.getElementById('oddiStorageSyncMessage');
+  const lastSync = document.getElementById('oddiStorageLastSync');
+  const syncButton = document.getElementById('oddiStorageSyncNow');
+  const reconnect = document.getElementById('oddiStorageReconnect');
+  const labels = {
+    checking: 'Checking', syncing: 'Syncing', synced: 'Up to date', pending: 'Changes waiting',
+    retrying: 'Retrying', authorization_required: 'Reconnect needed', not_configured: 'Not configured',
+    cloud: 'Cloud storage', server_storage: 'Server storage'
+  };
+
+  function readableTime(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleString(undefined, {dateStyle:'medium', timeStyle:'short'});
+  }
+
+  function render(data) {
+    const state = data.state || 'checking';
+    badge.dataset.state = state;
+    badge.textContent = labels[state] || 'Checking';
+    localCount.textContent = Number(data.local_chat_count || 0).toLocaleString();
+    reconnect.hidden = !data.can_reconnect;
+    syncButton.hidden = data.storage_mode !== 'laptop' || !data.drive_configured;
+    const pendingMetric = pendingCount.closest('.oddi-storage-sync-metrics > div');
+
+    if (data.storage_mode === 'laptop') {
+      mode.textContent = data.drive_configured
+        ? 'Chats are saved on this laptop SSD first, then mirrored to Google Drive.'
+        : 'Chats are saved on this laptop SSD. Google Drive sync is not configured here.';
+      localLabel.textContent = 'Chats on this laptop SSD';
+      pendingMetric.hidden = false;
+      pendingCount.textContent = data.pending_known
+        ? Number(data.pending_chat_count || 0).toLocaleString() + ' chats · ' + Number(data.pending_delete_count || 0).toLocaleString() + ' deletes'
+        : 'Checking';
+    } else if (data.storage_mode === 'drive') {
+      mode.textContent = 'This site uses shared Google Drive storage; laptop SSD sync runs in the laptop app.';
+      localLabel.textContent = 'Chats available in Drive';
+      pendingMetric.hidden = true;
+    } else {
+      mode.textContent = 'Chats use this app server’s configured storage.';
+      localLabel.textContent = 'Chats available here';
+      pendingMetric.hidden = true;
+    }
+
+    const messages = {
+      not_configured: 'Google Drive sync is not configured on this laptop. Your existing chats remain saved on its SSD.',
+      authorization_required: 'Google Drive rejected its authorization. Your chats remain saved on this laptop. Reconnect Drive to resume the mirror.',
+      retrying: 'Drive sync could not finish. Your chats remain saved locally, and the background worker will retry.',
+      syncing: 'ODDI is checking local chats against Drive and syncing changes now.',
+      pending: 'Some changes are waiting to reach Drive. ODDI will keep retrying in the background.',
+      checking: 'ODDI is checking the laptop and Drive copies for new changes.',
+      synced: 'The laptop chat files and their Drive mirror are up to date.',
+      cloud: 'The shared Drive copy is active for this website. The laptop downloads changes when its app is online.',
+      server_storage: 'This deployment is using its configured server storage.'
+    };
+    message.textContent = messages[state] || messages.checking;
+    const time = readableTime(data.last_sync_at);
+    const summary = data.last_sync_result || {};
+    lastSync.textContent = time
+      ? `Last successful sync: ${time} · ${Number(summary.uploaded_chats || 0)} uploaded, ${Number(summary.downloaded_chats || 0)} downloaded.`
+      : (data.storage_mode === 'laptop' ? 'No successful sync recorded on this laptop yet.' : '');
+  }
+
+  async function loadStatus() {
+    try {
+      const response = await fetch('/api/storage/sync-status', {credentials:'same-origin', cache:'no-store'});
+      if (!response.ok) throw new Error('status unavailable');
+      render(await response.json());
+    } catch (_) {
+      badge.dataset.state = 'retrying';
+      badge.textContent = 'Status unavailable';
+      message.textContent = 'ODDI could not load storage status right now. Your saved chats are not changed.';
+    }
+  }
+
+  document.querySelector('[data-settings-tab="data"]')?.addEventListener('click', () => {
+    window.setTimeout(loadStatus, 0);
+  });
+
+  document.addEventListener('click', event => {
+    if (event.target.closest('[data-settings-tab="data"]')) {
+      window.setTimeout(loadStatus, 0);
+      return;
+    }
+    if (event.target.closest('#oddiStorageSyncNow')) {
+      event.preventDefault();
+      if (syncButton.disabled) return;
+      syncButton.disabled = true;
+      const previous = syncButton.textContent;
+      syncButton.textContent = 'Syncing…';
+      fetch('/api/storage/sync-now', {method:'POST', credentials:'same-origin', headers:{'Accept':'application/json'}})
+        .then(async response => {
+          const payload = await response.json().catch(() => ({}));
+          if (payload.sync) render(payload.sync);
+          if (!response.ok && !payload.sync) throw new Error(payload.error || 'Sync could not start.');
+          return loadStatus();
+        })
+        .catch(() => {
+          message.textContent = 'Sync did not finish. ODDI will retry in the background; check the status again shortly.';
+          return loadStatus();
+        })
+        .finally(() => { syncButton.disabled = false; syncButton.textContent = previous; });
+    }
+  });
+  window.setInterval(() => {
+    const settings = document.getElementById('settingsModal');
+    const dataPanel = settings?.querySelector('[data-settings-panel="data"]');
+    if (!document.hidden && settings?.classList.contains('show') && dataPanel?.classList.contains('is-active')) loadStatus();
+  }, 15000);
+})();
+</script>
 
 </body>
 </html>

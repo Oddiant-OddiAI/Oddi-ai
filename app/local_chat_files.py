@@ -108,6 +108,8 @@ def _read_state(account_id):
         logger.exception("Could not read local chat index for account %s", account_id)
         value = {}
     imports = value.get("imports")
+    pending_chats = value.get("pending_chats")
+    pending_tombstones = value.get("pending_tombstones")
     try:
         next_id = max(1, int(value.get("next_id", 1) or 1))
     except (TypeError, ValueError, OverflowError):
@@ -116,6 +118,16 @@ def _read_state(account_id):
         "next_id": next_id,
         "imports": imports if isinstance(imports, dict) else {},
         "tombstones": value.get("tombstones", {}) if isinstance(value.get("tombstones"), dict) else {},
+        "pending_chats": sorted({str(item) for item in pending_chats if _CHAT_ID_RE.fullmatch(str(item))})
+        if isinstance(pending_chats, list) else [],
+        "pending_tombstones": {
+            str(key): str(timestamp)
+            for key, timestamp in pending_tombstones.items()
+            if _CHAT_ID_RE.fullmatch(str(key)) and timestamp
+        } if isinstance(pending_tombstones, dict) else {},
+        "sync_initialized": bool(value.get("sync_initialized", False)),
+        "last_sync_at": str(value.get("last_sync_at") or "") or None,
+        "last_sync_result": value.get("last_sync_result") if isinstance(value.get("last_sync_result"), dict) else {},
     }
 
 
@@ -222,6 +234,9 @@ def _write_conversation_locked(account_id, conversation):
     _atomic_write(_conversation_path(account_id, normalized["id"]), normalized)
     state = _read_state(account_id)
     state["next_id"] = max(state["next_id"], int(normalized["id"]) + 1)
+    pending = set(state["pending_chats"])
+    pending.add(str(normalized["id"]))
+    state["pending_chats"] = sorted(pending)
     _write_state(account_id, state)
     return normalized
 
@@ -285,6 +300,7 @@ def create_conversation(user_id, title="New Chat"):
             "deleted_at": None,
         }
         _atomic_write(_conversation_path(account_id, chat_id), conversation)
+        state["pending_chats"] = sorted(set(state["pending_chats"]) | {str(chat_id)})
         _write_state(account_id, state)
         return chat_id
 
@@ -315,6 +331,7 @@ def import_conversation(user_id, conversation):
         migrated = _normalize_conversation(conversation, account_id, chat_id)
         _atomic_write(_conversation_path(account_id, chat_id), migrated)
         state["next_id"] = max(state["next_id"], chat_id + 1)
+        state["pending_chats"] = sorted(set(state["pending_chats"]) | {str(chat_id)})
         _write_state(account_id, state)
         return chat_id
 
@@ -335,11 +352,14 @@ def import_local_conversation(user_id, source_id, conversation):
                 migrated = _merge_retried_local_import(existing, conversation, account_id, imported_id)
                 if migrated != existing:
                     _atomic_write(_conversation_path(account_id, imported_id), migrated)
+                    state["pending_chats"] = sorted(set(state["pending_chats"]) | {str(imported_id)})
+                    _write_state(account_id, state)
                 return migrated
         chat_id, state = _allocate_id_locked(account_id, state)
         migrated = _normalize_conversation(conversation, account_id, chat_id)
         _atomic_write(_conversation_path(account_id, chat_id), migrated)
         state["imports"][source_id] = chat_id
+        state["pending_chats"] = sorted(set(state["pending_chats"]) | {str(chat_id)})
         _write_state(account_id, state)
         return migrated
 
@@ -495,7 +515,10 @@ def delete_conversation(conversation_id, user_id):
         try:
             path.unlink()
             state = _read_state(account_id)
-            state["tombstones"][chat_id] = _iso_timestamp(None)
+            deleted_at = _iso_timestamp(None)
+            state["tombstones"][chat_id] = deleted_at
+            state["pending_tombstones"][chat_id] = deleted_at
+            state["pending_chats"] = [item for item in state["pending_chats"] if item != chat_id]
             _write_state(account_id, state)
             return True
         except FileNotFoundError:
@@ -510,7 +533,10 @@ def delete_all_conversations(user_id):
         for path in directory.glob("*.json"):
             if _CHAT_ID_RE.fullmatch(path.stem):
                 path.unlink(missing_ok=True)
-                state["tombstones"][path.stem] = _iso_timestamp(None)
+                deleted_at = _iso_timestamp(None)
+                state["tombstones"][path.stem] = deleted_at
+                state["pending_tombstones"][path.stem] = deleted_at
+                state["pending_chats"] = [item for item in state["pending_chats"] if item != path.stem]
         state["imports"] = {}
         _write_state(account_id, state)
 
@@ -527,12 +553,59 @@ def get_tombstones(user_id):
         return dict(_read_state(account_id)["tombstones"])
 
 
+def get_sync_status(user_id):
+    """Return local sync counters for the signed-in account only."""
+    account_id = _account_key(user_id)
+    with _lock_for(account_id):
+        state = _read_state(account_id)
+        return {
+            "initialized": state["sync_initialized"],
+            "last_sync_at": state["last_sync_at"],
+            "last_sync_result": dict(state["last_sync_result"]),
+            "pending_chat_count": len(state["pending_chats"]),
+            "pending_delete_count": len(state["pending_tombstones"]),
+        }
+
+
+def record_sync_success(user_id, chat_versions, tombstone_versions, result):
+    """Clear only changes included in this successful pass, preserving newer edits."""
+    account_id = _account_key(user_id)
+    with _lock_for(account_id):
+        state = _read_state(account_id)
+        pending = set(state["pending_chats"])
+        for chat_id, expected in (chat_versions or {}).items():
+            if str(chat_id) not in pending:
+                continue
+            current = _read_conversation_locked(account_id, chat_id)
+            if current and (
+                int(current.get("revision", 0) or 0) == int(expected.get("revision", 0) or 0)
+                and str(current.get("updated_at") or "") == str(expected.get("updated_at") or "")
+            ):
+                pending.discard(str(chat_id))
+        state["pending_chats"] = sorted(pending)
+
+        pending_deletes = state["pending_tombstones"]
+        for chat_id, expected_timestamp in (tombstone_versions or {}).items():
+            if pending_deletes.get(str(chat_id)) == str(expected_timestamp):
+                pending_deletes.pop(str(chat_id), None)
+
+        state["sync_initialized"] = True
+        state["last_sync_at"] = _iso_timestamp(None)
+        state["last_sync_result"] = {
+            key: int(value or 0)
+            for key, value in (result or {}).items()
+            if key in {"uploaded_chats", "downloaded_chats", "chats"}
+        }
+        _write_state(account_id, state)
+
+
 def apply_permanent_tombstone(user_id, conversation_id, deleted_at=None):
     account_id = _account_key(user_id)
     chat_id = _chat_key(conversation_id)
     with _lock_for(account_id):
         state = _read_state(account_id)
         state["tombstones"][chat_id] = _iso_timestamp(deleted_at)
+        state["pending_chats"] = [item for item in state["pending_chats"] if item != chat_id]
         _write_state(account_id, state)
         _conversation_path(account_id, chat_id).unlink(missing_ok=True)
 
@@ -593,7 +666,10 @@ def purge_expired_deleted_conversations(now=None, user_id=None):
                     if deleted_at.astimezone(timezone.utc) <= cutoff:
                         path.unlink(missing_ok=True)
                         state = _read_state(account_id)
-                        state["tombstones"][path.stem] = _iso_timestamp(deleted_at)
+                        deleted_stamp = _iso_timestamp(deleted_at)
+                        state["tombstones"][path.stem] = deleted_stamp
+                        state["pending_tombstones"][path.stem] = deleted_stamp
+                        state["pending_chats"] = [item for item in state["pending_chats"] if item != path.stem]
                         _write_state(account_id, state)
                         removed += 1
                 except (TypeError, ValueError, OSError):

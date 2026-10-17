@@ -365,6 +365,131 @@ app = FastAPI(
 _SUMMARY_BACKFILL_LOCK = threading.Lock()
 _SUMMARY_BACKFILL_USERS = set()
 _WORKSPACE_MUTATION_LOCK = threading.RLock()
+_LAPTOP_DRIVE_SYNC_STATE_LOCK = threading.RLock()
+app.state.laptop_drive_sync = {
+    "state": "idle",
+    "last_attempt_at": None,
+    "last_success_at": None,
+    "last_error_code": None,
+    "last_result": {},
+}
+
+
+def _drive_sync_timestamp():
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _run_laptop_drive_sync():
+    """Run one laptop mirror pass and keep a safe, user-visible status snapshot."""
+    from app import drive_sync
+
+    attempt_at = _drive_sync_timestamp()
+    with _LAPTOP_DRIVE_SYNC_STATE_LOCK:
+        previous_status = dict(app.state.laptop_drive_sync)
+        status = dict(previous_status)
+        status.update({"state": "syncing", "last_attempt_at": attempt_at, "last_error_code": None})
+        app.state.laptop_drive_sync = status
+
+    try:
+        result = drive_sync.sync_laptop_once()
+    except Exception as error:
+        message = str(error).casefold()
+        auth_rejected = any(token in message for token in ("refresh token", "invalid_grant", "oauth", "authorization rejected"))
+        with _LAPTOP_DRIVE_SYNC_STATE_LOCK:
+            status = dict(app.state.laptop_drive_sync)
+            status.update({
+                "state": "authorization_required" if auth_rejected else "retrying",
+                "last_error_code": "authorization_required" if auth_rejected else "sync_failed",
+                "last_error_at": _drive_sync_timestamp(),
+            })
+            app.state.laptop_drive_sync = status
+        raise
+
+    if result.get("skipped"):
+        with _LAPTOP_DRIVE_SYNC_STATE_LOCK:
+            current = dict(app.state.laptop_drive_sync)
+            if current.get("last_attempt_at") == attempt_at:
+                app.state.laptop_drive_sync = previous_status
+    else:
+        with _LAPTOP_DRIVE_SYNC_STATE_LOCK:
+            status = dict(app.state.laptop_drive_sync)
+            status.update({
+                "state": "synced",
+                "last_success_at": _drive_sync_timestamp(),
+                "last_error_code": None,
+                "last_result": {
+                    key: int(value or 0)
+                    for key, value in result.items()
+                    if key in {"accounts", "chats", "uploaded_chats", "downloaded_chats"}
+                },
+            })
+            status.pop("last_error_at", None)
+            app.state.laptop_drive_sync = status
+    return result
+
+
+def _storage_sync_status_payload(user_id):
+    from app import google_drive_storage, local_chat_files
+
+    if ODDI_LOCAL_ONLY_STORAGE:
+        pending = local_chat_files.get_sync_status(user_id)
+        local_chats = len(local_chat_files.get_conversations(user_id))
+        configured = google_drive_storage.is_configured()
+        with _LAPTOP_DRIVE_SYNC_STATE_LOCK:
+            runtime = dict(app.state.laptop_drive_sync)
+        if not configured:
+            state = "not_configured"
+        elif runtime.get("state") in {"authorization_required", "retrying", "syncing"}:
+            state = runtime["state"]
+        elif pending["pending_chat_count"] or pending["pending_delete_count"]:
+            state = "pending"
+        elif runtime.get("state") == "idle":
+            state = "checking"
+        elif pending["initialized"]:
+            state = "synced"
+        else:
+            state = "checking"
+        return {
+            "storage_mode": "laptop",
+            "state": state,
+            "local_chat_count": local_chats,
+            "pending_known": pending["initialized"],
+            "pending_chat_count": pending["pending_chat_count"],
+            "pending_delete_count": pending["pending_delete_count"],
+            "last_sync_at": pending["last_sync_at"],
+            "last_sync_result": pending["last_sync_result"],
+            "last_attempt_at": runtime.get("last_attempt_at"),
+            "error_code": runtime.get("last_error_code"),
+            "drive_configured": configured,
+            "can_reconnect": bool(configured and oauth.create_client("google")),
+        }
+
+    chat_count = len(get_conversations(user_id))
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return {
+            "storage_mode": "drive",
+            "state": "cloud",
+            "local_chat_count": chat_count,
+            "pending_known": True,
+            "pending_chat_count": 0,
+            "pending_delete_count": 0,
+            "last_sync_at": None,
+            "last_sync_result": {},
+            "drive_configured": True,
+            "can_reconnect": False,
+        }
+    return {
+        "storage_mode": "server",
+        "state": "server_storage",
+        "local_chat_count": chat_count,
+        "pending_known": False,
+        "pending_chat_count": 0,
+        "pending_delete_count": 0,
+        "last_sync_at": None,
+        "last_sync_result": {},
+        "drive_configured": False,
+        "can_reconnect": False,
+    }
 
 
 def _backfill_chat_summaries(user_id):
@@ -495,12 +620,11 @@ async def start_bin_retention_cleanup():
         from app import google_drive_storage
         if google_drive_storage.is_configured():
             async def sync_laptop_chats():
-                from app.drive_sync import sync_laptop_once
                 retry_delay = 30
                 auth_failure_reported = False
                 while True:
                     try:
-                        await run_in_threadpool(sync_laptop_once)
+                        await run_in_threadpool(_run_laptop_drive_sync)
                     except google_drive_storage.DriveStorageError as error:
                         message = str(error).casefold()
                         if "refresh token" in message or "oauth" in message:
@@ -730,8 +854,7 @@ async def sync_laptop_accounts_from_drive():
     if not google_drive_storage.is_configured():
         return
     try:
-        from app.drive_sync import sync_laptop_once
-        await run_in_threadpool(sync_laptop_once)
+        await run_in_threadpool(_run_laptop_drive_sync)
     except Exception:
         logger.exception("Could not refresh laptop accounts from Google Drive")
 
@@ -2570,6 +2693,44 @@ def api_storage_info(request: Request):
             storage_router.get_user_storage_info(user_id)
         )
     )
+
+
+@app.get("/api/storage/sync-status", name="api_storage_sync_status")
+async def api_storage_sync_status(request: Request):
+    user_id = await require_user_id_async(request)
+    payload = await run_in_threadpool(_storage_sync_status_payload, user_id)
+    return JSONResponse(content=jsonable_encoder(payload))
+
+
+@app.post("/api/storage/sync-now", name="api_storage_sync_now")
+async def api_storage_sync_now(request: Request):
+    user_id = await require_user_id_async(request)
+    if not ODDI_LOCAL_ONLY_STORAGE:
+        return JSONResponse(
+            {"success": False, "error": "Manual laptop sync is available in the laptop app."},
+            status_code=409,
+        )
+
+    from app import google_drive_storage
+    if not google_drive_storage.is_configured():
+        return JSONResponse(
+            {"success": False, "error": "Google Drive sync is not configured on this laptop."},
+            status_code=503,
+        )
+
+    try:
+        await run_in_threadpool(_run_laptop_drive_sync)
+    except DriveStorageError:
+        logger.warning("Manual Google Drive sync failed for account %s", user_id)
+        status = await run_in_threadpool(_storage_sync_status_payload, user_id)
+        return JSONResponse({"success": False, "sync": status}, status_code=503)
+    except Exception:
+        logger.exception("Manual Google Drive sync failed for account %s", user_id)
+        status = await run_in_threadpool(_storage_sync_status_payload, user_id)
+        return JSONResponse({"success": False, "sync": status}, status_code=503)
+
+    status = await run_in_threadpool(_storage_sync_status_payload, user_id)
+    return JSONResponse({"success": True, "sync": status})
 
 
 @app.get("/api/files/{file_id}", name="api_download_file")
