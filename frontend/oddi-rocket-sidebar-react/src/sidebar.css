@@ -1230,3 +1230,26 @@ body.oddi-system-theme.dark-mode .oddi-rs-menu.oddi-rs-menu-portal {
   --rs-hover: #2c3a30;
   --rs-border: #3a4a3e;
 }
+
+/* Put visible pinned-chat actions below the title instead of over it. */
+#oddi-react-sidebar-root .oddi-rs-chat.pinned {
+  flex-wrap: wrap;
+  row-gap: 2px;
+}
+#oddi-react-sidebar-root .oddi-rs-chat.pinned:not(.selecting):hover .oddi-rs-actions,
+#oddi-react-sidebar-root .oddi-rs-chat.pinned:not(.selecting):focus-within .oddi-rs-actions,
+#oddi-react-sidebar-root .oddi-rs-chat.pinned.active:not(.selecting) .oddi-rs-actions {
+  position: relative;
+  inset: auto;
+  flex: 0 0 100%;
+  width: 100%;
+  box-sizing: border-box;
+  justify-content: flex-end;
+  margin-top: 1px;
+  padding: 0 2px 0 0;
+  border-radius: 0;
+  background: transparent;
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
