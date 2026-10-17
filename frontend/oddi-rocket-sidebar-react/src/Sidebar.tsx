@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Archive, Brain, ChevronLeft, ChevronRight, Download, FolderOpen,
+  Archive, ChevronLeft, ChevronRight, Download, FolderOpen,
   Home, LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search, List,
   Settings, Sun, X, Pencil, Trash2, Menu, Monitor, Share2
 } from 'lucide-react';
@@ -180,10 +180,6 @@ function openExistingModal(id: string) {
 
 export default function Sidebar() {
   const [open, setOpen] = useState(() => typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches);
-  // Remember the sidebar state before entering the legacy Memory view. Desktop
-  // normally starts open; phone normally starts closed so its hamburger rail
-  // must remain available after Memory is closed.
-  const openBeforeMemoryRef = useRef<boolean | null>(null);
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     try {
@@ -417,36 +413,6 @@ export default function Sidebar() {
       window.visualViewport?.removeEventListener('scroll', positionMenu);
     };
   }, [menuId]);
-
-  // Memory is a main-window view. The sidebar closes while Memory is open.
-  // The closed rail itself stays mounted; CSS hides it only while the Memory
-  // surface is visible. This keeps the phone opener reliable and avoids
-  // React mounting/unmounting the rail in response to legacy DOM mutations.
-
-  // Memory is a legacy main-window view. When its close button removes
-  // the .show class, restore the React sidebar state that openMemory()
-  // intentionally closed. This keeps the sidebar state in React instead of
-  // relying on a page reload or DOM-only workaround.
-  useEffect(() => {
-    const memoryModal = document.getElementById('memoryModal');
-    if (!memoryModal) return;
-
-    const observer = new MutationObserver(() => {
-      const memoryOpen = memoryModal.classList.contains('show');
-      if (!memoryOpen && openBeforeMemoryRef.current !== null) {
-        const previousOpen = openBeforeMemoryRef.current;
-        openBeforeMemoryRef.current = null;
-        setOpen(previousOpen);
-      }
-    });
-
-    observer.observe(memoryModal, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   // Library is a legacy modal created by index.html. Opening Library closes
   // the React sidebar, but closing Library must restore the desktop sidebar.
@@ -962,22 +928,6 @@ export default function Sidebar() {
     };
   }
 
-  function openMemory() {
-    // Memory is a main-window view. Preserve the state that existed immediately
-    // before opening it so closing Memory restores desktop or phone behavior
-    // instead of always forcing the sidebar open.
-    openBeforeMemoryRef.current = open;
-    setOpen(false);
-
-    if (document.getElementById('memoryBtn')) {
-      document.getElementById('memoryBtn')!.click();
-      return;
-    }
-
-    openExistingModal('memoryModal');
-    window.dispatchEvent(new CustomEvent('oddi:open-memory'));
-  }
-
   function openArchive() {
     const legacyButton = document.getElementById('archivedBtn');
     if (legacyButton) {
@@ -1255,7 +1205,6 @@ export default function Sidebar() {
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
             { label: 'Archive', icon: <Archive size={14} />, action: openArchive },
             { label: 'Settings', icon: <Settings size={14} />, action: openSettings },
-            { label: 'Memory', icon: <Brain size={14} />, action: openMemory },
           ].map(item => (
             <button
               key={item.label}
@@ -1271,7 +1220,6 @@ export default function Sidebar() {
             >
               <span style={{ width: 18, display: 'inline-flex', justifyContent: 'flex-start', flexShrink: 0 }}>{item.icon}</span>
               {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
-              {!collapsed && item.badge && <b style={{ minWidth: 19, height: 19, padding: '0 5px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.12)', color: '#9d9d9d', fontSize: 10, fontWeight: 600, boxSizing: 'border-box' }}>{item.badge}</b>}
             </button>
           ))}
         </nav>
