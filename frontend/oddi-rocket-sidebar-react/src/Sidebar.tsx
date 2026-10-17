@@ -1255,7 +1255,7 @@ export default function Sidebar() {
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
             { label: 'Archive', icon: <Archive size={14} />, action: openArchive },
             { label: 'Settings', icon: <Settings size={14} />, action: openSettings },
-            { label: 'Memory', icon: <Brain size={14} />, action: openMemory, badge: '24' },
+            { label: 'Memory', icon: <Brain size={14} />, action: openMemory },
           ].map(item => (
             <button
               key={item.label}

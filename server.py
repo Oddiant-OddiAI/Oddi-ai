@@ -2855,7 +2855,7 @@ def api_delete_file(request: Request, file_id: int):
 # =========================================================
 
 def _persist_completed_chat_message(conversation_id, user_id, message):
-    """Best-effort Drive persistence after a generated answer was returned."""
+    """Retry a failed generated-answer save after returning the response."""
     try:
         saved = append_conversation_message(conversation_id, user_id, message)
         if not saved:
@@ -3427,43 +3427,45 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             assistant_message["document_workspace"] = True
             if document_title:
                 assistant_message["document_title"] = document_title
-        if ODDI_DRIVE_CHAT_STORAGE:
-            # Return the answer immediately. The browser keeps a local recovery
-            # copy and this best-effort Drive write runs after the HTTP reply.
-            background_tasks.add_task(
-                _persist_completed_chat_message,
+        try:
+            # Persist before sending the completed answer to the browser. A
+            # background-only Drive write allowed a reload to win this race.
+            saved_conversation = await run_in_threadpool(
+                append_conversation_message,
                 conversation_id,
                 user_id,
                 assistant_message,
             )
-        else:
-            try:
-                saved_conversation = await run_in_threadpool(
-                    append_conversation_message,
+        except DriveStorageError:
+            logger.warning(
+                "Google Drive save failed before reply delivery; keeping local recovery and scheduling a retry."
+            )
+            saved_conversation = None
+        except Exception:
+            logger.exception(
+                "Completed reply persistence failed request_id=%s conversation=%s user=%s; returning reply for local recovery",
+                chat_request_id,
+                conversation_id,
+                user_id,
+            )
+            saved_conversation = None
+
+        if not saved_conversation:
+            logger.warning(
+                "Completed chat response could not be saved conversation=%s user=%s",
+                conversation_id,
+                user_id,
+            )
+            if ODDI_DRIVE_CHAT_STORAGE:
+                background_tasks.add_task(
+                    _persist_completed_chat_message,
                     conversation_id,
                     user_id,
                     assistant_message,
                 )
-            except DriveStorageError:
-                logger.warning("Google Drive save failed after reply generation; returning the reply for local recovery.")
-                saved_conversation = None
-            except Exception:
-                logger.exception(
-                    "Completed reply persistence failed request_id=%s conversation=%s user=%s; returning reply for local recovery",
-                    chat_request_id,
-                    conversation_id,
-                    user_id,
-                )
-                saved_conversation = None
-            if not saved_conversation:
-                logger.warning(
-                    "Completed chat response could not be saved conversation=%s user=%s",
-                    conversation_id,
-                    user_id,
-                )
-            else:
-                assistant_saved_to_conversation = True
-                saved_conversation_revision = int(saved_conversation.get("revision", 0) or 0)
+        else:
+            assistant_saved_to_conversation = True
+            saved_conversation_revision = int(saved_conversation.get("revision", 0) or 0)
 
     if (
         fast_reply is not None

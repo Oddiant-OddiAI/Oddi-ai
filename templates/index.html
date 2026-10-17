@@ -2841,7 +2841,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261017-chat-row-actions-1">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261017-memory-badge-remove-1">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -14738,8 +14738,20 @@ async function checkpointAssistantResponse(conversation, userMessage, assistantM
 
     if (isLoggedIn) {
         conversationDirtyLocal.add(conversationId);
-        void appendConversationMessage(conversation, assistantMessage)
-            .catch(error => console.warn("Could not sync the saved assistant reply yet:", error));
+        let cloudSaved = false;
+        try {
+            cloudSaved = await appendConversationMessage(conversation, assistantMessage);
+        } catch (error) {
+            console.warn("Could not sync the saved assistant reply yet:", error);
+        }
+        if (!cloudSaved) {
+            showOddiToast(
+                recoverySaved
+                    ? "Reply is saved on this device; account sync will retry."
+                    : "Reply could not be saved yet. Keep this chat open while ODDI retries.",
+                "error"
+            );
+        }
         return true;
     }
 
@@ -23770,7 +23782,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261017-chat-row-actions-1"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261017-memory-badge-remove-1"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
