@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0b100e">
+  <title>Interview Studio · ODDI AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='oddi-interview-studio.css') }}?v=20261019-2">
+</head>
+<body>
+  <div class="studio-shell">
+    <header class="studio-topbar">
+      <a class="studio-brand" href="/" aria-label="ODDI Interview Studio home">
+        <span class="studio-brand-mark" aria-hidden="true">O</span>
+        <span class="studio-brand-copy">
+          <span class="studio-brand-eyebrow">ODDI · INTERVIEW STUDIO</span>
+          <strong id="selectedProfession">Interview Studio</strong>
+        </span>
+      </a>
+      <a class="studio-back-home" href="/">
+        <span aria-hidden="true">←</span>
+        <span>Back to home</span>
+      </a>
+    </header>
+
+    <main class="studio-main">
+      <section id="setupPanel" class="studio-panel setup-panel" aria-labelledby="setupTitle">
+        <div class="studio-hero-kicker"><span class="status-dot"></span> YOUR PRIVATE PRACTICE ROOM</div>
+        <h1 id="setupTitle">Walk in <span>ready.</span></h1>
+        <p class="studio-lede">Tell ODDI what role you’re preparing for. It will build a tailored interview with written and multiple-choice questions.</p>
+
+        <form id="professionForm" class="profession-form">
+          <label for="professionInput">Which profession or role?</label>
+          <div class="profession-field-wrap">
+            <input id="professionInput" name="profession" maxlength="160" autocomplete="organization-title" placeholder="e.g. Electrical Engineer, Nurse, Product Designer" required>
+            <span class="field-enter-hint" aria-hidden="true">↵</span>
+          </div>
+          <p class="field-help">Type any role—there’s no fixed profession list.</p>
+          <button id="generateButton" class="studio-primary-button" type="submit">
+            <span class="button-label">Build my 10 questions</span>
+            <span class="button-arrow" aria-hidden="true">↗</span>
+          </button>
+        </form>
+
+        <div class="studio-benefits" aria-label="Interview Studio features">
+          <span><i aria-hidden="true">01</i> Questions tailored to your role</span>
+          <span><i aria-hidden="true">02</i> Answer each question your way</span>
+          <span><i aria-hidden="true">03</i> Get useful feedback from ODDI</span>
+        </div>
+      </section>
+
+      <section id="practiceSessionsSection" class="practice-sessions" aria-labelledby="practiceSessionsTitle" hidden>
+        <div class="practice-sessions-heading">
+          <div>
+            <div class="studio-hero-kicker"><span class="status-dot"></span> PICK UP WHERE YOU LEFT OFF</div>
+            <h2 id="practiceSessionsTitle">Your practice sessions</h2>
+            <p>Each practice stays saved separately, even when you choose the same role again.</p>
+          </div>
+          <span id="practiceSessionCount" class="practice-session-count">0 saved</span>
+        </div>
+        <div id="practiceSessionList" class="practice-session-list" aria-live="polite"></div>
+      </section>
+
+      <section id="clarificationPanel" class="studio-panel clarification-panel" aria-labelledby="clarificationTitle" hidden>
+        <div class="studio-hero-kicker"><span class="status-dot"></span> ONE QUICK DETAIL</div>
+        <h1 id="clarificationTitle">Let’s tailor this <span>properly.</span></h1>
+        <p id="clarificationText" class="studio-lede"></p>
+        <form id="clarificationForm" class="profession-form">
+          <label for="roleDetailsInput">Add a specialization or focus</label>
+          <div class="profession-field-wrap">
+            <input id="roleDetailsInput" name="context" maxlength="500" placeholder="e.g. Power systems, pediatric care, mobile apps" required>
+            <span class="field-enter-hint" aria-hidden="true">↵</span>
+          </div>
+          <button id="continueButton" class="studio-primary-button" type="submit">
+            <span class="button-label">Create my questions</span>
+            <span class="button-arrow" aria-hidden="true">↗</span>
+          </button>
+        </form>
+      </section>
+
+      <section id="questionsPanel" class="questions-panel" aria-labelledby="questionsTitle" hidden>
+        <div class="questions-intro">
+          <div>
+            <div class="studio-hero-kicker"><span class="status-dot"></span> YOUR INTERVIEW SET</div>
+            <h1 id="questionsTitle">Take a breath. <span>You’ve got this.</span></h1>
+            <p>Answer the questions below. You can ask ODDI to swap any question before you submit.</p>
+          </div>
+          <div class="question-intro-tools">
+            <div class="question-count-pill"><span id="answeredCount">0</span><span>/</span><span id="totalCount">10</span><small>answered</small></div>
+            <button id="answerAllToggle" class="studio-secondary-button answer-all-toggle" type="button" aria-pressed="false">
+              <span aria-hidden="true">☷</span><span class="answer-all-toggle-label">Answer all at once</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="progress-track" role="progressbar" aria-label="Interview questions answered" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+          <span id="progressFill"></span>
+        </div>
+
+        <div id="questionList" class="question-list" aria-label="Interview questions"></div>
+
+        <section id="answerSheetSection" class="answer-sheet" aria-labelledby="answerSheetTitle" hidden>
+          <div class="answer-sheet-heading">
+            <div>
+              <div class="studio-hero-kicker"><span class="status-dot"></span> ODDI'S SAMPLE ANSWERS</div>
+              <h2 id="answerSheetTitle">All 10 answers</h2>
+              <p>Each question is included. Your own answers stay unchanged.</p>
+            </div>
+            <button id="hideAnswerSheetButton" class="studio-secondary-button answer-sheet-hide" type="button">Hide answers</button>
+          </div>
+          <div id="answerSheetContent" class="answer-sheet-content" aria-live="polite"></div>
+        </section>
+
+        <div class="submit-dock">
+          <div class="submit-dock-copy">
+            <strong>Ready when you are.</strong>
+            <span id="submitHint">Answer all 10 questions to get your ODDI review.</span>
+            <span id="sessionSaveState" class="session-save-state" aria-live="polite"></span>
+          </div>
+            <button id="answerAllQuestionsButton" class="studio-secondary-button answer-all-questions-button" type="button" aria-controls="answerSheetSection" aria-expanded="false">
+            <span class="answer-all-button-icon" aria-hidden="true">✦</span>
+            <span class="button-label">Answer all questions</span>
+          </button>
+          <button id="submitAnswersButton" class="studio-primary-button submit-button" type="button">
+            <span class="button-label">Submit answers to ODDI</span>
+            <span class="button-arrow" aria-hidden="true">↗</span>
+          </button>
+        </div>
+
+        <section id="feedbackSection" class="feedback-panel" aria-labelledby="feedbackTitle" hidden>
+          <div class="feedback-heading">
+            <div>
+              <div class="studio-hero-kicker"><span class="status-dot"></span> ODDI’S REVIEW</div>
+              <h2 id="feedbackTitle">Your interview feedback</h2>
+            </div>
+            <button id="practiceAnotherButton" class="studio-secondary-button" type="button">Practice another role</button>
+          </div>
+          <div id="feedbackText" class="feedback-copy" aria-live="polite"></div>
+          <details class="submitted-answers">
+            <summary>See the answer sheet sent to ODDI</summary>
+            <pre id="submittedAnswersText"></pre>
+          </details>
+        </section>
+      </section>
+
+      <div id="studioStatus" class="studio-status" role="status" aria-live="polite" hidden></div>
+    </main>
+  </div>
+  <script src="{{ url_for('static', path='oddi-interview-studio.js') }}?v=20261019-2" defer></script>
+</body>
+</html>

@@ -63,6 +63,7 @@ def sync_laptop_once():
         return {"accounts": 0, "chats": 0, "skipped": True}
 
     try:
+        google_drive_storage.ensure_google_api_dns()
         return _sync_laptop_once_locked()
     finally:
         _SYNC_LOCK.release()

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Archive, ChevronLeft, ChevronRight, Download, FolderOpen,
+  Archive, Briefcase, ChevronLeft, ChevronRight, Download, FolderOpen, FolderKanban,
   Home, LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search, List,
   Settings, Sun, X, Pencil, Trash2, Menu, Monitor, Share2
 } from 'lucide-react';
@@ -21,6 +21,8 @@ type Conversation = {
 
 type OddiWindow = Window & {
   oddiConversations?: Conversation[];
+  __oddiIsProjectConversation?: (id: string | number) => boolean;
+  __oddiWorkspaceReady?: Promise<unknown>;
   __oddiOpenConversation?: (index: number) => void;
   __oddiOpenSidebar?: () => void;
   newChat?: () => Promise<unknown>;
@@ -63,6 +65,11 @@ function normalizeConversation(conversation: Conversation): Conversation {
     archived: isEnabledFlag(conversation.archived),
     deleted: isEnabledFlag(conversation.deleted),
   };
+}
+
+function isProjectConversation(conversation: Conversation) {
+  try { return WIN().__oddiIsProjectConversation?.(conversation.id) === true; }
+  catch { return false; }
 }
 
 function hasConversationMessages(conversation: Conversation) {
@@ -211,7 +218,6 @@ export default function Sidebar() {
   const pressOriginRef = useRef<{ x: number; y: number } | null>(null);
   const longPressHandledRef = useRef(false);
   const chatPointerMovedRef = useRef(false);
-  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark' | 'system'>(() => {
     try {
       const saved = localStorage.getItem('oddi_theme_v1');
@@ -503,11 +509,12 @@ export default function Sidebar() {
       if (!r.ok) return;
       const data = await r.json();
       const list = Array.isArray(data) ? data : (Array.isArray(data?.conversations) ? data.conversations : []);
-      const normalizedList = list.map(normalizeConversation);
+      await Promise.resolve(WIN().__oddiWorkspaceReady).catch(() => undefined);
+      const normalizedList = list.map(normalizeConversation).filter(c => !isProjectConversation(c));
       setItems(normalizedList);
       const preferredId = getLastOpenConversationId();
       const preferred = preferredId && normalizedList.find((c: Conversation) => String(c.id) === String(preferredId));
-      if (preferredId === FRESH_CHAT_MARKER) setActive(null);
+      if (preferredId === FRESH_CHAT_MARKER || (preferredId && !preferred)) setActive(null);
       else if (preferred) setActive(preferred.id);
       else if (active === null && normalizedList[0]) setActive(normalizedList[0].id);
     } catch (error) { console.error('ODDI sidebar conversation load failed:', error); }
@@ -516,26 +523,35 @@ export default function Sidebar() {
   useEffect(() => {
     const syncFromLegacy = (event?: Event) => {
       const detail = (event as CustomEvent<{ conversations?: Conversation[] }> | undefined)?.detail;
-      const list = Array.isArray(detail?.conversations)
+      const source = Array.isArray(detail?.conversations)
         ? detail!.conversations!
         : Array.isArray(WIN().oddiConversations) ? WIN().oddiConversations! : [];
-      const normalizedList = list.map(normalizeConversation);
-      setItems(normalizedList);
-      const preferredId = getLastOpenConversationId();
-      const preferred = preferredId && normalizedList.find(c => String(c.id) === String(preferredId));
-      if (preferredId === FRESH_CHAT_MARKER) setActive(null);
-      else if (preferred) setActive(preferred.id);
-      else if (normalizedList[0]) setActive(current => current ?? normalizedList[0].id);
+      const apply = () => {
+        const latest = Array.isArray(WIN().oddiConversations) ? WIN().oddiConversations! : source;
+        const normalizedList = latest.map(normalizeConversation).filter(c => !isProjectConversation(c));
+        setItems(normalizedList);
+        const preferredId = getLastOpenConversationId();
+        const preferred = preferredId && normalizedList.find(c => String(c.id) === String(preferredId));
+        if (preferredId === FRESH_CHAT_MARKER || (preferredId && !preferred)) setActive(null);
+        else if (preferred) setActive(preferred.id);
+        else if (normalizedList[0]) setActive(current => current ?? normalizedList[0].id);
+      };
+      const workspaceReady = WIN().__oddiWorkspaceReady;
+      if (workspaceReady) void Promise.resolve(workspaceReady).then(apply).catch(() => apply());
+      else apply();
     };
     const onLoaded = (event: Event) => syncFromLegacy(event);
     window.addEventListener('oddi:conversations-loaded', onLoaded);
     if (WIN().__oddiConversationDataReady) syncFromLegacy();
     else if (!WIN().__oddiConversationLoadStarted) load();
     const refresh = () => load();
+    const refreshProjectChats = () => syncFromLegacy();
     window.addEventListener('oddi:conversations-changed', refresh);
+    window.addEventListener('oddi:project-conversations-changed', refreshProjectChats);
     return () => {
       window.removeEventListener('oddi:conversations-loaded', onLoaded);
       window.removeEventListener('oddi:conversations-changed', refresh);
+      window.removeEventListener('oddi:project-conversations-changed', refreshProjectChats);
     };
   }, []);
 
@@ -928,23 +944,21 @@ export default function Sidebar() {
     };
   }
 
-  function openArchive() {
-    const legacyButton = document.getElementById('archivedBtn');
-    if (legacyButton) {
-      legacyButton.click();
-      return;
-    }
-    setMenuId(null);
-    setArchiveModalOpen(true);
-    load();
-    window.dispatchEvent(new CustomEvent('oddi:open-archive'));
-  }
-
   function openLibrary() {
     setMenuId(null);
     setCollapsed(false);
     setOpen(false);
     window.dispatchEvent(new CustomEvent('oddi:open-library'));
+  }
+
+  function openProjects() {
+    setMenuId(null);
+    window.dispatchEvent(new CustomEvent('oddi:open-projects'));
+  }
+
+  function openInterviewStudio() {
+    setMenuId(null);
+    window.location.assign('/interview-studio');
   }
 
   function openSettings() {
@@ -1202,8 +1216,9 @@ export default function Sidebar() {
           aria-label="Sidebar utilities"
         >
           {[
+            { label: 'Interview Studio', icon: <Briefcase size={14} />, action: openInterviewStudio },
+            { label: 'Projects', icon: <FolderKanban size={14} />, action: openProjects },
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
-            { label: 'Archive', icon: <Archive size={14} />, action: openArchive },
             { label: 'Settings', icon: <Settings size={14} />, action: openSettings },
           ].map(item => (
             <button
@@ -1266,40 +1281,6 @@ export default function Sidebar() {
         <button type="button" role="menuitem" className="danger" onClick={() => moveToBin(menuConversation)}><Trash2 size={13} /><span>Delete</span></button>
       </div>,
       document.body
-    )}
-
-    {archiveModalOpen && (
-      <div
-        role="presentation"
-        onMouseDown={e => { if (e.target === e.currentTarget) setArchiveModalOpen(false); }}
-        style={{ position: 'fixed', inset: 0, zIndex: 2147483000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, background: 'rgba(0,0,0,.58)', backdropFilter: 'blur(4px)' }}
-      >
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="oddi-react-archive-title"
-          style={{ width: 'min(620px, calc(100vw - 40px))', maxHeight: 'min(620px, calc(100vh - 80px))', overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRadius: 16, border: '1px solid rgba(255,255,255,.14)', background: theme === 'dark' ? '#111' : '#fff', color: theme === 'dark' ? '#f5f5f5' : '#171717', boxShadow: '0 24px 80px rgba(0,0,0,.35)' }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderBottom: theme === 'dark' ? '1px solid rgba(255,255,255,.10)' : '1px solid rgba(0,0,0,.10)' }}>
-            <div>
-              <h3 id="oddi-react-archive-title" style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Archived Chats</h3>
-              <p style={{ margin: '5px 0 0', fontSize: 12, opacity: .62 }}>Archived chats are kept here and do not appear in normal history.</p>
-            </div>
-            <button type="button" onClick={() => setArchiveModalOpen(false)} aria-label="Close archived chats" style={{ width: 32, height: 32, border: 0, borderRadius: 8, background: theme === 'dark' ? '#1d1d1d' : '#f2f2f2', color: 'inherit', cursor: 'pointer', fontSize: 17 }}>×</button>
-          </div>
-          <div style={{ overflowY: 'auto', padding: 12 }}>
-            {items.filter(c => c.archived && !c.deleted).length === 0 ? (
-              <div style={{ padding: '38px 18px', textAlign: 'center', fontSize: 13, opacity: .58 }}>📦 No archived chats</div>
-            ) : items.filter(c => c.archived && !c.deleted).map(c => (
-              <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 10px', borderRadius: 9, marginBottom: 4 }}>
-                <Archive size={14} style={{ flexShrink: 0, opacity: .65 }} />
-                <button type="button" onClick={() => { setArchiveModalOpen(false); select(c); }} title={displayTitle(c)} style={{ flex: 1, minWidth: 0, border: 0, background: 'transparent', color: 'inherit', textAlign: 'left', cursor: 'pointer', font: 'inherit', fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayTitle(c)}</button>
-                <button type="button" onClick={async () => { try { await updateMetadata(c, { archived: false }); await load(); refreshLegacySidebar(); } catch (error) { console.error('Restore archive failed:', error); } }} style={{ border: theme === 'dark' ? '1px solid #333' : '1px solid #ddd', borderRadius: 7, padding: '6px 9px', background: theme === 'dark' ? '#191919' : '#f7f7f7', color: 'inherit', cursor: 'pointer', font: 'inherit', fontSize: 11, whiteSpace: 'nowrap' }}>Restore</button>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
     )}
 
     {isPhone && splashReady && (

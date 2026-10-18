@@ -2841,7 +2841,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261017-sidebar-memory-remove-1">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261018-interview-studio-nav-1">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -3456,6 +3456,12 @@ body.dark-mode .oddi-last-message-label{color:#8d8d8d}
 body.dark-mode .oddi-last-message-title{color:#f5f5f5}
 @media(max-width:620px){.oddi-suggestion-cards{grid-template-columns:1fr;width:min(560px,calc(100% - 24px))}.oddi-last-message-card{width:min(560px,calc(100% - 24px))}}
 @media(prefers-reduced-motion:reduce){.oddi-suggestion-card,.oddi-last-message-card{transition:none}}
+.oddi-interview-launch{grid-column:1/-1;min-height:68px;text-decoration:none;border-color:rgba(35,174,111,.35);background:linear-gradient(110deg,rgba(29,154,99,.12),rgba(255,255,255,.72) 58%)}
+.oddi-interview-launch .oddi-suggestion-icon{background:rgba(37,174,112,.14);color:#16844f}
+.oddi-interview-launch:hover{border-color:rgba(35,174,111,.66);box-shadow:0 10px 28px rgba(25,138,84,.13)}
+body.dark-mode .oddi-interview-launch{background:linear-gradient(110deg,rgba(32,171,109,.12),rgba(18,18,18,.82) 58%);border-color:rgba(71,194,137,.28)}
+body.dark-mode .oddi-interview-launch .oddi-suggestion-icon{background:rgba(42,183,119,.15);color:#58d694}
+@media(max-width:620px){.oddi-interview-launch{grid-column:auto}}
 </style>
 
 <style id="oddi-clean-ambient-motion-v1">
@@ -4610,6 +4616,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
             <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Write something</strong><small>Draft, rewrite or polish</small></span></button>
             <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><small>Turn ideas into clear next steps</small></span></button>
             <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Analyze a file</strong><small>Find key details and summaries</small></span></button>
+            <a href="/interview-studio" class="oddi-suggestion-card oddi-interview-launch" aria-label="Open Interview Studio"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></span><span class="oddi-suggestion-copy"><strong>Interview Studio</strong><small>Practice any profession with role-specific questions and ODDI feedback</small></span><span class="oddi-interview-arrow" aria-hidden="true">→</span></a>
         </div>
         <section id="oddiRecentSection" class="oddi-recent-work" aria-label="Recent work" hidden>
             <p id="oddiRecentHeadingText" class="oddi-recent-heading">RECENT WORK</p>
@@ -5211,6 +5218,10 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
               <a id="oddiStorageReconnect" class="oddi-pref-action" href="/auth/google/drive" hidden>Reconnect Google Drive</a>
             </div>
           </div>
+          <div class="oddi-pref-card oddi-archived-data-card" id="oddiArchivedChatsCard">
+            <div class="oddi-archived-data-heading"><div><strong>Archived chats</strong><small>Archived conversations are hidden from your history. Restore one whenever you want to continue it.</small></div><span id="oddiArchivedChatCount" class="oddi-archived-data-count">0 chats</span></div>
+            <div id="oddiArchivedChatsList" class="oddi-archived-data-list" aria-live="polite"></div>
+          </div>
           <div class="oddi-settings-group">
             <button id="clearChatBtn" class="oddi-danger-action" type="button"><span class="oddi-setting-icon">🗑</span><span class="oddi-setting-copy"><strong>Move all chats to Bin</strong><small>All conversations will be moved to Recently Deleted. You can restore them from the Bin.</small></span><span class="oddi-setting-arrow">→</span></button>
           </div>
@@ -5267,6 +5278,7 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
 <script>
 let currentConversation = null;
 let selectedFiles = [];
+window.__oddiActiveConversationId = null;
 const ODDI_LAST_OPEN_CONVERSATION_KEY = "oddi_last_open_conversation_v1";
 const ODDI_PENDING_GENERATION_KEY = "oddi_pending_chat_generation_v1";
 const ODDI_FRESH_CHAT_MARKER = "__oddi_fresh_chat__";
@@ -7853,9 +7865,29 @@ async function migrateBrowserLocalChatsToAccount() {
 }
 
 async function loadConversations() {
+    const activeIdAtLoad = Number.isInteger(currentConversation) && conversations[currentConversation]?.id !== null && conversations[currentConversation]?.id !== undefined
+        ? String(conversations[currentConversation].id)
+        : String(window.__oddiActiveConversationId || "");
+    const newChatEpochAtLoad = Number(window.__oddiNewChatEpoch || 0);
+    const restoreSelection = () => {
+        const epochChanged = newChatEpochAtLoad !== Number(window.__oddiNewChatEpoch || 0);
+        const activeId = String(window.__oddiActiveConversationId || (epochChanged ? "" : activeIdAtLoad) || "");
+        if (activeId) {
+            const index = conversations.findIndex(item => item?.id !== null && item?.id !== undefined && String(item.id) === activeId && !item.deleted);
+            if (index >= 0) {
+                currentConversation = index;
+                window.__oddiActiveConversationId = activeId;
+                return true;
+            }
+        }
+        currentConversation = null;
+        window.__oddiActiveConversationId = null;
+        if (!epochChanged) restoreLastOpenConversation();
+        return false;
+    };
     window.__oddiConversationLoadStarted = true;
     getOddiLocalChatBackups().filter(isExpiredDeletedConversation).forEach(chat => removeAllOddiConversationBackups(chat.id));
-    if (!isLoggedIn && !browserLocalChatStorage) { conversations = []; currentConversation = null; renderHistory(); publishConversationDataReady(); return; }
+    if (!isLoggedIn && !browserLocalChatStorage) { conversations = []; currentConversation = null; window.__oddiActiveConversationId = null; renderHistory(); publishConversationDataReady(); return; }
     if (browserLocalChatStorage) {
         try {
             const byId = new Map();
@@ -7901,16 +7933,16 @@ async function loadConversations() {
             }
             clearCompletedPendingGeneration(conversations);
             notifyUnseenBackgroundResponses(conversations);
-            currentConversation = null;
+            restoreSelection();
             renderHistory();
             publishConversationDataReady();
-            restoreLastOpenConversation();
             renderBin();
         } catch (error) {
             console.error("Could not load chats from this device:", error);
             conversations = [];
             window.__oddiServerTrash = [];
             currentConversation = null;
+            window.__oddiActiveConversationId = null;
             renderHistory();
             publishConversationDataReady();
         }
@@ -8010,10 +8042,9 @@ async function loadConversations() {
         await migrateLegacyConversationState();
         clearCompletedPendingGeneration(conversations);
         notifyUnseenBackgroundResponses(conversations);
-        currentConversation = null;
+        restoreSelection();
         renderHistory();
         publishConversationDataReady();
-        restoreLastOpenConversation();
         startConversationSync();
         localChatMigration.then(() => {
             if (conversationSyncStarted) syncConversationsFromServer({ refreshOpen: false });
@@ -8047,13 +8078,13 @@ async function loadConversations() {
             conversations = recoveredChats.sort((a, b) => (Date.parse(b.updated_at || b.created_at || "") || 0) - (Date.parse(a.updated_at || a.created_at || "") || 0));
             clearCompletedPendingGeneration(conversations);
             notifyUnseenBackgroundResponses(conversations);
-            currentConversation = null;
+            restoreSelection();
             renderHistory();
             publishConversationDataReady();
-            restoreLastOpenConversation();
         } else {
             conversations = [];
             currentConversation = null;
+            window.__oddiActiveConversationId = null;
             renderHistory();
             publishConversationDataReady();
         }
@@ -12964,6 +12995,14 @@ async function sendMessage(
 
     if (!message) return;
 
+    // A background history refresh can clear the numeric selection index.
+    // Re-resolve the active chat by ID before lazy New Chat creation runs.
+    const activeConversationId = String(window.__oddiActiveConversationId || "");
+    if (activeConversationId) {
+        const activeIndex = conversations.findIndex(item => item?.id !== null && item?.id !== undefined && String(item.id) === activeConversationId && !item.deleted);
+        if (activeIndex >= 0) currentConversation = activeIndex;
+    }
+
     /* Keep a stable send snapshot while the visible composer resets. */
     let outgoingFiles = Array.isArray(selectedFiles) ? selectedFiles.slice() : [];
 
@@ -13054,6 +13093,7 @@ async function sendMessage(
             });
 
             currentConversation = 0;
+            window.__oddiActiveConversationId = String(conversations[0]?.id ?? "") || null;
             touchConversation(conversations[0]);
 
         } else {
@@ -13067,7 +13107,9 @@ async function sendMessage(
             }];
 
             currentConversation = 0;
+            window.__oddiActiveConversationId = String(conversations[0]?.id ?? "") || null;
         }
+
     }
 
     /* -----------------------------------------
@@ -15392,6 +15434,7 @@ async function updateConversationMetadata(conversation, patch = {}, options = {}
         if (patch.deleted === true) {
             if (activeBeforeUpdate && String(activeBeforeUpdate.id) === conversationId) {
                 currentConversation = null;
+                window.__oddiActiveConversationId = null;
                 if (chat) chat.innerHTML = "";
                 setArchivedPreviewState(false);
             } else if (activeBeforeUpdate) {
@@ -15432,6 +15475,7 @@ async function updateConversationMetadata(conversation, patch = {}, options = {}
             if (patch.deleted === true) {
                 if (activeBeforeUpdate && String(activeBeforeUpdate.id) === conversationId) {
                     currentConversation = null;
+                    window.__oddiActiveConversationId = null;
                     if (chat) chat.innerHTML = "";
                     setArchivedPreviewState(false);
                 } else if (activeBeforeUpdate) {
@@ -15771,7 +15815,10 @@ function renderHistory() {
     const query = chatSearchQuery.trim().toLowerCase();
     /* Archived conversations never appear in the normal sidebar. */
 
-    const orderedConversations = [...conversations].sort((a, b) => {
+    const sidebarConversations = typeof window.__oddiIsProjectConversation === "function"
+        ? conversations.filter(conversation => !window.__oddiIsProjectConversation(conversation.id))
+        : conversations;
+    const orderedConversations = [...sidebarConversations].sort((a, b) => {
         const ap = pinnedIds.includes(getConversationKey(a)) ? 1 : 0;
         const bp = pinnedIds.includes(getConversationKey(b)) ? 1 : 0;
         if (ap !== bp) return bp - ap;
@@ -15963,6 +16010,7 @@ async function openConversation(index) {
     setArchivedPreviewState(isConversationArchived(conversation) || !!conversation.deleted);
 
     currentConversation = parsedIndex;
+    window.__oddiActiveConversationId = openingConversationId;
     persistLastOpenConversation(conversation);
 
     if (conversation.__summaryOnly && !browserLocalChatStorage) {
@@ -16002,7 +16050,7 @@ async function openConversation(index) {
 
     /* An empty saved conversation is still a usable blank workspace on phones.
        Keep the home actions visible instead of leaving only the composer. */
-    if (window.matchMedia("(max-width: 768px)").matches && conversation.messages.length === 0) {
+    if (conversation.messages.length === 0 && (window.matchMedia("(max-width: 768px)").matches || window.__oddiIsProjectConversation?.(conversation.id))) {
         const welcomeSource = window.__oddiWelcomeTemplate || document.getElementById("welcomeContainer");
         if (welcomeSource) {
             const welcome = welcomeSource.cloneNode(true);
@@ -16267,6 +16315,7 @@ async function newChat() {
        workspace as a fresh chat. This prevents stale sidebar/sync callbacks
        from immediately reopening the previous conversation. */
     window.__oddiNewChatEpoch = Number(window.__oddiNewChatEpoch || 0) + 1;
+    window.__oddiActiveConversationId = null;
     window.__oddiFreshChatActive = true;
     try { sessionStorage.setItem(ODDI_LAST_OPEN_CONVERSATION_KEY, ODDI_FRESH_CHAT_MARKER); } catch (_) {}
     window.dispatchEvent(new CustomEvent("oddi:conversation-opened", { detail: { id: null } }));
@@ -17503,7 +17552,6 @@ loadConversations();
     const shortcutsModal = document.getElementById("shortcutsModal");
     const closeShortcuts = document.getElementById("closeShortcuts");
     const archivedBtn = document.getElementById("archivedBtn");
-    let archivedModal = document.getElementById("archivedModal");
     function openModal(modal) {
         if (!modal) return;
         modal.__oddiReturnFocus = document.activeElement;
@@ -17537,72 +17585,84 @@ loadConversations();
     closeShortcuts?.addEventListener("click", () => closeModal(shortcutsModal));
     [binModal, shortcutsModal].forEach(modal => modal?.addEventListener("click", e => { if (e.target === modal) closeModal(modal); }));
 
-    function ensureArchivedModal() {
-        if (archivedModal) return archivedModal;
-        archivedModal = document.createElement("div");
-        archivedModal.id = "archivedModal";
-        archivedModal.className = "utility-modal";
-        archivedModal.setAttribute("aria-hidden", "true");
-        archivedModal.innerHTML = `
-            <div class="utility-box" role="dialog" aria-modal="true" aria-labelledby="archivedModalTitle">
-                <div class="utility-header">
-                    <h3 id="archivedModalTitle">Archived Chats</h3>
-                    <button id="closeArchived" class="utility-close" type="button" aria-label="Close archived chats">✕</button>
-                </div>
-                <p style="opacity:.65;margin:0 0 14px;">Archived chats are kept here and do not appear in your normal history.</p>
-                <div id="archivedModalList" class="archived-modal-list"></div>
-            </div>`;
-        document.body.appendChild(archivedModal);
-        archivedModal.addEventListener("click", e => { if (e.target === archivedModal) closeModal(archivedModal); });
-        return archivedModal;
-    }
-
-    function renderArchivedModal() {
-        const modal = ensureArchivedModal();
-        const list = modal.querySelector("#archivedModalList");
+    function renderArchivedData() {
+        const list = document.getElementById("oddiArchivedChatsList");
+        const countBadge = document.getElementById("oddiArchivedChatCount");
         if (!list) return;
-        const archived = (Array.isArray(conversations) ? conversations : []).filter(c => isConversationArchived(c));
-        list.innerHTML = "";
+        const archived = (Array.isArray(conversations) ? conversations : [])
+            .filter(conversation => isConversationArchived(conversation) && !conversation.deleted)
+            .sort((a, b) => getConversationDate(b) - getConversationDate(a));
+        if (countBadge) countBadge.textContent = `${archived.length} ${archived.length === 1 ? "chat" : "chats"}`;
+        list.replaceChildren();
         if (!archived.length) {
-            list.innerHTML = '<div class="utility-empty">📦 No archived chats</div>';
+            const empty = document.createElement("div");
+            empty.className = "oddi-archived-empty";
+            empty.innerHTML = '<span class="oddi-archived-empty-icon" aria-hidden="true">&#9635;</span><strong>No archived chats</strong><small>Chats you archive will appear here.</small>';
+            list.appendChild(empty);
             return;
         }
         archived.forEach(conversation => {
-            const row = document.createElement("div");
-            row.className = "archived-modal-item";
-            const count = Array.isArray(conversation.messages) ? conversation.messages.length : 0;
-            row.innerHTML = `<div class="archived-modal-main"><div class="archived-modal-title"></div><div class="archived-modal-meta">${count} ${count === 1 ? "message" : "messages"}</div></div><div class="archived-modal-actions"><button type="button" class="archived-open">Open</button><button type="button" class="archived-restore">Unarchive</button></div>`;
-            row.querySelector(".archived-modal-title").textContent = conversation.title || "New Chat";
-            const open = () => { closeModal(modal); const idx = conversations.indexOf(conversation); if (idx >= 0) openConversation(idx); };
-            row.querySelector(".archived-open").addEventListener("click", open);
-            row.querySelector(".archived-modal-main").addEventListener("click", open);
-            row.querySelector(".archived-restore").addEventListener("click", async () => {
-                const ok = await updateConversationMetadata(conversation, { archived: false });
-                if (!ok) { alert("Could not unarchive this chat. Please try again."); return; }
-                if (Number.isInteger(currentConversation) && conversations[currentConversation] === conversation) {
-                    setArchivedPreviewState(false);
-                }
-                renderArchivedModal();
-                renderHistory();
+            const row = document.createElement("article");
+            row.className = "oddi-archived-data-row";
+            const icon = document.createElement("span");
+            icon.className = "oddi-archived-data-icon";
+            icon.setAttribute("aria-hidden", "true");
+            icon.textContent = "\u25a4";
+            const copy = document.createElement("div");
+            copy.className = "oddi-archived-data-copy";
+            const title = document.createElement("strong");
+            title.className = "oddi-archived-data-title";
+            title.textContent = conversation.title || "New Chat";
+            const meta = document.createElement("small");
+            meta.className = "oddi-archived-data-meta";
+            const messageCount = Number(conversation.message_count || conversation.messages?.length || 0);
+            const updated = new Date(conversation.updated_at || conversation.created_at || "");
+            const dateLabel = Number.isNaN(updated.getTime()) ? "Archived" : `Archived \u00b7 ${updated.toLocaleDateString(undefined, {month:"short", day:"numeric", year:"numeric"})}`;
+            meta.textContent = `${messageCount} ${messageCount === 1 ? "message" : "messages"} \u00b7 ${dateLabel}`;
+            copy.append(title, meta);
+            const actions = document.createElement("div");
+            actions.className = "oddi-archived-data-actions";
+            const openButton = document.createElement("button");
+            openButton.type = "button";
+            openButton.className = "oddi-archived-open";
+            openButton.textContent = "Open chat";
+            openButton.addEventListener("click", () => {
+                const index = conversations.findIndex(item => String(item?.id) === String(conversation.id));
+                if (index < 0) return;
+                document.getElementById("closeSettings")?.click();
+                void openConversation(index);
             });
+            const restoreButton = document.createElement("button");
+            restoreButton.type = "button";
+            restoreButton.className = "oddi-archived-restore";
+            restoreButton.textContent = "Restore";
+            restoreButton.addEventListener("click", async () => {
+                restoreButton.disabled = true;
+                const restored = await updateConversationMetadata(conversation, {archived:false});
+                if (!restored) {
+                    restoreButton.disabled = false;
+                    window.showOddiToast?.("Could not restore this chat. Please try again.", "error");
+                    return;
+                }
+                renderHistory();
+                renderArchivedData();
+            });
+            actions.append(openButton, restoreButton);
+            row.append(icon, copy, actions);
             list.appendChild(row);
         });
     }
-
-    archivedBtn?.addEventListener("click", () => {
-        closeSidebarForModal();
-        renderArchivedModal();
-        openModal(ensureArchivedModal());
+    window.__oddiRenderArchivedData = renderArchivedData;
+    window.addEventListener("oddi:conversations-loaded", renderArchivedData);
+    window.addEventListener("oddi:conversations-changed", renderArchivedData);
+    window.addEventListener("oddi:settings-tab-activated", event => {
+        if (event.detail?.name === "data") renderArchivedData();
     });
-    document.addEventListener("click", event => {
-        const closeButton = event.target?.closest?.("#closeArchived");
-        if (!closeButton || !archivedModal) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        closeModal(archivedModal);
-    }, true);
+    document.querySelector('[data-settings-tab="data"]')?.addEventListener("click", renderArchivedData);
+    archivedBtn?.addEventListener("click", () => window.__oddiOpenSettings?.("data"));
+    window.addEventListener("oddi:open-archive", () => window.__oddiOpenSettings?.("data"));
     document.addEventListener("keydown", e => {
-        if (e.key === "Escape") { closeModal(binModal); closeModal(shortcutsModal); closeModal(archivedModal); }
+        if (e.key === "Escape") { closeModal(binModal); closeModal(shortcutsModal); }
     });
 })();
 </script>
@@ -23782,7 +23842,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261017-sidebar-memory-remove-1"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261018-interview-studio-nav-1"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -32580,7 +32640,7 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
   body.dark-mode #oddiWorkspaceDialog{--settings-card-bg:#151619;--settings-text:#f1f2f4}
   .oddi-workspace-head{display:flex;align-items:center;gap:12px;padding:18px 20px;border-bottom:1px solid #8883}.oddi-workspace-head h2{flex:1;margin:0;font-size:19px}.oddi-workspace-close{width:40px;height:40px;border:0;border-radius:12px;background:transparent;color:inherit;font-size:24px;cursor:pointer}
   .oddi-workspace-tabs{display:flex;gap:7px;overflow:auto;padding:10px 16px;border-bottom:1px solid #8883}.oddi-workspace-tabs button,.oddi-workspace-action,.oddi-workspace-row button{min-height:38px;border:1px solid #8885;border-radius:11px;padding:0 12px;background:transparent;color:inherit;font:inherit;cursor:pointer}.oddi-workspace-tabs button[aria-selected="true"]{background:#2b8d60;color:#fff;border-color:#2b8d60}
-  #oddiWorkspaceContent{padding:18px 20px 22px;overflow:auto}.oddi-workspace-content h3{margin:0 0 6px;font-size:16px}.oddi-workspace-content p{margin:0 0 14px;opacity:.72;font-size:13px;line-height:1.5}.oddi-workspace-form{display:flex;gap:8px;margin:12px 0 16px}.oddi-workspace-form input,.oddi-workspace-form textarea,.oddi-workspace-content select{min-height:42px;min-width:0;flex:1;box-sizing:border-box;border:1px solid #8885;border-radius:11px;padding:9px 12px;background:transparent;color:inherit;font:inherit}.oddi-workspace-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #8883}.oddi-workspace-row>div{flex:1;min-width:0}.oddi-workspace-row strong,.oddi-workspace-row small{display:block;overflow-wrap:anywhere}.oddi-workspace-row small{margin-top:4px;opacity:.7}.oddi-workspace-row button{min-height:34px}.oddi-workspace-row button.danger{color:#dc4949}.oddi-workspace-empty{padding:18px;border:1px dashed #8886;border-radius:13px;text-align:center;opacity:.7}.oddi-workspace-check{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #8883}.oddi-workspace-check input{width:18px;height:18px;accent-color:#2b8d60}.oddi-workspace-note{min-height:18px;margin-top:12px!important;color:#2b8d60}.oddi-workspace-sync{margin:0;padding:7px 18px;border-bottom:1px solid #8883;font-size:12px;color:#268453}.oddi-workspace-sync.is-error{color:#b33939}.oddi-project-chat{display:flex;align-items:center;gap:5px;margin-top:5px}.oddi-project-chat button{min-height:30px;padding:3px 8px;border:1px solid #8884;border-radius:8px;background:transparent;color:inherit;font:inherit;cursor:pointer}.oddi-project-chat button:disabled{opacity:.55;cursor:default}
+  #oddiWorkspaceContent{padding:18px 20px 22px;overflow:auto}.oddi-workspace-content h3{margin:0 0 6px;font-size:16px}.oddi-workspace-content p{margin:0 0 14px;opacity:.72;font-size:13px;line-height:1.5}.oddi-workspace-form{display:flex;gap:8px;margin:12px 0 16px}.oddi-workspace-form input,.oddi-workspace-form textarea,.oddi-workspace-content select{min-height:42px;min-width:0;flex:1;box-sizing:border-box;border:1px solid #8885;border-radius:11px;padding:9px 12px;background:transparent;color:inherit;font:inherit}.oddi-workspace-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-top:1px solid #8883}.oddi-workspace-row>div{flex:1;min-width:0}.oddi-workspace-row strong,.oddi-workspace-row small{display:block;overflow-wrap:anywhere}.oddi-workspace-row small{margin-top:4px;opacity:.7}.oddi-workspace-row button{min-height:34px}.oddi-workspace-row button.danger{color:#dc4949}.oddi-workspace-empty{padding:18px;border:1px dashed #8886;border-radius:13px;text-align:center;opacity:.7}.oddi-workspace-check{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #8883}.oddi-workspace-check input{width:18px;height:18px;accent-color:#2b8d60}.oddi-workspace-note{min-height:18px;margin-top:12px!important;color:#2b8d60}.oddi-workspace-sync{margin:0;padding:7px 18px;border-bottom:1px solid #8883;font-size:12px;color:#268453}.oddi-workspace-sync.is-error{color:#b33939}
   #oddiAskSelection{position:fixed;z-index:100210;display:none;transform:translate(-50%,-120%);min-height:38px;padding:0 13px;border:1px solid #7778;border-radius:999px;background:#202226;color:#fff;box-shadow:0 8px 28px #0004;font:600 13px system-ui;cursor:pointer}#oddiAskSelection.is-visible{display:block}
   .oddi-suggestion-card.oddi-workspace-card-hidden{display:none!important}.oddi-draft-recovery{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 78px);transform:translateX(-50%);z-index:100190;padding:6px 10px;border:1px solid #8885;border-radius:999px;background:var(--settings-card-bg,#fff);color:var(--settings-text,#222);font:12px system-ui;box-shadow:0 3px 14px #0002;pointer-events:none}
   @media(max-width:600px){ #oddiWorkspaceOverlay{padding:8px;align-items:end}#oddiWorkspaceDialog{max-height:88dvh;border-radius:20px 20px 14px 14px}.oddi-workspace-head{padding:14px}.oddi-workspace-tabs{padding:8px}.oddi-workspace-tabs button{white-space:nowrap}.oddi-workspace-content{padding:15px}.oddi-workspace-form{flex-wrap:wrap}.oddi-workspace-form input{flex-basis:100%}.oddi-workspace-row{align-items:flex-start}}
@@ -32589,7 +32649,7 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
   <section id="oddiWorkspaceDialog" role="dialog" aria-modal="true" aria-labelledby="oddiWorkspaceTitle">
     <header class="oddi-workspace-head"><h2 id="oddiWorkspaceTitle">ODDI Workspace</h2><button class="oddi-workspace-close" type="button" aria-label="Close workspace">×</button></header>
     <nav class="oddi-workspace-tabs" aria-label="Workspace tools">
-      <button type="button" data-workspace-tab="projects" aria-selected="true">Projects</button><button type="button" data-workspace-tab="tasks" aria-selected="false">Tasks</button><button type="button" data-workspace-tab="prompts" aria-selected="false">Prompt library</button><button type="button" data-workspace-tab="personalize" aria-selected="false">Personalize</button>
+      <button type="button" data-workspace-tab="tasks" aria-selected="true">Tasks</button><button type="button" data-workspace-tab="prompts" aria-selected="false">Prompt library</button><button type="button" data-workspace-tab="personalize" aria-selected="false">Personalize</button>
     </nav>
     <p id="oddiWorkspaceSyncStatus" class="oddi-workspace-sync" role="status" aria-live="polite"></p>
     <div id="oddiWorkspaceContent" tabindex="0"></div>
@@ -32605,7 +32665,7 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
   const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]));
   const uid=()=>window.crypto?.randomUUID?.()||`w-${Date.now()}-${Math.random().toString(36).slice(2,9)}`;
   const defaults={projects:[],tasks:[],prompts:[],hiddenHomeCards:[],responseStyle:""};
-  let state={...defaults},tab="projects",saveChain=Promise.resolve(),signedIn=false,identityReady=false,accountKey="guest",syncTimer=0;
+  let state={...defaults},tab="tasks",projectScreen=false,selectedProjectId="",saveChain=Promise.resolve(),signedIn=false,identityReady=false,accountKey="guest",syncTimer=0;
   let localKey="oddi_workspace_tools_v2_guest",pendingKey="oddi_workspace_operations_v1_guest",failedKey="oddi_workspace_failed_operations_v1_guest",draftKey="oddi_draft_v2_guest",pendingOperations=[],localOnlyOperations=[],draftRestoredFor="",draftClearRequested=false,draftTimer=0;
   const builtins=[
     {name:"Explain a topic",text:"Explain this topic in plain language, then give one practical example: "},
@@ -32616,7 +32676,7 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
     {name:"Project plan",text:"Turn this goal into a practical project plan with milestones, dependencies, and a first next step: "},
     {name:"Rewrite clearly",text:"Rewrite this text to be clear, natural, and concise while keeping its meaning: "}
   ];
-  function normalize(value){const v=value&&typeof value==="object"?value:{};return {projects:Array.isArray(v.projects)?v.projects.filter(x=>x&&typeof x==="object").map(x=>({id:String(x.id||uid()),name:String(x.name||"Project").slice(0,80),conversationIds:Array.isArray(x.conversationIds)?x.conversationIds.map(String).slice(0,500):[]})):[],tasks:Array.isArray(v.tasks)?v.tasks.filter(x=>x&&typeof x==="object").map(x=>({id:String(x.id||uid()),text:String(x.text||"").slice(0,240),done:!!x.done,chatTitle:String(x.chatTitle||"").slice(0,120)})):[],prompts:Array.isArray(v.prompts)?v.prompts.filter(x=>x&&typeof x==="object").map(x=>({id:String(x.id||uid()),name:String(x.name||"Prompt").slice(0,60),text:String(x.text||"").slice(0,1200)})):[],hiddenHomeCards:Array.isArray(v.hiddenHomeCards)?v.hiddenHomeCards.filter(x=>typeof x==="string").slice(0,20):[],responseStyle:["","concise","step_by_step","table","detailed"].includes(v.responseStyle)?v.responseStyle:""}}
+  function normalize(value){const v=value&&typeof value==="object"?value:{};return {projects:Array.isArray(v.projects)?v.projects.filter(x=>x&&typeof x==="object").map(x=>({id:String(x.id||uid()),name:String(x.name||"Project").slice(0,80),type:["general","job_search","study","build","personal"].includes(x.type)?x.type:"general",conversationIds:Array.isArray(x.conversationIds)?x.conversationIds.map(String).slice(0,500):[]})):[],tasks:Array.isArray(v.tasks)?v.tasks.filter(x=>x&&typeof x==="object").map(x=>({id:String(x.id||uid()),text:String(x.text||"").slice(0,240),done:!!x.done,chatTitle:String(x.chatTitle||"").slice(0,120)})):[],prompts:Array.isArray(v.prompts)?v.prompts.filter(x=>x&&typeof x==="object").map(x=>({id:String(x.id||uid()),name:String(x.name||"Prompt").slice(0,60),text:String(x.text||"").slice(0,1200)})):[],hiddenHomeCards:Array.isArray(v.hiddenHomeCards)?v.hiddenHomeCards.filter(x=>typeof x==="string").slice(0,20):[],responseStyle:["","concise","step_by_step","table","detailed"].includes(v.responseStyle)?v.responseStyle:""}}
   function localRead(){try{return normalize(JSON.parse(localStorage.getItem(localKey)||"{}"))}catch(_){return normalize({})}}
   function readPending(){try{const value=JSON.parse(localStorage.getItem(pendingKey)||"[]");return Array.isArray(value)?value.filter(x=>x&&typeof x.id==="string"&&typeof x.type==="string"):[]}catch(_){return []}}
   function readLocalOnly(){try{const value=JSON.parse(localStorage.getItem(failedKey)||"[]");return Array.isArray(value)?value.filter(x=>x?.operation&&typeof x.operation.id==="string"):[]}catch(_){return []}}
@@ -32646,16 +32706,155 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
     localKey=`oddi_workspace_tools_v2_${accountKey}`;pendingKey=`oddi_workspace_operations_v1_${accountKey}`;failedKey=`oddi_workspace_failed_operations_v1_${accountKey}`;draftKey=`oddi_draft_v2_${accountKey}`;pendingOperations=readPending();localOnlyOperations=readLocalOnly();identityReady=true;restoreDraft();
     if(remoteData){state=normalize(remoteData.workspace);localOnlyOperations.forEach(entry=>applyOperation(state,entry.operation));pendingOperations.forEach(op=>applyOperation(state,op));saveLocal();if(pendingOperations.length)void flushPending();setSyncStatus(localOnlyOperations.length?`${localOnlyOperations.length} change(s) are saved only on this device.`:pendingOperations.length?`Syncing ${pendingOperations.length} saved change(s)…`:"Workspace synced to your account.",localOnlyOperations.length>0)}
     else{state=localRead();localOnlyOperations.forEach(entry=>applyOperation(state,entry.operation));setSyncStatus(signedIn?"Using account-specific local copy. Sync will retry.":"Saved on this device only. Sign in to sync across devices.",signedIn);if(signedIn){pendingOperations.forEach(op=>applyOperation(state,op));syncTimer=setTimeout(()=>pendingOperations.length?flushPending():loadState(),8000)}}
-    window.__oddiResponseStyle=state.responseStyle||"";applyHomeCards();return state
+    window.__oddiResponseStyle=state.responseStyle||"";applyHomeCards();notifyProjectConversationsChanged();return state
   }
   function chatList(){try{return Array.isArray(conversations)?conversations:[]}catch(_){return []}}
+  function waitForConversationData(){if(window.__oddiConversationDataReady)return Promise.resolve();return new Promise((resolve,reject)=>{let timer=0;const finish=()=>{clearTimeout(timer);window.removeEventListener("oddi:conversations-loaded",finish);resolve()};window.addEventListener("oddi:conversations-loaded",finish,{once:true});timer=setTimeout(()=>{window.removeEventListener("oddi:conversations-loaded",finish);reject(new Error("Chat history is still loading. Please try again in a moment."))},20000);if(window.__oddiConversationDataReady)finish()})}
   function activeChat(){try{return typeof currentConversation==="number"?chatList()[currentConversation]||null:null}catch(_){return null}}
   function homeCardKey(card,i){const label=card.querySelector("strong")?.textContent||card.dataset.oddiPrompt||`quick-start-${i+1}`;return `quick-${label.trim().toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,48)||i+1}`}
   function applyHomeCards(){document.querySelectorAll("#oddiSuggestionCards .oddi-suggestion-card").forEach((card,i)=>{card.dataset.oddiWorkspaceCard=homeCardKey(card,i);card.classList.toggle("oddi-workspace-card-hidden",state.hiddenHomeCards.includes(card.dataset.oddiWorkspaceCard))})}
-  function render(){document.querySelectorAll("[data-workspace-tab]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.workspaceTab===tab)));let html="";
+  const projectTypeLabels={general:"General",job_search:"Job search",study:"Study",build:"Build",personal:"Personal"};
+  function isProjectConversation(id){const key=String(id||"");return !!key&&state.projects.some(project=>(project.conversationIds||[]).some(chatId=>String(chatId)===key))}
+  window.__oddiIsProjectConversation=isProjectConversation;
+  function notifyProjectConversationsChanged(){window.dispatchEvent(new CustomEvent("oddi:project-conversations-changed"));if(typeof renderHistory==="function")renderHistory()}
+  function renderProjectScreen(){
+    const project=state.projects.find(item=>String(item.id)===String(selectedProjectId));
+    if(!project){
+      const cards=state.projects.map(item=>`<button type="button" class="oddi-project-card" data-open-project="${esc(item.id)}"><span class="oddi-project-card-icon">P</span><span class="oddi-project-card-copy"><strong>${esc(item.name)}</strong><small>${esc(projectTypeLabels[item.type]||projectTypeLabels.general)}</small></span><span class="oddi-project-card-arrow" aria-hidden="true">&rsaquo;</span></button>`).join("");
+      content.innerHTML=`<main class="oddi-projects-page"><section class="oddi-projects-intro"><div><span class="oddi-project-eyebrow">YOUR WORKSPACE</span><h3>Projects</h3><p>Organize your work into focused projects.</p></div><form class="oddi-project-create-form" data-project-form="create"><label><span>Project name</span><input name="name" maxlength="80" required placeholder="e.g. Backend developer job search"></label><label><span>Type</span><select name="type"><option value="general">General</option><option value="job_search">Job search</option><option value="study">Study</option><option value="build">Build</option><option value="personal">Personal</option></select></label><button type="submit" class="oddi-project-primary">+ Add project</button></form></section><section class="oddi-project-list" aria-label="Your projects">${cards||`<div class="oddi-project-empty"><span class="oddi-project-empty-icon">P</span><strong>No projects yet</strong><p>Create one above to get started.</p></div>`}</section></main>`;
+      return;
+    }
+    const linked=(project.conversationIds||[]).map(String).map(id=>chatList().find(chat=>String(chat?.id)===id&&!chat.deleted)).filter(Boolean).sort((a,b)=>(Date.parse(b.updated_at||b.created_at||"")||0)-(Date.parse(a.updated_at||a.created_at||"")||0));
+    const chatRows=linked.map(chat=>{const pending=String(chat.id).startsWith("project-pending-");return `<article class="oddi-project-chat-row"><div class="oddi-project-chat-copy"><strong>${esc(chat.title||"New Chat")}</strong><small>${pending?"Saving draft…":Number(chat.message_count||0)>0||(Array.isArray(chat.messages)&&chat.messages.length>0)?"Saved conversation":"Empty draft"}</small></div><div class="oddi-project-chat-actions"><button type="button" data-open-project-chat="${esc(chat.id)}" ${pending?"disabled":""}>Open</button><button type="button" class="oddi-project-chat-delete" data-delete-project-chat="${esc(chat.id)}" aria-label="Delete ${esc(chat.title||"project chat")}" ${pending?"disabled":""}>Delete</button></div></article>`}).join("");
+    content.innerHTML=`<main class="oddi-projects-page oddi-project-detail"><button type="button" class="oddi-project-back" data-project-back>&larr; All projects</button><section class="oddi-project-detail-head"><div><span class="oddi-project-type">${esc(projectTypeLabels[project.type]||projectTypeLabels.general)}</span><h3>${esc(project.name)}</h3><p>Chats saved in this project.</p></div></section><section class="oddi-project-chats"><div class="oddi-project-section-head"><div><h4>Chats</h4><p>${linked.length} ${linked.length===1?"chat":"chats"}</p></div><button type="button" class="oddi-project-primary oddi-project-new-chat" data-create-project-chat="${esc(project.id)}">+ Create chat</button></div>${chatRows||`<div class="oddi-project-empty"><strong>No chats yet</strong><p>Create a new chat to start working in this project.</p></div>`}</section><button type="button" class="oddi-project-delete" data-delete-project="${esc(project.id)}">Delete project</button></main>`;
+    content.querySelector("[data-create-project-chat]")?.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();void createProjectChat(project.id,event.currentTarget)});
+    content.querySelectorAll("[data-open-project-chat]").forEach(button=>button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();void openProjectChat(String(event.currentTarget.dataset.openProjectChat||""),event.currentTarget)}));
+    content.querySelectorAll("[data-delete-project-chat]").forEach(button=>button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();void deleteProjectChat(project.id,String(event.currentTarget.dataset.deleteProjectChat||""),event.currentTarget)}));
+  }
+
+  async function openProjectChat(conversationId,button){
+    if(!conversationId||button?.disabled)return;
+    if(button)button.disabled=true;
+    try{
+      await waitForConversationData();
+      const index=chatList().findIndex(chat=>String(chat?.id)===String(conversationId)&&!chat.deleted);
+      if(index<0)throw new Error("This project chat is not available in chat storage. Refresh Projects and try again.");
+      close();
+      const opened=await openConversation(index);
+      if(opened===false)throw new Error("ODDI could not open this project chat. Please try again.");
+    }catch(error){
+      console.error("Could not open project chat:",error);
+      window.showOddiToast?.(error?.message||"Could not open project chat. Please try again.","error");
+    }finally{if(button)button.disabled=false}
+  }
+
+  async function deleteProjectChat(projectId,conversationId,button){
+    if(!conversationId||button?.disabled)return;
+    if(button)button.disabled=true;
+    try{
+      await waitForConversationData();
+      const conversation=chatList().find(chat=>String(chat?.id)===String(conversationId)&&!chat.deleted);
+      if(!conversation)throw new Error("This project chat is no longer available.");
+      const wasActive=typeof currentConversation==="number"&&String(chatList()[currentConversation]?.id)===String(conversationId);
+      const moved=await updateConversationMetadata(conversation,{deleted:true,pinned:false,archived:false});
+      if(!moved)throw new Error("Could not move this chat to the Bin. Please try again.");
+      const project=state.projects.find(item=>String(item.id)===String(projectId));
+      if(project)project.conversationIds=(project.conversationIds||[]).filter(id=>String(id)!==String(conversationId));
+      saveLocal();
+      notifyProjectConversationsChanged();
+      renderProjectScreen();
+      const synced=await persist({id:uid(),type:"project.unlink",item_id:String(projectId),conversation_id:String(conversationId)});
+      // Sync may have replaced workspace state while the local row was already
+      // removed. Re-render from the newest state once the request settles.
+      notifyProjectConversationsChanged();
+      renderProjectScreen();
+      if(wasActive&&typeof window.newChat==="function")await window.newChat();
+      const notice=synced?"Project chat moved to the Bin.":signedIn?"Project chat moved to the Bin. The project update will sync when connected.":"Project chat moved to the Bin and removed from this device's project list.";
+      window.showOddiToast?.(notice,synced?"success":"error");
+    }catch(error){
+      console.error("Could not delete project chat:",error);
+      if(button)button.disabled=false;
+      window.showOddiToast?.(error?.message||"Could not delete project chat. Please try again.","error");
+    }
+  }
+
+  async function createProjectChat(projectId,button){
+    let project=state.projects.find(item=>String(item.id)===String(projectId));
+    if(!project||!button||button.disabled)return;
+    if(!browserLocalChatStorage&&!isLoggedIn){window.showOddiToast?.("Sign in to save project chats.","error");return;}
+    button.disabled=true;
+    let pendingId="";
+    try{
+      project=state.projects.find(item=>String(item.id)===String(projectId));
+      if(!project)throw new Error("This project is no longer available. Refresh Projects and try again.");
+      const titlePrefix=`${project.name} Chat`.toLocaleLowerCase();
+      const previousNumbers=(project.conversationIds||[]).map(id=>chatList().find(chat=>String(chat?.id)===String(id))).filter(Boolean).map(chat=>{
+        const existingTitle=String(chat.title||"").trim();
+        if(!existingTitle.toLocaleLowerCase().startsWith(titlePrefix))return 0;
+        const suffix=existingTitle.slice(titlePrefix.length).trim().replace(/^-\s*/,"");
+        return Number(suffix);
+      }).filter(number=>Number.isSafeInteger(number)&&number>0);
+      const title=`${project.name} Chat ${Math.max(0,...previousNumbers)+1}`;
+      pendingId=`project-pending-${uid()}`;
+      let conversation=normalizeConversationObject({id:pendingId,title,messages:[],revision:0,pinned:false,archived:false,deleted:false,created_at:new Date().toISOString(),updated_at:new Date().toISOString()});
+      conversations.unshift(conversation);
+      project.conversationIds=[...new Set([...(project.conversationIds||[]).map(String),pendingId])].slice(-500);
+      saveLocal();
+      renderHistory();
+      window.dispatchEvent(new CustomEvent("oddi:conversations-changed"));
+      notifyProjectConversationsChanged();
+      renderProjectScreen();
+
+      if(browserLocalChatStorage){
+        const savedConversation=await createServerConversation(title);
+        if(!savedConversation?.id)throw new Error("Could not create a project chat on this device.");
+        savedConversation.title=title;
+        savedConversation.messages=[];
+        if(!await putOddiBrowserChat(savedConversation))throw new Error("Could not save this project chat on this device.");
+        conversation=normalizeConversationObject(savedConversation);
+      }else{
+        const response=await fetch("/api/conversations",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},body:JSON.stringify({title})});
+        const payload=await response.json().catch(()=>({}));
+        if(!response.ok)throw new Error(payload.error||payload.detail||`Chat creation failed (${response.status}).`);
+        if(payload?.id===undefined||payload?.id===null)throw new Error("Chat creation returned no conversation ID.");
+        conversation=normalizeConversationObject({...payload,title,messages:Array.isArray(payload.messages)?payload.messages:[]});
+      }
+      project=state.projects.find(item=>String(item.id)===String(projectId))||project;
+      const conversationId=String(conversation.id);
+      const pendingIndex=chatList().findIndex(chat=>String(chat?.id)===pendingId);
+      if(pendingIndex>=0)conversations[pendingIndex]=normalizeConversationObject({...conversation,title,messages:Array.isArray(conversation.messages)?conversation.messages:[]});
+      else conversations.unshift(normalizeConversationObject({...conversation,title,messages:Array.isArray(conversation.messages)?conversation.messages:[]}));
+      project.conversationIds=[...new Set([...(project.conversationIds||[]).map(id=>String(id)===pendingId?conversationId:String(id)),conversationId])].filter(id=>id!==pendingId).slice(-500);
+      touchConversation(conversation);
+      saveLocal();
+      renderHistory();
+      window.dispatchEvent(new CustomEvent("oddi:conversations-changed"));
+      notifyProjectConversationsChanged();
+      renderProjectScreen();
+      await persist({id:uid(),type:"project.link",item_id:project.id,conversation_id:conversationId});
+      project=state.projects.find(item=>String(item.id)===String(projectId))||project;
+      renderHistory();
+      window.dispatchEvent(new CustomEvent("oddi:conversations-changed"));
+      notifyProjectConversationsChanged();
+      renderProjectScreen();
+    }catch(error){
+      if(pendingId){
+        conversations=chatList().filter(chat=>String(chat?.id)!==pendingId);
+        project=state.projects.find(item=>String(item.id)===String(projectId));
+        if(project)project.conversationIds=(project.conversationIds||[]).filter(id=>String(id)!==pendingId);
+        saveLocal();
+        notifyProjectConversationsChanged();
+        renderProjectScreen();
+      }
+      console.error("Could not create project chat:",error);
+      button.disabled=false;
+      window.showOddiToast?.(error?.message||"Could not create project chat. Please try again.","error");
+    }
+  }
+  function render(){if(projectScreen){renderProjectScreen();return;}document.querySelectorAll("[data-workspace-tab]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.workspaceTab===tab)));let html="";
     if(tab==="projects"){
-      html='<div class="oddi-workspace-content"><h3>Projects</h3><p>Group related chats into projects. These preferences follow your signed-in account.</p><form class="oddi-workspace-form" data-form="project"><input name="name" maxlength="80" required placeholder="Project name"><button class="oddi-workspace-action">Create project</button></form>';
-      html+=state.projects.length?state.projects.map(p=>{const ids=p.conversationIds||[],linked=ids.map(id=>chatList().find(c=>String(c.id)===String(id))).filter(Boolean);return `<article class="oddi-workspace-row"><div><strong>${esc(p.name)}</strong><small>${linked.length} available of ${ids.length} linked chats</small>${ids.map(id=>{const c=chatList().find(x=>String(x.id)===String(id));return `<div class="oddi-project-chat"><button type="button" ${c?`data-open-project-chat="${esc(c.id)}"`:"disabled"}>${c?`↗ ${esc(c.title||"Open chat")}`:"Unavailable chat"}</button><button type="button" data-unlink-project="${esc(p.id)}" data-unlink-chat="${esc(id)}" aria-label="Unlink chat">×</button></div>`}).join("")}</div><button type="button" data-link-project="${esc(p.id)}">Add current chat</button><button type="button" class="danger" data-delete-project="${esc(p.id)}" aria-label="Delete ${esc(p.name)}">Delete</button></article>`}).join(""):'<div class="oddi-workspace-empty">Create a project, then link chats with “Add current chat.”</div>';
+      html='<div class="oddi-workspace-content"><h3>Projects</h3><p>Organize your work into projects. These preferences follow your signed-in account.</p><form class="oddi-workspace-form" data-form="project"><input name="name" maxlength="80" required placeholder="Project name"><button class="oddi-workspace-action">Create project</button></form>';
+      html+=state.projects.length?state.projects.map(p=>`<article class="oddi-workspace-row"><div><strong>${esc(p.name)}</strong><small>${esc(projectTypeLabels[p.type]||projectTypeLabels.general)}</small></div><button type="button" class="danger" data-delete-project="${esc(p.id)}" aria-label="Delete ${esc(p.name)}">Delete</button></article>`).join(""):'<div class="oddi-workspace-empty">Create a project to get started.</div>';
       html+='</div>';
     } else if(tab==="tasks"){
       const open=state.tasks.filter(t=>!t.done),done=state.tasks.filter(t=>t.done);
@@ -32673,23 +32872,22 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
     content.innerHTML=html;
     const style=document.getElementById("oddiWorkspaceStyle");if(style)style.value=state.responseStyle||"";
   }
-  function open(opener){content.innerHTML='<div class="oddi-workspace-empty">Loading account workspace…</div>';overlay.inert=false;overlay.classList.add("is-open");overlay.setAttribute("aria-hidden","false");document.body.classList.add("oddi-workspace-open");workspaceReturnFocus=opener||document.getElementById("headerMoreBtn");dialog.querySelector(".oddi-workspace-close")?.focus({preventScroll:true});Promise.resolve(window.__oddiWorkspaceReady).then(()=>loadState()).then(()=>{if(overlay.classList.contains("is-open"))render()})}
-  function close(){document.body.classList.remove("oddi-workspace-open");if(dialog.contains(document.activeElement)){const target=workspaceReturnFocus?.isConnected&&!overlay.contains(workspaceReturnFocus)?workspaceReturnFocus:document.getElementById("headerMoreBtn");target?.focus({preventScroll:true});if(dialog.contains(document.activeElement)){document.body.tabIndex=-1;document.body.focus({preventScroll:true})}}overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");overlay.inert=true}
+  function open(opener,mode="tools"){projectScreen=mode==="projects";selectedProjectId="";tab=projectScreen?"projects":"tasks";dialog.dataset.workspaceMode=projectScreen?"projects":"tools";document.getElementById("oddiWorkspaceTitle").textContent=projectScreen?"Projects":"ODDI Workspace";dialog.querySelector(".oddi-workspace-tabs").hidden=projectScreen;content.innerHTML='<div class="oddi-workspace-empty">Loading account workspace...</div>';overlay.inert=false;overlay.classList.add("is-open");overlay.setAttribute("aria-hidden","false");document.body.classList.add("oddi-workspace-open");document.body.classList.toggle("oddi-project-workspace-open",projectScreen);workspaceReturnFocus=opener||document.getElementById("headerMoreBtn");dialog.querySelector(".oddi-workspace-close")?.focus({preventScroll:true});Promise.resolve(window.__oddiWorkspaceReady).then(()=>loadState()).then(()=>{if(overlay.classList.contains("is-open"))render()})}
+  function close(){document.body.classList.remove("oddi-workspace-open","oddi-project-workspace-open");projectScreen=false;dialog.dataset.workspaceMode="tools";dialog.querySelector(".oddi-workspace-tabs").hidden=false;document.getElementById("oddiWorkspaceTitle").textContent="ODDI Workspace";if(dialog.contains(document.activeElement)){const target=workspaceReturnFocus?.isConnected&&!overlay.contains(workspaceReturnFocus)?workspaceReturnFocus:document.getElementById("headerMoreBtn");target?.focus({preventScroll:true});if(dialog.contains(document.activeElement)){document.body.tabIndex=-1;document.body.focus({preventScroll:true})}}overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");overlay.inert=true}
   let workspaceReturnFocus=null;
   const workspaceBtn=document.createElement("button");workspaceBtn.type="button";workspaceBtn.className="header-more-action";workspaceBtn.id="oddiWorkspaceOpen";workspaceBtn.innerHTML='▦ <span>Workspace &amp; Prompts</span>';panel.append(workspaceBtn);workspaceBtn.addEventListener("click",()=>{const opener=document.getElementById("headerMoreBtn");document.getElementById("headerMoreClose")?.click();open(opener)});
+  window.addEventListener("oddi:open-projects",()=>open(null,"projects"));
   dialog.querySelector(".oddi-workspace-close").addEventListener("click",close);overlay.addEventListener("click",e=>{if(e.target===overlay)close()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&overlay.classList.contains("is-open"))close()});
   dialog.querySelector(".oddi-workspace-tabs").addEventListener("click",e=>{const b=e.target.closest("[data-workspace-tab]");if(!b)return;tab=b.dataset.workspaceTab;render()});
+  content.addEventListener("submit",e=>{const form=e.target.closest("form[data-project-form]");if(!form)return;e.preventDefault();e.stopImmediatePropagation();const fd=new FormData(form);if(form.dataset.projectForm==="create"){const name=String(fd.get("name")||"").trim();if(!name)return;const item={id:uid(),name,type:String(fd.get("type")||"general"),conversationIds:[]};state.projects.push(item);selectedProjectId="";void persist({id:uid(),type:"project.upsert",item});render()}});
   content.addEventListener("submit",e=>{const form=e.target.closest("form[data-form]");if(!form)return;e.preventDefault();const fd=new FormData(form);
     if(form.dataset.form==="project"){const item={id:uid(),name:String(fd.get("name")||"").trim(),conversationIds:[]};state.projects.push(item);persist({id:uid(),type:"project.upsert",item})}
     if(form.dataset.form==="task"){const chat=activeChat(),item={id:uid(),text:String(fd.get("text")||"").trim(),done:false,chatTitle:chat?.title||""};state.tasks.unshift(item);persist({id:uid(),type:"task.upsert",item})}
     if(form.dataset.form==="prompt"){const item={id:uid(),name:String(fd.get("name")||"").trim(),text:String(fd.get("text")||"").trim()};state.prompts.push(item);persist({id:uid(),type:"prompt.upsert",item})}
     render();
   });
-  content.addEventListener("change",e=>{const cb=e.target.closest("[data-toggle-task]");if(cb){const task=state.tasks.find(t=>t.id===cb.dataset.toggleTask);if(task){task.done=cb.checked;persist({id:uid(),type:"task.upsert",item:task})}render();return}const home=e.target.closest("[data-home-card]");if(home){const id=home.dataset.homeCard;state.hiddenHomeCards=home.checked?state.hiddenHomeCards.filter(x=>x!==id):[...new Set([...state.hiddenHomeCards,id])];applyHomeCards();persist({id:uid(),type:"home.set_card",card_id:id,hidden:!home.checked});return}if(e.target.id==="oddiWorkspaceStyle"){state.responseStyle=e.target.value;window.__oddiResponseStyle=state.responseStyle;persist({id:uid(),type:"style.set",style:state.responseStyle});const status=document.getElementById("oddiWorkspaceStatus");if(status)status.textContent="Preferences saved."}});
+  content.addEventListener("click",e=>{const openProject=e.target.closest("[data-open-project]");if(openProject){selectedProjectId=String(openProject.dataset.openProject||"");render();return}if(e.target.closest("[data-project-back]")){selectedProjectId="";render();return}if(e.target.closest("[data-delete-project]")){e.stopImmediatePropagation();const projectId=String(e.target.closest("[data-delete-project]").dataset.deleteProject||"");const project=state.projects.find(item=>String(item.id)===projectId);if(!project)return;if(!window.confirm(`Delete project "${project.name}"? Its chats will stay in your chat history.`))return;state.projects=state.projects.filter(item=>String(item.id)!==projectId);notifyProjectConversationsChanged();void persist({id:uid(),type:"project.delete",item_id:projectId});selectedProjectId="";render();return}});
   content.addEventListener("click",e=>{
-    const openChat=e.target.closest("[data-open-project-chat]");if(openChat){const index=chatList().findIndex(c=>String(c.id)===String(openChat.dataset.openProjectChat));if(index>=0&&typeof openConversation==="function"){close();openConversation(index)}return}
-    const link=e.target.closest("[data-link-project]");if(link){const project=state.projects.find(p=>p.id===link.dataset.linkProject),chat=activeChat();if(!chat){window.showOddiToast?.("Open a chat first, then link it to a project.","error");return}if(project){project.conversationIds=[...new Set([...(project.conversationIds||[]),String(chat.id)])];persist({id:uid(),type:"project.link",item_id:project.id,conversation_id:String(chat.id)});render()}return}
-    const unlink=e.target.closest("[data-unlink-project]");if(unlink){const project=state.projects.find(p=>p.id===unlink.dataset.unlinkProject);if(project){project.conversationIds=(project.conversationIds||[]).filter(id=>String(id)!==String(unlink.dataset.unlinkChat));persist({id:uid(),type:"project.unlink",item_id:project.id,conversation_id:unlink.dataset.unlinkChat});render()}return}
     const delProject=e.target.closest("[data-delete-project]");if(delProject){state.projects=state.projects.filter(p=>p.id!==delProject.dataset.deleteProject);persist({id:uid(),type:"project.delete",item_id:delProject.dataset.deleteProject});render();return}
     const delTask=e.target.closest("[data-delete-task]");if(delTask){state.tasks=state.tasks.filter(t=>t.id!==delTask.dataset.deleteTask);persist({id:uid(),type:"task.delete",item_id:delTask.dataset.deleteTask});render();return}
     const askTask=e.target.closest("[data-ask-task]");if(askTask){const task=state.tasks.find(t=>t.id===askTask.dataset.askTask);if(task&&composer){composer.value=`Help me make a practical plan for this next step: ${task.text}`;composer.dispatchEvent(new Event("input",{bubbles:true}));close();composer.focus()}return}
@@ -39206,6 +39404,124 @@ body.dark-mode .oddi-storage-sync-badge[data-state="retrying"],body.dark-mode .o
   }, 15000);
 })();
 </script>
+
+<style id="oddi-archived-data-section-ui">
+#settingsModal.oddi-settings-page-modal [data-settings-panel="data"] > #oddiArchivedChatsCard{grid-column:1/-1;width:100%;box-sizing:border-box;padding:18px;display:grid;gap:12px;}
+.oddi-archived-data-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+.oddi-archived-data-heading>div{display:grid;gap:5px;min-width:0;}
+.oddi-archived-data-heading>div>strong{font-size:15px;}
+.oddi-archived-data-heading small,.oddi-archived-data-meta{color:var(--settings-muted,#747887);font-size:12px;line-height:1.5;}
+.oddi-archived-data-count{flex:0 0 auto;padding:5px 10px;border:1px solid var(--settings-card-border,#dedfe5);border-radius:999px;font-size:11px;font-weight:700;}
+.oddi-archived-data-list{display:grid;}
+.oddi-archived-empty{display:grid;justify-items:center;gap:6px;padding:28px 16px;border:1px dashed var(--settings-card-border,#dedfe5);border-radius:12px;text-align:center;}
+.oddi-archived-empty-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:rgba(127,127,127,.10);font-size:18px;}
+.oddi-archived-empty strong{font-size:13px;}
+.oddi-archived-empty small{color:var(--settings-muted,#747887);font-size:11px;}
+.oddi-archived-data-row{display:flex;align-items:center;gap:12px;min-width:0;padding:11px 2px;border-top:1px solid var(--settings-card-border,#dedfe5);}
+.oddi-archived-data-row:first-child{border-top:0;}
+.oddi-archived-data-icon{display:grid;place-items:center;width:34px;height:34px;flex:0 0 34px;border:1px solid var(--settings-card-border,#dedfe5);border-radius:10px;background:rgba(127,127,127,.07);font-size:15px;}
+.oddi-archived-data-copy{display:grid;gap:3px;flex:1;min-width:0;}
+.oddi-archived-data-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:650;}
+.oddi-archived-data-meta{font-size:11px;}
+.oddi-archived-data-actions{display:flex;align-items:center;gap:7px;flex:0 0 auto;}
+.oddi-archived-data-actions button{min-height:32px;padding:0 11px;border:1px solid var(--settings-card-border,#dedfe5);border-radius:9px;background:transparent;color:inherit;font:inherit;font-size:11px;font-weight:650;cursor:pointer;}
+.oddi-archived-data-actions .oddi-archived-open{border-color:#278552;background:#278552;color:#fff;}
+.oddi-archived-data-actions button:disabled{opacity:.55;cursor:wait;}
+@media(max-width:560px){ #settingsModal.oddi-settings-page-modal [data-settings-panel="data"] > #oddiArchivedChatsCard{padding:14px!important}.oddi-archived-data-heading{align-items:flex-start;flex-direction:column}.oddi-archived-data-row{align-items:flex-start;flex-wrap:wrap}.oddi-archived-data-copy{padding-top:2px}.oddi-archived-data-actions{width:100%;padding-left:46px}.oddi-archived-data-actions button{flex:1}}
+</style>
+
+<style id="oddi-projects-workspace-and-sidebar-alignment-v1">
+/* Settings and Projects attach to the live sidebar width, including resize/collapse. */
+@media (min-width: 769px) {
+  #settingsModal.oddi-settings-page-modal,
+  #settingsModal.oddi-settings-page-modal.show {
+    left: var(--oddi-sidebar-width, 208px) !important;
+    inset-inline-start: var(--oddi-sidebar-width, 208px) !important;
+  }
+}
+
+body.oddi-project-workspace-open #oddiWorkspaceOverlay {
+  position: fixed !important;
+  inset: 0 0 0 var(--oddi-sidebar-width, 208px) !important;
+  inset-inline-start: var(--oddi-sidebar-width, 208px) !important;
+  display: block !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: var(--oddi-workspace-bg, #fff) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.oddi-project-workspace-open #oddiWorkspaceDialog {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+body.oddi-project-workspace-open .oddi-workspace-tabs { display: none !important; }
+body.oddi-project-workspace-open #oddiWorkspaceContent { padding: 0 !important; }
+body.oddi-project-workspace-open .oddi-workspace-sync { padding: 8px 26px !important; }
+.oddi-projects-page { min-height: 100%; box-sizing: border-box; padding: clamp(20px, 3.2vw, 46px); color: var(--oddi-workspace-fg, #171717); }
+.oddi-projects-intro { display: grid; grid-template-columns: minmax(220px, .9fr) minmax(360px, 1.1fr); align-items: end; gap: 30px; max-width: 1180px; margin: 0 auto 30px; }
+.oddi-project-eyebrow { display: block; margin-bottom: 8px; color: #298657; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+.oddi-projects-intro h3,.oddi-project-detail-head h3 { margin: 0; font-size: clamp(26px, 3vw, 36px); letter-spacing: -.035em; }
+.oddi-projects-intro p,.oddi-project-detail-head p,.oddi-project-section-head p { margin: 8px 0 0; opacity: .68; font-size: 13px; line-height: 1.55; }
+.oddi-project-create-form { display: grid; grid-template-columns: minmax(0,1fr) 148px auto; align-items: end; gap: 9px; }
+.oddi-project-create-form label { display: grid; gap: 6px; min-width: 0; font-size: 11px; font-weight: 650; opacity: .84; }
+.oddi-project-create-form input,.oddi-project-create-form select { width: 100%; min-width: 0; box-sizing: border-box; border: 1px solid var(--oddi-workspace-border, #dedede); border-radius: 11px; background: color-mix(in srgb, var(--oddi-workspace-bg, #fff) 94%, var(--oddi-workspace-fg, #111)); color: inherit; font: inherit; }
+.oddi-project-create-form input,.oddi-project-create-form select { height: 42px; padding: 0 11px; }
+.oddi-project-primary,.oddi-project-secondary,.oddi-project-back,.oddi-project-delete { min-height: 40px; border: 1px solid var(--oddi-workspace-border, #dedede); border-radius: 11px; background: transparent; color: inherit; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.oddi-project-primary { padding: 0 15px; border-color: #278552; background: #278552; color: #fff; white-space: nowrap; }
+.oddi-project-primary:hover { background: #1f7045; }
+.oddi-project-secondary { min-height: 36px; padding: 0 12px; }
+.oddi-project-secondary:hover,.oddi-project-back:hover { background: color-mix(in srgb, var(--oddi-workspace-fg, #111) 6%, transparent); }
+.oddi-project-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; max-width: 1180px; margin: 0 auto; }
+.oddi-project-card { display: flex; align-items: center; gap: 13px; min-width: 0; min-height: 82px; padding: 15px; border: 1px solid var(--oddi-workspace-border, #dedede); border-radius: 16px; background: color-mix(in srgb, var(--oddi-workspace-bg, #fff) 96%, var(--oddi-workspace-fg, #111)); color: inherit; text-align: left; cursor: pointer; }
+.oddi-project-card:hover { border-color: #278552; transform: translateY(-1px); }
+.oddi-project-card-icon { display: grid; place-items: center; width: 42px; height: 42px; flex: 0 0 42px; border-radius: 13px; background: color-mix(in srgb, #278552 16%, transparent); color: #278552; font-size: 21px; }
+.oddi-project-card-copy { display: grid; min-width: 0; gap: 5px; flex: 1; }
+.oddi-project-card-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.oddi-project-card-copy small { opacity: .63; font-size: 11px; }
+.oddi-project-card-arrow { opacity: .55; font-size: 22px; }
+.oddi-project-empty { display: grid; place-items: center; align-content: center; gap: 5px; min-height: 170px; grid-column: 1/-1; border: 1px dashed var(--oddi-workspace-border, #dedede); border-radius: 16px; text-align: center; }
+.oddi-project-empty-icon { color: #278552; font-size: 27px; }
+.oddi-project-empty p { margin: 2px 0 0; opacity: .65; font-size: 12px; }
+.oddi-project-detail { max-width: 1120px; margin: 0 auto; }
+.oddi-project-back { min-height: 34px; margin: 0 0 22px; padding: 0 11px; }
+.oddi-project-detail-head { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-bottom: 24px; border-bottom: 1px solid var(--oddi-workspace-border, #dedede); }
+.oddi-project-type { display: inline-flex; margin-bottom: 8px; padding: 4px 9px; border-radius: 999px; background: color-mix(in srgb, #278552 13%, transparent); color: #278552; font-size: 10px; font-weight: 750; }
+.oddi-project-chats { margin-top: 16px; padding: 15px; border: 1px solid var(--oddi-workspace-border, #dedede); border-radius: 16px; background: color-mix(in srgb, var(--oddi-workspace-bg, #fff) 97%, var(--oddi-workspace-fg, #111)); }
+.oddi-project-section-head h4 { margin: 0; font-size: 15px; }
+.oddi-project-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.oddi-project-new-chat { min-height: 36px; padding: 0 13px; }
+.oddi-project-detail .oddi-project-empty { min-height: 104px; }
+.oddi-project-chat-row { display: flex; align-items: center; gap: 9px; width: 100%; min-height: 54px; padding: 7px 0; border: 0; border-top: 1px solid var(--oddi-workspace-border, #dedede); border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+.oddi-project-chat-copy { display: grid; gap: 4px; flex: 1; min-width: 0; }
+.oddi-project-chat-copy strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+.oddi-project-chat-copy small { opacity: .63; font-size: 11px; }
+.oddi-project-chat-actions { display: flex; align-items: center; gap: 7px; flex: 0 0 auto; }
+.oddi-project-chat-actions button { min-height: 32px; padding: 0 10px; border: 1px solid var(--oddi-workspace-border, #dedede); border-radius: 9px; background: transparent; color: inherit; font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+.oddi-project-chat-actions button:hover { background: color-mix(in srgb, var(--oddi-workspace-fg, #111) 6%, transparent); }
+.oddi-project-chat-actions .oddi-project-chat-delete { color: #be3434; }
+.oddi-project-delete { display: block; margin: 18px 0 0 auto; padding: 0 12px; color: #be3434; }
+body.dark-mode .oddi-project-create-form input,body.dark-mode .oddi-project-create-form select { color-scheme: dark; }
+body.oddi-system-theme .oddi-project-create-form input,body.oddi-system-theme .oddi-project-create-form select { color-scheme: light dark; }
+@media (max-width: 900px) { .oddi-projects-intro { grid-template-columns: 1fr; gap: 18px; } }
+@media (max-width: 768px) {
+  body.oddi-project-workspace-open #oddiWorkspaceOverlay { inset: 0 !important; inset-inline-start: 0 !important; }
+  .oddi-projects-page { padding: 20px 15px calc(28px + env(safe-area-inset-bottom,0px)); }
+  .oddi-project-create-form { grid-template-columns: minmax(0,1fr) minmax(110px, .55fr); }
+  .oddi-project-create-form button { grid-column: 1/-1; }
+  .oddi-project-detail-head,.oddi-project-section-head { align-items: flex-start; flex-direction: column; }
+  .oddi-project-chats { padding: 14px; }
+  .oddi-project-chat-row { gap: 6px; }
+  .oddi-project-chat-actions { gap: 5px; }
+  .oddi-project-chat-actions button { padding: 0 7px; }
+}
+</style>
 
 </body>
 </html>

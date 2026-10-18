@@ -770,7 +770,7 @@ def process_message(
         try:
             user_memories = get_memory(user_id) or {}
         except Exception as memory_load_error:
-            print("⚠️ Could not load user memories:", memory_load_error)
+            print("Warning: Could not load user memories:", ascii(memory_load_error))
 
     memory_context = ""
 
@@ -985,7 +985,7 @@ def process_message(
 
     if not phase6_quota["allowed"]:
         print(
-            "⚠️ Phase 6 user quota rejected request:",
+            "Warning: Phase 6 user quota rejected request:",
             user_context.get("user_id"),
         )
         return _phase6_quota_rejection(
@@ -1051,7 +1051,7 @@ def process_message(
                 request_for_routing,
             )
         except WebResearchError as search_error:
-            print("⚠️ Live web retrieval failed:", search_error)
+            print("Warning: Live web retrieval failed:", ascii(search_error))
             return str(search_error)
 
         # The source material is already attached to the provider-neutral
@@ -1121,7 +1121,7 @@ def process_message(
 
         if candidates:
             print(
-                "🎯 Route candidates: "
+                "Route candidates: "
                 + " -> ".join(
                     (
                         f"{candidate.get('provider')}/"
@@ -1224,21 +1224,21 @@ def process_message(
 
         if phase6_usage is not None:
             print(
-                "📊 Phase 6 user usage recorded:",
+                "Phase 6 user usage recorded:",
                 f"user={user_context.get('user_id')}",
                 f"requests={phase6_usage.get('requests')}",
                 f"tokens={phase6_usage.get('tokens')}",
             )
 
         print(
-            f"✅ ODDI-AI routed to "
+            f"ODDI-AI routed to "
             f"{execution['provider']}/"
             f"{execution['model']}"
         )
 
         if execution.get("capacity_id"):
             print(
-                f"📦 Capacity: "
+                f"Capacity: "
                 f"{execution['capacity_id']}"
             )
 
@@ -1247,7 +1247,7 @@ def process_message(
     except Exception as routing_error:
         # Do not silently jump back to OpenAI. OpenAI is not part of
         # the primary ODDI provider chain.
-        print("⚠️ Routed providers failed:", routing_error)
+        print("Routed providers failed:", ascii(routing_error))
 
         # Final non-OpenAI fallback: Groq.
         try:
@@ -1302,17 +1302,17 @@ def process_message(
 
             if phase6_usage is not None:
                 print(
-                    "📊 Phase 6 user usage recorded:",
+                    "Phase 6 user usage recorded:",
                     f"user={user_context.get('user_id')}",
                     f"requests={phase6_usage.get('requests')}",
                     f"tokens={phase6_usage.get('tokens')}",
                 )
 
-            print("✅ Using Groq final fallback.")
+            print("Using Groq final fallback.")
 
             return _SourcedReply(response, sources=web_sources) if web_sources else response
 
         except Exception as groq_error:
-            print("❌ Groq final fallback failed:", groq_error)
+            print("Groq final fallback failed:", ascii(groq_error))
 
             return PROVIDER_UNAVAILABLE_RESPONSE

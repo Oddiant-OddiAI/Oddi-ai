@@ -546,6 +546,25 @@ def _create_chat_tables():
                     UNIQUE (conversation_id)
                 )
             """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS interview_sessions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                profession TEXT NOT NULL,
+                context TEXT NOT NULL DEFAULT '',
+                questions TEXT NOT NULL DEFAULT '[]',
+                answers TEXT NOT NULL DEFAULT '[]',
+                status TEXT NOT NULL DEFAULT 'in_progress',
+                formatted_answers TEXT NOT NULL DEFAULT '',
+                review TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_updated "
+            "ON interview_sessions(user_id, updated_at DESC)"
+        )
         conn.commit()
     finally:
         conn.close()
@@ -744,6 +763,161 @@ def _create_files_tables():
 # ---------------------------------------------------------------------------
 # USERS (CHAT DB)
 # ---------------------------------------------------------------------------
+
+def _decode_interview_session(value):
+    session = dict(value)
+    for key, fallback in (("questions", []), ("answers", [])):
+        raw = session.get(key)
+        if isinstance(raw, str):
+            try:
+                session[key] = json.loads(raw)
+            except (TypeError, json.JSONDecodeError):
+                session[key] = fallback
+        elif raw is None:
+            session[key] = fallback
+    return session
+
+
+def _interview_sessions_from_settings(settings):
+    sessions = settings.get("interview_sessions", []) if isinstance(settings, dict) else []
+    if not isinstance(sessions, list):
+        return []
+    return [dict(item) for item in sessions if isinstance(item, dict) and item.get("id")]
+
+
+def list_interview_sessions(user_id):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        sessions = _interview_sessions_from_settings(get_user_settings(user_id))
+        return sorted(sessions, key=lambda item: str(item.get("updated_at") or ""), reverse=True)
+
+    conn = get_db("chat")
+    try:
+        rows = _fetchall(
+            conn,
+            "SELECT * FROM interview_sessions WHERE user_id = ? ORDER BY updated_at DESC, created_at DESC",
+            (str(user_id),),
+        )
+        return [_decode_interview_session(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_interview_session(user_id, session_id):
+    session_id = str(session_id or "").strip()
+    if not session_id:
+        return None
+    if ODDI_DRIVE_CHAT_STORAGE:
+        sessions = _interview_sessions_from_settings(get_user_settings(user_id))
+        return next((item for item in sessions if str(item.get("id")) == session_id), None)
+
+    conn = get_db("chat")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT * FROM interview_sessions WHERE id = ? AND user_id = ?",
+            (session_id, str(user_id)),
+        )
+        return _decode_interview_session(row) if row else None
+    finally:
+        conn.close()
+
+
+def create_interview_session(user_id, profession, context, questions):
+    now = datetime.now(timezone.utc).isoformat(timespec="microseconds")
+    session = {
+        "id": secrets.token_urlsafe(18),
+        "profession": str(profession or "").strip()[:160],
+        "context": str(context or "").strip()[:500],
+        "questions": questions if isinstance(questions, list) else [],
+        "answers": [""] * (len(questions) if isinstance(questions, list) else 0),
+        "status": "in_progress",
+        "formatted_answers": "",
+        "review": "",
+        "created_at": now,
+        "updated_at": now,
+    }
+    if ODDI_DRIVE_CHAT_STORAGE:
+        settings = get_user_settings(user_id)
+        sessions = _interview_sessions_from_settings(settings)
+        sessions.append(session)
+        settings["interview_sessions"] = sessions
+        save_user_settings(user_id, settings)
+        return session
+
+    conn = get_db("chat")
+    try:
+        conn.execute(
+            """
+            INSERT INTO interview_sessions
+                (id, user_id, profession, context, questions, answers, status,
+                 formatted_answers, review, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                session["id"], str(user_id), session["profession"], session["context"],
+                json.dumps(session["questions"], ensure_ascii=False),
+                json.dumps(session["answers"], ensure_ascii=False), session["status"],
+                session["formatted_answers"], session["review"], now, now,
+            ),
+        )
+        conn.commit()
+        return session
+    finally:
+        conn.close()
+
+
+def update_interview_session(user_id, session_id, patch):
+    session_id = str(session_id or "").strip()
+    if not session_id or not isinstance(patch, dict):
+        return None
+    allowed = {"profession", "context", "questions", "answers", "status", "formatted_answers", "review"}
+    changes = {key: value for key, value in patch.items() if key in allowed}
+    now = datetime.now(timezone.utc).isoformat(timespec="microseconds")
+
+    if ODDI_DRIVE_CHAT_STORAGE:
+        settings = get_user_settings(user_id)
+        sessions = _interview_sessions_from_settings(settings)
+        session = next((item for item in sessions if str(item.get("id")) == session_id), None)
+        if session is None:
+            return None
+        session.update(changes)
+        session["updated_at"] = now
+        settings["interview_sessions"] = sessions
+        save_user_settings(user_id, settings)
+        return session
+
+    conn = get_db("chat")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT * FROM interview_sessions WHERE id = ? AND user_id = ?",
+            (session_id, str(user_id)),
+        )
+        if not row:
+            return None
+        session = _decode_interview_session(row)
+        session.update(changes)
+        session["updated_at"] = now
+        conn.execute(
+            """
+            UPDATE interview_sessions
+            SET profession = ?, context = ?, questions = ?, answers = ?, status = ?,
+                formatted_answers = ?, review = ?, updated_at = ?
+            WHERE id = ? AND user_id = ?
+            """,
+            (
+                str(session.get("profession") or "")[:160], str(session.get("context") or "")[:500],
+                json.dumps(session.get("questions") if isinstance(session.get("questions"), list) else [], ensure_ascii=False),
+                json.dumps(session.get("answers") if isinstance(session.get("answers"), list) else [], ensure_ascii=False),
+                str(session.get("status") or "in_progress")[:32],
+                str(session.get("formatted_answers") or ""), str(session.get("review") or ""), now,
+                session_id, str(user_id),
+            ),
+        )
+        conn.commit()
+        return session
+    finally:
+        conn.close()
 
 def create_user(username, email, password_hash):
     if ODDI_DRIVE_CHAT_STORAGE:
@@ -964,6 +1138,7 @@ def delete_user_record(user_id):
 
     conn = get_db("chat")
     try:
+        conn.execute("DELETE FROM interview_sessions WHERE user_id = ?", (str(user_id),))
         conn.execute("DELETE FROM user_settings WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()

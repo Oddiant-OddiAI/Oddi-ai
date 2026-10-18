@@ -87,6 +87,10 @@ from app.database import (
     get_memory_extraction_status,
     clear_memory_extraction_queue,
     recover_stale_memory_claims,
+    create_interview_session,
+    list_interview_sessions,
+    get_interview_session,
+    update_interview_session,
 )
 from app.google_drive_storage import (
     DriveStorageError,
@@ -95,6 +99,14 @@ from app.google_drive_storage import (
 )
 
 from app.engine import process_message
+from app.interview_studio import (
+    InterviewStudioError,
+    generate_alternate_question,
+    generate_interview_answer,
+    generate_interview_answer_set,
+    generate_question_set,
+    review_interview_answers,
+)
 from app.attachments import MAX_UPLOAD_BYTES
 from app.config import client
 from app.fast_responses import fast_response
@@ -637,13 +649,26 @@ async def start_bin_retention_cleanup():
                             await asyncio.sleep(retry_delay)
                             retry_delay = min(retry_delay * 2, 300)
                             continue
-                        logger.exception("Laptop to Google Drive chat sync failed; it will retry")
+                        if "temporarily unreachable" in message or "temporarily unavailable" in message:
+                            logger.warning(
+                                "Laptop to Google Drive sync is waiting for network access; "
+                                "local chats remain saved. Retrying in %s seconds.",
+                                retry_delay,
+                            )
+                        else:
+                            logger.error("Laptop to Google Drive chat sync failed: %s", error)
                     except Exception:
                         logger.exception("Laptop to Google Drive chat sync failed; it will retry")
+                        await asyncio.sleep(retry_delay)
+                        retry_delay = min(retry_delay * 2, 300)
+                        continue
                     else:
                         auth_failure_reported = False
                         retry_delay = 30
-                    await asyncio.sleep(30)
+                        await asyncio.sleep(30)
+                        continue
+                    await asyncio.sleep(retry_delay)
+                    retry_delay = min(retry_delay * 2, 300)
 
             app.state.drive_sync_task = asyncio.create_task(sync_laptop_chats())
 
@@ -1161,6 +1186,331 @@ def home(request: Request):
     return response
 
 
+@app.get("/interview-studio", response_class=HTMLResponse, name="interview_studio")
+async def interview_studio(request: Request):
+    try:
+        await require_user_id_async(request)
+    except HTTPException as error:
+        if error.status_code == 401:
+            return RedirectResponse(url="/login", status_code=303)
+        raise
+    response = render_template(request, "interview_studio.html")
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+async def _read_interview_json(request: Request):
+    try:
+        payload = await request.json()
+    except Exception as error:
+        raise HTTPException(status_code=400, detail="A valid JSON request is required.") from error
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="A valid JSON request is required.")
+    return payload
+
+
+def _interview_text(value, label: str, maximum: int, *, required: bool = True) -> str:
+    text = str(value or "").strip()
+    if required and not text:
+        raise HTTPException(status_code=400, detail=f"{label} is required.")
+    if len(text) > maximum:
+        raise HTTPException(status_code=400, detail=f"{label} is too long.")
+    return text
+
+
+def _clean_interview_questions(value):
+    if not isinstance(value, list) or len(value) != 10:
+        raise HTTPException(status_code=400, detail="An interview must contain exactly 10 questions.")
+    questions = []
+    for item in value:
+        if not isinstance(item, dict):
+            raise HTTPException(status_code=400, detail="An interview question is invalid.")
+        question_type = str(item.get("type") or "written").strip().casefold()
+        if question_type not in {"written", "multiple_choice"}:
+            raise HTTPException(status_code=400, detail="An interview question type is invalid.")
+        question = _interview_text(item.get("question"), "Question", 700)
+        options = item.get("options") if isinstance(item.get("options"), list) else []
+        if question_type == "multiple_choice":
+            if len(options) != 4:
+                raise HTTPException(status_code=400, detail="Each multiple-choice question needs four options.")
+            options = [_interview_text(option, "Choice", 240) for option in options]
+        else:
+            options = []
+        questions.append({"type": question_type, "question": question, "options": options})
+    return questions
+
+
+def _interview_session_summary(session):
+    questions = session.get("questions") if isinstance(session.get("questions"), list) else []
+    answers = session.get("answers") if isinstance(session.get("answers"), list) else []
+    answered_count = sum(bool(str(answer or "").strip()) for answer in answers)
+    return {
+        "id": str(session.get("id") or ""),
+        "profession": str(session.get("profession") or "Interview practice"),
+        "status": str(session.get("status") or "in_progress"),
+        "has_review": bool(session.get("review")),
+        "answered_count": answered_count,
+        "question_count": len(questions),
+        "created_at": session.get("created_at"),
+        "updated_at": session.get("updated_at"),
+    }
+
+
+@app.get("/api/interview/sessions", name="api_interview_sessions")
+async def api_interview_sessions(request: Request):
+    user_id = await require_user_id_async(request)
+    sessions = await run_in_threadpool(list_interview_sessions, str(user_id))
+    return JSONResponse(
+        {"sessions": [_interview_session_summary(session) for session in sessions]},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.get("/api/interview/sessions/{session_id}", name="api_interview_session")
+async def api_interview_session(request: Request, session_id: str):
+    user_id = await require_user_id_async(request)
+    session = await run_in_threadpool(get_interview_session, str(user_id), session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="That practice session could not be found.")
+    return JSONResponse({"session": session}, headers={"Cache-Control": "no-store"})
+
+
+@app.patch("/api/interview/sessions/{session_id}", name="api_update_interview_session")
+async def api_update_interview_session(request: Request, session_id: str):
+    user_id = await require_user_id_async(request)
+    payload = await _read_interview_json(request)
+    if len(session_id) > 100:
+        raise HTTPException(status_code=400, detail="Practice session ID is invalid.")
+    questions = _clean_interview_questions(payload.get("questions"))
+    raw_answers = payload.get("answers")
+    if not isinstance(raw_answers, list) or len(raw_answers) != 10:
+        raise HTTPException(status_code=400, detail="Every question needs an answer slot.")
+    answers = [_interview_text(answer, "Answer", 10000, required=False) for answer in raw_answers]
+    if sum(map(len, answers)) > 100000:
+        raise HTTPException(status_code=400, detail="The combined answers are too long to save.")
+    session = await run_in_threadpool(
+        update_interview_session,
+        str(user_id),
+        session_id,
+        {
+            "questions": questions,
+            "answers": answers,
+            "status": "in_progress",
+            "formatted_answers": "",
+            "review": "",
+        },
+    )
+    if not session:
+        raise HTTPException(status_code=404, detail="That practice session could not be found.")
+    return JSONResponse({"session": _interview_session_summary(session)}, headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/interview/questions", name="api_interview_questions")
+async def api_interview_questions(request: Request):
+    user_id = await require_user_id_async(request)
+    payload = await _read_interview_json(request)
+    profession = _interview_text(payload.get("profession"), "Profession", 160)
+    context = _interview_text(payload.get("context"), "Role details", 500, required=False)
+    email = str(request.session.get("email") or "")
+    try:
+        result = await run_in_threadpool(
+            generate_question_set,
+            str(user_id),
+            email,
+            profession,
+            context,
+        )
+        if isinstance(result.get("questions"), list) and len(result["questions"]) == 10:
+            try:
+                session = await run_in_threadpool(
+                    create_interview_session,
+                    str(user_id),
+                    profession,
+                    context,
+                    result["questions"],
+                )
+                result["session_id"] = session["id"]
+            except Exception:
+                logger.exception("Interview Studio generated questions but could not save the practice session.")
+                result["session_error"] = "Questions were created, but this practice could not be saved."
+        return JSONResponse(result, headers={"Cache-Control": "no-store"})
+    except InterviewStudioError as error:
+        return JSONResponse({"error": str(error)}, status_code=502, headers={"Cache-Control": "no-store"})
+    except Exception:
+        logger.exception("Interview Studio question generation failed.")
+        return JSONResponse(
+            {"error": "ODDI couldn't generate this interview right now. Please try again."},
+            status_code=503,
+            headers={"Cache-Control": "no-store"},
+        )
+
+
+@app.post("/api/interview/question", name="api_interview_alternate_question")
+async def api_interview_alternate_question(request: Request):
+    user_id = await require_user_id_async(request)
+    payload = await _read_interview_json(request)
+    profession = _interview_text(payload.get("profession"), "Profession", 160)
+    context = _interview_text(payload.get("context"), "Role details", 500, required=False)
+    excluded = payload.get("existing_questions")
+    if not isinstance(excluded, list):
+        excluded = []
+    excluded = [str(item).strip()[:700] for item in excluded[:20] if str(item).strip()]
+    email = str(request.session.get("email") or "")
+    try:
+        question = await run_in_threadpool(
+            generate_alternate_question,
+            str(user_id),
+            email,
+            profession,
+            context,
+            excluded,
+        )
+        return JSONResponse({"question": question}, headers={"Cache-Control": "no-store"})
+    except InterviewStudioError as error:
+        return JSONResponse({"error": str(error)}, status_code=502, headers={"Cache-Control": "no-store"})
+    except Exception:
+        logger.exception("Interview Studio alternate question generation failed.")
+        return JSONResponse(
+            {"error": "ODDI couldn't create a different question right now. Please try again."},
+            status_code=503,
+            headers={"Cache-Control": "no-store"},
+        )
+
+
+@app.post("/api/interview/answer", name="api_interview_answer")
+async def api_interview_answer(request: Request):
+    user_id = await require_user_id_async(request)
+    payload = await _read_interview_json(request)
+    profession = _interview_text(payload.get("profession"), "Profession", 160)
+    context = _interview_text(payload.get("context"), "Role details", 500, required=False)
+    question = _interview_text(payload.get("question"), "Question", 700)
+    question_type = str(payload.get("question_type") or "written").strip().casefold()
+    if question_type not in {"written", "multiple_choice"}:
+        raise HTTPException(status_code=400, detail="Question type is invalid.")
+    raw_options = payload.get("options")
+    options = []
+    if question_type == "multiple_choice":
+        if not isinstance(raw_options, list) or len(raw_options) != 4:
+            raise HTTPException(status_code=400, detail="A multiple-choice question needs four options.")
+        options = [_interview_text(option, "Choice", 240) for option in raw_options]
+
+    email = str(request.session.get("email") or "")
+    try:
+        answer = await run_in_threadpool(
+            generate_interview_answer,
+            str(user_id),
+            email,
+            profession,
+            context,
+            question,
+            question_type,
+            options,
+        )
+        return JSONResponse({"answer": answer}, headers={"Cache-Control": "no-store"})
+    except InterviewStudioError as error:
+        return JSONResponse({"error": str(error)}, status_code=502, headers={"Cache-Control": "no-store"})
+    except Exception:
+        logger.exception("Interview Studio sample answer generation failed.")
+        return JSONResponse(
+            {"error": "ODDI couldn't prepare this sample answer right now. Please try again."},
+            status_code=503,
+            headers={"Cache-Control": "no-store"},
+        )
+
+
+@app.post("/api/interview/answers", name="api_interview_answers")
+async def api_interview_answers(request: Request):
+    user_id = await require_user_id_async(request)
+    payload = await _read_interview_json(request)
+    profession = _interview_text(payload.get("profession"), "Profession", 160)
+    context = _interview_text(payload.get("context"), "Role details", 500, required=False)
+    questions = _clean_interview_questions(payload.get("questions"))
+    email = str(request.session.get("email") or "")
+    try:
+        answers = await run_in_threadpool(
+            generate_interview_answer_set,
+            str(user_id),
+            email,
+            profession,
+            context,
+            questions,
+        )
+        return JSONResponse(
+            {"answers": answers},
+            headers={"Cache-Control": "no-store"},
+        )
+    except InterviewStudioError as error:
+        return JSONResponse({"error": str(error)}, status_code=502, headers={"Cache-Control": "no-store"})
+    except Exception:
+        logger.exception("Interview Studio full sample answer generation failed.")
+        return JSONResponse(
+            {"error": "ODDI couldn't answer all 10 questions right now. Please try again."},
+            status_code=503,
+            headers={"Cache-Control": "no-store"},
+        )
+
+
+@app.post("/api/interview/review", name="api_interview_review")
+async def api_interview_review(request: Request):
+    user_id = await require_user_id_async(request)
+    payload = await _read_interview_json(request)
+    profession = _interview_text(payload.get("profession"), "Profession", 160)
+    session_id = _interview_text(payload.get("session_id"), "Practice session", 100, required=False)
+    if session_id:
+        existing_session = await run_in_threadpool(get_interview_session, str(user_id), session_id)
+        if not existing_session:
+            raise HTTPException(status_code=404, detail="That practice session could not be found.")
+    raw_answers = payload.get("answers")
+    if not isinstance(raw_answers, list) or len(raw_answers) != 10:
+        raise HTTPException(status_code=400, detail="Answer all 10 questions before submitting.")
+
+    answers = []
+    for answer in raw_answers:
+        if not isinstance(answer, dict):
+            raise HTTPException(status_code=400, detail="Every interview answer must include its question and answer.")
+        question = _interview_text(answer.get("question"), "Question", 700)
+        response = _interview_text(answer.get("answer"), "Answer", 10000)
+        answers.append({"question": question, "answer": response})
+
+    if sum(len(item["question"]) + len(item["answer"]) for item in answers) > 50000:
+        raise HTTPException(status_code=400, detail="The combined answers are too long to review.")
+
+    email = str(request.session.get("email") or "")
+    try:
+        formatted_answers, review = await run_in_threadpool(
+            review_interview_answers,
+            str(user_id),
+            email,
+            profession,
+            answers,
+        )
+        if session_id:
+            updated_session = await run_in_threadpool(
+                update_interview_session,
+                str(user_id),
+                session_id,
+                {
+                    "answers": [item["answer"] for item in answers],
+                    "formatted_answers": formatted_answers,
+                    "review": review,
+                    "status": "completed",
+                },
+            )
+            if not updated_session:
+                raise HTTPException(status_code=404, detail="That practice session could not be found.")
+        return JSONResponse(
+            {"session_id": session_id or None, "formatted_answers": formatted_answers, "review": review},
+            headers={"Cache-Control": "no-store"},
+        )
+    except Exception:
+        logger.exception("Interview Studio answer review failed.")
+        return JSONResponse(
+            {"error": "ODDI couldn't review these answers right now. Please try again."},
+            status_code=503,
+            headers={"Cache-Control": "no-store"},
+        )
+
+
 @app.get("/login", response_class=HTMLResponse, name="login_page")
 def login_page(request: Request):
     return render_template(request, "login.html")
@@ -1662,11 +2012,18 @@ def _workspace_operation_result(user_id, operation):
             values = workspace[collection]
             for index, existing in enumerate(values):
                 if isinstance(existing, dict) and str(existing.get("id")) == value_id:
-                    if collection == "projects" and isinstance(existing.get("conversationIds"), list) and not isinstance(value.get("conversationIds"), list):
-                        value["conversationIds"] = existing["conversationIds"]
+                    if collection == "projects":
+                        value = {**existing, **value}
+                        # Project memory was removed from the feature; purge its legacy field on edits.
+                        value.pop("context", None)
+                        if not isinstance(value.get("conversationIds"), list):
+                            value["conversationIds"] = existing.get("conversationIds", [])
                     values[index] = value
                     break
             else:
+                if collection == "projects":
+                    value.setdefault("conversationIds", [])
+                    value.setdefault("type", "general")
                 if collection == "tasks":
                     values.insert(0, value)
                 else:
@@ -1683,7 +2040,12 @@ def _workspace_operation_result(user_id, operation):
                 field, maximum = limits[kind.split(".", 1)[0]]
                 value = {"id": str(item.get("id") or ""), field: str(item.get(field) or "").strip()[:maximum]}
                 if kind == "project.upsert":
-                    value["conversationIds"] = [str(x) for x in item.get("conversationIds", []) if x][:500] if isinstance(item.get("conversationIds", []), list) else []
+                    if isinstance(item.get("conversationIds"), list):
+                        value["conversationIds"] = [str(x) for x in item.get("conversationIds", []) if x][:500]
+                    if "type" in item:
+                        project_type = str(item.get("type") or "general").strip().casefold()
+                        if project_type in {"general", "job_search", "study", "build", "personal"}:
+                            value["type"] = project_type
                 elif kind == "task.upsert":
                     value.update({"done": bool(item.get("done")), "chatTitle": str(item.get("chatTitle") or "")[:120]})
                 else:

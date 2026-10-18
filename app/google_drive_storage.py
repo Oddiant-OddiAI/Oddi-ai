@@ -7,6 +7,7 @@ import logging
 import os
 import re
 import secrets
+import socket
 import sqlite3
 import threading
 import time
@@ -65,6 +66,22 @@ _DRIVE_READ_POOL = ThreadPoolExecutor(
 
 class DriveStorageError(RuntimeError):
     """A safe-to-log Drive configuration or API error."""
+
+
+def ensure_google_api_dns():
+    """Fail fast when Google OAuth or Drive hosts cannot be resolved."""
+    for host in ("oauth2.googleapis.com", "www.googleapis.com"):
+        try:
+            socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+        except OSError as exc:
+            logger.warning(
+                "Google Drive sync paused because %s could not be resolved (error_type=%s)",
+                host,
+                type(exc).__name__,
+            )
+            raise DriveStorageError(
+                "Google Drive is temporarily unreachable. Local chats remain saved; sync will retry."
+            ) from exc
 
 
 def _clean_env(name):
@@ -428,6 +445,14 @@ def _read_json_file_meta(meta):
     except DriveStorageError:
         raise
     except Exception as exc:
+        if _is_retryable_drive_error(exc):
+            logger.warning(
+                "Google Drive file download is temporarily unavailable (error_type=%s)",
+                type(exc).__name__,
+            )
+            raise DriveStorageError(
+                "Google Drive is temporarily unreachable. Local chats remain saved; sync will retry."
+            ) from exc
         logger.exception("Could not read Drive JSON file %s", meta.get("name", "<unknown>"))
         raise DriveStorageError("A stored Google Drive data file could not be read.") from exc
     finally:
@@ -788,6 +813,9 @@ def _all_conversations(user_id):
     ]
     if not chat_files:
         return []
+    # Avoid launching a batch of parallel media downloads when Google's API
+    # hosts cannot be reached from this laptop.
+    ensure_google_api_dns()
     # Chat files are independent. Bounded parallel downloads avoid a
     # many-minute serial wait for accounts with a large history.
     return [
