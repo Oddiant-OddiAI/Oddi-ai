@@ -1253,3 +1253,268 @@ body.oddi-system-theme.dark-mode .oddi-rs-menu.oddi-rs-menu-portal {
   pointer-events: auto;
   transform: none;
 }
+
+/* Mobile drawer: use one calm chat-row style for pinned and regular chats. */
+@media (max-width: 768px) {
+  body.dark-mode #oddi-react-sidebar-root,
+  body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
+    --rs-bg: #111815;
+    --rs-surface: #171f1a;
+    --rs-hover: #202a23;
+    --rs-active: #202a23;
+    --rs-border: #2a352d;
+    --rs-text: #eff4ef;
+    --rs-muted: #a9b2ac;
+    --rs-dim: #7f8b83;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-sidebar {
+    width: min(180px, 86vw) !important;
+    border-right-color: var(--rs-border) !important;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, .24) !important;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-header {
+    height: 50px;
+    flex-basis: 50px;
+    padding: 0 9px 0 11px;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-brand { gap: 7px; }
+  #oddi-react-sidebar-root .oddi-rs-brand img {
+    width: 22px !important;
+    height: 22px !important;
+    flex-basis: 22px !important;
+    padding: 3px !important;
+    border: 1px solid color-mix(in srgb, var(--rs-accent) 32%, var(--rs-border)) !important;
+    border-radius: 8px !important;
+    background: color-mix(in srgb, var(--rs-accent) 12%, var(--rs-surface)) !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-brand span { font-size: 13px; }
+  #oddi-react-sidebar-root .oddi-rs-mobile-close {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    color: var(--rs-muted);
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-main { padding: 8px 9px 6px; }
+  #oddi-react-sidebar-root .oddi-rs-new {
+    height: 42px;
+    flex-basis: 42px;
+    justify-content: flex-start;
+    padding: 0 12px;
+    border-color: var(--rs-border);
+    border-radius: 12px;
+    background: var(--rs-surface);
+    color: var(--rs-text);
+    font-size: 11px;
+  }
+  #oddi-react-sidebar-root .oddi-rs-new:hover {
+    background: var(--rs-hover);
+    color: var(--rs-text);
+  }
+  #oddi-react-sidebar-root .oddi-rs-search {
+    height: 36px;
+    flex-basis: 36px;
+    margin: 8px 0 7px;
+    padding: 0 10px;
+    border-radius: 11px;
+  }
+  #oddi-react-sidebar-root .oddi-rs-search input { font-size: 10px; }
+  #oddi-react-sidebar-root .oddi-rs-history { padding: 2px 1px 6px; }
+  #oddi-react-sidebar-root .oddi-rs-group { margin: 0 0 7px; }
+  #oddi-react-sidebar-root .oddi-rs-label {
+    padding: 5px 5px 3px;
+    font-size: 8px;
+    letter-spacing: .12em;
+  }
+  #oddi-react-sidebar-root .oddi-rs-chat {
+    min-height: 34px;
+    gap: 7px;
+    margin: 1px 0;
+    padding: 0 7px;
+    border-radius: 8px;
+    font-size: 10.5px;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-pinned-group {
+    margin: 0 0 7px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-pinned-group::after { display: none !important; }
+  #oddi-react-sidebar-root .oddi-rs-pinned-group .oddi-rs-label { padding: 5px 5px 3px; }
+  #oddi-react-sidebar-root .oddi-rs-pinned-count { display: none !important; }
+
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned {
+    width: 100%;
+    min-height: 34px !important;
+    display: flex;
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 7px;
+    margin: 1px 0 !important;
+    padding: 0 7px !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned > svg {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    color: var(--rs-muted) !important;
+    opacity: 1 !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned .oddi-rs-title-glass {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+  }
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned .oddi-rs-title-glass > span {
+    display: block !important;
+    overflow: hidden;
+    white-space: nowrap !important;
+    text-overflow: ellipsis !important;
+    overflow-wrap: normal !important;
+    line-height: 1.25 !important;
+    font-size: 10.5px !important;
+    -webkit-line-clamp: unset !important;
+    line-clamp: unset !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned:not(.active):not(.selected) {
+    color: var(--rs-muted) !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned:hover,
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned:focus-within {
+    background: var(--rs-hover) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned.active:not(.selected) {
+    background: var(--rs-active) !important;
+    border-color: var(--rs-border) !important;
+    box-shadow: inset 2px 0 var(--rs-text) !important;
+    color: var(--rs-text) !important;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned:not(.selecting):hover .oddi-rs-actions,
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned:not(.selecting):focus-within .oddi-rs-actions,
+  #oddi-react-sidebar-root .oddi-rs-chat.pinned.active:not(.selecting) .oddi-rs-actions {
+    position: static !important;
+    inset: auto !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    transform: none !important;
+  }
+
+  #oddi-react-sidebar-root .oddi-rs-nav {
+    gap: 2px;
+    padding: 7px 0 4px;
+    margin-top: 5px;
+  }
+  #oddi-react-sidebar-root .oddi-rs-nav button {
+    height: 34px;
+    min-height: 34px !important;
+    padding: 0 8px !important;
+    border-radius: 9px !important;
+    font-size: 11px !important;
+  }
+  #oddi-react-sidebar-root .oddi-rs-install {
+    height: 34px;
+    min-height: 34px;
+    margin: 1px 0 0;
+    border-radius: 9px;
+    font-size: 10px;
+  }
+  #oddi-react-sidebar-root .oddi-rs-profile {
+    min-height: 52px !important;
+    padding: 7px 9px !important;
+  }
+}
+
+/* Pinned conversations keep their pin marker but use the regular chat-row layout. */
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-pinned-group {
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-pinned-group::after { display: none !important; }
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-pinned-count { display: none !important; }
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned {
+  width: 100% !important;
+  min-height: 34px !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  gap: 7px !important;
+  margin: 1px 0 !important;
+  padding: 0 7px !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  background: transparent !important;
+  color: var(--rs-muted) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned > svg {
+  width: 16px !important;
+  height: 16px !important;
+  flex: 0 0 16px !important;
+  color: var(--rs-muted) !important;
+  opacity: 1 !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned .oddi-rs-title-glass {
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned .oddi-rs-title-glass::before { display: none !important; }
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned .oddi-rs-title-glass > span {
+  display: block !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  text-overflow: ellipsis !important;
+  overflow-wrap: normal !important;
+  line-height: 1.25 !important;
+  font-size: 10.5px !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned:not(.active):not(.selected) { color: var(--rs-muted) !important; }
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned:hover,
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned:focus-within {
+  background: var(--rs-hover) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned.active:not(.selected) {
+  background: var(--rs-active) !important;
+  border-color: var(--rs-border) !important;
+  box-shadow: inset 2px 0 var(--rs-text) !important;
+  color: var(--rs-text) !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-chat.pinned:not(.selecting) .oddi-rs-actions {
+  position: static !important;
+  inset: auto !important;
+  flex: 0 0 auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  transform: none !important;
+}

@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 import { createPortal } from 'react-dom';
 import {
   Archive, Briefcase, ChevronLeft, ChevronRight, Download, FolderOpen, FolderKanban,
-  Home, LogOut, MessageSquare, Moon, MoreHorizontal, Pin, Plus, Search, List,
-  Settings, Sun, X, Pencil, Trash2, Menu, Monitor, Share2
+  Home, LogOut, MessageSquare, MoreHorizontal, Pin, Plus, Search, List,
+  Settings, X, Pencil, Trash2, Menu, Share2
 } from 'lucide-react';
 
 type Conversation = {
@@ -966,17 +966,6 @@ export default function Sidebar() {
     openExistingModal('settingsModal');
   }
 
-  function syncThemeViaLegacyApp() {
-    const next = theme === 'light' ? 'dark' : theme === 'dark' ? 'system' : 'light';
-    setTheme(next);
-    WIN().__oddiApplyTheme?.(next);
-    window.dispatchEvent(new CustomEvent('oddi:theme-changed', { detail: { theme: next } }));
-    const label = `${next === 'system' ? 'System' : next === 'dark' ? 'Dark' : 'Light'} mode`;
-    if (WIN().showOddiToast) WIN().showOddiToast!(`Appearance: ${label}`);
-    else if (WIN().__oddiShowToast) WIN().__oddiShowToast!(`Appearance: ${label}`);
-    else window.dispatchEvent(new CustomEvent('oddi:toast', { detail: { message: `Appearance: ${label}` } }));
-  }
-
   async function installOddi() {
     const button = document.getElementById('installBtn');
     if (button) { button.click(); return; }
@@ -1238,11 +1227,6 @@ export default function Sidebar() {
             </button>
           ))}
         </nav>
-
-        <button className="oddi-rs-theme" onClick={syncThemeViaLegacyApp} title={`Switch appearance (current: ${theme})`}>
-          {theme === 'dark' ? <Moon size={14} /> : theme === 'system' ? <Monitor size={14} /> : <Sun size={14} />}
-          {!collapsed && <span>{theme === 'dark' ? 'Dark Mode' : theme === 'system' ? 'System Mode' : 'Bright Mode'}</span>}
-        </button>
 
         {!collapsed && installReady && <button className="oddi-rs-install" onClick={installOddi}><Download size={13} />Install ODDI AI</button>}
       </main>

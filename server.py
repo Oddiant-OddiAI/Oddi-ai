@@ -107,6 +107,17 @@ from app.interview_studio import (
     generate_question_set,
     review_interview_answers,
 )
+from app.help_feedback import (
+    FeedbackCooldownError,
+    FeedbackValidationError,
+    admin_feedback_overview,
+    admin_feedback_reply,
+    is_admin_email as is_help_feedback_admin,
+    mark_replies_read as mark_help_feedback_replies_read,
+    submit_feedback as save_help_feedback_submission,
+    unread_feedback_replies as get_unread_help_feedback_replies,
+    user_feedback_state as get_help_feedback_state,
+)
 from app.attachments import MAX_UPLOAD_BYTES
 from app.config import client
 from app.fast_responses import fast_response
@@ -1907,9 +1918,131 @@ def api_auth_me(request: Request):
                 "name": user["username"],
                 "email": user["email"],
             },
+            "can_submit_feedback": True,
             "auth_provider": request.session.get("auth_provider", "password"),
         }
     )
+
+
+def _help_feedback_session_user(request: Request, *, allow_guest=False):
+    user = _get_session_user(request)
+    if not user:
+        if allow_guest:
+            return None
+        raise HTTPException(status_code=401, detail="Sign in to use feedback.")
+    # Local account lookups return sqlite3.Row, while trusted Drive sessions
+    # return a dict. Feedback handlers use .get(), so normalize both shapes.
+    keys = getattr(user, "keys", None)
+    if callable(keys):
+        return {key: user[key] for key in keys()}
+    return user
+
+
+def _require_help_feedback_admin(request: Request):
+    user = _help_feedback_session_user(request)
+    if not is_help_feedback_admin(user.get("email")):
+        raise HTTPException(status_code=403, detail="The feedback inbox is only available to the ODDI host account.")
+    return user
+
+
+@app.get("/api/help-feedback/state", name="api_help_feedback_state")
+async def api_help_feedback_state(request: Request):
+    user = await run_in_threadpool(_help_feedback_session_user, request, allow_guest=True)
+    if not user:
+        return JSONResponse({"authenticated": False, "can_submit": False, "is_admin": False, "submissions": [], "unread_replies": []})
+    browser_local = is_temporary_browser_account(request)
+    payload = {
+        "authenticated": True,
+        "can_submit": True,
+        "is_admin": is_help_feedback_admin(user.get("email")),
+        "user_email": str(user.get("email") or ""),
+        "submissions": [],
+        "cooldown_until": None,
+        "unread_replies": [],
+    }
+    if browser_local:
+        payload["account_message"] = "Feedback and replies are linked to this browser-only account. Sign in to a personal ODDI account to keep them across devices."
+    state = await run_in_threadpool(get_help_feedback_state, user["id"])
+    payload.update(state)
+    return JSONResponse(payload)
+
+
+@app.get("/api/help-feedback/notifications", name="api_help_feedback_notifications")
+async def api_help_feedback_notifications(request: Request):
+    user = await run_in_threadpool(_help_feedback_session_user, request, allow_guest=True)
+    if not user:
+        return JSONResponse({"unread_replies": []})
+    replies = await run_in_threadpool(get_unread_help_feedback_replies, user["id"])
+    return JSONResponse({"unread_replies": replies})
+
+
+@app.post("/api/help-feedback/submissions", name="api_help_feedback_submit")
+async def api_help_feedback_submit(request: Request):
+    user = await run_in_threadpool(_help_feedback_session_user, request)
+    data = await safe_json(request)
+    try:
+        submission = await run_in_threadpool(
+            save_help_feedback_submission,
+            user["id"],
+            user.get("username"),
+            user.get("email"),
+            data.get("ratings"),
+            data.get("reasons"),
+            data.get("overall_feedback"),
+        )
+    except FeedbackCooldownError as exc:
+        return JSONResponse(
+            {"error": str(exc), "cooldown_until": exc.cooldown_until},
+            status_code=429,
+        )
+    except FeedbackValidationError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except DriveStorageError as exc:
+        logger.exception("ODDI feedback could not be saved to Google Drive")
+        return JSONResponse({"error": str(exc)}, status_code=503)
+    except Exception:
+        logger.exception("ODDI feedback submission failed")
+        return JSONResponse(
+            {"error": "ODDI couldn't save your feedback. Your answers are still on this screen; please try again."},
+            status_code=500,
+        )
+    return JSONResponse({"submission": submission}, status_code=201)
+
+
+@app.get("/api/help-feedback/admin", name="api_help_feedback_admin")
+async def api_help_feedback_admin(request: Request):
+    await run_in_threadpool(_require_help_feedback_admin, request)
+    overview = await run_in_threadpool(admin_feedback_overview)
+    return JSONResponse(overview)
+
+
+@app.post("/api/help-feedback/admin/{submission_id}/replies", name="api_help_feedback_admin_reply")
+async def api_help_feedback_admin_reply(request: Request, submission_id: str):
+    host = await run_in_threadpool(_require_help_feedback_admin, request)
+    data = await safe_json(request)
+    try:
+        reply = await run_in_threadpool(
+            admin_feedback_reply,
+            submission_id,
+            data.get("target_key"),
+            data.get("body"),
+            host["id"],
+            host.get("email"),
+        )
+    except FeedbackValidationError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except LookupError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=404)
+    return JSONResponse({"reply": reply}, status_code=201)
+
+
+@app.post("/api/help-feedback/replies/read", name="api_help_feedback_replies_read")
+async def api_help_feedback_replies_read(request: Request):
+    user = await run_in_threadpool(_help_feedback_session_user, request)
+    data = await safe_json(request)
+    reply_ids = data.get("reply_ids") if isinstance(data.get("reply_ids"), list) else []
+    updated = await run_in_threadpool(mark_help_feedback_replies_read, user["id"], reply_ids[:100])
+    return JSONResponse({"updated": updated})
 
 
 @app.get("/api/settings", name="api_get_settings")

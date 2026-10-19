@@ -1105,6 +1105,49 @@ def update_account_profile(user_id, username):
     return True
 
 
+def read_help_feedback_document(user_id):
+    """Read one account's private Help & Feedback history from its Drive folder."""
+    folder_id = _account_folder(user_id)
+    if not folder_id:
+        return {"submissions": []}
+    value = _read_json_file(folder_id, "help-feedback.json")
+    if not isinstance(value, dict) or not isinstance(value.get("submissions"), list):
+        return {"submissions": []}
+    return value
+
+
+def mutate_help_feedback_document(user_id, mutator):
+    """Apply one serialized update to a signed-in account's feedback file."""
+    account_id = _account_key(user_id)
+    with _lock_for(account_id):
+        account = get_account_by_id(account_id)
+        folder_id = _account_folder(account_id)
+        if not account or not folder_id:
+            raise DriveStorageError("The signed-in account's feedback storage is unavailable.")
+        current = _read_json_file(folder_id, "help-feedback.json")
+        if not isinstance(current, dict) or not isinstance(current.get("submissions"), list):
+            current = {"submissions": []}
+        updated, result = mutator(current)
+        _write_json_file(folder_id, "help-feedback.json", updated)
+        return result
+
+
+def list_help_feedback_documents():
+    """Read feedback documents for active Drive-backed accounts."""
+    result = []
+    for account in list_accounts():
+        document = read_help_feedback_document(account.get("id"))
+        submissions = document.get("submissions", [])
+        if submissions:
+            result.append({
+                "user_id": account.get("id"),
+                "username": account.get("username") or "",
+                "user_email": account.get("email") or "",
+                "submissions": submissions,
+            })
+    return result
+
+
 def delete_account(user_id):
     folder_id = _account_folder(user_id)
     if not folder_id:

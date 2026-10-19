@@ -196,7 +196,7 @@
 
 
 <style id="remove-phone-version-final">
-@media (max-width: 768px) and (pointer: coarse) {
+@media (max-width: 768px) {
     #sidebar .oddi-sidebar-brand .oddi-sidebar-version,
     #sidebar .oddi-sidebar-brand .sidebar-version,
     #sidebar .oddi-sidebar-brand .logo-version {
@@ -306,7 +306,7 @@
 /* Mobile AI message alignment:
    Keep every ODDI response on the same left edge as the chatbox content.
    The header sits directly above the response and uses the exact same left edge. */
-@media (max-width: 768px) and (pointer: coarse) {
+@media (max-width: 768px) {
     .chatbox .bot-message,
     .chatbox .bot-message.pinned-message,
     .chatbox .bot-message.stopped-message {
@@ -2841,7 +2841,8 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261018-interview-studio-nav-1">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261019-sidebar-laptop-flat-pins-3">
+    <link rel="stylesheet" href="/static/oddi-help-feedback.css?v=20261019-3">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -4602,21 +4603,22 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         <div class="welcome-message" id="welcomeContainer">
             <h2>
                 {% if logged_in %}
-                    <span class="welcome-line">Ready to level up, {{ username }}?<span class="welcome-emoji" aria-hidden="true"> 🚀</span></span>
+                    <span class="welcome-line welcome-desktop-greeting">Ready to level up, {{ username }}?<span class="welcome-emoji" aria-hidden="true"> 🚀</span></span>
                 {% else %}
-                    <span class="welcome-line">What would you like to</span>
-                    <span class="welcome-line">work on today?</span>
+                    <span class="welcome-line welcome-desktop-greeting">What would you like to</span>
+                    <span class="welcome-line welcome-desktop-greeting">work on today?</span>
                 {% endif %}
+                <span class="welcome-line welcome-phone-greeting">Ready to level up,<br>there?</span>
             </h2>
         
         <p class="oddi-home-subtitle">Understand, create, plan, and explore — all in one place.</p>
 
         <div id="oddiSuggestionCards" class="oddi-suggestion-cards" aria-label="Quick suggestions">
-            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? I want a clear, structured explanation."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5c3.1-.9 5.8-.4 8 1.2v13c-2.2-1.6-4.9-2.1-8-1.2z"/><path d="M20 5.5c-3.1-.9-5.8-.4-8 1.2v13c2.2-1.6 4.9-2.1 8-1.2z"/></svg></span><span class="oddi-suggestion-copy"><strong>Learn a topic</strong><small>Clear, structured explanations</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="I need help writing something. Can you assist me with drafting content?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Write something</strong><small>Draft, rewrite or polish</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me plan a project from start to finish with clear milestones and tasks."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><small>Turn ideas into clear next steps</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="I have a document I'd like you to analyze. What information can you extract from it?"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Analyze a file</strong><small>Find key details and summaries</small></span></button>
-            <a href="/interview-studio" class="oddi-suggestion-card oddi-interview-launch" aria-label="Open Interview Studio"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></span><span class="oddi-suggestion-copy"><strong>Interview Studio</strong><small>Practice any profession with role-specific questions and ODDI feedback</small></span><span class="oddi-interview-arrow" aria-hidden="true">→</span></a>
+            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? Give me a clear explanation of an idea or subject."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5c3.1-.9 5.8-.4 8 1.2v13c-2.2-1.6-4.9-2.1-8-1.2z"/><path d="M20 5.5c-3.1-.9-5.8-.4-8 1.2v13c2.2-1.6 4.9-2.1 8-1.2z"/></svg></span><span class="oddi-suggestion-copy"><strong>Understand a topic</strong><small>Get a clear explanation of an idea or subject</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="Help me draft, refine, or polish something I am writing."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Draft or refine writing</strong><small>Create, refine, or polish your writing</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me turn a goal into a clear project plan with actionable steps."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><small>Turn a goal into clear, actionable steps</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="Help me set today's priorities and focus on the most important work."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Set today's priorities</strong><small>Focus on the most important work</small></span></button>
+            <a href="/interview-studio" class="oddi-suggestion-card oddi-interview-launch" aria-label="Open Interview Studio"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></span><span class="oddi-suggestion-copy"><strong>Interview Studio</strong><small><span class="interview-desktop-copy">Practice any profession with role-specific questions and ODDI feedback</span><span class="interview-phone-copy">Practice any profession with role-specific questions</span></small></span><span class="oddi-interview-arrow" aria-hidden="true">→</span></a>
         </div>
         <section id="oddiRecentSection" class="oddi-recent-work" aria-label="Recent work" hidden>
             <p id="oddiRecentHeadingText" class="oddi-recent-heading">RECENT WORK</p>
@@ -5122,6 +5124,7 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="account"><span>♙</span>Account</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="chat-preferences"><span>&#128172;</span>Chat Preference</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="memory"><span>🧠</span>Memory</button>
+        <button type="button" class="oddi-settings-nav-item" data-settings-tab="help-feedback"><span>❔</span>Help &amp; Feedback</button>
       </aside>
 
       <main class="oddi-settings-page-content">
@@ -5269,6 +5272,48 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
           <div class="oddi-memory-filters" id="oddiMemoryFilters"></div>
           <div id="oddiMemoryList" class="oddi-memory-list" aria-live="polite"><div class="oddi-memory-empty">Loading memories…</div></div>
           <div class="oddi-pref-card oddi-memory-add"><label><strong>Add a memory</strong><small>Save a fact for future conversations</small></label><div><input id="oddiMemoryNewCategory" maxlength="40" placeholder="Category (e.g. preference)"><input id="oddiMemoryNewValue" maxlength="1000" placeholder="Memory detail"><button type="button" id="oddiMemoryAddBtn" class="oddi-pref-primary">Add memory</button></div></div>
+        </section>
+
+        <section class="oddi-settings-section oddi-settings-tab oddi-pref-panel" data-settings-panel="help-feedback" id="oddiHelpFeedbackPanel">
+          <div class="oddi-settings-content-heading"><h4>Help &amp; Feedback</h4><p>Find answers, take a guided tour, or tell us how ODDI can improve.</p></div>
+          <div class="oddi-hfb-view-switch" role="tablist" aria-label="Help and feedback">
+            <button type="button" class="is-active" data-hfb-view="help" role="tab" aria-selected="true">Help</button>
+            <button type="button" data-hfb-view="feedback" role="tab" aria-selected="false">Feedback</button>
+            <button type="button" data-hfb-view="admin" role="tab" aria-selected="false" hidden>Host inbox</button>
+          </div>
+          <div class="oddi-hfb-panel" data-hfb-panel="help" role="tabpanel">
+            <section class="oddi-hfb-tutorial-card">
+              <div class="oddi-hfb-tutorial-top"><span class="oddi-hfb-eyebrow">GUIDED WALKTHROUGH</span><span class="oddi-hfb-tour-duration">20 steps · about 5 minutes</span></div>
+              <h5>Learn your way around ODDI</h5>
+              <p>A practical tour of chats, sharing and voice tools, Projects, Library, Interview Studio, and the Settings you will use most.</p>
+              <div class="oddi-hfb-tour-topics" aria-label="Tutorial topics"><span>Chats &amp; sharing</span><span>Projects &amp; files</span><span>Interview Studio</span><span>Settings &amp; feedback</span></div>
+              <div class="oddi-hfb-tutorial-action"><button type="button" class="oddi-pref-primary" id="oddiHfbStartTour">Start website tutorial <span aria-hidden="true">→</span></button><small>Read-only · Exit any time with Escape</small></div>
+            </section>
+            <label class="oddi-hfb-search-wrap"><span aria-hidden="true">⌕</span><input id="oddiHfbFaqSearch" type="search" autocomplete="off" placeholder="Search help questions" aria-label="Search help questions"></label>
+            <div id="oddiHfbFaqCategories" class="oddi-hfb-category-list"></div>
+            <div id="oddiHfbFaqList" class="oddi-hfb-faq-list" aria-live="polite"></div>
+            <div class="oddi-hfb-help-footer"><span>Still need help?</span><button type="button" data-hfb-open-feedback>Send feedback <span aria-hidden="true">→</span></button></div>
+          </div>
+          <div class="oddi-hfb-panel" data-hfb-panel="feedback" role="tabpanel" hidden>
+            <div class="oddi-hfb-feedback-heading"><div><span class="oddi-hfb-eyebrow">HELP US IMPROVE</span><h5>Your feedback matters</h5><p>Rate each part of ODDI. Your account details help the ODDI team review and reply.</p></div><span id="oddiHfbCooldownBadge" class="oddi-hfb-cooldown-badge" hidden></span></div>
+            <div id="oddiHfbFeedbackStatus" class="oddi-hfb-status" role="status" aria-live="polite"></div>
+            <div id="oddiHfbSignInGate" class="oddi-hfb-signin-gate" hidden><strong>Sign in to submit feedback</strong><p>Your account keeps the 24-hour limit and any team reply connected to you.</p><a class="oddi-pref-primary" href="/login">Sign in to ODDI</a></div>
+            <div id="oddiHfbFeedbackFormWrap" hidden>
+              <div class="oddi-hfb-survey-intro"><strong>ODDI experience survey</strong><span>Rate all 10 · 1–5 stars · 3 or less needs a reason</span></div>
+              <form id="oddiHfbFeedbackForm" novalidate>
+                <div id="oddiHfbQuestionList" class="oddi-hfb-question-list"></div>
+                <label class="oddi-hfb-overall-field" for="oddiHfbOverall"><span><strong>Anything else you would like us to know?</strong><small>Share an idea, report a problem, or tell us what is working well. Optional.</small></span><textarea id="oddiHfbOverall" maxlength="4000" rows="5" placeholder="Write your feedback here..."></textarea></label>
+                <div class="oddi-hfb-submit-row"><span id="oddiHfbSubmitHint">Rate all 10 questions. Ratings of 3 stars or less need a reason.</span><button type="submit" class="oddi-pref-primary" id="oddiHfbSubmit" disabled>Submit feedback</button></div>
+              </form>
+            </div>
+            <div id="oddiHfbHistory" class="oddi-hfb-history"></div>
+          </div>
+          <div class="oddi-hfb-panel" data-hfb-panel="admin" role="tabpanel" hidden>
+            <div class="oddi-hfb-admin-heading"><div><span class="oddi-hfb-eyebrow">HOST ONLY</span><h5>Feedback inbox</h5><p>Review account-linked feedback and reply to individual comments.</p></div><button type="button" class="oddi-pref-action" id="oddiHfbRefreshInbox">Refresh</button></div>
+            <div id="oddiHfbAdminStatus" class="oddi-hfb-status" role="status" aria-live="polite"></div>
+            <div id="oddiHfbAverages" class="oddi-hfb-averages"></div>
+            <div id="oddiHfbInbox" class="oddi-hfb-inbox"></div>
+          </div>
         </section>
 
       </main>
@@ -23842,7 +23887,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261018-interview-studio-nav-1"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261019-sidebar-theme-toggle-removed-1"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -37105,7 +37150,7 @@ body.oddi-system-theme #welcomeContainer > .oddi-home-subtitle {
   body.oddi-generation-active #oddiComposerShell .oddi-composer-field { min-height: 58px !important; }
 }
 
-@media (max-width: 360px) and (pointer: coarse) {
+@media (max-width: 360px) {
   #oddiComposerShell .oddi-composer-field { grid-template-columns: 44px minmax(0, 1fr) 44px !important; }
   #oddiComposerShell .oddi-composer-field #dictation-btn { display: none !important; }
   #oddiComposerShell .oddi-composer-field .action-button-slot { grid-column: 3 !important; }
@@ -37168,7 +37213,7 @@ body.dark-mode {
   --oddi-home-orange: #efad70;
 }
 
-@media (max-width: 768px) and (pointer: coarse) {
+@media (max-width: 768px) {
   body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) .app > .header {
     padding-right: max(var(--oddi-home-space-4), env(safe-area-inset-right, 0px)) !important;
     padding-left: max(var(--oddi-home-space-4), env(safe-area-inset-left, 0px)) !important;
@@ -37503,6 +37548,11 @@ body.dark-mode {
     margin: 0 auto var(--oddi-home-space-3) !important;
     font-size: clamp(34px, 2.8vw, 46px) !important;
     line-height: 1.08 !important;
+    text-wrap: balance !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 > .welcome-line {
+    display: block !important;
+    white-space: normal !important;
     text-wrap: balance !important;
   }
 
@@ -39521,6 +39571,692 @@ body.oddi-system-theme .oddi-project-create-form input,body.oddi-system-theme .o
   .oddi-project-chat-actions { gap: 5px; }
   .oddi-project-chat-actions button { padding: 0 7px; }
 }
+</style>
+<style id="oddi-mobile-home-ux-polish-v1">
+/* Keep the home quick actions comfortable to scan and tap on touch screens. */
+body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 12px !important;
+  text-align: center !important;
+}
+body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy {
+  flex: 0 1 56ch !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  text-align: center !important;
+}
+body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 38px !important;
+  width: 38px !important;
+  height: 38px !important;
+  margin: 0 !important;
+  border: 1px solid color-mix(in srgb, var(--oddi-home-accent, #278552) 24%, transparent) !important;
+  border-radius: 50% !important;
+  background: color-mix(in srgb, var(--oddi-home-accent, #278552) 10%, transparent) !important;
+  color: var(--oddi-home-accent, #278552) !important;
+  font-size: 20px !important;
+  line-height: 1 !important;
+}
+
+@media (max-width: 768px) {
+  body:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    padding-bottom: calc(var(--oddi-home-safe-bottom, 148px) + 20px) !important;
+    scroll-padding-top: calc(70px + env(safe-area-inset-top, 0px)) !important;
+    scroll-padding-bottom: calc(124px + env(safe-area-inset-bottom, 0px)) !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer {
+    width: min(100%, 520px) !important;
+    padding: 14px 0 8px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 {
+    width: min(100%, 17ch) !important;
+    margin-bottom: 12px !important;
+    font-size: clamp(29px, 8vw, 36px) !important;
+    line-height: 1.08 !important;
+    letter-spacing: -.045em !important;
+    text-wrap: balance !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    width: min(100%, 34ch) !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    text-wrap: balance !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards {
+    grid-template-columns: minmax(0, 1fr) !important;
+    width: min(100%, 560px) !important;
+    gap: 10px !important;
+    margin-top: 20px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card {
+    display: grid !important;
+    grid-template-columns: 44px minmax(0, 1fr) !important;
+    align-content: center !important;
+    align-items: center !important;
+    column-gap: 12px !important;
+    min-height: 76px !important;
+    padding: 13px 15px !important;
+    border-radius: 17px !important;
+    text-align: left !important;
+    touch-action: manipulation !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-icon {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    border-radius: 13px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-copy {
+    display: flex !important;
+    align-items: flex-start !important;
+    min-width: 0 !important;
+    gap: 4px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-copy > strong {
+    display: block !important;
+    overflow: visible !important;
+    font-size: 15px !important;
+    line-height: 1.3 !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-copy > small {
+    display: block !important;
+    overflow: visible !important;
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+    overflow-wrap: anywhere !important;
+    -webkit-line-clamp: unset !important;
+  }
+
+  /* Make Interview Studio read as the featured action, with its content
+     centered in the card and its arrow still easy to spot. */
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 9px !important;
+    min-height: 122px !important;
+    padding: 16px 58px !important;
+    border-color: color-mix(in srgb, var(--oddi-home-accent, #278552) 34%, var(--oddi-home-border, #292d2b)) !important;
+    background: linear-gradient(140deg, color-mix(in srgb, var(--oddi-home-accent, #278552) 11%, var(--oddi-home-surface, #111313)), var(--oddi-home-surface, #111313) 72%) !important;
+    text-align: center !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-icon {
+    width: 44px !important;
+    min-width: 44px !important;
+    height: 44px !important;
+    border-radius: 14px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy {
+    flex: 0 1 auto !important;
+    width: min(100%, 42ch) !important;
+    align-items: center !important;
+    text-align: center !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy > strong {
+    font-size: 16px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy > small {
+    max-width: 38ch !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
+    position: absolute !important;
+    top: 50% !important;
+    right: 12px !important;
+    transform: translateY(-50%) !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection {
+    width: min(100%, 560px) !important;
+    margin: 26px auto 12px !important;
+    padding-bottom: 10px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    margin: 0 2px 12px !important;
+    padding-bottom: 10px !important;
+    border-bottom: 1px solid var(--oddi-home-border, #292d2b) !important;
+    font-size: 11px !important;
+    letter-spacing: .12em !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+    min-height: 76px !important;
+    padding: 13px 15px !important;
+    border-radius: 17px !important;
+  }
+
+  /* The greeting action is part of the scrollable home flow on phones. Keep
+     it below Recent Work so it never floats over a chat card. */
+  body:has(#chatbox > #welcomeContainer) #oddiSayHello {
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    z-index: auto !important;
+    width: min(100%, 320px) !important;
+    min-height: 48px !important;
+    margin: 16px auto 0 !important;
+    padding: 0 18px !important;
+    box-sizing: border-box !important;
+  }
+
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .theme-toggle,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .header-more,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .theme-toggle > #themeBtn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .header-more > #headerMoreBtn,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher {
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+  }
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .theme-toggle,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) > .header-controls > .header-more,
+  body.oddi-phone-controls-portaled:has(#chatbox #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher {
+    flex: 0 0 48px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  body:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card {
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+    padding-right: 52px !important;
+    padding-left: 52px !important;
+  }
+}
+</style>
+<script src="/static/oddi-help-feedback.js?v=20261019-7" defer></script>
+
+<style id="oddi-rocket-inspired-phone-home-v2">
+/* Phone home layout follows the supplied reference while leaving the composer intact. */
+.welcome-phone-greeting,
+.interview-phone-copy { display: none !important; }
+@media (max-width: 768px) {
+  body:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    padding: 0 16px calc(104px + env(safe-area-inset-bottom, 0px)) !important;
+    scroll-padding-bottom: calc(86px + env(safe-area-inset-bottom, 0px)) !important;
+    background: radial-gradient(ellipse at 50% 0%, rgba(46, 147, 94, .13), transparent 62%), #edf6f1 !important;
+  }
+  body.oddi-phone-controls-portaled:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    padding-top: 58px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer {
+    width: min(100%, 520px) !important;
+    max-width: 520px !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    padding: 0 0 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    overflow: visible !important;
+    transform: none !important;
+    text-align: center !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 {
+    width: min(100%, 330px) !important;
+    max-width: 330px !important;
+    margin: 0 auto 12px !important;
+    font-size: clamp(26px, 7vw, 30px) !important;
+    line-height: 1.1 !important;
+    letter-spacing: -.035em !important;
+    text-wrap: balance !important;
+  }
+  body:has(#chatbox > #welcomeContainer) .welcome-desktop-greeting { display: none !important; }
+  body:has(#chatbox > #welcomeContainer) .welcome-phone-greeting { display: block !important; }
+  body:has(#chatbox > #welcomeContainer) .interview-desktop-copy { display: none !important; }
+  body:has(#chatbox > #welcomeContainer) .interview-phone-copy { display: inline !important; }
+
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    width: min(100%, 350px) !important;
+    max-width: 350px !important;
+    margin: 0 auto !important;
+    padding: 10px 12px !important;
+    border: 1px solid rgba(104, 132, 113, .16) !important;
+    border-radius: 15px !important;
+    background: rgba(232, 241, 234, .72) !important;
+    color: #627168 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    text-wrap: balance !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards {
+    width: min(100%, 560px) !important;
+    margin: 16px auto 0 !important;
+    gap: 10px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) {
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    column-gap: 12px !important;
+    min-height: 76px !important;
+    padding: 12px 14px !important;
+    border: 1px solid #e5eae5 !important;
+    border-radius: 18px !important;
+    background: #fff !important;
+    color: #1d2921 !important;
+    box-shadow: 0 5px 14px rgba(22, 42, 28, .07) !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-icon {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy {
+    gap: 2px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy > strong {
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+    font-weight: 750 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy > small {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    color: #748078 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-blue .oddi-suggestion-icon {
+    background: #e8f0ff !important; color: #3e6ed8 !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-purple .oddi-suggestion-icon {
+    background: #f1e9ff !important; color: #8b4fd6 !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-green .oddi-suggestion-icon {
+    background: #e4f5ec !important; color: #168957 !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-orange .oddi-suggestion-icon {
+    background: #fff0e3 !important; color: #e27628 !important;
+  }
+
+  /* Keep Interview Studio as the clear, full-width featured action. */
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-height: 108px !important;
+    padding: 14px 58px 14px 16px !important;
+    border: 1px solid #148958 !important;
+    border-radius: 19px !important;
+    background: linear-gradient(112deg, #10875a 0%, #006b45 100%) !important;
+    color: #fff !important;
+    text-align: left !important;
+    box-shadow: 0 9px 24px rgba(13, 128, 76, .26) !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-icon {
+    display: none !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    align-items: flex-start !important;
+    gap: 7px !important;
+    text-align: left !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy > strong {
+    display: inline-flex !important;
+    align-items: center !important;
+    min-height: 20px !important;
+    padding: 3px 9px !important;
+    border-radius: 999px !important;
+    background: #d7f275 !important;
+    color: #223b17 !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+    letter-spacing: .01em !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy > small {
+    display: block !important;
+    max-width: 34ch !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+    line-height: 1.25 !important;
+    opacity: 1 !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
+    position: absolute !important;
+    top: 50% !important;
+    right: 12px !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    border: 1px solid rgba(255, 255, 255, .22) !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, .13) !important;
+    color: #fff !important;
+    font-size: 19px !important;
+    transform: translateY(-50%) !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection {
+    width: min(100%, 560px) !important;
+    display: none !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #oddiRecentSection .oddi-recent-heading {
+    margin-bottom: 8px !important;
+    font-size: 10px !important;
+  }
+  body:has(#chatbox > #welcomeContainer) #welcomeContainer > #oddiSayHello {
+    display: none !important;
+  }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer) #chatbox.chatbox,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    background: radial-gradient(ellipse at 50% 0%, rgba(30, 103, 68, .22), transparent 60%), #07110c !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    border-color: #24352b !important;
+    background: #101b15 !important;
+    color: #a8b6ad !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch),
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) {
+    border-color: #26372d !important;
+    background: #111b16 !important;
+    color: #f3f6f3 !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .2) !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy > small,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy > small {
+    color: #a8b3ac !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-blue .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-blue .oddi-suggestion-icon {
+    background: #1b2a42 !important; color: #9abaff !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-purple .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-purple .oddi-suggestion-icon {
+    background: #302344 !important; color: #d0a7ff !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-green .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-green .oddi-suggestion-icon {
+    background: #193a2b !important; color: #88d8ad !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-orange .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .suggestion-orange .oddi-suggestion-icon {
+    background: #422c1c !important; color: #ffc18f !important;
+  }
+}
+</style>
+
+<style id="oddi-phone-home-reference-match-v3">
+/* The phone preview keeps the reference's home layout. The composer styles stay owned by the existing composer layer. */
+@media (max-width: 768px) {
+  html:has(#chatbox > #welcomeContainer),
+  body:has(#chatbox > #welcomeContainer) {
+    min-width: 0 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) .app {
+    width: 100% !important;
+    max-width: 100vw !important;
+    max-width: 100dvw !important;
+  }
+
+  #chatbox.chatbox:has(> #welcomeContainer) {
+    padding: 0 16px calc(104px + env(safe-area-inset-bottom, 0px)) !important;
+    background: #f5f8f5 !important;
+  }
+
+  #welcomeContainer {
+    width: min(100%, 520px) !important;
+    max-width: 520px !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 auto !important;
+    padding: 0 0 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    overflow: visible !important;
+    transform: none !important;
+    text-align: center !important;
+  }
+
+  #welcomeContainer > h2 {
+    width: min(100%, 330px) !important;
+    max-width: 330px !important;
+    margin: 0 auto 12px !important;
+    font-size: clamp(26px, 7vw, 30px) !important;
+    line-height: 1.1 !important;
+    letter-spacing: -.035em !important;
+    text-wrap: balance !important;
+  }
+
+  #welcomeContainer .welcome-desktop-greeting { display: none !important; }
+  #welcomeContainer .welcome-phone-greeting { display: block !important; }
+  #welcomeContainer .interview-desktop-copy { display: none !important; }
+  #welcomeContainer .interview-phone-copy { display: inline !important; }
+
+  #welcomeContainer > .oddi-home-subtitle {
+    width: min(100%, 350px) !important;
+    max-width: 350px !important;
+    margin: 0 auto !important;
+    padding: 10px 12px !important;
+    border: 1px solid #e8eee9 !important;
+    border-radius: 15px !important;
+    background: #eef4ef !important;
+    color: #647168 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    text-wrap: balance !important;
+  }
+
+  #oddiSuggestionCards {
+    width: min(100%, 560px) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    margin: 16px auto 0 !important;
+    gap: 10px !important;
+  }
+
+  #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) {
+    grid-template-columns: 42px minmax(0, 1fr) !important;
+    column-gap: 12px !important;
+    min-height: 76px !important;
+    padding: 12px 14px !important;
+    border: 1px solid #e5eae5 !important;
+    border-radius: 18px !important;
+    background: #fff !important;
+    color: #1d2921 !important;
+    box-shadow: 0 5px 14px rgba(22, 42, 28, .07) !important;
+  }
+
+  #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-icon {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    border-radius: 14px !important;
+  }
+
+  #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy > strong {
+    font-size: 14px !important;
+    line-height: 1.25 !important;
+    font-weight: 750 !important;
+  }
+
+  #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy > small {
+    font-size: 11px !important;
+    line-height: 1.35 !important;
+    color: #748078 !important;
+  }
+
+  #oddiSuggestionCards > .suggestion-blue .oddi-suggestion-icon { background: #e8f0ff !important; color: #3e6ed8 !important; }
+  #oddiSuggestionCards > .suggestion-purple .oddi-suggestion-icon { background: #f1e9ff !important; color: #8b4fd6 !important; }
+  #oddiSuggestionCards > .suggestion-green .oddi-suggestion-icon { background: #e4f5ec !important; color: #168957 !important; }
+  #oddiSuggestionCards > .suggestion-orange .oddi-suggestion-icon { background: #fff0e3 !important; color: #e27628 !important; }
+
+  #oddiSuggestionCards > .oddi-interview-launch {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-height: 108px !important;
+    padding: 14px 58px 14px 16px !important;
+    border: 1px solid #148958 !important;
+    border-radius: 19px !important;
+    background: linear-gradient(112deg, #10875a 0%, #006b45 100%) !important;
+    color: #fff !important;
+    text-align: left !important;
+    box-shadow: 0 9px 24px rgba(13, 128, 76, .26) !important;
+  }
+
+  #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-icon { display: none !important; }
+  #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    align-items: flex-start !important;
+    gap: 7px !important;
+    text-align: left !important;
+  }
+  #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy > strong {
+    display: inline-flex !important;
+    align-items: center !important;
+    min-height: 20px !important;
+    padding: 3px 9px !important;
+    border-radius: 999px !important;
+    background: #d7f275 !important;
+    color: #223b17 !important;
+    font-size: 10px !important;
+    line-height: 1 !important;
+  }
+  #oddiSuggestionCards > .oddi-interview-launch > .oddi-suggestion-copy > small {
+    display: block !important;
+    max-width: 34ch !important;
+    color: #fff !important;
+    font-size: 13px !important;
+    font-weight: 750 !important;
+    line-height: 1.25 !important;
+    opacity: 1 !important;
+  }
+  #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
+    position: absolute !important;
+    top: 50% !important;
+    right: 12px !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 38px !important;
+    height: 38px !important;
+    border: 1px solid rgba(255, 255, 255, .22) !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, .13) !important;
+    color: #fff !important;
+    font-size: 19px !important;
+    transform: translateY(-50%) !important;
+  }
+
+  #oddiRecentSection,
+  #oddiSayHello,
+  #oddiAccuracyNote { display: none !important; }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer),
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) {
+    background: #07110c !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) .app,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) .app,
+  body.dark-mode #chatbox.chatbox:has(> #welcomeContainer),
+  body.oddi-system-theme.dark-mode #chatbox.chatbox:has(> #welcomeContainer) {
+    background: radial-gradient(ellipse at 50% 0%, rgba(30, 103, 68, .22), transparent 60%), #07110c !important;
+  }
+  body.dark-mode #welcomeContainer > .oddi-home-subtitle,
+  body.oddi-system-theme.dark-mode #welcomeContainer > .oddi-home-subtitle {
+    border-color: #24352b !important;
+    background: #101b15 !important;
+    color: #a8b6ad !important;
+  }
+  body.dark-mode #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch),
+  body.oddi-system-theme.dark-mode #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) {
+    border-color: #26372d !important;
+    background: #111b16 !important;
+    color: #f3f6f3 !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, .2) !important;
+  }
+  body.dark-mode #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy > small,
+  body.oddi-system-theme.dark-mode #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-copy > small {
+    color: #a8b3ac !important;
+  }
+  body.dark-mode #oddiSuggestionCards > .suggestion-blue .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode #oddiSuggestionCards > .suggestion-blue .oddi-suggestion-icon { background: #1b2a42 !important; color: #9abaff !important; }
+  body.dark-mode #oddiSuggestionCards > .suggestion-purple .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode #oddiSuggestionCards > .suggestion-purple .oddi-suggestion-icon { background: #302344 !important; color: #d0a7ff !important; }
+  body.dark-mode #oddiSuggestionCards > .suggestion-green .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode #oddiSuggestionCards > .suggestion-green .oddi-suggestion-icon { background: #193a2b !important; color: #88d8ad !important; }
+  body.dark-mode #oddiSuggestionCards > .suggestion-orange .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode #oddiSuggestionCards > .suggestion-orange .oddi-suggestion-icon { background: #422c1c !important; color: #ffc18f !important; }
+}
+</style>
+
+<style id="oddi-laptop-home-polish-v1">
+  /* Keep the greeting action out of the home screen. */
+  #oddiSayHello { display: none !important; }
+
+  /* Keep the desktop greeting singular and the quick actions comfortable to use. */
+  @media (min-width: 769px) {
+    /* The phone-specific fallback greeting must not stack with the account greeting. */
+    body:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 > .welcome-desktop-greeting {
+      display: block !important;
+    }
+    body:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 > .welcome-phone-greeting {
+      display: none !important;
+    }
+
+    /* Give laptop home actions more tap area and breathing room. */
+    body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards {
+      gap: 12px !important;
+    }
+    body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) {
+      min-height: 72px !important;
+      padding-top: 14px !important;
+      padding-bottom: 14px !important;
+    }
+    body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-icon {
+      width: 42px !important;
+      min-width: 42px !important;
+      height: 42px !important;
+    }
+    body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+      min-height: 76px !important;
+      padding-top: 16px !important;
+      padding-bottom: 16px !important;
+    }
+
+  }
 </style>
 
 </body>

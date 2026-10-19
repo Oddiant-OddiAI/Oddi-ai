@@ -565,6 +565,68 @@ def _create_chat_tables():
             "CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_updated "
             "ON interview_sessions(user_id, updated_at DESC)"
         )
+        if _use_postgres("chat"):
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS help_feedback_submissions (
+                    id BIGSERIAL PRIMARY KEY,
+                    user_id BIGINT NOT NULL,
+                    username TEXT NOT NULL DEFAULT '',
+                    user_email TEXT NOT NULL DEFAULT '',
+                    ratings_json TEXT NOT NULL,
+                    reasons_json TEXT NOT NULL,
+                    overall_feedback TEXT NOT NULL DEFAULT '',
+                    submitted_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS help_feedback_replies (
+                    id BIGSERIAL PRIMARY KEY,
+                    submission_id BIGINT NOT NULL,
+                    recipient_user_id BIGINT NOT NULL,
+                    host_user_id BIGINT NOT NULL,
+                    target_key TEXT NOT NULL,
+                    body TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    read_at TEXT NULL
+                )
+            """)
+        else:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS help_feedback_submissions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    username TEXT NOT NULL DEFAULT '',
+                    user_email TEXT NOT NULL DEFAULT '',
+                    ratings_json TEXT NOT NULL,
+                    reasons_json TEXT NOT NULL,
+                    overall_feedback TEXT NOT NULL DEFAULT '',
+                    submitted_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS help_feedback_replies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    submission_id INTEGER NOT NULL,
+                    recipient_user_id INTEGER NOT NULL,
+                    host_user_id INTEGER NOT NULL,
+                    target_key TEXT NOT NULL,
+                    body TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    read_at TEXT NULL
+                )
+            """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_help_feedback_user_submitted "
+            "ON help_feedback_submissions(user_id, submitted_at DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_help_feedback_replies_recipient "
+            "ON help_feedback_replies(recipient_user_id, read_at, created_at DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_help_feedback_replies_submission "
+            "ON help_feedback_replies(submission_id, created_at)"
+        )
         conn.commit()
     finally:
         conn.close()
@@ -1138,6 +1200,11 @@ def delete_user_record(user_id):
 
     conn = get_db("chat")
     try:
+        conn.execute(
+            "DELETE FROM help_feedback_replies WHERE recipient_user_id = ? OR host_user_id = ?",
+            (user_id, user_id),
+        )
+        conn.execute("DELETE FROM help_feedback_submissions WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM interview_sessions WHERE user_id = ?", (str(user_id),))
         conn.execute("DELETE FROM user_settings WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
