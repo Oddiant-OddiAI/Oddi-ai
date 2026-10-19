@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Archive, Briefcase, ChevronLeft, ChevronRight, Download, FolderOpen, FolderKanban,
   Home, LogOut, MessageSquare, MoreHorizontal, Pin, Plus, Search, List,
-  Settings, X, Pencil, Trash2, Menu, Share2
+  Settings, X, Pencil, Trash2, Menu, Share2, UsersRound
 } from 'lucide-react';
 
 type Conversation = {
@@ -30,6 +30,7 @@ type OddiWindow = Window & {
   __oddiReturnToHome?: boolean;
   __oddiApplyTheme?: (theme: string) => void;
   __oddiShowToast?: (message: string) => void;
+  __oddiSharedWorkspaceNotify?: (message: string) => void;
   showOddiToast?: (message: string, type?: string) => void;
   __oddiOpenExportShare?: (ids: Array<string | number>, intent?: 'share' | 'download') => boolean;
   __oddiFreshChatActive?: boolean;
@@ -227,8 +228,11 @@ export default function Sidebar() {
   });
   const [isDarkAppearance, setIsDarkAppearance] = useState(() => document.body.classList.contains('dark-mode'));
   const loggedIn = document.body.dataset.loggedIn === 'true';
+  const accountId = document.body.dataset.userId?.trim() || '';
   const username = document.body.dataset.username?.trim() || '';
   const email = document.body.dataset.email?.trim() || '';
+  const [sharedInviteCount, setSharedInviteCount] = useState(0);
+  const [sharedUnreadCount, setSharedUnreadCount] = useState(0);
   const [installReady, setInstallReady] = useState(false);
   const [isPhone, setIsPhone] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
@@ -238,6 +242,110 @@ export default function Sidebar() {
   const [splashReady, setSplashReady] = useState(() =>
     typeof document === 'undefined' || !document.getElementById('oddi-video-splash')
   );
+
+  useEffect(() => {
+    setSharedInviteCount(0);
+    setSharedUnreadCount(0);
+    if (!loggedIn || !accountId) return;
+    let active = true;
+    let refreshing = false;
+    let previousInviteCount: number | null = null;
+    let previousUnreadByWorkspace: Map<string, { name: string; count: number }> | null = null;
+    const isCurrentAccount = () => active
+      && document.body.dataset.loggedIn === 'true'
+      && document.body.dataset.userId?.trim() === accountId;
+    const matchesAccount = (payload: { account_id?: number | string } | null | undefined) => {
+      const responseAccountId = payload?.account_id;
+      if (!isCurrentAccount() || (responseAccountId != null && String(responseAccountId) !== accountId)) {
+        if (active) { setSharedInviteCount(0); setSharedUnreadCount(0); previousUnreadByWorkspace = null; }
+        return false;
+      }
+      return true;
+    };
+    const notify = (message: string) => {
+      if (WIN().__oddiSharedWorkspaceNotify) WIN().__oddiSharedWorkspaceNotify(message);
+      else WIN().showOddiToast?.(message);
+    };
+    const refreshInvites = async () => {
+      if (refreshing || !isCurrentAccount()) return;
+      refreshing = true;
+      try {
+        const response = await fetch('/api/shared-workspaces/invitations', {
+          credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
+        });
+        if (!response.ok || !isCurrentAccount()) return;
+        const payload = await response.json();
+        if (!matchesAccount(payload)) return;
+        const invitations = Array.isArray(payload?.invitations) ? payload.invitations : [];
+        setSharedInviteCount(invitations.length);
+        if (previousInviteCount !== null && invitations.length > previousInviteCount) {
+          notify('You have a new shared workspace invitation.');
+        }
+        previousInviteCount = invitations.length;
+        const workspaceResponse = await fetch('/api/shared-workspaces', {
+          credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
+        });
+        if (!isCurrentAccount()) return;
+        if (workspaceResponse.ok) {
+          const workspacePayload = await workspaceResponse.json();
+          if (!matchesAccount(workspacePayload)) return;
+          const workspaces: Array<{ id?: string | number; name?: string; unread_count?: number }> = Array.isArray(workspacePayload?.workspaces) ? workspacePayload.workspaces : [];
+          const unreadByWorkspace = new Map<string, { name: string; count: number }>();
+          const unreadCount = workspaces.reduce((total: number, workspace) => {
+            const count = Math.max(0, Number(workspace.unread_count || 0));
+            if (count > 0) unreadByWorkspace.set(String(workspace.id ?? workspace.name ?? ''), { name: workspace.name || 'a shared workspace', count });
+            return total + count;
+          }, 0);
+          if (previousUnreadByWorkspace) {
+            const increased = Array.from(unreadByWorkspace.entries()).map(([id, current]) => ({
+              current,
+              newlyUnread: Math.max(0, current.count - (previousUnreadByWorkspace?.get(id)?.count || 0)),
+            })).filter(item => item.newlyUnread > 0);
+            if (increased.length === 1) {
+              const item = increased[0];
+              notify(`${item.newlyUnread} new message${item.newlyUnread === 1 ? '' : 's'} in ${item.current.name} (${item.current.count} unread).`);
+            } else if (increased.length > 1) {
+              const totalNew = increased.reduce((total, item) => total + item.newlyUnread, 0);
+              notify(`${totalNew} new messages across ${increased.length} shared workspaces.`);
+            }
+          }
+          previousUnreadByWorkspace = unreadByWorkspace;
+          setSharedUnreadCount(unreadCount);
+        }
+        const noticeResponse = await fetch('/api/shared-workspaces/notifications', {
+          credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' },
+        });
+        if (!noticeResponse.ok || !isCurrentAccount()) return;
+        const noticePayload = await noticeResponse.json();
+        if (!matchesAccount(noticePayload)) return;
+        if (Array.isArray(noticePayload?.notifications) && noticePayload.notifications.length) {
+          noticePayload.notifications.forEach((notice: { id?: string; status?: string; invitee_email?: string; workspace_name?: string }) => {
+            const action = notice.status === 'accepted' ? 'accepted' : 'declined';
+            notify(`${notice.invitee_email || 'A member'} ${action} your invitation to ${notice.workspace_name || 'a shared group'}.`);
+          });
+          const ids = noticePayload.notifications.map((notice: { id?: string }) => notice.id).filter((id: unknown): id is string => typeof id === 'string');
+          if (ids.length && noticePayload.account_id != null && isCurrentAccount()) {
+            await fetch('/api/shared-workspaces/notifications/ack', {
+              method: 'POST', credentials: 'same-origin', cache: 'no-store',
+              headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ids }),
+            });
+          }
+        }
+      } catch { /* Keep the sidebar usable when collaboration is offline. */ }
+      finally { refreshing = false; }
+    };
+    void refreshInvites();
+    const interval = window.setInterval(refreshInvites, 10000);
+    window.addEventListener('focus', refreshInvites);
+    window.addEventListener('oddi:shared-invitations-changed', refreshInvites);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshInvites);
+      window.removeEventListener('oddi:shared-invitations-changed', refreshInvites);
+    };
+  }, [loggedIn, accountId]);
   useEffect(() => {
     const root = document.getElementById('oddi-react-sidebar-root');
     const sync = () => {
@@ -956,6 +1064,11 @@ export default function Sidebar() {
     window.dispatchEvent(new CustomEvent('oddi:open-projects'));
   }
 
+  function openSharedWorkspaces() {
+    setMenuId(null);
+    window.dispatchEvent(new CustomEvent('oddi:shared-workspaces-open'));
+  }
+
   function openInterviewStudio() {
     setMenuId(null);
     window.location.assign('/interview-studio');
@@ -1205,6 +1318,11 @@ export default function Sidebar() {
           aria-label="Sidebar utilities"
         >
           {[
+            {
+              label: 'Shared workspaces', icon: <UsersRound size={14} />, action: openSharedWorkspaces,
+              invitationDot: sharedInviteCount > 0, unreadDot: sharedUnreadCount > 0,
+              notificationLabel: `Shared workspaces${sharedInviteCount ? `, ${sharedInviteCount} pending invitation${sharedInviteCount === 1 ? '' : 's'}` : ''}${sharedUnreadCount ? `, ${sharedUnreadCount} unread message${sharedUnreadCount === 1 ? '' : 's'}` : ''}`,
+            },
             { label: 'Interview Studio', icon: <Briefcase size={14} />, action: openInterviewStudio },
             { label: 'Projects', icon: <FolderKanban size={14} />, action: openProjects },
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
@@ -1214,9 +1332,10 @@ export default function Sidebar() {
               key={item.label}
               type="button"
               onClick={item.action}
-              title={item.label}
+              title={item.notificationLabel || item.label}
+              aria-label={item.notificationLabel || item.label}
               style={{
-                width: '100%', minHeight: 32, display: 'flex', alignItems: 'center', gap: 10,
+                position: 'relative', width: '100%', minHeight: 32, display: 'flex', alignItems: 'center', gap: 10,
                 padding: '7px 8px', border: 0, borderRadius: 7, background: 'transparent',
                 color: 'var(--oddi-sidebar-muted, #a5a5a5)', font: 'inherit', fontSize: 13,
                 textAlign: 'left', cursor: 'pointer', boxSizing: 'border-box',
@@ -1224,6 +1343,16 @@ export default function Sidebar() {
             >
               <span style={{ width: 18, display: 'inline-flex', justifyContent: 'flex-start', flexShrink: 0 }}>{item.icon}</span>
               {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+              {(item.invitationDot || item.unreadDot) && <span aria-hidden="true" style={{
+                position: collapsed ? 'absolute' : 'static', top: collapsed ? 3 : undefined, right: collapsed ? 5 : undefined,
+                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+                marginLeft: collapsed ? undefined : 'auto', padding: collapsed ? 2 : '0 2px',
+                borderRadius: 999, background: collapsed ? 'var(--oddi-sidebar-bg, #0d0f0e)' : 'transparent',
+                boxSizing: 'border-box',
+              }}>
+                {item.invitationDot && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444', boxShadow: '0 0 0 1px rgba(239,68,68,.2)' }} />}
+                {item.unreadDot && <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', boxShadow: '0 0 0 1px rgba(34,197,94,.2)' }} />}
+              </span>}
             </button>
           ))}
         </nav>

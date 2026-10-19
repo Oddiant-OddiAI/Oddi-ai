@@ -602,6 +602,8 @@ def process_message(
     quota_exempt=False,
     identity=None,
     long_term_memory_enabled=True,
+    allow_user_knowledge=True,
+    allow_account_actions=True,
 ):
     # The HTTP layer resolves identity from the authenticated session. Keep
     # identity optional so existing internal/legacy callers remain compatible.
@@ -633,7 +635,7 @@ def process_message(
     # response layer, but do NOT automatically index normal chat
     # attachments here. Attachments must go through the local
     # extraction/vision pipeline below first.
-    if user_id is not None and not ODDI_LOCAL_ONLY_STORAGE:
+    if allow_user_knowledge and user_id is not None and not ODDI_LOCAL_ONLY_STORAGE:
         # Read an existing vector-store ID only. Do not create an OpenAI
         # vector store during every chat request.
         try:
@@ -717,12 +719,13 @@ def process_message(
     """ + documents
 
     # 1. Commands
-    command_reply = handle_command(user_message, identity=identity)
-    if command_reply:
-        return command_reply
+    if allow_account_actions:
+        command_reply = handle_command(user_message, identity=identity)
+        if command_reply:
+            return command_reply
 
 
-    if user_id is not None:
+    if allow_account_actions and user_id is not None:
 
         if user_id is not None and state.pending_update:
             pending = state.pending_update

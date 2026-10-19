@@ -2841,8 +2841,9 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261019-sidebar-laptop-flat-pins-3">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261019-shared-workspaces-1">
     <link rel="stylesheet" href="/static/oddi-help-feedback.css?v=20261019-3">
+    <link rel="stylesheet" href="/static/oddi-shared-workspaces.css?v=20261019-4">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -4618,7 +4619,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
             <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="Help me draft, refine, or polish something I am writing."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Draft or refine writing</strong><small>Create, refine, or polish your writing</small></span></button>
             <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me turn a goal into a clear project plan with actionable steps."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><small>Turn a goal into clear, actionable steps</small></span></button>
             <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="Help me set today's priorities and focus on the most important work."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Set today's priorities</strong><small>Focus on the most important work</small></span></button>
-            <a href="/interview-studio" class="oddi-suggestion-card oddi-interview-launch" aria-label="Open Interview Studio"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></span><span class="oddi-suggestion-copy"><strong>Interview Studio</strong><small><span class="interview-desktop-copy">Practice any profession with role-specific questions and ODDI feedback</span><span class="interview-phone-copy">Practice any profession with role-specific questions</span></small></span><span class="oddi-interview-arrow" aria-hidden="true">→</span></a>
+            <a href="/interview-studio" class="oddi-suggestion-card oddi-interview-launch" aria-label="Open Interview Studio"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></span><span class="oddi-suggestion-copy"><strong>Interview Studio</strong><small><span class="interview-desktop-copy">Practice any profession with role-specific questions and ODDI feedback</span><span class="interview-phone-copy">Practice any profession with role-specific questions</span></small></span><span class="oddi-interview-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span></a>
         </div>
         <section id="oddiRecentSection" class="oddi-recent-work" aria-label="Recent work" hidden>
             <p id="oddiRecentHeadingText" class="oddi-recent-heading">RECENT WORK</p>
@@ -5908,16 +5909,15 @@ function stopGeneration() {
         botMessage.querySelector('.thinking-actions')?.remove();
         botMessage.dataset.messageIndex = String(stagedAssistantIndex);
         if (stagedAssistantMessage.document_workspace) {
-            window.OddiDocumentWorkspace?.update(stagedAssistantMessage.text || "", {
-                status: "Document ready. You can edit it or download a copy.",
-                generating: false
-            });
-            activeTypingElement.textContent = "Your document is ready in the editor.";
+            activeTypingElement.textContent = "Your document draft is ready in Writing. Open it to edit or download.";
         } else {
             renderRichContent(activeTypingElement, stagedAssistantMessage.text || "", { final: true });
         }
         oddiRenderMessageSources(botMessage, stagedAssistantMessage.sources || []);
         addBotMessageActions(botMessage, stagedAssistantIndex, conversationIndex);
+        if (stagedAssistantMessage.document_workspace && String(stagedAssistantMessage.text || "").trim()) {
+            openDocumentMessage(conversationIndex, stagedAssistantIndex, {focus: false});
+        }
         renderHistory();
         publishConversationDataReady();
         if (conversations[currentConversation] === conversation) {
@@ -5953,16 +5953,8 @@ function stopGeneration() {
 
         if (!alreadySaved) {
             if (documentMode) {
-                window.OddiDocumentWorkspace?.update(partialText, {
-                    status: partialText
-                        ? "Generation stopped. The partial draft is kept in the editor."
-                        : "Generation stopped before a draft arrived. Retry from the chat to continue.",
-                    generating: false,
-                    error: !partialText
-                });
-                activeTypingElement.textContent = partialText
-                    ? "Generation stopped. The partial document is in the editor."
-                    : "Generation stopped before the document arrived.";
+                if (partialText) activeTypingElement.textContent = "Your document draft is ready in Writing. Open it to continue editing or download.";
+                else activeTypingElement.textContent = "Generation stopped before a draft arrived. Retry from the chat to continue.";
             } else if (partialText) {
                 renderRichContent(activeTypingElement, partialText, { final: true });
             } else {
@@ -5980,7 +5972,7 @@ function stopGeneration() {
                 stopped: true,
                 response_meta: { elapsed_ms: elapsed }
             };
-            if (documentMode) {
+            if (documentMode && partialText) {
                 stoppedMessage.document_workspace = true;
                 stoppedMessage.document_title = documentTitle;
             }
@@ -5989,6 +5981,9 @@ function stopGeneration() {
 
             botMessage.dataset.messageIndex = stoppedIndex;
             addBotMessageActions(botMessage, stoppedIndex, conversationIndex);
+            if (documentMode && partialText) {
+                openDocumentMessage(conversationIndex, stoppedIndex, {focus: false});
+            }
 
             touchConversation(conversation);
             appendConversationMessage(conversation, stoppedMessage);
@@ -13395,20 +13390,7 @@ async function sendMessage(
     if (documentMode) {
         thinkingBubble.dataset.documentWorkspace = "true";
         thinkingBubble.dataset.documentTitle = documentTitle;
-        typing.textContent = "Preparing your document in the editor…";
-        window.OddiDocumentWorkspace?.open({
-            title: documentTitle,
-            markdown: "",
-            status: "Preparing your document…",
-            generating: true,
-            renderMarkdown: source => renderRichContentToHtml(source),
-            serializeMarkdown: root => resumeSectionMarkdown(root),
-            createPdfBlob: root => createResumePdfBlob(root),
-            createDocxBlob: html => {
-                if (!window.htmlDocx?.asBlob) throw new Error("Word export is unavailable right now.");
-                return window.htmlDocx.asBlob(html);
-            }
-        });
+        typing.textContent = "Preparing your document in this chat…";
     }
     const thinkingStartedAt = Date.now();
     thinkingBubble.dataset.thinkingStartedAt = String(thinkingStartedAt);
@@ -13646,16 +13628,12 @@ async function sendMessage(
         ----------------------------------------- */
 
         typing.innerHTML = "";
-        if (documentMode) typing.textContent = "Writing your document in the editor…";
+        if (documentMode) typing.textContent = "Writing your document in this chat…";
 
         if (documentMode || !typingEnabled || window.__oddiChatPreferences?.stream_responses === false) {
 
             if (documentMode) {
-                window.OddiDocumentWorkspace?.update(reply, {
-                    status: "Document ready. You can edit it or download a copy.",
-                    generating: false
-                });
-                typing.textContent = "Your document is ready in the editor.";
+                renderRichContent(typing, reply, { final: true });
             } else {
                 renderRichContent(typing, reply, { final: true });
             }
@@ -13727,21 +13705,21 @@ async function sendMessage(
             const bubble = typing.closest(".bot-message");
             stopAssistantThinkingClock(bubble, "Reply unavailable");
 
-            if (documentMode) {
-                window.OddiDocumentWorkspace?.update(activeGenerationPartialText, {
-                    status: "Document generation failed. The current draft is kept here; retry from the chat when ready.",
-                    generating: false,
-                    error: true
-                });
-            }
-
             const failureMessage = String(error?.message || "");
             const fileLimitFailure = failureMessage.includes("Your Library is full (30 files)");
-            typing.textContent = documentMode && !fileLimitFailure
-                ? "Document generation failed. Your editor is still open; use Retry to try again."
-                : fileLimitFailure
-                ? failureMessage
-                : getChatFailureMessage(error);
+            if (documentMode && activeGenerationPartialText.trim() && !fileLimitFailure) {
+                renderRichContent(typing, activeGenerationPartialText, { final: true });
+                const notice = document.createElement("p");
+                notice.className = "oddi-document-inline-notice is-error";
+                notice.textContent = "Document generation stopped early. Use Retry to continue.";
+                typing.appendChild(notice);
+            } else {
+                typing.textContent = fileLimitFailure
+                    ? failureMessage
+                    : documentMode
+                    ? "Document generation failed. Use Retry to try again."
+                    : getChatFailureMessage(error);
+            }
 
             if (!fileLimitFailure) {
                 window.__oddiAnnounce?.("ODDI-AI could not complete that reply. A Retry button is available.");
@@ -13788,20 +13766,7 @@ async function sendMessage(
                         if (retryTimeLabel) retryTimeLabel.textContent = `Thinking ${formatAssistantElapsedTime(Date.now() - retryStartedAt)}`;
                     }, 1000);
                     if (documentMode) {
-                        typing.textContent = "Preparing your document in the editor…";
-                        window.OddiDocumentWorkspace?.open({
-                            title: documentTitle,
-                            markdown: activeGenerationPartialText,
-                            status: "Retrying document generation…",
-                            generating: true,
-                            renderMarkdown: source => renderRichContentToHtml(source),
-                            serializeMarkdown: root => resumeSectionMarkdown(root),
-                            createPdfBlob: root => createResumePdfBlob(root),
-                            createDocxBlob: html => {
-                                if (!window.htmlDocx?.asBlob) throw new Error("Word export is unavailable right now.");
-                                return window.htmlDocx.asBlob(html);
-                            }
-                        });
+                        typing.textContent = "Retrying your document in this chat…";
                     } else {
                         typing.innerHTML = '<span class="thinking-indicator" aria-label="Thinking" role="status"><span class="thinking-dot" aria-hidden="true"></span><span class="thinking-dot" aria-hidden="true"></span><span class="thinking-dot" aria-hidden="true"></span></span>';
                     }
@@ -13873,12 +13838,7 @@ async function sendMessage(
                         );
                         if (stagedAssistantIndex >= 0) bubble.dataset.messageIndex = String(stagedAssistantIndex);
                         if (documentMode) {
-                            typing.textContent = "Preparing your document in the editor…";
-                            window.OddiDocumentWorkspace?.update(reply, {
-                                status: "Document ready. You can edit it or download a copy.",
-                                generating: false
-                            });
-                            typing.textContent = "Your document is ready in the editor.";
+                            renderRichContent(typing, reply, { final: true });
                         } else {
                             typing.innerHTML = "";
                             if (!typingEnabled || window.__oddiChatPreferences?.stream_responses === false) {
@@ -13902,12 +13862,15 @@ async function sendMessage(
                             retryActions.remove();
                         } else {
                             if (documentMode) {
-                                window.OddiDocumentWorkspace?.update(activeGenerationPartialText, {
-                                    status: "Document generation failed. Your current draft is kept here; try Retry again.",
-                                    generating: false,
-                                    error: true
-                                });
-                                typing.textContent = "Document generation failed. Your editor is still open; use Retry to try again.";
+                                if (activeGenerationPartialText.trim()) {
+                                    renderRichContent(typing, activeGenerationPartialText, { final: true });
+                                    const notice = document.createElement("p");
+                                    notice.className = "oddi-document-inline-notice is-error";
+                                    notice.textContent = "Document generation stopped early. Use Retry to continue.";
+                                    typing.appendChild(notice);
+                                } else {
+                                    typing.textContent = "Document generation failed. Use Retry to try again.";
+                                }
                             } else {
                                 typing.textContent = getChatFailureMessage(retryError);
                                 window.__oddiAnnounce?.("Retry did not work. The Retry button is available again.");
@@ -14119,7 +14082,7 @@ function buildCompactModelHistory(conversation, limit, currentPrompt) {
         const title = String(message.document_title || documentTitleFromPrompt(precedingUserMessage(conversation, messageIndex)?.text) || "Document");
         return {
             role: "assistant",
-            text: `[Document prepared in the editor: ${title}. Full text stays in the editor and is omitted from model history.]`
+            text: `[Document prepared in the chat: ${title}. Full text is omitted from model history unless requested.]`
         };
     });
 }
@@ -14128,11 +14091,19 @@ function openDocumentMessage(conversationIndex, messageIndex, options = {}) {
     const conversation = conversations[conversationIndex];
     const message = conversation?.messages?.[messageIndex];
     if (!message || !isDocumentOutputMessage(conversation, messageIndex) || !window.OddiDocumentWorkspace) return false;
+    const botMessage = Number(conversationIndex) === Number(currentConversation)
+        ? chat.querySelector(`.bot-message[data-message-index="${messageIndex}"]`)
+        : null;
+    if (!botMessage) return false;
+    const writingBlock = botMessage.querySelector(".oddi-writing-block");
     const prompt = precedingUserMessage(conversation, messageIndex)?.text || "";
     const title = String(message.document_title || documentTitleFromPrompt(prompt));
     const sourceMarkdown = String(message.document_workspace === true ? (message.text || "") : (message.resume_draft || message.text || ""));
     const workspace = window.OddiDocumentWorkspace;
-    workspace.open({
+    return workspace.open({
+        documentKey: String(message.id || `${conversationIndex}-${messageIndex}`),
+        opener: options.opener || writingBlock || null,
+        focus: options.focus,
         title,
         markdown: sourceMarkdown,
         format: options.format || "pdf",
@@ -14158,21 +14129,27 @@ function openDocumentMessage(conversationIndex, messageIndex, options = {}) {
             return saved;
         }
     });
-    return true;
 }
 
 function addDocumentOpenControl(botMessage, conversation, messageIndex, conversationIndex = currentConversation) {
-    if (!botMessage || botMessage.querySelector(".oddi-open-document-btn") || !isDocumentOutputMessage(conversation, messageIndex)) return;
-    const actions = botMessage.querySelector(".bot-actions");
-    if (!actions) return;
+    if (!botMessage || botMessage.querySelector(".oddi-writing-block") || !isDocumentOutputMessage(conversation, messageIndex)) return;
+    const aiContent = botMessage.querySelector(".ai-content");
+    if (!aiContent) return;
+    const message = conversation.messages?.[messageIndex];
+    const documentMarkdown = message?.document_workspace === true
+        ? message.text
+        : (message?.resume_draft || message?.text || "");
+    if (!String(documentMarkdown || "").trim()) return;
+    const prompt = precedingUserMessage(conversation, messageIndex)?.text || "";
+    const title = String(message?.document_title || documentTitleFromPrompt(prompt));
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "message-action-btn oddi-open-document-btn";
-    button.textContent = "Open in editor";
-    button.title = "Open this document in the editor";
-    button.setAttribute("aria-label", "Open generated document in editor");
-    button.addEventListener("click", () => openDocumentMessage(conversationIndex, messageIndex));
-    actions.prepend(button);
+    button.className = "oddi-writing-block";
+    button.setAttribute("aria-label", `Open ${title} in the Writing editor`);
+    button.title = "Open this saved document in the right-side editor";
+    button.innerHTML = `<span class="oddi-writing-block-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.75h8l4 4v12.5H6a2 2 0 0 1-2-2v-12.5a2 2 0 0 1 2-2Z"/><path d="M14 3.75v4h4M8 12h8M8 15.5h8"/></svg></span><span class="oddi-writing-block-copy"><strong>Writing</strong><small>${escapeHtml(title)} · Open to edit or download</small></span><span class="oddi-writing-block-arrow" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span>`;
+    button.addEventListener("click", () => openDocumentMessage(conversationIndex, messageIndex, {opener: button}));
+    aiContent.insertAdjacentElement("afterend", button);
 }
 
 function appendLocalDocumentExportTurn(conversation, userText, sourceMessage, format) {
@@ -14184,7 +14161,7 @@ function appendLocalDocumentExportTurn(conversation, userText, sourceMessage, fo
     const assistantMessage = {
         id: makeMessageId(),
         role: "assistant",
-        text: `Your existing document is open in the editor with ${format.toUpperCase()} selected. Choose Download to save it.`,
+        text: `Your existing document is open in the chat editor with ${format.toUpperCase()} selected. Choose Download to save it.`,
         pinned: false,
         feedback: null,
         document_workspace: false,
@@ -14211,32 +14188,15 @@ function appendLocalDocumentExportTurn(conversation, userText, sourceMessage, fo
         addBotMessageActions(botBubble, userIndex + 1, currentConversation);
         oddiSmartScroll(true);
     }
-    window.OddiDocumentWorkspace?.open({
-        title,
-        markdown: String(sourceMessage.document_workspace === true ? (sourceMessage.text || "") : (sourceMessage.resume_draft || sourceMessage.text || "")),
-        format,
-        status: `Choose Download to export this document as ${format.toUpperCase()}. The conversion runs locally.`,
-        renderMarkdown: source => renderRichContentToHtml(source),
-        serializeMarkdown: root => resumeSectionMarkdown(root),
-        createPdfBlob: root => createResumePdfBlob(root),
-        createDocxBlob: html => {
-            if (!window.htmlDocx?.asBlob) throw new Error("Word export is unavailable right now.");
-            return window.htmlDocx.asBlob(html);
-        },
-        onSave: async ({markdown}) => {
-            const patch = {text: markdown, document_workspace: true, document_title: title};
-            if (sourceMessage.resume_draft) patch.resume_draft = markdown;
-            const saved = await updateConversationMessageRemote(conversation, sourceMessage.id, patch);
-            if (saved) {
-                sourceMessage.text = markdown;
-                sourceMessage.document_workspace = true;
-                sourceMessage.document_title = title;
-                if (sourceMessage.resume_draft) sourceMessage.resume_draft = markdown;
-            }
-            return saved;
-        }
-    });
     renderHistory();
+    openDocumentMessage(
+        conversations.indexOf(conversation),
+        sourceIndex,
+        {
+            format,
+            status: `Choose Download to export this document as ${format.toUpperCase()}. The conversion runs locally.`
+        }
+    );
     return true;
 }
 
@@ -14909,6 +14869,10 @@ async function finishAIMessage(
 
     if (botMessage && botMessage.isConnected && conversationIndex >= 0 && conversations[currentConversation] === conversation) {
         botMessage.dataset.messageIndex = assistantIndex;
+        if (documentMetadata?.title) {
+            const documentSummary = botMessage.querySelector(".ai-content");
+            if (documentSummary) documentSummary.textContent = "Your document is ready in Writing. Open it to edit or download.";
+        }
         oddiRenderMessageSources(botMessage, normalizedSources);
         const metaHost = botMessage.querySelector(".odd-chat-meta");
         const prefs = window.__oddiChatPreferences || {};
@@ -14956,6 +14920,11 @@ async function finishAIMessage(
 
     renderHistory();
     publishConversationDataReady();
+
+    if (documentMetadata?.title && conversations[currentConversation] === conversation) {
+        const currentIndex = conversations.indexOf(conversation);
+        if (currentIndex >= 0) openDocumentMessage(currentIndex, assistantIndex, {focus: false});
+    }
 
     if (conversations[currentConversation] === conversation) {
         window.__oddiAnnounce?.("ODDI-AI finished responding.");
@@ -16192,9 +16161,9 @@ async function openConversation(index) {
 
                 const feedback = msg.feedback || "";
                 const isDocumentOutput = isDocumentOutputMessage(conversation, messageIndex);
-                const documentStatus = msg.stopped
-                    ? "Generation stopped. The partial document is in the editor."
-                    : "Your document is ready in the editor.";
+                const documentContent = String(msg.text || "").trim()
+                    ? `<p>${msg.stopped ? "A partial draft is saved in Writing. Open it to continue editing or download." : "Your document is ready in Writing. Open it to edit or download."}</p>`
+                    : "<p>Document generation stopped before a draft arrived.</p>";
 
                 chat.innerHTML += `
                     <div class="bot-message ${msg.pinned ? "pinned-message" : ""} ${msg.stopped ? "stopped-message" : ""} ${isDocumentOutput ? "document-output-message" : ""}"
@@ -16216,7 +16185,7 @@ async function openConversation(index) {
                         </div>
 
                         <div class="ai-content">
-                            ${isDocumentOutput ? documentStatus : renderRichContentToHtml(msg.text)}
+                            ${isDocumentOutput ? documentContent : renderRichContentToHtml(msg.text)}
                         </div>
 
                         <div class="odd-chat-meta" data-response-meta="${messageIndex}"></div>
@@ -23887,7 +23856,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261019-sidebar-theme-toggle-removed-1"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261019-shared-workspaces-5"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -36506,8 +36475,8 @@ body[data-theme="dark"] #chatbox.chatbox > .user-message > .user-bubble-main {
   #oddiLastMessageCard { min-height: 46px !important; }
 }
 </style>
-<link rel="stylesheet" href="/static/oddi-document-workspace.css">
-<script src="/static/oddi-document-workspace.js"></script>
+<link rel="stylesheet" href="/static/oddi-document-workspace.css?v=docked-writing-editor-20261019">
+<script src="/static/oddi-document-workspace.js?v=docked-writing-editor-20261019"></script>
 <link rel="stylesheet" href="/static/oddi-mobile-experience.css">
 <script src="/static/oddi-mobile-experience.js"></script>
 <style id="oddi-generation-composer-normal-size-v1">
@@ -39781,6 +39750,7 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
 }
 </style>
 <script src="/static/oddi-help-feedback.js?v=20261019-7" defer></script>
+<script src="/static/oddi-shared-workspaces.js?v=20261019-10" defer></script>
 
 <style id="oddi-rocket-inspired-phone-home-v2">
 /* Phone home layout follows the supplied reference while leaving the composer intact. */
@@ -40257,6 +40227,95 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
     }
 
   }
+</style>
+
+<style id="oddi-laptop-composer-underlay-blur-v1">
+@media (min-width: 769px) {
+  /* A soft glass fade under the fixed composer, behind the editable surface. */
+  #oddiComposerShell {
+    isolation: isolate !important;
+    overflow: visible !important;
+  }
+  #oddiComposerShell::before {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    z-index: -1 !important;
+    top: calc(100% - 24px) !important;
+    right: -14px !important;
+    bottom: -40px !important;
+    left: -14px !important;
+    border-radius: 0 0 26px 26px !important;
+    background: linear-gradient(to bottom, rgba(248, 251, 248, .015), rgba(248, 251, 248, .07)) !important;
+    backdrop-filter: blur(3px) saturate(1.04) !important;
+    -webkit-backdrop-filter: blur(3px) saturate(1.04) !important;
+    -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .12), #000 76%) !important;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .12), #000 76%) !important;
+    pointer-events: none !important;
+  }
+  body.dark-mode #oddiComposerShell::before,
+  body.oddi-system-theme.dark-mode #oddiComposerShell::before {
+    background: linear-gradient(to bottom, rgba(10, 16, 12, .02), rgba(10, 16, 12, .10)) !important;
+  }
+}
+</style>
+
+<style id="oddi-interview-card-fit-and-phone-dark-green-v1">
+/* Keep Interview Studio featured without stretching it across the laptop grid. */
+@media (min-width: 769px) {
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+    grid-column: 1 / -1 !important;
+    justify-self: center !important;
+    width: min(640px, 100%) !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding-right: 24px !important;
+    padding-left: 24px !important;
+  }
+}
+
+/* Use a centered vector arrow so the icon sits optically in its circle. */
+body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+}
+body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow > svg {
+  display: block !important;
+  width: 18px !important;
+  height: 18px !important;
+  overflow: visible !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* Keep every phone home action in the same green family in dark mode. */
+@media (max-width: 768px) {
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch),
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) {
+    border-color: #284334 !important;
+    background: #111b15 !important;
+    color: #eef6f0 !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(119, 222, 157, .035) !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-icon,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-icon {
+    border-color: #28523a !important;
+    background: #193a29 !important;
+    color: #79dda0 !important;
+  }
+  body.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow,
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
+    border-color: rgba(126, 230, 164, .38) !important;
+    background: rgba(66, 178, 108, .20) !important;
+    color: #a1f0bb !important;
+  }
+}
 </style>
 
 </body>

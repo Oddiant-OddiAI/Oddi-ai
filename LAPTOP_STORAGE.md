@@ -34,6 +34,16 @@ login or registration. If the app closes before a queued mirror finishes, the
 local copy remains safe and the next sync pass uploads it. Drive is the shared
 sync source; the laptop keeps its own per-account copy.
 
+## Shared workspaces
+
+Shared groups use the chat database locally. On Drive-backed Render hosting,
+configure `ODDI_SHARED_WORKSPACES_DATABASE_URL` with a persistent PostgreSQL
+connection string in the Render environment. Group membership, invitations,
+and live messages are stored there so different accounts and app instances see
+the same workspace. Render's temporary local SQLite file is not suitable for
+this data. Invitations appear inside ODDI and expire after 14 days. Groups have
+no fixed member limit; admins can invite as many ODDI members as they need.
+
 ## Google Drive setup
 
 ODDI authenticates to the owner's personal My Drive using Google OAuth user

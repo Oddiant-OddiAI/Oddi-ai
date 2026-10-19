@@ -99,6 +99,11 @@ from app.google_drive_storage import (
 )
 
 from app.engine import process_message
+from app.shared_workspaces import (
+    cleanup_deleted_account as cleanup_shared_workspaces_for_account,
+    router as shared_workspaces_router,
+    shared_workspace_queue_worker,
+)
 from app.interview_studio import (
     InterviewStudioError,
     generate_alternate_question,
@@ -384,6 +389,7 @@ app = FastAPI(
     title="ODDI AI",
     version="1.0.0",
 )
+app.include_router(shared_workspaces_router)
 
 _SUMMARY_BACKFILL_LOCK = threading.Lock()
 _SUMMARY_BACKFILL_USERS = set()
@@ -623,6 +629,9 @@ async def start_bin_retention_cleanup():
 
     app.state.bin_retention_task = asyncio.create_task(cleanup_expired_bin_chats())
 
+    if not ODDI_DRIVE_CHAT_STORAGE or os.getenv("ODDI_SHARED_WORKSPACES_DATABASE_URL", "").strip():
+        app.state.shared_workspace_task = asyncio.create_task(shared_workspace_queue_worker())
+
     if not ODDI_BROWSER_LOCAL_CHATS and memory_provider_keys_configured():
         await run_in_threadpool(recover_stale_memory_claims)
 
@@ -686,7 +695,7 @@ async def start_bin_retention_cleanup():
 
 @app.on_event("shutdown")
 async def stop_bin_retention_cleanup():
-    for task_name in ("bin_retention_task", "drive_sync_task", "memory_extraction_task"):
+    for task_name in ("bin_retention_task", "drive_sync_task", "memory_extraction_task", "shared_workspace_task"):
         task = getattr(app.state, task_name, None)
         if task:
             task.cancel()
@@ -2340,6 +2349,10 @@ async def api_delete_account(request: Request):
 
     delete_all_conversations(user_id)
     clear_memory(user_id)
+    try:
+        cleanup_shared_workspaces_for_account(int(user_id))
+    except (TypeError, ValueError, OverflowError):
+        logger.warning("Could not resolve shared workspace account ID during account deletion")
     delete_user_record(user_id)
     request.session.clear()
     return JSONResponse({"success": True, "redirect": "/login"})

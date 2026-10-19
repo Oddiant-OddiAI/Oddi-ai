@@ -74,6 +74,7 @@ LEGACY_DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 RAW_CHAT_DATABASE_URL = os.getenv("DATABASE_URL_CHAT", "").strip()
 RAW_FILES_DATABASE_URL = os.getenv("DATABASE_URL_FILES", "").strip()
 RAW_ARCHIVE_MEMORY_DATABASE_URL = os.getenv("DATABASE_URL_ARCHIVE_MEMORY", "").strip()
+RAW_SHARED_WORKSPACES_DATABASE_URL = os.getenv("ODDI_SHARED_WORKSPACES_DATABASE_URL", "").strip()
 
 # A single DATABASE_URL supports a unified PostgreSQL database. The three
 # DATABASE_URL_* variables remain available when separate stores are desired.
@@ -206,6 +207,13 @@ else:
     FILES_DATABASE_URL = RAW_FILES_DATABASE_URL or LEGACY_DATABASE_URL
     ARCHIVE_MEMORY_DATABASE_URL = RAW_ARCHIVE_MEMORY_DATABASE_URL or LEGACY_DATABASE_URL
 
+# Collaboration can use the main chat database by default. Drive-backed
+# hosting must provide its own persistent SQL store because local SQLite is
+# ephemeral there and Drive file writes are unsuitable for concurrent chat.
+SHARED_WORKSPACES_DATABASE_URL = (
+    RAW_SHARED_WORKSPACES_DATABASE_URL or CHAT_DATABASE_URL
+)
+
 USE_POSTGRES = bool(CHAT_DATABASE_URL or FILES_DATABASE_URL or ARCHIVE_MEMORY_DATABASE_URL)
 
 _PROJECT_DATABASE = os.path.join(
@@ -261,6 +269,8 @@ DATABASE = _local_database_path() if ODDI_LOCAL_ONLY_STORAGE else _PROJECT_DATAB
 def _database_url(kind):
     if kind == "chat":
         return CHAT_DATABASE_URL
+    if kind == "shared":
+        return SHARED_WORKSPACES_DATABASE_URL
     if kind == "files":
         return FILES_DATABASE_URL
     if kind == "archive_memory":
@@ -274,6 +284,12 @@ def _use_postgres(kind):
 
 def get_db(kind="chat"):
     url = _database_url(kind)
+
+    if kind == "shared" and not url and ODDI_DRIVE_CHAT_STORAGE:
+        raise RuntimeError(
+            "Shared workspaces need a durable PostgreSQL database in Drive-backed hosting. "
+            "Set ODDI_SHARED_WORKSPACES_DATABASE_URL."
+        )
 
     if url:
         try:
@@ -305,6 +321,8 @@ def _backend_label(kind):
     if kind == "chat" and ODDI_DRIVE_CHAT_STORAGE:
         return "Google Drive account files"
     url = _database_url(kind)
+    if kind == "shared" and not url and ODDI_DRIVE_CHAT_STORAGE:
+        return "unconfigured durable collaboration database"
     return "postgres" if url else os.path.abspath(DATABASE)
 
 
@@ -330,6 +348,8 @@ def create_tables():
         logger.info("Render is redirect-only; account and chat storage stay on the laptop")
         return
     _create_chat_tables()
+    if not (ODDI_DRIVE_CHAT_STORAGE and not SHARED_WORKSPACES_DATABASE_URL):
+        _create_shared_workspace_tables()
     _create_archive_memory_tables()
     _create_files_tables()
     _migrate_legacy_archived_conversations()
@@ -626,6 +646,188 @@ def _create_chat_tables():
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_help_feedback_replies_submission "
             "ON help_feedback_replies(submission_id, created_at)"
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _create_shared_workspace_tables():
+    """Create the durable, cross-account collaboration store."""
+    conn = get_db("shared")
+    try:
+        if _use_postgres("shared"):
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspaces (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    owner_user_id BIGINT NOT NULL,
+                    ai_active_message_id TEXT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_members (
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    user_id BIGINT NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'member',
+                    display_name TEXT NOT NULL DEFAULT '',
+                    email TEXT NOT NULL DEFAULT '',
+                    joined_at TEXT NOT NULL,
+                    PRIMARY KEY (workspace_id, user_id)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_invitations (
+                    id TEXT PRIMARY KEY,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    inviter_user_id BIGINT NOT NULL,
+                    inviter_name TEXT NOT NULL DEFAULT '',
+                    inviter_email TEXT NOT NULL DEFAULT '',
+                    invitee_user_id BIGINT NULL,
+                    invitee_email TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    responded_at TEXT NULL,
+                    inviter_notified_at TEXT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_messages (
+                    seq BIGSERIAL PRIMARY KEY,
+                    id TEXT NOT NULL UNIQUE,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    sender_user_id BIGINT NULL,
+                    sender_name TEXT NOT NULL DEFAULT '',
+                    sender_email TEXT NOT NULL DEFAULT '',
+                    kind TEXT NOT NULL DEFAULT 'user',
+                    body TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    client_message_id TEXT NOT NULL,
+                    ai_status TEXT NULL,
+                    ai_error TEXT NULL,
+                    ai_started_at TEXT NULL,
+                    UNIQUE(workspace_id, client_message_id)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_user_leases (
+                    user_id BIGINT PRIMARY KEY,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    message_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_reads (
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    user_id BIGINT NOT NULL,
+                    last_read_seq BIGINT NOT NULL DEFAULT 0,
+                    PRIMARY KEY (workspace_id, user_id)
+                )
+            """)
+        else:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspaces (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    owner_user_id INTEGER NOT NULL,
+                    ai_active_message_id TEXT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_members (
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    user_id INTEGER NOT NULL,
+                    role TEXT NOT NULL DEFAULT 'member',
+                    display_name TEXT NOT NULL DEFAULT '',
+                    email TEXT NOT NULL DEFAULT '',
+                    joined_at TEXT NOT NULL,
+                    PRIMARY KEY (workspace_id, user_id)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_invitations (
+                    id TEXT PRIMARY KEY,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    inviter_user_id INTEGER NOT NULL,
+                    inviter_name TEXT NOT NULL DEFAULT '',
+                    inviter_email TEXT NOT NULL DEFAULT '',
+                    invitee_user_id INTEGER NULL,
+                    invitee_email TEXT NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    created_at TEXT NOT NULL,
+                    expires_at TEXT NOT NULL,
+                    responded_at TEXT NULL,
+                    inviter_notified_at TEXT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_messages (
+                    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id TEXT NOT NULL UNIQUE,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    sender_user_id INTEGER NULL,
+                    sender_name TEXT NOT NULL DEFAULT '',
+                    sender_email TEXT NOT NULL DEFAULT '',
+                    kind TEXT NOT NULL DEFAULT 'user',
+                    body TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    client_message_id TEXT NOT NULL,
+                    ai_status TEXT NULL,
+                    ai_error TEXT NULL,
+                    ai_started_at TEXT NULL,
+                    UNIQUE(workspace_id, client_message_id)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_user_leases (
+                    user_id INTEGER PRIMARY KEY,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    message_id TEXT NOT NULL,
+                    created_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_reads (
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    user_id INTEGER NOT NULL,
+                    last_read_seq INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (workspace_id, user_id)
+                )
+            """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_members_user "
+            "ON shared_workspace_members(user_id, workspace_id)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_invitations_email "
+            "ON shared_workspace_invitations(invitee_email, status, created_at DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_invitations_workspace "
+            "ON shared_workspace_invitations(workspace_id, created_at DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_messages_order "
+            "ON shared_workspace_messages(workspace_id, seq)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_messages_queue "
+            "ON shared_workspace_messages(workspace_id, ai_status, seq)"
+        )
+        conn.execute(
+            """INSERT INTO shared_workspace_reads (workspace_id, user_id, last_read_seq)
+               SELECT m.workspace_id, m.user_id, COALESCE(MAX(msg.seq), 0)
+               FROM shared_workspace_members m
+               LEFT JOIN shared_workspace_messages msg ON msg.workspace_id = m.workspace_id
+               WHERE 1 = 1
+               GROUP BY m.workspace_id, m.user_id
+               ON CONFLICT (workspace_id, user_id) DO NOTHING"""
         )
         conn.commit()
     finally:
@@ -2964,6 +3166,7 @@ def get_database_backends():
     """Return safe diagnostics showing which logical DB each store uses."""
     return {
         "chat": _backend_label("chat"),
+        "shared_workspaces": _backend_label("shared"),
         "files": _backend_label("files"),
         "archive_memory": _backend_label("archive_memory"),
         "strict_three_database_mode": REQUIRE_THREE_DATABASES,
