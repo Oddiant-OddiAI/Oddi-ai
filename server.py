@@ -1239,8 +1239,8 @@ def _interview_text(value, label: str, maximum: int, *, required: bool = True) -
 
 
 def _clean_interview_questions(value):
-    if not isinstance(value, list) or len(value) != 10:
-        raise HTTPException(status_code=400, detail="An interview must contain exactly 10 questions.")
+    if not isinstance(value, list) or len(value) not in {5, 10}:
+        raise HTTPException(status_code=400, detail="A practice round must contain 5 or 10 questions.")
     questions = []
     for item in value:
         if not isinstance(item, dict):
@@ -1303,7 +1303,7 @@ async def api_update_interview_session(request: Request, session_id: str):
         raise HTTPException(status_code=400, detail="Practice session ID is invalid.")
     questions = _clean_interview_questions(payload.get("questions"))
     raw_answers = payload.get("answers")
-    if not isinstance(raw_answers, list) or len(raw_answers) != 10:
+    if not isinstance(raw_answers, list) or len(raw_answers) != len(questions):
         raise HTTPException(status_code=400, detail="Every question needs an answer slot.")
     answers = [_interview_text(answer, "Answer", 10000, required=False) for answer in raw_answers]
     if sum(map(len, answers)) > 100000:
@@ -1331,6 +1331,19 @@ async def api_interview_questions(request: Request):
     payload = await _read_interview_json(request)
     profession = _interview_text(payload.get("profession"), "Profession", 160)
     context = _interview_text(payload.get("context"), "Role details", 500, required=False)
+    count = payload.get("count", 10)
+    if type(count) is not int or count not in {5, 10}:
+        raise HTTPException(status_code=400, detail="Choose either 5 or 10 questions for a practice round.")
+    question_mode = str(payload.get("question_mode") or "mixed").strip().casefold()
+    if question_mode not in {"mixed", "written", "multiple_choice"}:
+        raise HTTPException(status_code=400, detail="The requested question format is invalid.")
+    difficulty = str(payload.get("difficulty") or "standard").strip().casefold()
+    if difficulty not in {"standard", "easier", "challenging"}:
+        raise HTTPException(status_code=400, detail="The requested difficulty is invalid.")
+    raw_existing_questions = payload.get("existing_questions")
+    existing_questions = []
+    if isinstance(raw_existing_questions, list):
+        existing_questions = [str(item).strip()[:700] for item in raw_existing_questions[:20] if str(item).strip()]
     email = str(request.session.get("email") or "")
     try:
         result = await run_in_threadpool(
@@ -1339,8 +1352,12 @@ async def api_interview_questions(request: Request):
             email,
             profession,
             context,
+            count,
+            question_mode,
+            difficulty,
+            existing_questions,
         )
-        if isinstance(result.get("questions"), list) and len(result["questions"]) == 10:
+        if isinstance(result.get("questions"), list) and len(result["questions"]) == count:
             try:
                 session = await run_in_threadpool(
                     create_interview_session,
@@ -1464,7 +1481,7 @@ async def api_interview_answers(request: Request):
     except Exception:
         logger.exception("Interview Studio full sample answer generation failed.")
         return JSONResponse(
-            {"error": "ODDI couldn't answer all 10 questions right now. Please try again."},
+            {"error": "ODDI couldn't prepare model answers for this practice round. Please try again."},
             status_code=503,
             headers={"Cache-Control": "no-store"},
         )
@@ -1476,13 +1493,17 @@ async def api_interview_review(request: Request):
     payload = await _read_interview_json(request)
     profession = _interview_text(payload.get("profession"), "Profession", 160)
     session_id = _interview_text(payload.get("session_id"), "Practice session", 100, required=False)
+    existing_session = None
     if session_id:
         existing_session = await run_in_threadpool(get_interview_session, str(user_id), session_id)
         if not existing_session:
             raise HTTPException(status_code=404, detail="That practice session could not be found.")
     raw_answers = payload.get("answers")
-    if not isinstance(raw_answers, list) or len(raw_answers) != 10:
-        raise HTTPException(status_code=400, detail="Answer all 10 questions before submitting.")
+    expected_count = len(existing_session.get("questions") or []) if existing_session else None
+    if not isinstance(raw_answers, list) or len(raw_answers) not in {5, 10}:
+        raise HTTPException(status_code=400, detail="Answer all questions in this 5- or 10-question round before submitting.")
+    if expected_count is not None and len(raw_answers) != expected_count:
+        raise HTTPException(status_code=400, detail="The answers do not match this practice round.")
 
     answers = []
     for answer in raw_answers:

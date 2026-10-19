@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b100e">
   <title>Interview Studio · ODDI AI</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='oddi-interview-studio.css') }}?v=20261019-2">
+  <link rel="stylesheet" href="{{ url_for('static', path='oddi-interview-studio.css') }}?v=20261019-3">
 </head>
 <body>
   <div class="studio-shell">
@@ -133,19 +133,37 @@
               <div class="studio-hero-kicker"><span class="status-dot"></span> ODDI’S REVIEW</div>
               <h2 id="feedbackTitle">Your interview feedback</h2>
             </div>
-            <button id="practiceAnotherButton" class="studio-secondary-button" type="button">Practice another role</button>
           </div>
           <div id="feedbackText" class="feedback-copy" aria-live="polite"></div>
-          <details class="submitted-answers">
-            <summary>See the answer sheet sent to ODDI</summary>
-            <pre id="submittedAnswersText"></pre>
-          </details>
+          <section class="feedback-followups" aria-labelledby="feedbackFollowupsTitle">
+            <h3 id="feedbackFollowupsTitle">Keep practising this role</h3>
+            <div class="feedback-action-list">
+              <button class="feedback-action-button feedback-action-primary" type="button" data-follow-up="more-10">Get 10 more questions</button>
+              <button class="feedback-action-button" type="button" data-follow-up="more-5">Get 5 more questions</button>
+              <button class="feedback-action-button" type="button" data-follow-up="written">Get written questions only</button>
+              <button class="feedback-action-button" type="button" data-follow-up="multiple-choice">Get multiple-choice questions only</button>
+              <button class="feedback-action-button" type="button" data-follow-up="easier">Make the questions easier</button>
+              <button class="feedback-action-button" type="button" data-follow-up="challenging">Make the questions more challenging</button>
+              <button id="showPreviousAnswersButton" class="feedback-action-button feedback-action-answers" type="button">Show model answers for the previous 10 questions</button>
+            </div>
+          </section>
+          <section id="previousAnswersSection" class="answer-sheet feedback-answer-sheet" aria-labelledby="previousAnswersTitle" hidden>
+            <div class="answer-sheet-heading">
+              <div>
+                <div class="studio-hero-kicker"><span class="status-dot"></span> MODEL ANSWERS</div>
+                <h2 id="previousAnswersTitle">Answers to your previous questions</h2>
+                <p>Use these examples to compare and strengthen your interview responses.</p>
+              </div>
+              <button id="hidePreviousAnswersButton" class="studio-secondary-button answer-sheet-hide" type="button">Hide answers</button>
+            </div>
+            <div id="previousAnswersContent" class="answer-sheet-content" aria-live="polite"></div>
+          </section>
         </section>
       </section>
 
       <div id="studioStatus" class="studio-status" role="status" aria-live="polite" hidden></div>
     </main>
   </div>
-  <script src="{{ url_for('static', path='oddi-interview-studio.js') }}?v=20261019-2" defer></script>
+  <script src="{{ url_for('static', path='oddi-interview-studio.js') }}?v=20261019-3" defer></script>
 </body>
 </html>

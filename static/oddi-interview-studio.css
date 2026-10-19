@@ -343,9 +343,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .feedback-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 20px; }
 .feedback-heading h2 { margin: 10px 0 0; font-size: clamp(21px, 3vw, 28px); letter-spacing: -.04em; }
 .feedback-copy { color: #e2ebe5; font-size: 14px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
-.submitted-answers { margin-top: 22px; padding-top: 15px; border-top: 1px solid var(--studio-border); color: var(--studio-muted); }
-.submitted-answers summary { width: fit-content; cursor: pointer; font-size: 12px; font-weight: 650; }
-.submitted-answers pre { overflow: auto; max-height: 320px; margin: 13px 0 0; padding: 14px; border: 1px solid var(--studio-border); border-radius: 12px; background: rgba(0,0,0,.22); color: #cbd5ce; font: 12px/1.7 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+.feedback-copy p { margin: 0 0 13px; }
+.feedback-copy p:last-child { margin-bottom: 0; }
+.feedback-subheading { margin: 22px 0 9px; color: #eff8f2; font-size: 15px; line-height: 1.4; }
+.feedback-list { display: grid; gap: 7px; margin: 8px 0 15px; padding-left: 22px; }
+.feedback-followups { display: grid; gap: 12px; margin-top: 27px; padding-top: 21px; border-top: 1px solid var(--studio-border); }
+.feedback-followups h3 { margin: 0; color: #aebbb2; font-size: 11px; font-weight: 760; letter-spacing: .09em; text-transform: uppercase; }
+.feedback-action-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.feedback-action-button { display: flex; min-height: 43px; align-items: center; justify-content: flex-start; gap: 9px; padding: 9px 13px; border: 1px solid var(--studio-border); border-radius: 12px; background: rgba(5,10,7,.32); color: #d8e3db; font: inherit; font-size: 12px; font-weight: 660; line-height: 1.4; text-align: left; cursor: pointer; transition: border-color .16s ease, background .16s ease, color .16s ease, transform .16s ease; }
+.feedback-action-button::before { content: ""; width: 6px; height: 6px; flex: 0 0 6px; border-radius: 50%; background: #438761; }
+.feedback-action-button:hover { transform: translateY(-1px); border-color: rgba(87,211,144,.36); background: rgba(49,198,129,.08); color: #f1fff6; }
+.feedback-action-button.feedback-action-primary { border-color: rgba(64,204,135,.32); background: rgba(31,107,68,.19); color: #a7ecc1; }
+.feedback-action-button.feedback-action-primary::before, .feedback-action-button.feedback-action-answers::before { background: #50d792; box-shadow: 0 0 10px rgba(80,215,146,.4); }
+.feedback-action-button.feedback-action-answers { grid-column: 1 / -1; }
+.feedback-action-button:disabled { cursor: wait; opacity: .58; transform: none; }
+.feedback-answer-sheet { margin-top: 18px; }
 .studio-status { position: fixed; right: 20px; bottom: 20px; z-index: 30; width: min(460px, calc(100vw - 32px)); padding: 12px 15px; border: 1px solid rgba(91,206,144,.26); border-radius: 13px; background: #121a15; color: #e8f4ec; font-size: 13px; box-shadow: 0 10px 35px rgba(0,0,0,.36); }
 .studio-status.is-error { border-color: rgba(255,134,134,.34); color: #ffdada; }
 .studio-status.is-success { border-color: rgba(91,206,144,.36); color: #d6ffe7; }
@@ -383,6 +395,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .answer-all-questions-button { width: 100%; min-height: 42px; }
   .submit-button { width: 100%; }
   .answer-sheet-heading { align-items: stretch; flex-direction: column; gap: 12px; }
+  .feedback-action-list { grid-template-columns: minmax(0, 1fr); }
+  .feedback-action-button.feedback-action-answers { grid-column: auto; }
   .answer-sheet-hide { align-self: flex-start; }
   .feedback-heading { flex-direction: column; }
   .studio-secondary-button { min-height: 38px; }

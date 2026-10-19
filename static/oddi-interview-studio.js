@@ -25,7 +25,12 @@
   const sessionSaveState = document.getElementById("sessionSaveState");
   const feedbackSection = document.getElementById("feedbackSection");
   const feedbackText = document.getElementById("feedbackText");
-  const submittedAnswersText = document.getElementById("submittedAnswersText");
+  const feedbackActionButtons = Array.from(document.querySelectorAll("[data-follow-up]"));
+  const showPreviousAnswersButton = document.getElementById("showPreviousAnswersButton");
+  const previousAnswersSection = document.getElementById("previousAnswersSection");
+  const previousAnswersTitle = document.getElementById("previousAnswersTitle");
+  const previousAnswersContent = document.getElementById("previousAnswersContent");
+  const hidePreviousAnswersButton = document.getElementById("hidePreviousAnswersButton");
   const answeredCount = document.getElementById("answeredCount");
   const totalCount = document.getElementById("totalCount");
   const progressTrack = document.querySelector(".progress-track");
@@ -42,6 +47,9 @@
   let saveQueue = Promise.resolve();
   let restoringSession = false;
   let answerSheetRequestToken = 0;
+  let previousAnswersRequestToken = 0;
+  let previousAnswersCache = null;
+  let sessionReviewed = false;
 
   function setStatus(message, kind) {
     window.clearTimeout(statusTimeout);
@@ -144,7 +152,7 @@
   function saveSessionNow(keepalive) {
     window.clearTimeout(saveTimeout);
     saveTimeout = 0;
-    if (!sessionId || questions.length !== 10) return Promise.resolve();
+    if (!sessionId || sessionReviewed || ![5, 10].includes(questions.length)) return Promise.resolve();
 
     const savingId = sessionId;
     const snapshot = currentSessionSnapshot();
@@ -203,9 +211,10 @@
       questions = result.questions;
       answers = Array(questions.length).fill("");
       sessionId = String(result.session_id || "");
+      sessionReviewed = false;
       setSessionUrl(sessionId);
       feedbackText.textContent = "";
-      submittedAnswersText.textContent = "";
+      clearPreviousAnswers();
       feedbackSection.hidden = true;
       feedbackSection.dataset.visible = "false";
       setAnswerAllMode(false);
@@ -290,6 +299,77 @@
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
     return node;
+  }
+
+  function appendReviewText(container, text) {
+    const parts = String(text || "").split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    parts.forEach(function (part) {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        container.appendChild(makeElement("strong", "", part.slice(2, -2)));
+      } else if (part.startsWith("*") && part.endsWith("*")) {
+        container.appendChild(makeElement("em", "", part.slice(1, -1)));
+      } else if (part) {
+        container.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
+  function renderFeedback(text) {
+    feedbackText.replaceChildren();
+    const lines = String(text || "ODDI received your answers but did not return feedback.").split(/\r?\n/);
+    let paragraph = [];
+    let list = null;
+    let listKind = "";
+
+    function flushParagraph() {
+      if (!paragraph.length) return;
+      const node = makeElement("p");
+      appendReviewText(node, paragraph.join(" "));
+      feedbackText.appendChild(node);
+      paragraph = [];
+    }
+
+    lines.forEach(function (rawLine) {
+      const line = rawLine.trim();
+      if (!line || /^-{3,}$/.test(line)) {
+        flushParagraph();
+        list = null;
+        listKind = "";
+        return;
+      }
+
+      const heading = line.match(/^#{1,4}\s+(.+)$/);
+      if (heading) {
+        flushParagraph();
+        list = null;
+        listKind = "";
+        const node = makeElement("h3", "feedback-subheading");
+        appendReviewText(node, heading[1]);
+        feedbackText.appendChild(node);
+        return;
+      }
+
+      const ordered = line.match(/^\d+[.)]\s+(.+)$/);
+      const unordered = line.match(/^(?:[-*•])\s+(.+)$/);
+      if (ordered || unordered) {
+        flushParagraph();
+        const kind = ordered ? "ol" : "ul";
+        if (!list || listKind !== kind) {
+          list = makeElement(kind, "feedback-list");
+          listKind = kind;
+          feedbackText.appendChild(list);
+        }
+        const item = makeElement("li");
+        appendReviewText(item, (ordered || unordered)[1]);
+        list.appendChild(item);
+        return;
+      }
+
+      list = null;
+      listKind = "";
+      paragraph.push(line);
+    });
+    flushParagraph();
   }
 
   function buildQuestionCard(question, index, previousAnswer) {
@@ -416,6 +496,9 @@
 
   function renderQuestions() {
     clearAnswerSheet();
+    const count = questions.length || 10;
+    document.getElementById("answerSheetTitle").textContent = "All " + count + " answers";
+    answerAllQuestionsButton.querySelector(".button-label").textContent = "Get model answers for all " + count + " questions";
     questionList.replaceChildren();
     questions.forEach(function (question, index) {
       questionList.appendChild(buildQuestionCard(question, index, answers[index] || ""));
@@ -430,14 +513,33 @@
     if (answerAllQuestionsButton.disabled) setButtonBusy(answerAllQuestionsButton, false);
   }
 
+  function previousAnswersLabel(action) {
+    const count = questions.length || 10;
+    return action + " model answers for the previous " + count + " questions";
+  }
+
+  function clearPreviousAnswers() {
+    previousAnswersRequestToken += 1;
+    previousAnswersSection.hidden = true;
+    previousAnswersContent.replaceChildren();
+    previousAnswersCache = null;
+    showPreviousAnswersButton.disabled = false;
+    showPreviousAnswersButton.setAttribute("aria-expanded", "false");
+    showPreviousAnswersButton.textContent = previousAnswersLabel("Show");
+  }
+
   function renderAnswerSheet(sampleAnswers, questionSet) {
-    answerSheetContent.replaceChildren();
+    return renderAnswerCards(answerSheetContent, sampleAnswers, questionSet);
+  }
+
+  function renderAnswerCards(container, sampleAnswers, questionSet) {
+    container.replaceChildren();
     sampleAnswers.forEach(function (answer, index) {
       const item = makeElement("article", "answer-sheet-item");
       item.appendChild(makeElement("h3", "answer-sheet-question", "Q" + (index + 1) + ". " + questionSet[index].question));
       item.appendChild(makeElement("span", "answer-sheet-label", "ODDI sample answer"));
       item.appendChild(makeElement("p", "answer-sheet-response", answer));
-      answerSheetContent.appendChild(item);
+      container.appendChild(item);
     });
   }
 
@@ -445,6 +547,7 @@
     const answer = getAnswer(card);
     if (answer && !window.confirm("Replace this question? Your current answer to it will be cleared.")) return;
 
+    const hadReview = !feedbackSection.hidden;
     feedbackSection.hidden = true;
     feedbackSection.dataset.visible = "false";
     const cardStatus = card.querySelector(".card-status");
@@ -460,6 +563,8 @@
         existing_questions: questions.map(function (item) { return item.question; })
       });
       if (!result.question || !result.question.question) throw new Error("ODDI didn't return a replacement question.");
+      sessionReviewed = false;
+      clearPreviousAnswers();
       questions[index] = result.question;
       answers[index] = "";
       clearAnswerSheet();
@@ -473,6 +578,10 @@
       button.querySelector("span:last-child").textContent = originalLabel;
       cardStatus.textContent = error.message || "ODDI couldn't create a different question.";
       cardStatus.classList.add("is-error");
+      if (hadReview) {
+        feedbackSection.hidden = false;
+        feedbackSection.dataset.visible = "true";
+      }
     }
   }
 
@@ -549,7 +658,7 @@
     try {
       const result = await requestJson("/api/interview/sessions/" + encodeURIComponent(id), "GET");
       const saved = result.session;
-      if (!saved || !Array.isArray(saved.questions) || saved.questions.length !== 10) {
+      if (!saved || !Array.isArray(saved.questions) || ![5, 10].includes(saved.questions.length)) {
         throw new Error("This saved practice doesn't have a complete question set.");
       }
 
@@ -557,12 +666,13 @@
       profession = String(saved.profession || "");
       roleContext = String(saved.context || "");
       questions = saved.questions;
-      answers = Array.isArray(saved.answers) ? saved.answers.slice(0, 10) : Array(10).fill("");
-      while (answers.length < 10) answers.push("");
+      sessionReviewed = Boolean(saved.review);
+      answers = Array.isArray(saved.answers) ? saved.answers.slice(0, questions.length) : Array(questions.length).fill("");
+      while (answers.length < questions.length) answers.push("");
       professionInput.value = profession;
       roleDetailsInput.value = roleContext;
-      feedbackText.textContent = String(saved.review || "");
-      submittedAnswersText.textContent = String(saved.formatted_answers || "");
+      renderFeedback(String(saved.review || ""));
+      clearPreviousAnswers();
       feedbackSection.hidden = !saved.review;
       feedbackSection.dataset.visible = saved.review ? "true" : "false";
       setAnswerAllMode(false);
@@ -604,6 +714,7 @@
       feedbackSection.hidden = true;
       feedbackSection.dataset.visible = "false";
     }
+    sessionReviewed = false;
     updateProgress();
   }
 
@@ -612,10 +723,11 @@
 
   answerAllQuestionsButton.addEventListener("click", async function () {
     if (answerAllQuestionsButton.disabled) return;
-    if (questions.length !== 10) {
-      setStatus("ODDI needs all 10 questions before it can prepare the answer sheet.", "error");
+    if (![5, 10].includes(questions.length)) {
+      setStatus("ODDI needs a complete practice round before it can prepare model answers.", "error");
       return;
     }
+    const count = questions.length;
 
     const questionSet = questions.map(function (question) {
       return {
@@ -626,11 +738,11 @@
     });
     const requestToken = ++answerSheetRequestToken;
     clearStatus();
-    setButtonBusy(answerAllQuestionsButton, true, "ODDI is answering all 10...");
+    setButtonBusy(answerAllQuestionsButton, true, "ODDI is answering all " + count + "...");
     answerSheetSection.hidden = false;
     answerAllQuestionsButton.setAttribute("aria-expanded", "true");
     answerSheetContent.replaceChildren(
-      makeElement("div", "answer-sheet-loading", "ODDI is preparing a sample answer for every question...")
+        makeElement("div", "answer-sheet-loading", "ODDI is preparing a sample answer for each of the " + count + " questions...")
     );
 
     try {
@@ -643,17 +755,17 @@
       if (!Array.isArray(result.answers) || result.answers.length !== questionSet.length || result.answers.some(function (answer) {
         return typeof answer !== "string" || !answer.trim();
       })) {
-        throw new Error("ODDI didn't return a complete set of 10 sample answers.");
+        throw new Error("ODDI didn't return a complete set of " + count + " sample answers.");
       }
       renderAnswerSheet(result.answers, questionSet);
       answerSheetSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      setStatus("ODDI's sample answers for all 10 questions are ready.", "success");
+      setStatus("ODDI's sample answers for all " + count + " questions are ready.", "success");
     } catch (error) {
       if (requestToken !== answerSheetRequestToken) return;
       answerSheetContent.replaceChildren(
-        makeElement("div", "answer-sheet-loading answer-sheet-error", error.message || "ODDI couldn't answer all 10 questions. Please try again.")
+        makeElement("div", "answer-sheet-loading answer-sheet-error", error.message || "ODDI couldn't answer all " + count + " questions. Please try again.")
       );
-      setStatus(error.message || "ODDI couldn't answer all 10 questions. Please try again.", "error");
+      setStatus(error.message || "ODDI couldn't answer all " + count + " questions. Please try again.", "error");
     } finally {
       if (requestToken === answerSheetRequestToken) setButtonBusy(answerAllQuestionsButton, false);
     }
@@ -662,6 +774,149 @@
   hideAnswerSheetButton.addEventListener("click", function () {
     answerSheetSection.hidden = true;
     answerAllQuestionsButton.setAttribute("aria-expanded", "false");
+  });
+
+  function openPreviousAnswers() {
+    previousAnswersSection.hidden = false;
+    showPreviousAnswersButton.setAttribute("aria-expanded", "true");
+    showPreviousAnswersButton.textContent = "Hide model answers";
+    previousAnswersSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  showPreviousAnswersButton.addEventListener("click", async function () {
+    if (showPreviousAnswersButton.disabled) return;
+    if (!previousAnswersSection.hidden) {
+      previousAnswersSection.hidden = true;
+      showPreviousAnswersButton.setAttribute("aria-expanded", "false");
+      showPreviousAnswersButton.textContent = previousAnswersLabel("Show");
+      return;
+    }
+    if (previousAnswersCache) {
+      renderAnswerCards(previousAnswersContent, previousAnswersCache.answers, previousAnswersCache.questions);
+      openPreviousAnswers();
+      return;
+    }
+
+    const questionSet = questions.map(function (question) {
+      return {
+        type: question.type === "multiple_choice" ? "multiple_choice" : "written",
+        question: question.question,
+        options: question.type === "multiple_choice" ? (question.options || []).slice() : []
+      };
+    });
+    const requestToken = ++previousAnswersRequestToken;
+    clearStatus();
+    showPreviousAnswersButton.disabled = true;
+    showPreviousAnswersButton.textContent = "ODDI is preparing model answers...";
+    previousAnswersSection.hidden = false;
+    previousAnswersContent.replaceChildren(
+      makeElement("div", "answer-sheet-loading", "ODDI is preparing model answers for your previous " + questionSet.length + " questions...")
+    );
+
+    try {
+      const result = await postJson("/api/interview/answers", {
+        profession: profession,
+        context: roleContext,
+        questions: questionSet
+      });
+      if (requestToken !== previousAnswersRequestToken) return;
+      if (!Array.isArray(result.answers) || result.answers.length !== questionSet.length || result.answers.some(function (answer) {
+        return typeof answer !== "string" || !answer.trim();
+      })) {
+        throw new Error("ODDI didn't return model answers for every question.");
+      }
+      previousAnswersCache = { answers: result.answers, questions: questionSet };
+      previousAnswersTitle.textContent = "Model answers for your previous " + questionSet.length + " questions";
+      renderAnswerCards(previousAnswersContent, result.answers, questionSet);
+      openPreviousAnswers();
+      setStatus("ODDI's model answers are ready.", "success");
+    } catch (error) {
+      if (requestToken !== previousAnswersRequestToken) return;
+      previousAnswersSection.hidden = false;
+      previousAnswersContent.replaceChildren(
+        makeElement("div", "answer-sheet-loading answer-sheet-error", error.message || "ODDI couldn't prepare the model answers. Please try again.")
+      );
+      showPreviousAnswersButton.setAttribute("aria-expanded", "true");
+      showPreviousAnswersButton.textContent = "Hide model answers";
+      setStatus(error.message || "ODDI couldn't prepare the model answers. Please try again.", "error");
+    } finally {
+      if (requestToken === previousAnswersRequestToken) showPreviousAnswersButton.disabled = false;
+    }
+  });
+
+  hidePreviousAnswersButton.addEventListener("click", function () {
+    previousAnswersSection.hidden = true;
+    showPreviousAnswersButton.setAttribute("aria-expanded", "false");
+    showPreviousAnswersButton.textContent = previousAnswersLabel("Show");
+  });
+
+  async function createFollowupQuestions(button) {
+    if (button.disabled) return;
+    const action = button.dataset.followUp;
+    const request = { count: 10, question_mode: "mixed", difficulty: "standard" };
+    if (action === "more-5") request.count = 5;
+    if (action === "written") request.question_mode = "written";
+    if (action === "multiple-choice") request.question_mode = "multiple_choice";
+    if (action === "easier") request.difficulty = "easier";
+    if (action === "challenging") request.difficulty = "challenging";
+
+    const originalLabel = button.textContent;
+    feedbackActionButtons.forEach(function (item) { item.disabled = true; });
+    showPreviousAnswersButton.disabled = true;
+    button.textContent = "ODDI is preparing your questions...";
+    clearStatus();
+    try {
+      const result = await postJson("/api/interview/questions", {
+        profession: profession,
+        context: roleContext,
+        count: request.count,
+        question_mode: request.question_mode,
+        difficulty: request.difficulty,
+        existing_questions: questions.map(function (item) { return item.question; })
+      });
+      if (result.clarification) throw new Error(result.clarification);
+      if (!Array.isArray(result.questions) || result.questions.length !== request.count) {
+        throw new Error("ODDI didn't return the complete new question set. Please try again.");
+      }
+
+      questions = result.questions;
+      answers = Array(questions.length).fill("");
+      sessionId = String(result.session_id || "");
+      sessionReviewed = false;
+      setSessionUrl(sessionId);
+      feedbackText.replaceChildren();
+      clearPreviousAnswers();
+      feedbackSection.hidden = true;
+      feedbackSection.dataset.visible = "false";
+      setAnswerAllMode(false);
+      showQuestions();
+      restoringSession = true;
+      renderQuestions();
+      updateProgress();
+      restoringSession = false;
+
+      if (sessionId) {
+        setSaveState("New practice saved. Your answers save automatically.");
+        void loadSavedSessions(false);
+        setStatus("Your next " + questions.length + " questions are ready for " + profession + ".", "success");
+      } else {
+        setSaveState("This practice couldn't be saved. Please keep this page open.", "error");
+        setStatus(result.session_error || "Your questions are ready, but ODDI couldn't save this practice.", "error");
+      }
+    } catch (error) {
+      restoringSession = false;
+      setStatus(error.message || "ODDI couldn't prepare the next questions. Please try again.", "error");
+    } finally {
+      feedbackActionButtons.forEach(function (item) { item.disabled = false; });
+      showPreviousAnswersButton.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+
+  feedbackActionButtons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      void createFollowupQuestions(button);
+    });
   });
 
   submitButton.addEventListener("click", async function () {
@@ -690,10 +945,11 @@
           return { question: questions[index].question, answer: getAnswer(card) };
         })
       });
-      feedbackText.textContent = result.review || "ODDI received your answers but did not return feedback.";
-      submittedAnswersText.textContent = result.formatted_answers || "";
+      renderFeedback(result.review || "ODDI received your answers but did not return feedback.");
+      clearPreviousAnswers();
       feedbackSection.hidden = false;
       feedbackSection.dataset.visible = "true";
+      sessionReviewed = true;
       setSaveState("Review and answers saved to this account.");
       feedbackSection.scrollIntoView({ behavior: "smooth", block: "start" });
       setStatus("Your interview review is ready.", "success");
@@ -706,37 +962,8 @@
     }
   });
 
-  document.getElementById("practiceAnotherButton").addEventListener("click", function () {
-    window.clearTimeout(saveTimeout);
-    profession = "";
-    roleContext = "";
-    questions = [];
-    answers = [];
-    sessionId = "";
-    professionInput.value = "";
-    roleDetailsInput.value = "";
-    roleDisplay.textContent = "Interview Studio";
-    questionList.replaceChildren();
-    clearAnswerSheet();
-    feedbackText.textContent = "";
-    submittedAnswersText.textContent = "";
-    feedbackSection.hidden = true;
-    feedbackSection.dataset.visible = "false";
-    questionsPanel.hidden = true;
-    clarificationPanel.hidden = true;
-    setupPanel.hidden = false;
-    practiceSessionsSection.hidden = true;
-    setAnswerAllMode(false);
-    setSessionUrl("");
-    setSaveState("");
-    clearStatus();
-    void loadSavedSessions(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
-    professionInput.focus({ preventScroll: true });
-  });
-
   window.addEventListener("pagehide", function () {
-    if (sessionId && questions.length === 10) {
+    if (sessionId && [5, 10].includes(questions.length)) {
       void saveSessionNow(true).catch(function () {});
     }
   });
