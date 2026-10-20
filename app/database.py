@@ -745,6 +745,7 @@ def _create_shared_workspace_tables():
                     workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
                     name TEXT NOT NULL,
                     goal TEXT NOT NULL,
+                    team_size TEXT NOT NULL DEFAULT 'individual',
                     deadline TEXT NULL,
                     workflow_status TEXT NOT NULL DEFAULT 'offered',
                     created_by BIGINT NOT NULL,
@@ -845,6 +846,7 @@ def _create_shared_workspace_tables():
                     workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
                     name TEXT NOT NULL,
                     goal TEXT NOT NULL,
+                    team_size TEXT NOT NULL DEFAULT 'individual',
                     deadline TEXT NULL,
                     workflow_status TEXT NOT NULL DEFAULT 'offered',
                     created_by INTEGER NOT NULL,
@@ -867,6 +869,14 @@ def _create_shared_workspace_tables():
                     updated_at TEXT NOT NULL
                 )
             """)
+        if _use_postgres("shared"):
+            conn.execute(
+                "ALTER TABLE shared_workspace_projects ADD COLUMN IF NOT EXISTS team_size TEXT NOT NULL DEFAULT 'individual'"
+            )
+        else:
+            project_columns = {str(row[1] or "") for row in conn.execute("PRAGMA table_info(shared_workspace_projects)").fetchall()}
+            if "team_size" not in project_columns:
+                conn.execute("ALTER TABLE shared_workspace_projects ADD COLUMN team_size TEXT NOT NULL DEFAULT 'individual'")
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_shared_workspace_members_user "
             "ON shared_workspace_members(user_id, workspace_id)"

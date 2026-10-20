@@ -37,6 +37,7 @@ MAX_MESSAGE_LENGTH = 8000
 MAX_NAME_LENGTH = 80
 MAX_PROJECT_GOAL_LENGTH = 4000
 MAX_TASK_TITLE_LENGTH = 180
+PROJECT_TEAM_SIZE_CHOICES = frozenset({"individual", "2-15", "16+"})
 INVITE_LIFETIME = timedelta(days=14)
 _AI_PREFIX = re.compile(r"^\s*@oddi(?=$|\s|[:,])\s*[:,]?\s*(.*)$", re.IGNORECASE | re.DOTALL)
 
@@ -139,7 +140,7 @@ def _require_membership(conn, workspace_id: str, user_id: int):
 def _workspace_projects(conn, workspace_id: str, include_tasks: bool = True) -> list[dict[str, Any]]:
     rows = _fetchall(
         conn,
-        """SELECT id, workspace_id, name, goal, deadline, workflow_status,
+        """SELECT id, workspace_id, name, goal, team_size, deadline, workflow_status,
                   created_by, created_at, updated_at
            FROM shared_workspace_projects WHERE workspace_id = ?
            ORDER BY created_at DESC, id""",
@@ -185,6 +186,8 @@ def _workspace_projects(conn, workspace_id: str, include_tasks: bool = True) -> 
     for project in projects:
         project["id"] = str(project.get("id") or "")
         project["workspace_id"] = str(project.get("workspace_id") or workspace_id)
+        team_size = str(project.get("team_size") or "individual").strip().casefold()
+        project["team_size"] = team_size if team_size in PROJECT_TEAM_SIZE_CHOICES else "individual"
         project["workflow_status"] = str(project.get("workflow_status") or "offered")
         project.pop("created_by", None)
         if include_tasks:
@@ -539,6 +542,9 @@ def _create_project(user: dict[str, Any], payload: dict[str, Any]):
         raise HTTPException(status_code=400, detail=f"Choose a project name of 1 to {MAX_NAME_LENGTH} characters.")
     if not goal or len(goal) > MAX_PROJECT_GOAL_LENGTH:
         raise HTTPException(status_code=400, detail=f"Add a project goal of 1 to {MAX_PROJECT_GOAL_LENGTH} characters.")
+    team_size = str(payload.get("team_size") or "individual").strip().casefold()
+    if team_size not in PROJECT_TEAM_SIZE_CHOICES:
+        raise HTTPException(status_code=400, detail="Choose a valid project team size.")
     deadline = str(payload.get("deadline") or "").strip() or None
     if deadline:
         try:
@@ -581,9 +587,9 @@ def _create_project(user: dict[str, Any], payload: dict[str, Any]):
 
         conn.execute(
             """INSERT INTO shared_workspace_projects
-               (id, workspace_id, name, goal, deadline, workflow_status, created_by, created_at, updated_at)
-               VALUES (?, ?, ?, ?, ?, 'offered', ?, ?, ?)""",
-            (project_id, workspace_id, name, goal, deadline, user["id"], now, now),
+               (id, workspace_id, name, goal, team_size, deadline, workflow_status, created_by, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?, 'offered', ?, ?, ?)""",
+            (project_id, workspace_id, name, goal, team_size, deadline, user["id"], now, now),
         )
         conn.execute("UPDATE shared_workspaces SET updated_at = ? WHERE id = ?", (now, workspace_id))
         conn.commit()

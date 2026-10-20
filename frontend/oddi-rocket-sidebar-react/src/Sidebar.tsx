@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Archive, Briefcase, ChevronLeft, ChevronRight, Download, FolderOpen, FolderKanban,
+  Archive, Briefcase, ChevronLeft, ChevronRight, Download, FolderOpen,
   Home, LogOut, MessageSquare, MoreHorizontal, Pin, Plus, Search, List,
   Settings, X, Pencil, Trash2, Menu, Share2, UsersRound
 } from 'lucide-react';
@@ -1059,11 +1059,6 @@ export default function Sidebar() {
     window.dispatchEvent(new CustomEvent('oddi:open-library'));
   }
 
-  function openProjects() {
-    setMenuId(null);
-    window.dispatchEvent(new CustomEvent('oddi:open-projects'));
-  }
-
   function openSharedWorkspaces() {
     setMenuId(null);
     window.dispatchEvent(new CustomEvent('oddi:shared-workspaces-open'));
@@ -1324,7 +1319,6 @@ export default function Sidebar() {
               notificationLabel: `Shared workspaces${sharedInviteCount ? `, ${sharedInviteCount} pending invitation${sharedInviteCount === 1 ? '' : 's'}` : ''}${sharedUnreadCount ? `, ${sharedUnreadCount} unread message${sharedUnreadCount === 1 ? '' : 's'}` : ''}`,
             },
             { label: 'Interview Studio', icon: <Briefcase size={14} />, action: openInterviewStudio },
-            { label: 'Projects', icon: <FolderKanban size={14} />, action: openProjects },
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
             { label: 'Settings', icon: <Settings size={14} />, action: openSettings },
           ].map(item => (

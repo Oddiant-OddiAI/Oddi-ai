@@ -8,6 +8,11 @@
   const MAX_MESSAGE_LENGTH = 8000;
   const MAX_TASK_TITLE_LENGTH = 180;
   const MAX_PROJECT_GOAL_LENGTH = 4000;
+  const PROJECT_TEAM_SIZE_LABELS = Object.freeze({
+    individual: 'Individual',
+    '2-15': '2–15 members',
+    '16+': '16+ members',
+  });
   const pageAccountId = document.body.dataset.userId?.trim() || '';
 
   const root = document.createElement('div');
@@ -338,6 +343,7 @@
     if (!target || !project || !state.details) return;
     const { workspace, members } = state.details;
     const isAdmin = workspace.my_role === 'admin' || workspace.my_role === 'owner';
+    const teamSize = PROJECT_TEAM_SIZE_LABELS[project.team_size] || PROJECT_TEAM_SIZE_LABELS.individual;
     const tasks = Array.isArray(project.tasks) ? project.tasks : [];
     const done = Number(project.completed_count || 0);
     const progress = tasks.length ? Math.round(done * 100 / tasks.length) : 0;
@@ -359,7 +365,7 @@
       workflow = '<section class="oddi-sw-workflow-offer is-generating"><strong>ODDI is creating your workflow...</strong><p>Your project checklist will appear here when it is ready.</p><span class="oddi-sw-typing"><i></i><i></i><i></i></span></section>';
     }
     target.innerHTML = `<div class="oddi-sw-project-content"><button type="button" class="oddi-sw-project-back" data-action="back-to-list">&larr; All projects</button>
-      <header class="oddi-sw-project-heading"><div><span class="oddi-sw-project-eyebrow">PROJECT IN ${escapeHtml(workspace.name)}</span><h1>${escapeHtml(project.name)}</h1><div class="oddi-sw-project-meta"><span>Deadline: <strong>${escapeHtml(deadline)}</strong></span><span>${done} of ${tasks.length} tasks complete</span></div></div><div class="oddi-sw-project-actions">${isAdmin ? '<button type="button" class="oddi-sw-secondary" data-action="manage-group">Invite members</button>' : ''}<button type="button" class="oddi-sw-primary" data-action="open-workspace" data-workspace-id="${escapeHtml(workspace.id)}">Open group chat</button></div></header>
+      <header class="oddi-sw-project-heading"><div><span class="oddi-sw-project-eyebrow">PROJECT IN ${escapeHtml(workspace.name)}</span><h1>${escapeHtml(project.name)}</h1><div class="oddi-sw-project-meta"><span>Team size: <strong>${escapeHtml(teamSize)}</strong></span><span>Deadline: <strong>${escapeHtml(deadline)}</strong></span><span>${done} of ${tasks.length} tasks complete</span></div></div><div class="oddi-sw-project-actions">${isAdmin ? '<button type="button" class="oddi-sw-secondary" data-action="manage-group">Invite members</button>' : ''}<button type="button" class="oddi-sw-primary" data-action="open-workspace" data-workspace-id="${escapeHtml(workspace.id)}">Open group chat</button></div></header>
       <section class="oddi-sw-goal-card"><span class="oddi-sw-project-eyebrow">PROJECT GOAL</span><p>${escapeHtml(project.goal)}</p>${tasks.length ? `<div class="oddi-sw-progress-track" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><span style="width:${progress}%"></span></div>` : ''}</section>
       ${workflow}
       <section class="oddi-sw-task-section"><div class="oddi-sw-project-section-head"><div><span class="oddi-sw-project-eyebrow">SHARED CHECKLIST</span><h2>Tasks &amp; milestones</h2><p>Admins assign tasks. Group members can mark the work complete.</p></div><span class="oddi-sw-task-count">${done}/${tasks.length}</span></div>
@@ -532,6 +538,7 @@
     renderModal('Create a project', 'Set a clear goal and optional deadline. You can invite group members after creating it.', `<form class="oddi-sw-project-form" data-form="create-project">
       <label><span>Project name</span><input name="name" maxlength="${MAX_NAME_LENGTH}" placeholder="e.g. Prepare the product launch" required></label>
       ${groupChoices}
+      <label><span>How many people will work on this project?</span><select name="team_size" required><option value="" selected disabled>Choose a team size</option><option value="individual">Individual</option><option value="2-15">2–15 members</option><option value="16+">16+ members</option></select></label>
       <label><span>Project goal</span><textarea name="goal" maxlength="${MAX_PROJECT_GOAL_LENGTH}" rows="3" placeholder="What should this project accomplish?" required></textarea></label>
       <label><span>Deadline <small>(optional)</small></span><input name="deadline" type="date"></label>
       <button class="oddi-sw-primary" type="submit">Create Project</button>
@@ -728,6 +735,7 @@
         const payload = {
           name: values.get('name'),
           goal: values.get('goal'),
+          team_size: values.get('team_size'),
           deadline: values.get('deadline'),
           workspace_id: values.get('workspace_id'),
           group_name: values.get('group_name'),
