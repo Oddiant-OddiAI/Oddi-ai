@@ -6,6 +6,7 @@
 
   const MAX_NAME_LENGTH = 80;
   const MAX_MESSAGE_LENGTH = 8000;
+  const MAX_TASK_TITLE_LENGTH = 180;
   const MAX_PROJECT_GOAL_LENGTH = 4000;
   const pageAccountId = document.body.dataset.userId?.trim() || '';
 
@@ -36,6 +37,7 @@
     detailsTimer: null,
     toastTimer: null,
     refreshingMessages: false,
+    expandedProjectIds: new Set(),
   };
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -153,8 +155,8 @@
     </article>`;
   }
 
-  function workspaceCard(workspace, activeId = '') {
-    return `<button type="button" class="oddi-sw-workspace-card${workspace.id === activeId ? ' active' : ''}" data-action="open-workspace" data-workspace-id="${escapeHtml(workspace.id)}">
+  function workspaceCard(workspace, activeId = '', extraClass = '') {
+    return `<button type="button" class="oddi-sw-workspace-card${extraClass ? ` ${extraClass}` : ''}${workspace.id === activeId ? ' active' : ''}" data-action="open-workspace" data-workspace-id="${escapeHtml(workspace.id)}">
       <span class="oddi-sw-card-title">${avatar(workspace.name, true)}<span>${escapeHtml(workspace.name)}</span><span class="oddi-sw-card-stats"><span class="oddi-sw-muted">${Number(workspace.member_count || 0)} ${Number(workspace.member_count || 0) === 1 ? 'member' : 'members'}</span>${unreadBadge(workspace.unread_count)}</span></span>
       <span class="oddi-sw-card-preview">${escapeHtml(workspace.last_message || 'Shared group')}</span>
     </button>`;
@@ -164,15 +166,29 @@
     const taskCount = Number(project.task_count || 0);
     const completed = Number(project.completed_count || 0);
     const progress = taskCount ? `${completed}/${taskCount} tasks` : 'Workflow not created';
-    return `<button type="button" class="oddi-sw-project-card${project.id === activeProjectId ? ' active' : ''}" data-action="open-project" data-workspace-id="${escapeHtml(workspace.id)}" data-project-id="${escapeHtml(project.id)}">
-      <span class="oddi-sw-project-mark" aria-hidden="true">P</span><span class="oddi-sw-project-copy"><strong>${escapeHtml(project.name)}</strong><small>${escapeHtml(workspace.name)} · ${escapeHtml(progress)}</small></span>
-    </button>`;
+    const expanded = state.expandedProjectIds.has(project.id);
+    const panelId = `oddi-sw-project-contents-${String(project.id).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+    return `<section class="oddi-sw-project-tree${expanded ? ' is-expanded' : ''}">
+      <button type="button" class="oddi-sw-project-card${project.id === activeProjectId ? ' active' : ''}" data-action="toggle-project" data-project-id="${escapeHtml(project.id)}" data-project-name="${escapeHtml(project.name)}" aria-expanded="${expanded}" aria-controls="${escapeHtml(panelId)}">
+        <span class="oddi-sw-project-mark" aria-hidden="true">P</span><span class="oddi-sw-project-copy"><strong>${escapeHtml(project.name)}</strong><small>${escapeHtml(progress)}</small></span>
+        <span class="oddi-sw-project-indicators">${unreadBadge(workspace.unread_count)}<svg class="oddi-sw-project-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span>
+      </button>
+      <div class="oddi-sw-project-children" id="${escapeHtml(panelId)}"${expanded ? '' : ' hidden'}>
+        ${workspaceCard(workspace, state.workspaceId === workspace.id ? workspace.id : '', 'oddi-sw-project-group-card')}
+        <button type="button" class="oddi-sw-project-plan-link${project.id === activeProjectId ? ' active' : ''}" data-action="open-project" data-workspace-id="${escapeHtml(workspace.id)}" data-project-id="${escapeHtml(project.id)}">
+          <span><strong>Project plan &amp; checklist</strong><small>Goal, deadline, and task progress</small></span><span aria-hidden="true">↗</span>
+        </button>
+      </div>
+    </section>`;
   }
 
   function renderList() {
     const invitations = state.invitations;
     const workspaces = state.workspaces;
-    const workspaceCards = workspaces.length ? workspaces.map(workspace => workspaceCard(workspace)).join('') : '<div class="oddi-sw-empty-inline">Your groups will show up here.</div>';
+    const standaloneWorkspaces = workspaces.filter(workspace => !(workspace.projects || []).length);
+    const workspaceCards = standaloneWorkspaces.length
+      ? standaloneWorkspaces.map(workspace => workspaceCard(workspace)).join('')
+      : `<div class="oddi-sw-empty-inline">${workspaces.length ? 'Groups linked to projects appear beneath each project.' : 'Your groups will show up here.'}</div>`;
     const projectCards = workspaces.flatMap(workspace => (workspace.projects || []).map(project => projectCard(project, workspace))).join('') || '<div class="oddi-sw-empty-inline">Projects you create in a group will show up here.</div>';
     const inviteCards = invitations.length ? invitations.map(inviteCard).join('') : '<div class="oddi-sw-empty-inline">No pending invitations.</div>';
 
@@ -309,9 +325,11 @@
     const invitations = state.invitations.length
       ? `<div class="oddi-sw-section"><div class="oddi-sw-section-label">Invitations <span class="oddi-sw-count">${state.invitations.length}</span></div>${state.invitations.map(inviteCard).join('')}</div>`
       : '';
-    const workspaces = state.workspaces.map(item => workspaceCard(item, activeWorkspaceId)).join('');
+    const standaloneWorkspaces = state.workspaces.filter(item => !(item.projects || []).length);
+    const workspaces = standaloneWorkspaces.map(item => workspaceCard(item, activeWorkspaceId)).join('');
     const projects = state.workspaces.flatMap(item => (item.projects || []).map(project => projectCard(project, item, state.projectId || ''))).join('');
-    return `<aside class="oddi-sw-list" aria-label="Groups, projects and invitations"><div class="oddi-sw-list-head"><h2>Shared workspace</h2><button class="oddi-sw-icon-btn" type="button" data-action="back-to-list" aria-label="All groups">Back</button></div>${invitations}<div class="oddi-sw-section"><div class="oddi-sw-section-label">Groups</div>${workspaces || '<div class="oddi-sw-empty-inline">Your groups will show up here.</div>'}</div><div class="oddi-sw-section"><div class="oddi-sw-section-label">Projects</div>${projects || '<div class="oddi-sw-empty-inline">Projects appear here.</div>'}</div><div class="oddi-sw-section"><button type="button" class="oddi-sw-secondary" data-action="create-project" style="width:100%">Create Project</button></div></aside>`;
+    const groupEmptyMessage = state.workspaces.length ? 'Groups linked to projects appear beneath each project.' : 'Your groups will show up here.';
+    return `<aside class="oddi-sw-list" aria-label="Groups, projects and invitations"><div class="oddi-sw-list-head"><h2>Shared workspace</h2><button class="oddi-sw-icon-btn" type="button" data-action="back-to-list" aria-label="All groups">Back</button></div>${invitations}<div class="oddi-sw-section"><div class="oddi-sw-section-label">Groups</div>${workspaces || `<div class="oddi-sw-empty-inline">${groupEmptyMessage}</div>`}</div><div class="oddi-sw-section"><div class="oddi-sw-section-label">Projects</div>${projects || '<div class="oddi-sw-empty-inline">Projects appear here.</div>'}</div><div class="oddi-sw-section"><button type="button" class="oddi-sw-secondary" data-action="create-project" style="width:100%">Create Project</button></div></aside>`;
   }
 
   function renderProjectView() {
@@ -389,6 +407,7 @@
     state.page = 'project';
     state.workspaceId = workspaceId;
     state.projectId = projectId;
+    state.expandedProjectIds.add(projectId);
     state.details = null;
     state.infoOpen = false;
     root.innerHTML = '<section class="oddi-sw-shell"><header class="oddi-sw-top"><button type="button" data-action="back-to-list" aria-label="Back to projects">Back</button><span class="oddi-sw-brand">ODDI</span><span class="oddi-sw-kicker">Loading project...</span></header><main class="oddi-sw-empty"><p>Opening your project...</p></main></section>';
@@ -585,6 +604,20 @@
     if (action === 'back-to-list') { state.page = 'list'; state.workspaceId = null; state.projectId = null; state.details = null; stopPolling(); await refreshList(); if (!root.querySelector('.oddi-sw-shell.is-error')) state.listTimer = window.setInterval(() => { if (!root.hidden && state.page === 'list') void refreshList(); }, 10000); return; }
     if (action === 'create-project' || action === 'new-workspace') { openCreateProjectModal(); return; }
     if (action === 'open-workspace') { void selectWorkspace(button.dataset.workspaceId); return; }
+    if (action === 'toggle-project') {
+      const projectId = button.dataset.projectId;
+      const tree = button.closest('.oddi-sw-project-tree');
+      const contents = tree?.querySelector('.oddi-sw-project-children');
+      if (!projectId || !contents) return;
+      const expanded = !state.expandedProjectIds.has(projectId);
+      if (expanded) state.expandedProjectIds.add(projectId);
+      else state.expandedProjectIds.delete(projectId);
+      button.setAttribute('aria-expanded', String(expanded));
+      button.setAttribute('aria-label', (expanded ? 'Collapse ' : 'Expand ') + (button.dataset.projectName || 'project'));
+      tree.classList.toggle('is-expanded', expanded);
+      contents.hidden = !expanded;
+      return;
+    }
     if (action === 'open-project') { void openProject(button.dataset.workspaceId, button.dataset.projectId); return; }
     if (action === 'manage-group') {
       const workspaceId = state.workspaceId;

@@ -173,16 +173,32 @@ body.dark-mode .oddi-sw-toast{border-color:#2a5b3a;background:#14251a;color:#b0f
 @media(prefers-reduced-motion:reduce){.oddi-sw-workspace-card,.oddi-sw-primary,.oddi-sw-secondary,.oddi-sw-info{animation:none;transition:none}}
 
 /* Shared project navigation and checklist */
-.oddi-sw-project-card{width:calc(100% - 12px);min-height:58px;display:flex;align-items:center;gap:10px;margin:6px 6px;padding:9px 10px;border:1px solid transparent;border-radius:13px;background:transparent;color:inherit;text-align:left;cursor:pointer}
-.oddi-sw-project-card:hover,.oddi-sw-project-card.active{border-color:#d5e8dc;background:#f0f8f3}
-body.dark-mode .oddi-sw-project-card:hover,body.dark-mode .oddi-sw-project-card.active{border-color:#28583a;background:#14251b}
+.oddi-sw-project-tree{margin:6px 0 10px}
+.oddi-sw-project-card{width:100%;min-height:58px;display:flex;align-items:center;gap:10px;margin:0;padding:9px 10px;border:1px solid transparent;border-radius:13px;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.oddi-sw-project-card:hover,.oddi-sw-project-card.active,.oddi-sw-project-tree.is-expanded>.oddi-sw-project-card{border-color:#d5e8dc;background:#f0f8f3}
+body.dark-mode .oddi-sw-project-card:hover,body.dark-mode .oddi-sw-project-card.active,body.dark-mode .oddi-sw-project-tree.is-expanded>.oddi-sw-project-card{border-color:#28583a;background:#14251b}
 .oddi-sw-project-mark{width:32px;height:32px;flex:0 0 32px;display:grid;place-items:center;border-radius:10px;background:#e2f4e9;color:#167444;font-size:12px;font-weight:850}
 body.dark-mode .oddi-sw-project-mark{background:#193b28;color:#a6e9be}
-.oddi-sw-project-copy{min-width:0;display:grid;gap:3px}
+.oddi-sw-project-copy{min-width:0;flex:1;display:grid;gap:3px}
 .oddi-sw-project-copy strong,.oddi-sw-project-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .oddi-sw-project-copy strong{font-size:12px}
 .oddi-sw-project-copy small{color:#7a887f;font-size:10px}
 body.dark-mode .oddi-sw-project-copy small{color:#95a49a}
+.oddi-sw-project-indicators{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.oddi-sw-project-chevron{width:18px;height:18px;fill:none;stroke:#829087;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;transition:transform .16s ease}
+.oddi-sw-project-tree.is-expanded .oddi-sw-project-chevron{transform:rotate(180deg)}
+.oddi-sw-project-children{margin:3px 0 0 18px;padding:4px 0 2px 11px;border-left:1px solid #d6e2da}
+body.dark-mode .oddi-sw-project-children{border-color:#2b4334}
+.oddi-sw-project-children[hidden]{display:none!important}
+.oddi-sw-project-group-card{width:100%;margin:3px 0;padding:8px;border-radius:11px}
+.oddi-sw-project-group-card .oddi-sw-card-preview{max-width:calc(100% - 43px);font-size:10px}
+.oddi-sw-project-plan-link{width:100%;min-height:48px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 0 0;padding:8px 10px;border:1px solid transparent;border-radius:11px;background:transparent;color:inherit;text-align:left;cursor:pointer}
+.oddi-sw-project-plan-link:hover,.oddi-sw-project-plan-link.active{border-color:#d5e8dc;background:#f0f8f3}
+body.dark-mode .oddi-sw-project-plan-link:hover,body.dark-mode .oddi-sw-project-plan-link.active{border-color:#28583a;background:#14251b}
+.oddi-sw-project-plan-link>span:first-child{min-width:0;display:grid;gap:3px}
+.oddi-sw-project-plan-link strong{font-size:11px}
+.oddi-sw-project-plan-link small{color:#7a887f;font-size:10px}
+body.dark-mode .oddi-sw-project-plan-link small{color:#95a49a}
 .oddi-sw-project-view{min-width:0;min-height:0;overflow:auto;background:radial-gradient(ellipse at 50% 0%,rgba(43,153,91,.08),transparent 48%),#f7faf8}
 body.dark-mode .oddi-sw-project-view{background:radial-gradient(ellipse at 50% 0%,rgba(43,153,91,.11),transparent 48%),#0b0e0c}
 .oddi-sw-project-content{width:min(1040px,100%);margin:0 auto;padding:clamp(22px,4vw,48px);overflow-wrap:anywhere}
