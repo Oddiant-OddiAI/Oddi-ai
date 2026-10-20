@@ -739,6 +739,34 @@ def _create_shared_workspace_tables():
                     PRIMARY KEY (workspace_id, user_id)
                 )
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_projects (
+                    id TEXT PRIMARY KEY,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    name TEXT NOT NULL,
+                    goal TEXT NOT NULL,
+                    deadline TEXT NULL,
+                    workflow_status TEXT NOT NULL DEFAULT 'offered',
+                    created_by BIGINT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_project_tasks (
+                    id TEXT PRIMARY KEY,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    project_id TEXT NOT NULL REFERENCES shared_workspace_projects(id) ON DELETE CASCADE,
+                    title TEXT NOT NULL,
+                    details TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT 'todo',
+                    assigned_user_id BIGINT NULL,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_by BIGINT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
         else:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS shared_workspaces (
@@ -811,6 +839,34 @@ def _create_shared_workspace_tables():
                     PRIMARY KEY (workspace_id, user_id)
                 )
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_projects (
+                    id TEXT PRIMARY KEY,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    name TEXT NOT NULL,
+                    goal TEXT NOT NULL,
+                    deadline TEXT NULL,
+                    workflow_status TEXT NOT NULL DEFAULT 'offered',
+                    created_by INTEGER NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_project_tasks (
+                    id TEXT PRIMARY KEY,
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    project_id TEXT NOT NULL REFERENCES shared_workspace_projects(id) ON DELETE CASCADE,
+                    title TEXT NOT NULL,
+                    details TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT 'todo',
+                    assigned_user_id INTEGER NULL,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_by INTEGER NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            """)
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_shared_workspace_members_user "
             "ON shared_workspace_members(user_id, workspace_id)"
@@ -830,6 +886,14 @@ def _create_shared_workspace_tables():
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_shared_workspace_messages_queue "
             "ON shared_workspace_messages(workspace_id, ai_status, seq)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_projects_group "
+            "ON shared_workspace_projects(workspace_id, created_at DESC)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_project_tasks_order "
+            "ON shared_workspace_project_tasks(project_id, sort_order, created_at)"
         )
         conn.execute(
             """INSERT INTO shared_workspace_reads (workspace_id, user_id, last_read_seq)

@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import time
 import uuid
 from dataclasses import replace
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request
 from starlette.concurrency import run_in_threadpool
 
 from app.database import (
@@ -34,6 +35,8 @@ router = APIRouter(prefix="/api/shared-workspaces", tags=["shared workspaces"])
 
 MAX_MESSAGE_LENGTH = 8000
 MAX_NAME_LENGTH = 80
+MAX_PROJECT_GOAL_LENGTH = 4000
+MAX_TASK_TITLE_LENGTH = 180
 INVITE_LIFETIME = timedelta(days=14)
 _AI_PREFIX = re.compile(r"^\s*@oddi(?=$|\s|[:,])\s*[:,]?\s*(.*)$", re.IGNORECASE | re.DOTALL)
 
@@ -131,6 +134,64 @@ def _require_membership(conn, workspace_id: str, user_id: int):
     if not row:
         raise HTTPException(status_code=404, detail="This shared workspace is unavailable to your account.")
     return row
+
+
+def _workspace_projects(conn, workspace_id: str, include_tasks: bool = True) -> list[dict[str, Any]]:
+    rows = _fetchall(
+        conn,
+        """SELECT id, workspace_id, name, goal, deadline, workflow_status,
+                  created_by, created_at, updated_at
+           FROM shared_workspace_projects WHERE workspace_id = ?
+           ORDER BY created_at DESC, id""",
+        (workspace_id,),
+    )
+    projects = [_dict(row) or {} for row in rows]
+    if not projects:
+        return []
+    if include_tasks:
+        task_rows = _fetchall(
+            conn,
+            """SELECT t.id, t.project_id, t.title, t.details, t.status,
+                      t.assigned_user_id, t.sort_order, t.created_at, t.updated_at,
+                      m.display_name AS assigned_user_name
+               FROM shared_workspace_project_tasks t
+               LEFT JOIN shared_workspace_members m
+                 ON m.workspace_id = t.workspace_id AND m.user_id = t.assigned_user_id
+               WHERE t.workspace_id = ?
+               ORDER BY t.project_id, t.sort_order, t.created_at, t.id""",
+            (workspace_id,),
+        )
+        task_groups: dict[str, list[dict[str, Any]]] = {}
+        for row in task_rows:
+            task = _dict(row) or {}
+            task["assigned_user_id"] = int(task["assigned_user_id"]) if task.get("assigned_user_id") is not None else None
+            task["sort_order"] = int(task.get("sort_order") or 0)
+            task_groups.setdefault(str(task.get("project_id") or ""), []).append(task)
+        for project in projects:
+            project["tasks"] = task_groups.get(str(project.get("id") or ""), [])
+    else:
+        counts = _fetchall(
+            conn,
+            """SELECT project_id, COUNT(*) AS task_count,
+                      SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS completed_count
+               FROM shared_workspace_project_tasks WHERE workspace_id = ? GROUP BY project_id""",
+            (workspace_id,),
+        )
+        count_by_project = {str(row["project_id"]): row for row in counts}
+        for project in projects:
+            counts_row = count_by_project.get(str(project.get("id") or ""), {})
+            project["task_count"] = int(counts_row.get("task_count") or 0)
+            project["completed_count"] = int(counts_row.get("completed_count") or 0)
+    for project in projects:
+        project["id"] = str(project.get("id") or "")
+        project["workspace_id"] = str(project.get("workspace_id") or workspace_id)
+        project["workflow_status"] = str(project.get("workflow_status") or "offered")
+        project.pop("created_by", None)
+        if include_tasks:
+            tasks = project.get("tasks") or []
+            project["task_count"] = len(tasks)
+            project["completed_count"] = sum(1 for task in tasks if task.get("status") == "done")
+    return projects
 
 
 def _quota_payload(user_id: int, email: str) -> dict[str, Any]:
@@ -243,6 +304,12 @@ def _workspace_details(workspace_id: str, viewer_id: int):
             )
             invitations = [_dict(row) or {} for row in invite_rows]
 
+        projects = _workspace_projects(conn, workspace_id, include_tasks=True)
+        if not is_owner:
+            for project in projects:
+                for task in project.get("tasks") or []:
+                    task.pop("assigned_user_id", None)
+
         return {
             "workspace": {
                 "id": str(workspace_data.get("id") or ""),
@@ -254,6 +321,7 @@ def _workspace_details(workspace_id: str, viewer_id: int):
             },
             "members": members,
             "invitations": invitations,
+            "projects": projects,
         }
     finally:
         conn.close()
@@ -287,8 +355,11 @@ def _workspace_list(user_id: int):
                         w.updated_at DESC""",
             (user_id,),
         )
-        return [
-            {
+        result = []
+        for row in rows:
+            workspace_id = str(row["id"])
+            projects = _workspace_projects(conn, workspace_id, include_tasks=False)
+            result.append({
                 "id": str(row["id"]),
                 "name": str(row["name"] or "Shared workspace"),
                 "updated_at": str(row["updated_at"] or ""),
@@ -296,9 +367,9 @@ def _workspace_list(user_id: int):
                 "member_count": int(row["member_count"] or 0),
                 "last_message": str(row["last_message"] or "Start the group conversation"),
                 "unread_count": int(row["unread_count"] or 0),
-            }
-            for row in rows
-        ]
+                "projects": projects,
+            })
+        return result
     finally:
         conn.close()
 
@@ -459,6 +530,425 @@ def _create_workspace(user: dict[str, Any], name: str):
         raise HTTPException(status_code=500, detail="ODDI could not create that group. Please try again.")
     finally:
         conn.close()
+
+
+def _create_project(user: dict[str, Any], payload: dict[str, Any]):
+    name = str(payload.get("name") or "").strip()
+    goal = str(payload.get("goal") or "").strip()
+    if not name or len(name) > MAX_NAME_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Choose a project name of 1 to {MAX_NAME_LENGTH} characters.")
+    if not goal or len(goal) > MAX_PROJECT_GOAL_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Add a project goal of 1 to {MAX_PROJECT_GOAL_LENGTH} characters.")
+    deadline = str(payload.get("deadline") or "").strip() or None
+    if deadline:
+        try:
+            deadline = date.fromisoformat(deadline).isoformat()
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail="Choose a valid project deadline.") from error
+
+    workspace_id = str(payload.get("workspace_id") or "").strip()
+    create_group = not workspace_id
+    group_name = str(payload.get("group_name") or "").strip()
+    if create_group:
+        if not group_name:
+            group_name = name
+        if len(group_name) > MAX_NAME_LENGTH:
+            raise HTTPException(status_code=400, detail=f"Choose a group name of 1 to {MAX_NAME_LENGTH} characters.")
+        workspace_id = str(uuid.uuid4())
+
+    project_id = str(uuid.uuid4())
+    now = _timestamp()
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        if create_group:
+            conn.execute(
+                """INSERT INTO shared_workspaces (id, name, owner_user_id, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (workspace_id, group_name, user["id"], now, now),
+            )
+            conn.execute(
+                """INSERT INTO shared_workspace_members
+                   (workspace_id, user_id, role, display_name, email, joined_at)
+                   VALUES (?, ?, 'owner', ?, ?, ?)""",
+                (workspace_id, user["id"], user["name"], user["email"], now),
+            )
+            _store_workspace_read_marker(conn, workspace_id, user["id"])
+        else:
+            workspace = _require_membership(conn, workspace_id, user["id"])
+            if str(workspace["my_role"]) != "owner":
+                raise HTTPException(status_code=403, detail="Only the group admin can create a project in this group.")
+
+        conn.execute(
+            """INSERT INTO shared_workspace_projects
+               (id, workspace_id, name, goal, deadline, workflow_status, created_by, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, 'offered', ?, ?, ?)""",
+            (project_id, workspace_id, name, goal, deadline, user["id"], now, now),
+        )
+        conn.execute("UPDATE shared_workspaces SET updated_at = ? WHERE id = ?", (now, workspace_id))
+        conn.commit()
+        details = _workspace_details(workspace_id, user["id"])
+        project = next((item for item in details["projects"] if item["id"] == project_id), None)
+        return {"workspace": details["workspace"], "project": project}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not create shared workspace project")
+        raise HTTPException(status_code=500, detail="ODDI could not create that project. Please try again.")
+    finally:
+        conn.close()
+
+
+def _project_access(conn, project_id: str, user_id: int):
+    project = _fetchone(conn, "SELECT * FROM shared_workspace_projects WHERE id = ?", (project_id,))
+    if not project:
+        raise HTTPException(status_code=404, detail="That project is not available to your account.")
+    workspace_id = str(project["workspace_id"])
+    membership = _require_membership(conn, workspace_id, user_id)
+    return _dict(project) or {}, membership
+
+
+def _project_snapshot(project_id: str, user_id: int):
+    conn = _connection()
+    try:
+        project = _fetchone(conn, "SELECT workspace_id FROM shared_workspace_projects WHERE id = ?", (project_id,))
+        if not project:
+            raise HTTPException(status_code=404, detail="That project is no longer available.")
+        workspace_id = str(project["workspace_id"])
+    finally:
+        conn.close()
+    details = _workspace_details(workspace_id, user_id)
+    item = next((entry for entry in details["projects"] if entry["id"] == project_id), None)
+    if not item:
+        raise HTTPException(status_code=404, detail="That project is no longer available.")
+    return {"workspace": details["workspace"], "project": item, "members": details["members"]}
+
+
+def _create_project_task(user: dict[str, Any], project_id: str, payload: dict[str, Any]):
+    title = str(payload.get("title") or "").strip()
+    details = str(payload.get("details") or "").strip()
+    if not title or len(title) > MAX_TASK_TITLE_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Enter a task title of 1 to {MAX_TASK_TITLE_LENGTH} characters.")
+    if len(details) > 2000:
+        raise HTTPException(status_code=400, detail="Task details can be up to 2,000 characters.")
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        project, membership = _project_access(conn, project_id, user["id"])
+        if str(membership["my_role"]) != "owner":
+            raise HTTPException(status_code=403, detail="Only the group admin can add project tasks.")
+        order = _fetchone(
+            conn,
+            "SELECT COALESCE(MAX(sort_order), -1) + 1 AS next_position FROM shared_workspace_project_tasks WHERE project_id = ?",
+            (project_id,),
+        )
+        now = _timestamp()
+        conn.execute(
+            """INSERT INTO shared_workspace_project_tasks
+               (id, workspace_id, project_id, title, details, status, sort_order, created_by, created_at, updated_at)
+               VALUES (?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?)""",
+            (str(uuid.uuid4()), project["workspace_id"], project_id, title, details,
+             int(order["next_position"] or 0), user["id"], now, now),
+        )
+        conn.execute("UPDATE shared_workspace_projects SET updated_at = ? WHERE id = ?", (now, project_id))
+        conn.commit()
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not add a task to shared project %s", project_id)
+        raise HTTPException(status_code=500, detail="ODDI could not add that task.")
+    finally:
+        conn.close()
+    return _project_snapshot(project_id, user["id"])
+
+
+def _update_project_task(user: dict[str, Any], project_id: str, task_id: str, payload: dict[str, Any]):
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        project, membership = _project_access(conn, project_id, user["id"])
+        task = _fetchone(
+            conn,
+            "SELECT * FROM shared_workspace_project_tasks WHERE id = ? AND project_id = ?",
+            (task_id, project_id),
+        )
+        if not task:
+            raise HTTPException(status_code=404, detail="That task is no longer available.")
+        is_admin = str(membership["my_role"]) == "owner"
+        updates: dict[str, Any] = {}
+        if "status" in payload:
+            status = str(payload.get("status") or "").strip().casefold()
+            if status not in {"todo", "done"}:
+                raise HTTPException(status_code=400, detail="Choose a valid task status.")
+            updates["status"] = status
+        if "assigned_user_id" in payload:
+            if not is_admin:
+                raise HTTPException(status_code=403, detail="Only the group admin can assign project tasks.")
+            assignee = payload.get("assigned_user_id")
+            if assignee in (None, ""):
+                updates["assigned_user_id"] = None
+            else:
+                try:
+                    assignee = int(assignee)
+                except (TypeError, ValueError, OverflowError) as error:
+                    raise HTTPException(status_code=400, detail="Choose a current group member.") from error
+                member = _fetchone(
+                    conn,
+                    "SELECT user_id FROM shared_workspace_members WHERE workspace_id = ? AND user_id = ?",
+                    (project["workspace_id"], assignee),
+                )
+                if not member:
+                    raise HTTPException(status_code=400, detail="Tasks can only be assigned to current group members.")
+                updates["assigned_user_id"] = assignee
+        if "title" in payload or "details" in payload:
+            if not is_admin:
+                raise HTTPException(status_code=403, detail="Only the group admin can edit project tasks.")
+            if "title" in payload:
+                title = str(payload.get("title") or "").strip()
+                if not title or len(title) > MAX_TASK_TITLE_LENGTH:
+                    raise HTTPException(status_code=400, detail=f"Enter a task title of 1 to {MAX_TASK_TITLE_LENGTH} characters.")
+                updates["title"] = title
+            if "details" in payload:
+                details = str(payload.get("details") or "").strip()
+                if len(details) > 2000:
+                    raise HTTPException(status_code=400, detail="Task details can be up to 2,000 characters.")
+                updates["details"] = details
+        if not updates:
+            raise HTTPException(status_code=400, detail="Choose a task update.")
+        updates["updated_at"] = _timestamp()
+        assignments = ", ".join(f"{column} = ?" for column in updates)
+        conn.execute(
+            f"UPDATE shared_workspace_project_tasks SET {assignments} WHERE id = ? AND project_id = ?",
+            (*updates.values(), task_id, project_id),
+        )
+        conn.execute("UPDATE shared_workspace_projects SET updated_at = ? WHERE id = ?", (updates["updated_at"], project_id))
+        conn.commit()
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not update project task %s", task_id)
+        raise HTTPException(status_code=500, detail="ODDI could not update that task.")
+    finally:
+        conn.close()
+    return _project_snapshot(project_id, user["id"])
+
+
+def _delete_project_task(user: dict[str, Any], project_id: str, task_id: str):
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        project, membership = _project_access(conn, project_id, user["id"])
+        if str(membership["my_role"]) != "owner":
+            raise HTTPException(status_code=403, detail="Only the group admin can remove project tasks.")
+        deleted = conn.execute(
+            "DELETE FROM shared_workspace_project_tasks WHERE id = ? AND project_id = ?",
+            (task_id, project_id),
+        )
+        if not deleted.rowcount:
+            raise HTTPException(status_code=404, detail="That task is no longer available.")
+        conn.commit()
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not remove project task %s", task_id)
+        raise HTTPException(status_code=500, detail="ODDI could not remove that task.")
+    finally:
+        conn.close()
+    return _project_snapshot(project_id, user["id"])
+
+
+def _claim_project_workflow(user: dict[str, Any], project_id: str):
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        project, _membership = _project_access(conn, project_id, user["id"])
+        status = str(project.get("workflow_status") or "offered")
+        if status == "ready":
+            conn.rollback()
+            return {"ready": True, **_project_snapshot(project_id, user["id"])}
+        updated_at = str(project.get("updated_at") or "")
+        if status == "generating" and updated_at:
+            try:
+                started = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+                if _now() - started < timedelta(minutes=30):
+                    raise HTTPException(status_code=409, detail="ODDI is already creating this project's workflow.")
+            except ValueError:
+                pass
+        now = _timestamp()
+        conn.execute(
+            "DELETE FROM shared_workspace_user_leases WHERE workspace_id = ? AND message_id = ?",
+            (project["workspace_id"], project_id),
+        )
+        lease = conn.execute(
+            """INSERT INTO shared_workspace_user_leases (user_id, workspace_id, message_id, created_at)
+               VALUES (?, ?, ?, ?) ON CONFLICT (user_id) DO NOTHING""",
+            (user["id"], project["workspace_id"], project_id, now),
+        )
+        if not lease.rowcount:
+            raise HTTPException(status_code=429, detail="Finish your current ODDI request before creating a project workflow.")
+        conn.execute(
+            "UPDATE shared_workspace_projects SET workflow_status = 'generating', updated_at = ? WHERE id = ?",
+            (now, project_id),
+        )
+        conn.commit()
+        project["workflow_status"] = "generating"
+        project["updated_at"] = now
+        return {"ready": False, "project": project}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not start a project workflow for %s", project_id)
+        raise HTTPException(status_code=500, detail="ODDI could not start that workflow.")
+    finally:
+        conn.close()
+
+
+def _parse_workflow_tasks(response: str) -> list[dict[str, str]]:
+    raw = str(response or "").strip()
+    fenced = re.search(r"```(?:json)?\s*(.*?)\s*```", raw, re.IGNORECASE | re.DOTALL)
+    candidates = [fenced.group(1).strip()] if fenced else [raw]
+    if not fenced:
+        left, right = raw.find("{"), raw.rfind("}")
+        if left >= 0 and right > left:
+            candidates.append(raw[left:right + 1])
+        left, right = raw.find("["), raw.rfind("]")
+        if left >= 0 and right > left:
+            candidates.append(raw[left:right + 1])
+    for candidate in candidates:
+        try:
+            data = json.loads(candidate)
+        except (TypeError, ValueError):
+            continue
+        if isinstance(data, dict):
+            data = data.get("tasks") or data.get("checklist") or []
+        if not isinstance(data, list):
+            continue
+        tasks = []
+        for item in data[:20]:
+            if isinstance(item, str):
+                title, details = item.strip(), ""
+            elif isinstance(item, dict):
+                title = str(item.get("title") or item.get("task") or item.get("name") or "").strip()
+                details = str(item.get("details") or item.get("description") or "").strip()
+            else:
+                continue
+            if title:
+                tasks.append({"title": title[:MAX_TASK_TITLE_LENGTH], "details": details[:2000]})
+        if tasks:
+            return tasks
+    # Accept a plain numbered/bulleted checklist if the model ignored JSON mode.
+    tasks = []
+    for line in raw.splitlines():
+        match = re.match(r"^\s*(?:[-*•]|\d+[.)])\s+(.+?)\s*$", line)
+        if match:
+            title = re.sub(r"\*\*|__|`", "", match.group(1)).strip()
+            if title:
+                tasks.append({"title": title[:MAX_TASK_TITLE_LENGTH], "details": ""})
+    return tasks[:20]
+
+
+def _save_project_workflow(user: dict[str, Any], project_id: str, tasks: list[dict[str, str]]):
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        project, _membership = _project_access(conn, project_id, user["id"])
+        if str(project.get("workflow_status") or "") == "ready":
+            conn.execute(
+                "DELETE FROM shared_workspace_user_leases WHERE user_id = ? AND message_id = ?",
+                (user["id"], project_id),
+            )
+            conn.commit()
+            return _project_snapshot(project_id, user["id"])
+        now = _timestamp()
+        for position, task in enumerate(tasks):
+            conn.execute(
+                """INSERT INTO shared_workspace_project_tasks
+                   (id, workspace_id, project_id, title, details, status, sort_order, created_by, created_at, updated_at)
+                   VALUES (?, ?, ?, ?, ?, 'todo', ?, ?, ?, ?)""",
+                (str(uuid.uuid4()), project["workspace_id"], project_id, task["title"], task["details"],
+                 position, user["id"], now, now),
+            )
+        conn.execute(
+            "UPDATE shared_workspace_projects SET workflow_status = 'ready', updated_at = ? WHERE id = ?",
+            (now, project_id),
+        )
+        conn.execute(
+            "DELETE FROM shared_workspace_user_leases WHERE user_id = ? AND message_id = ?",
+            (user["id"], project_id),
+        )
+        conn.commit()
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not save workflow tasks for project %s", project_id)
+        raise HTTPException(status_code=500, detail="ODDI could not save the generated checklist.")
+    finally:
+        conn.close()
+    return _project_snapshot(project_id, user["id"])
+
+
+def _fail_project_workflow(project_id: str):
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        conn.execute(
+            "UPDATE shared_workspace_projects SET workflow_status = 'failed', updated_at = ? WHERE id = ? AND workflow_status = 'generating'",
+            (_timestamp(), project_id),
+        )
+        conn.execute("DELETE FROM shared_workspace_user_leases WHERE message_id = ?", (project_id,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not reset failed project workflow %s", project_id)
+    finally:
+        conn.close()
+
+
+async def _generate_project_workflow(user: dict[str, Any], project: dict[str, Any]):
+    project_id = str(project.get("id") or "")
+    identity = _shared_workspace_identity(user["id"], user["email"])
+    prompt = (
+        "Create a practical, ordered project workflow checklist from the project details below. "
+        "Return JSON only, with this exact shape: {\"tasks\":[{\"title\":\"Short actionable task\",\"details\":\"One concise sentence\"}]}. "
+        "Provide 5 to 12 useful tasks, unless the goal clearly needs fewer. Do not assign people, invent facts, or add commentary outside the JSON. "
+        "Make the steps realistic for the deadline and suitable for a small group working together.\n\n"
+        f"Project: {project.get('name') or ''}\n"
+        f"Goal: {project.get('goal') or ''}\n"
+        f"Deadline: {project.get('deadline') or 'No deadline'}"
+    )
+    try:
+        response = await run_in_threadpool(
+            process_message,
+            prompt,
+            [],
+            [],
+            user_id=user["id"],
+            identity=identity,
+            long_term_memory_enabled=False,
+            allow_user_knowledge=False,
+            allow_account_actions=False,
+        )
+        tasks = _parse_workflow_tasks(str(response or ""))
+        if not tasks:
+            logger.warning("ODDI returned no structured workflow tasks for project %s", project_id)
+            await run_in_threadpool(_fail_project_workflow, project_id)
+            return
+        await run_in_threadpool(_save_project_workflow, user, project_id, tasks)
+    except Exception:
+        logger.exception("Could not generate checklist for shared project %s", project_id)
+        await run_in_threadpool(_fail_project_workflow, project_id)
 
 
 def _invite_member(user: dict[str, Any], workspace_id: str, email: str):
@@ -631,6 +1121,10 @@ def _remove_member(user: dict[str, Any], workspace_id: str, member_id: int):
             raise HTTPException(status_code=403, detail="Only the group admin can remove members.")
         if member_id == int(workspace["owner_user_id"]):
             raise HTTPException(status_code=400, detail="The group admin cannot remove themself. Delete the group to close it.")
+        conn.execute(
+            "UPDATE shared_workspace_project_tasks SET assigned_user_id = NULL, updated_at = ? WHERE workspace_id = ? AND assigned_user_id = ?",
+            (_timestamp(), workspace_id, member_id),
+        )
         deleted = conn.execute(
             "DELETE FROM shared_workspace_members WHERE workspace_id = ? AND user_id = ?",
             (workspace_id, member_id),
@@ -659,6 +1153,10 @@ def _leave_workspace(user: dict[str, Any], workspace_id: str):
         workspace = _require_membership(conn, workspace_id, user["id"])
         if str(workspace["my_role"]) == "owner":
             raise HTTPException(status_code=409, detail="The group admin needs to delete the group before leaving it.")
+        conn.execute(
+            "UPDATE shared_workspace_project_tasks SET assigned_user_id = NULL, updated_at = ? WHERE workspace_id = ? AND assigned_user_id = ?",
+            (_timestamp(), workspace_id, user["id"]),
+        )
         conn.execute(
             "DELETE FROM shared_workspace_members WHERE workspace_id = ? AND user_id = ?",
             (workspace_id, user["id"]),
@@ -861,6 +1359,33 @@ def _job_context(job: dict[str, Any]):
         conn.close()
 
 
+def _job_project_context(workspace_id: str) -> str:
+    conn = _connection()
+    try:
+        projects = _workspace_projects(conn, workspace_id, include_tasks=True)
+        if not projects:
+            return ""
+        lines = ["Project context shared with this group:"]
+        for project in projects[:12]:
+            lines.append(f"- Project: {project.get('name') or 'Untitled'}")
+            lines.append(f"  Goal: {project.get('goal') or 'Not specified'}")
+            lines.append(f"  Deadline: {project.get('deadline') or 'No deadline'}")
+            tasks = project.get("tasks") or []
+            if tasks:
+                task_summary = "; ".join(
+                    f"{'[done] ' if task.get('status') == 'done' else ''}{task.get('title', '')}"
+                    for task in tasks[:20]
+                )
+                lines.append(f"  Checklist: {task_summary}")
+        lines.append("Use the relevant project's goal, deadline, and checklist when answering. If the request could refer to multiple projects, ask which one.")
+        return "\n".join(lines)
+    except Exception:
+        logger.exception("Could not load project context for shared group %s", workspace_id)
+        return ""
+    finally:
+        conn.close()
+
+
 def _save_ai_result(job: dict[str, Any], result: str, failed: bool = False):
     conn = _connection()
     try:
@@ -904,6 +1429,7 @@ def _save_ai_result(job: dict[str, Any], result: str, failed: bool = False):
 async def _run_claimed_job(job: dict[str, Any]):
     try:
         context_rows = await run_in_threadpool(_job_context, job)
+        project_context = await run_in_threadpool(_job_project_context, str(job["workspace_id"]))
         history = []
         for item in context_rows:
             kind = str(item.get("kind") or "user")
@@ -924,6 +1450,7 @@ async def _run_claimed_job(job: dict[str, Any]):
             "This is a shared ODDI group workspace. Answer the current request for the whole group, "
             "using only the messages in this shared conversation. Do not use or reveal any member's "
             "private chats, saved memories, or personal files.\n\n"
+            f"{project_context}\n\n"
             f"{job.get('sender_name') or 'A group member'} asks: {question}"
         )
         identity = _shared_workspace_identity(
@@ -979,6 +1506,7 @@ async def shared_workspace_queue_worker():
 def _recover_stale_jobs():
     """Release abandoned claims after a process restart without regenerating."""
     cutoff = _timestamp(_now() - timedelta(minutes=30))
+    stale_jobs = []
     conn = _connection()
     try:
         stale = _fetchall(
@@ -988,6 +1516,26 @@ def _recover_stale_jobs():
             (cutoff,),
         )
         stale_jobs = [_dict(row) or {} for row in stale]
+        _begin_write(conn, "shared")
+        stale_projects = _fetchall(
+            conn,
+            """SELECT id, workspace_id FROM shared_workspace_projects
+               WHERE workflow_status = 'generating' AND updated_at < ? LIMIT 100""",
+            (cutoff,),
+        )
+        for project in stale_projects:
+            conn.execute(
+                "UPDATE shared_workspace_projects SET workflow_status = 'failed', updated_at = ? WHERE id = ? AND workflow_status = 'generating'",
+                (_timestamp(), project["id"]),
+            )
+            conn.execute(
+                "DELETE FROM shared_workspace_user_leases WHERE workspace_id = ? AND message_id = ?",
+                (project["workspace_id"], project["id"]),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not recover abandoned shared project workflow claims")
     finally:
         conn.close()
     for job in stale_jobs:
@@ -1008,6 +1556,10 @@ def cleanup_deleted_account(user_id: int):
         owned = _fetchall(conn, "SELECT id FROM shared_workspaces WHERE owner_user_id = ?", (user_id,))
         for row in owned:
             conn.execute("DELETE FROM shared_workspaces WHERE id = ?", (row["id"],))
+        conn.execute(
+            "UPDATE shared_workspace_project_tasks SET assigned_user_id = NULL, updated_at = ? WHERE assigned_user_id = ?",
+            (_timestamp(), user_id),
+        )
         conn.execute("DELETE FROM shared_workspace_members WHERE user_id = ?", (user_id,))
         conn.execute(
             """UPDATE shared_workspace_invitations SET status = 'revoked', responded_at = ?
@@ -1039,6 +1591,54 @@ async def api_create_shared_workspace(request: Request):
         payload = {}
     result = await run_in_threadpool(_create_workspace, account, payload.get("name"))
     return result
+
+
+@router.post("/projects")
+async def api_create_shared_workspace_project(request: Request):
+    account = await _account(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    return await run_in_threadpool(_create_project, account, payload)
+
+
+@router.post("/projects/{project_id}/workflow")
+async def api_generate_shared_project_workflow(request: Request, project_id: str, background_tasks: BackgroundTasks):
+    account = await _account(request)
+    claim = await run_in_threadpool(_claim_project_workflow, account, project_id)
+    if claim.get("ready"):
+        return {"workspace": claim["workspace"], "project": claim["project"], "members": claim["members"]}
+    background_tasks.add_task(_generate_project_workflow, account, claim["project"])
+    return await run_in_threadpool(_project_snapshot, project_id, account["id"])
+
+
+@router.post("/projects/{project_id}/tasks")
+async def api_create_shared_project_task(request: Request, project_id: str):
+    account = await _account(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    return await run_in_threadpool(_create_project_task, account, project_id, payload if isinstance(payload, dict) else {})
+
+
+@router.patch("/projects/{project_id}/tasks/{task_id}")
+async def api_update_shared_project_task(request: Request, project_id: str, task_id: str):
+    account = await _account(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    return await run_in_threadpool(_update_project_task, account, project_id, task_id, payload if isinstance(payload, dict) else {})
+
+
+@router.delete("/projects/{project_id}/tasks/{task_id}")
+async def api_delete_shared_project_task(request: Request, project_id: str, task_id: str):
+    account = await _account(request)
+    return await run_in_threadpool(_delete_project_task, account, project_id, task_id)
 
 
 @router.get("/invitations")

@@ -6,6 +6,7 @@
 
   const MAX_NAME_LENGTH = 80;
   const MAX_MESSAGE_LENGTH = 8000;
+  const MAX_PROJECT_GOAL_LENGTH = 4000;
   const pageAccountId = document.body.dataset.userId?.trim() || '';
 
   const root = document.createElement('div');
@@ -23,6 +24,7 @@
     workspaces: [],
     invitations: [],
     workspaceId: null,
+    projectId: null,
     details: null,
     messages: new Map(),
     messageCursor: 0,
@@ -130,6 +132,7 @@
     root.hidden = true;
     document.body.classList.remove('oddi-shared-workspace-open');
     state.workspaceId = null;
+    state.projectId = null;
     state.details = null;
     state.messages.clear();
     state.messageCursor = 0;
@@ -150,25 +153,39 @@
     </article>`;
   }
 
+  function workspaceCard(workspace, activeId = '') {
+    return `<button type="button" class="oddi-sw-workspace-card${workspace.id === activeId ? ' active' : ''}" data-action="open-workspace" data-workspace-id="${escapeHtml(workspace.id)}">
+      <span class="oddi-sw-card-title">${avatar(workspace.name, true)}<span>${escapeHtml(workspace.name)}</span><span class="oddi-sw-card-stats"><span class="oddi-sw-muted">${Number(workspace.member_count || 0)} ${Number(workspace.member_count || 0) === 1 ? 'member' : 'members'}</span>${unreadBadge(workspace.unread_count)}</span></span>
+      <span class="oddi-sw-card-preview">${escapeHtml(workspace.last_message || 'Shared group')}</span>
+    </button>`;
+  }
+
+  function projectCard(project, workspace, activeProjectId = '') {
+    const taskCount = Number(project.task_count || 0);
+    const completed = Number(project.completed_count || 0);
+    const progress = taskCount ? `${completed}/${taskCount} tasks` : 'Workflow not created';
+    return `<button type="button" class="oddi-sw-project-card${project.id === activeProjectId ? ' active' : ''}" data-action="open-project" data-workspace-id="${escapeHtml(workspace.id)}" data-project-id="${escapeHtml(project.id)}">
+      <span class="oddi-sw-project-mark" aria-hidden="true">P</span><span class="oddi-sw-project-copy"><strong>${escapeHtml(project.name)}</strong><small>${escapeHtml(workspace.name)} · ${escapeHtml(progress)}</small></span>
+    </button>`;
+  }
+
   function renderList() {
     const invitations = state.invitations;
     const workspaces = state.workspaces;
-    const workspaceCards = workspaces.length ? workspaces.map(workspace => `
-      <button type="button" class="oddi-sw-workspace-card" data-action="open-workspace" data-workspace-id="${escapeHtml(workspace.id)}">
-        <span class="oddi-sw-card-title">${avatar(workspace.name, true)}<span>${escapeHtml(workspace.name)}</span><span class="oddi-sw-card-stats"><span class="oddi-sw-muted">${Number(workspace.member_count || 0)} ${Number(workspace.member_count || 0) === 1 ? 'member' : 'members'}</span>${unreadBadge(workspace.unread_count)}</span></span>
-        <span class="oddi-sw-card-preview">${escapeHtml(workspace.last_message || 'Start the group conversation')}</span>
-      </button>`).join('') : '<div class="oddi-sw-empty-inline">Your shared groups will show up here.</div>';
+    const workspaceCards = workspaces.length ? workspaces.map(workspace => workspaceCard(workspace)).join('') : '<div class="oddi-sw-empty-inline">Your groups will show up here.</div>';
+    const projectCards = workspaces.flatMap(workspace => (workspace.projects || []).map(project => projectCard(project, workspace))).join('') || '<div class="oddi-sw-empty-inline">Projects you create in a group will show up here.</div>';
     const inviteCards = invitations.length ? invitations.map(inviteCard).join('') : '<div class="oddi-sw-empty-inline">No pending invitations.</div>';
 
     root.innerHTML = `<section class="oddi-sw-shell is-list">
       <header class="oddi-sw-top"><button type="button" class="oddi-sw-back-home" data-action="close" aria-label="Back to home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg><span>Back to home</span></button></header>
       <div class="oddi-sw-body">
         <aside class="oddi-sw-list" aria-label="Shared workspaces and invitations">
-          <div class="oddi-sw-list-head"><h2>Your groups</h2><button class="oddi-sw-primary" type="button" data-action="new-workspace">＋ New</button></div>
+          <div class="oddi-sw-list-head"><h2>Shared workspace</h2><button class="oddi-sw-primary" type="button" data-action="create-project">Create Project</button></div>
           <section class="oddi-sw-section"><div class="oddi-sw-section-label">Invitations <span class="oddi-sw-count">${invitations.length}</span></div>${inviteCards}</section>
-          <section class="oddi-sw-section"><div class="oddi-sw-section-label">Shared workspaces</div>${workspaceCards}</section>
+          <section class="oddi-sw-section"><div class="oddi-sw-section-label">Groups</div>${workspaceCards}</section>
+          <section class="oddi-sw-section"><div class="oddi-sw-section-label">Projects</div>${projectCards}</section>
         </aside>
-        <main class="oddi-sw-empty"><span class="oddi-sw-empty-icon">⌁</span><h2>Work through it together</h2><p>Create a shared group, invite as many ODDI members as you need, and chat together. Messages stay in the group; ODDI replies only when someone starts with <strong>@ODDI</strong>.</p><button class="oddi-sw-primary" type="button" data-action="new-workspace">Create a workspace</button></main>
+        <main class="oddi-sw-empty"><span class="oddi-sw-empty-icon">&#10003;</span><h2>Plan it together</h2><p>Create a project with a clear goal and deadline, invite your group, and keep its checklist and shared ODDI conversation together.</p><button class="oddi-sw-primary" type="button" data-action="create-project">Create Project</button></main>
       </div>
     </section>`;
   }
@@ -185,7 +202,11 @@
       state.invitations = Array.isArray(payload.invitations) ? payload.invitations : [];
       const hasNewInvite = state.lastInviteCount !== null && state.invitations.length > state.lastInviteCount;
       state.lastInviteCount = state.invitations.length;
-      if (!root.querySelector('.oddi-sw-modal-backdrop')) renderList();
+      if (!root.querySelector('.oddi-sw-modal-backdrop')) {
+        if (state.page === 'project' && state.details) renderProject();
+        else if (state.page === 'chat' && state.details) renderChat();
+        else renderList();
+      }
       if (hasNewInvite) showToast('You have a new shared workspace invitation.');
       window.dispatchEvent(new Event('oddi:shared-invitations-changed'));
     } catch (error) {
@@ -288,14 +309,58 @@
     const invitations = state.invitations.length
       ? `<div class="oddi-sw-section"><div class="oddi-sw-section-label">Invitations <span class="oddi-sw-count">${state.invitations.length}</span></div>${state.invitations.map(inviteCard).join('')}</div>`
       : '';
-    const workspaces = state.workspaces.map(item => `<button type="button" class="oddi-sw-workspace-card${item.id === activeWorkspaceId ? ' active' : ''}" data-action="open-workspace" data-workspace-id="${escapeHtml(item.id)}"><span class="oddi-sw-card-title">${avatar(item.name, true)}<span>${escapeHtml(item.name)}</span>${unreadBadge(item.unread_count)}</span><span class="oddi-sw-card-preview">${escapeHtml(item.last_message || 'Shared group')}</span></button>`).join('');
-    return `<aside class="oddi-sw-list" aria-label="Groups and invitations"><div class="oddi-sw-list-head"><h2>Group chat</h2><button class="oddi-sw-icon-btn" type="button" data-action="back-to-list" aria-label="All groups">Back</button></div>${invitations}<div class="oddi-sw-section"><div class="oddi-sw-section-label">Your groups</div>${workspaces || '<div class="oddi-sw-empty-inline">Your shared groups will show up here.</div>'}</div><div class="oddi-sw-section"><button type="button" class="oddi-sw-secondary" data-action="new-workspace" style="width:100%">Create another group</button></div></aside>`;
+    const workspaces = state.workspaces.map(item => workspaceCard(item, activeWorkspaceId)).join('');
+    const projects = state.workspaces.flatMap(item => (item.projects || []).map(project => projectCard(project, item, state.projectId || ''))).join('');
+    return `<aside class="oddi-sw-list" aria-label="Groups, projects and invitations"><div class="oddi-sw-list-head"><h2>Shared workspace</h2><button class="oddi-sw-icon-btn" type="button" data-action="back-to-list" aria-label="All groups">Back</button></div>${invitations}<div class="oddi-sw-section"><div class="oddi-sw-section-label">Groups</div>${workspaces || '<div class="oddi-sw-empty-inline">Your groups will show up here.</div>'}</div><div class="oddi-sw-section"><div class="oddi-sw-section-label">Projects</div>${projects || '<div class="oddi-sw-empty-inline">Projects appear here.</div>'}</div><div class="oddi-sw-section"><button type="button" class="oddi-sw-secondary" data-action="create-project" style="width:100%">Create Project</button></div></aside>`;
+  }
+
+  function renderProjectView() {
+    const target = root.querySelector('.oddi-sw-project-view');
+    const project = (state.details?.projects || []).find(item => item.id === state.projectId);
+    if (!target || !project || !state.details) return;
+    const { workspace, members } = state.details;
+    const isAdmin = workspace.my_role === 'admin' || workspace.my_role === 'owner';
+    const tasks = Array.isArray(project.tasks) ? project.tasks : [];
+    const done = Number(project.completed_count || 0);
+    const progress = tasks.length ? Math.round(done * 100 / tasks.length) : 0;
+    const deadline = project.deadline ? new Date(`${project.deadline}T00:00:00`).toLocaleDateString() : 'No deadline';
+    const taskRows = tasks.length ? tasks.map(task => {
+      const assignedName = task.assigned_user_name || (Number(task.assigned_user_id) === Number(pageAccountId) ? 'You' : 'Unassigned');
+      const assignment = isAdmin
+        ? `<select class="oddi-sw-task-assignee" data-task-assignee data-task-id="${escapeHtml(task.id)}" aria-label="Assign ${escapeHtml(task.title)}"><option value="">Unassigned</option>${members.filter(member => member.id != null).map(member => `<option value="${escapeHtml(member.id)}" ${Number(member.id) === Number(task.assigned_user_id) ? 'selected' : ''}>${escapeHtml(member.name)}${member.is_me ? ' (you)' : ''}</option>`).join('')}</select>`
+        : `<span class="oddi-sw-task-assignee-label">${escapeHtml(assignedName)}</span>`;
+      return `<article class="oddi-sw-task-row${task.status === 'done' ? ' is-done' : ''}">
+        <label class="oddi-sw-task-check"><input type="checkbox" data-task-status data-task-id="${escapeHtml(task.id)}" ${task.status === 'done' ? 'checked' : ''}><span class="oddi-sw-task-checkmark" aria-hidden="true"></span><span class="oddi-sw-task-copy"><strong>${escapeHtml(task.title)}</strong>${task.details ? `<small>${escapeHtml(task.details)}</small>` : ''}</span></label>
+        <div class="oddi-sw-task-tools">${assignment}${isAdmin ? `<button type="button" class="oddi-sw-task-delete" data-action="delete-project-task" data-task-id="${escapeHtml(task.id)}" aria-label="Delete ${escapeHtml(task.title)}" title="Delete task">&times;</button>` : ''}</div>
+      </article>`;
+    }).join('') : '<div class="oddi-sw-empty-inline">Your checklist will appear here after it is created.</div>';
+    let workflow = '';
+    if (project.workflow_status === 'offered' || project.workflow_status === 'failed') {
+      workflow = `<section class="oddi-sw-workflow-offer"><div><span class="oddi-sw-project-eyebrow">OPTIONAL ODDI WORKFLOW</span><h3>Would you like ODDI to create a suggested workflow for this project?</h3><p>ODDI will turn your goal${project.deadline ? ' and deadline' : ''} into a practical checklist. Choosing Yes uses your daily ODDI allowance; tasks stay unassigned until an admin assigns them.</p></div><button class="oddi-sw-primary" type="button" data-action="generate-workflow">Yes, create workflow</button></section>`;
+    } else if (project.workflow_status === 'generating') {
+      workflow = '<section class="oddi-sw-workflow-offer is-generating"><strong>ODDI is creating your workflow...</strong><p>Your project checklist will appear here when it is ready.</p><span class="oddi-sw-typing"><i></i><i></i><i></i></span></section>';
+    }
+    target.innerHTML = `<div class="oddi-sw-project-content"><button type="button" class="oddi-sw-project-back" data-action="back-to-list">&larr; All projects</button>
+      <header class="oddi-sw-project-heading"><div><span class="oddi-sw-project-eyebrow">PROJECT IN ${escapeHtml(workspace.name)}</span><h1>${escapeHtml(project.name)}</h1><div class="oddi-sw-project-meta"><span>Deadline: <strong>${escapeHtml(deadline)}</strong></span><span>${done} of ${tasks.length} tasks complete</span></div></div><div class="oddi-sw-project-actions">${isAdmin ? '<button type="button" class="oddi-sw-secondary" data-action="manage-group">Invite members</button>' : ''}<button type="button" class="oddi-sw-primary" data-action="open-workspace" data-workspace-id="${escapeHtml(workspace.id)}">Open group chat</button></div></header>
+      <section class="oddi-sw-goal-card"><span class="oddi-sw-project-eyebrow">PROJECT GOAL</span><p>${escapeHtml(project.goal)}</p>${tasks.length ? `<div class="oddi-sw-progress-track" role="progressbar" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><span style="width:${progress}%"></span></div>` : ''}</section>
+      ${workflow}
+      <section class="oddi-sw-task-section"><div class="oddi-sw-project-section-head"><div><span class="oddi-sw-project-eyebrow">SHARED CHECKLIST</span><h2>Tasks &amp; milestones</h2><p>Admins assign tasks. Group members can mark the work complete.</p></div><span class="oddi-sw-task-count">${done}/${tasks.length}</span></div>
+      ${taskRows}${isAdmin ? `<form class="oddi-sw-add-task" data-form="add-task"><input name="title" maxlength="${MAX_TASK_TITLE_LENGTH}" placeholder="Add a task or milestone" required><button type="submit" class="oddi-sw-secondary">Add task</button></form>` : ''}</section>
+    </div>`;
+  }
+
+  function renderProject() {
+    if (!state.details) return;
+    const workspace = state.details.workspace;
+    root.innerHTML = `<section class="oddi-sw-shell is-project"><header class="oddi-sw-top"><button type="button" class="oddi-sw-back-home" data-action="close" aria-label="Back to home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg><span>Back to home</span></button><span class="oddi-sw-brand">ODDI</span><span class="oddi-sw-kicker">Project workspace</span></header><div class="oddi-sw-body">${renderChatSidebar(workspace.id)}<main class="oddi-sw-project-view" aria-label="Project details"></main></div></section>`;
+    renderProjectView();
   }
 
   async function selectWorkspace(workspaceId) {
     stopPolling();
     state.page = 'chat';
     state.workspaceId = workspaceId;
+    state.projectId = null;
     state.messages.clear();
     state.messageCursor = 0;
     state.details = null;
@@ -315,6 +380,29 @@
       state.detailsTimer = window.setInterval(() => { void refreshDetails(); }, 15000);
     } catch (error) {
       state.page = 'list';
+      showError(error.message, error.status === 401 || error.status === 403);
+    }
+  }
+
+  async function openProject(workspaceId, projectId) {
+    stopPolling();
+    state.page = 'project';
+    state.workspaceId = workspaceId;
+    state.projectId = projectId;
+    state.details = null;
+    state.infoOpen = false;
+    root.innerHTML = '<section class="oddi-sw-shell"><header class="oddi-sw-top"><button type="button" data-action="back-to-list" aria-label="Back to projects">Back</button><span class="oddi-sw-brand">ODDI</span><span class="oddi-sw-kicker">Loading project...</span></header><main class="oddi-sw-empty"><p>Opening your project...</p></main></section>';
+    try {
+      const details = await api(`/api/shared-workspaces/${encodeURIComponent(workspaceId)}`);
+      if (state.workspaceId !== workspaceId || state.projectId !== projectId) return;
+      if (!(details.projects || []).some(project => project.id === projectId)) throw new Error('This project is no longer available in the group.');
+      state.details = details;
+      renderProject();
+      state.detailsTimer = window.setInterval(() => { void refreshDetails(); }, 5000);
+      void refreshListQuietly();
+    } catch (error) {
+      state.page = 'list';
+      state.projectId = null;
       showError(error.message, error.status === 401 || error.status === 403);
     }
   }
@@ -364,8 +452,15 @@
       const details = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}`);
       if (state.workspaceId !== details.workspace.id) return;
       state.details = details;
-      renderHeader();
-      renderInfoPanel();
+      if (state.page === 'project') {
+        const projectView = root.querySelector('.oddi-sw-project-view');
+        const scrollTop = projectView?.scrollTop || 0;
+        renderProjectView();
+        if (projectView) root.querySelector('.oddi-sw-project-view').scrollTop = scrollTop;
+      } else {
+        renderHeader();
+        renderInfoPanel();
+      }
       void refreshListQuietly();
     } catch (error) {
       if (error.status === 401 || error.status === 403 || error.status === 404) {
@@ -385,13 +480,15 @@
       }
       state.workspaces = Array.isArray(payload.workspaces) ? payload.workspaces : [];
       state.invitations = Array.isArray(payload.invitations) ? payload.invitations : [];
-      if (state.page === 'chat' && !root.hidden) {
+      if ((state.page === 'chat' || state.page === 'project') && !root.hidden) {
         const currentWorkspaceId = state.details?.workspace?.id || state.workspaceId;
         const aside = root.querySelector('.oddi-sw-list');
         if (aside) {
+          const scrollTop = aside.scrollTop;
           const replacement = document.createElement('div');
           replacement.innerHTML = renderChatSidebar(currentWorkspaceId);
           aside.replaceWith(replacement.firstElementChild);
+          root.querySelector('.oddi-sw-list').scrollTop = scrollTop;
         }
       }
       window.dispatchEvent(new Event('oddi:shared-invitations-changed'));
@@ -408,8 +505,27 @@
     window.setTimeout(() => backdrop.querySelector('input')?.focus(), 40);
   }
 
-  function openCreateModal() {
-    renderModal('Create a shared group', 'Choose a name now. You can invite as many ODDI members as you need after creating it.', `<form class="oddi-sw-create-form" data-form="create"><input name="name" maxlength="${MAX_NAME_LENGTH}" placeholder="e.g. Product launch" required aria-label="Group name"><button class="oddi-sw-primary" type="submit">Create</button></form>`);
+  function openCreateProjectModal() {
+    const groups = state.workspaces.filter(group => group.my_role === 'admin' || group.my_role === 'owner');
+    const groupChoices = groups.length
+      ? `<label><span>Group</span><select name="workspace_id" data-project-group>${groups.map(group => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.name)}</option>`).join('')}<option value="">Create a new group</option></select></label><label class="oddi-sw-new-group-field" hidden><span>New group name</span><input name="group_name" maxlength="${MAX_NAME_LENGTH}" placeholder="e.g. Product team"></label>`
+      : `<input type="hidden" name="workspace_id" value=""><label><span>Group name</span><input name="group_name" maxlength="${MAX_NAME_LENGTH}" placeholder="e.g. Product team" required></label>`;
+    renderModal('Create a project', 'Set a clear goal and optional deadline. You can invite group members after creating it.', `<form class="oddi-sw-project-form" data-form="create-project">
+      <label><span>Project name</span><input name="name" maxlength="${MAX_NAME_LENGTH}" placeholder="e.g. Prepare the product launch" required></label>
+      ${groupChoices}
+      <label><span>Project goal</span><textarea name="goal" maxlength="${MAX_PROJECT_GOAL_LENGTH}" rows="3" placeholder="What should this project accomplish?" required></textarea></label>
+      <label><span>Deadline <small>(optional)</small></span><input name="deadline" type="date"></label>
+      <button class="oddi-sw-primary" type="submit">Create Project</button>
+    </form>`);
+    const form = root.querySelector('.oddi-sw-project-form');
+    if (groups.length) {
+      const selector = form?.querySelector('[data-project-group]');
+      const newGroup = form?.querySelector('.oddi-sw-new-group-field');
+      if (selector && newGroup) {
+        newGroup.hidden = !!selector.value;
+        newGroup.querySelector('input').required = !selector.value;
+      }
+    }
   }
 
   async function sendMessage(form) {
@@ -438,6 +554,17 @@
     }
   }
 
+  function applyProjectSnapshot(snapshot) {
+    if (!snapshot?.project || !state.details) return;
+    state.details.workspace = snapshot.workspace || state.details.workspace;
+    state.details.members = snapshot.members || state.details.members;
+    const projects = state.details.projects || [];
+    const index = projects.findIndex(item => item.id === snapshot.project.id);
+    if (index >= 0) projects[index] = snapshot.project;
+    else projects.unshift(snapshot.project);
+    state.details.projects = projects;
+  }
+
   async function handleClick(event) {
     const button = event.target.closest('[data-action]');
     if (!button) {
@@ -455,9 +582,46 @@
     if (action === 'reload') { stopPolling(); await refreshList(); state.page = 'list'; if (!root.querySelector('.oddi-sw-shell.is-error')) state.listTimer = window.setInterval(() => { if (!root.hidden && state.page === 'list') void refreshList(); }, 10000); return; }
     if (action === 'reload-page') { window.location.reload(); return; }
     if (action === 'signin') { window.location.assign('/login'); return; }
-    if (action === 'back-to-list') { state.page = 'list'; state.workspaceId = null; state.details = null; stopPolling(); await refreshList(); if (!root.querySelector('.oddi-sw-shell.is-error')) state.listTimer = window.setInterval(() => { if (!root.hidden && state.page === 'list') void refreshList(); }, 10000); return; }
-    if (action === 'new-workspace') { openCreateModal(); return; }
+    if (action === 'back-to-list') { state.page = 'list'; state.workspaceId = null; state.projectId = null; state.details = null; stopPolling(); await refreshList(); if (!root.querySelector('.oddi-sw-shell.is-error')) state.listTimer = window.setInterval(() => { if (!root.hidden && state.page === 'list') void refreshList(); }, 10000); return; }
+    if (action === 'create-project' || action === 'new-workspace') { openCreateProjectModal(); return; }
     if (action === 'open-workspace') { void selectWorkspace(button.dataset.workspaceId); return; }
+    if (action === 'open-project') { void openProject(button.dataset.workspaceId, button.dataset.projectId); return; }
+    if (action === 'manage-group') {
+      const workspaceId = state.workspaceId;
+      state.infoOpen = true;
+      await selectWorkspace(workspaceId);
+      state.infoOpen = true;
+      renderInfoPanel();
+      return;
+    }
+    if (action === 'generate-workflow') {
+      if (button.disabled || !state.projectId) return;
+      button.disabled = true;
+      const projectId = state.projectId;
+      const project = (state.details?.projects || []).find(item => item.id === projectId);
+      if (project) project.workflow_status = 'generating';
+      renderProjectView();
+      try {
+        const snapshot = await api(`/api/shared-workspaces/projects/${encodeURIComponent(projectId)}/workflow`, { method: 'POST' });
+        applyProjectSnapshot(snapshot);
+        renderProjectView();
+        await refreshListQuietly();
+      } catch (error) {
+        await refreshDetails();
+        showToast(error.message);
+      }
+      return;
+    }
+    if (action === 'delete-project-task') {
+      if (!window.confirm('Remove this task from the project checklist?')) return;
+      try {
+        const snapshot = await api(`/api/shared-workspaces/projects/${encodeURIComponent(state.projectId)}/tasks/${encodeURIComponent(button.dataset.taskId)}`, { method: 'DELETE' });
+        applyProjectSnapshot(snapshot);
+        renderProjectView();
+        await refreshListQuietly();
+      } catch (error) { showToast(error.message); }
+      return;
+    }
     if (action === 'group-info') { state.infoOpen = !state.infoOpen; renderInfoPanel(); return; }
     if (action === 'close-info') { state.infoOpen = false; renderInfoPanel(); return; }
     if (action === 'add-prefix') {
@@ -503,7 +667,7 @@
       if (!window.confirm('Leave this group? You will lose access to its messages.')) return;
       try {
         await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/leave`, { method: 'POST' });
-        state.workspaceId = null; state.details = null; stopPolling();
+        state.page = 'list'; state.workspaceId = null; state.projectId = null; state.details = null; stopPolling();
         await refreshList();
         showToast('You left the group.');
       } catch (error) { showToast(error.message); }
@@ -513,7 +677,7 @@
       if (!window.confirm('Delete this group and all of its messages for every member? This cannot be undone.')) return;
       try {
         await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}`, { method: 'DELETE' });
-        state.workspaceId = null; state.details = null; stopPolling();
+        state.page = 'list'; state.workspaceId = null; state.projectId = null; state.details = null; stopPolling();
         await refreshList();
         showToast('Group deleted.');
       } catch (error) { showToast(error.message); }
@@ -527,7 +691,28 @@
     const kind = form.dataset.form;
     const values = new FormData(form);
     try {
-      if (kind === 'create') {
+      if (kind === 'create-project') {
+        const payload = {
+          name: values.get('name'),
+          goal: values.get('goal'),
+          deadline: values.get('deadline'),
+          workspace_id: values.get('workspace_id'),
+          group_name: values.get('group_name'),
+        };
+        const created = await api('/api/shared-workspaces/projects', { method: 'POST', body: JSON.stringify(payload) });
+        root.querySelector('.oddi-sw-modal-backdrop')?.remove();
+        state.workspaceId = created.workspace.id;
+        await refreshList();
+        await openProject(created.workspace.id, created.project.id);
+        showToast('Project created. Invite your group, then choose Yes if you want ODDI to build a checklist.');
+      } else if (kind === 'add-task') {
+        const snapshot = await api(`/api/shared-workspaces/projects/${encodeURIComponent(state.projectId)}/tasks`, {
+          method: 'POST', body: JSON.stringify({ title: values.get('title'), details: values.get('details') }),
+        });
+        applyProjectSnapshot(snapshot);
+        renderProjectView();
+        await refreshListQuietly();
+      } else if (kind === 'create') {
         const created = await api('/api/shared-workspaces', { method: 'POST', body: JSON.stringify({ name: values.get('name') }) });
         root.querySelector('.oddi-sw-modal-backdrop')?.remove();
         state.workspaces = [created.workspace, ...state.workspaces.filter(item => item.id !== created.workspace.id)];
@@ -569,10 +754,41 @@
     event.target.style.height = `${Math.min(140, event.target.scrollHeight)}px`;
   }
 
+  async function onChange(event) {
+    const groupSelect = event.target.closest('[data-project-group]');
+    if (groupSelect) {
+      const field = groupSelect.form?.querySelector('.oddi-sw-new-group-field');
+      if (field) {
+        field.hidden = !!groupSelect.value;
+        field.querySelector('input').required = !groupSelect.value;
+      }
+      return;
+    }
+    const statusInput = event.target.closest('[data-task-status]');
+    const assigneeInput = event.target.closest('[data-task-assignee]');
+    const control = statusInput || assigneeInput;
+    if (!control || control.disabled || !state.projectId) return;
+    const taskId = control.dataset.taskId;
+    const value = statusInput ? { status: control.checked ? 'done' : 'todo' } : { assigned_user_id: control.value || null };
+    control.disabled = true;
+    try {
+      const snapshot = await api(`/api/shared-workspaces/projects/${encodeURIComponent(state.projectId)}/tasks/${encodeURIComponent(taskId)}`, {
+        method: 'PATCH', body: JSON.stringify(value),
+      });
+      applyProjectSnapshot(snapshot);
+      renderProjectView();
+      await refreshListQuietly();
+    } catch (error) {
+      await refreshDetails();
+      showToast(error.message);
+    }
+  }
+
   async function openWorkspaceList() {
     stopPolling();
     state.page = 'list';
     state.workspaceId = null;
+    state.projectId = null;
     state.details = null;
     state.messages.clear();
     state.messageCursor = 0;
@@ -591,6 +807,7 @@
   root.addEventListener('submit', event => { void handleSubmit(event); });
   root.addEventListener('keydown', onKeyDown);
   root.addEventListener('input', onInput);
+  root.addEventListener('change', event => { void onChange(event); });
   window.addEventListener('oddi:shared-workspaces-open', () => { void openWorkspaceList(); });
   window.addEventListener('oddi:shared-workspaces-notification', event => {
     const detail = event.detail || {};
