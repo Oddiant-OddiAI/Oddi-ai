@@ -20,6 +20,7 @@
   const answerAllQuestionsButton = document.getElementById("answerAllQuestionsButton");
   const answerSheetSection = document.getElementById("answerSheetSection");
   const answerSheetContent = document.getElementById("answerSheetContent");
+  const answerFollowups = document.getElementById("answerFollowups");
   const hideAnswerSheetButton = document.getElementById("hideAnswerSheetButton");
   const answerAllToggle = document.getElementById("answerAllToggle");
   const sessionSaveState = document.getElementById("sessionSaveState");
@@ -41,7 +42,13 @@
   let roleContext = "";
   let questions = [];
   let answers = [];
+  let questionSampleAnswers = [];
+  let answerSources = [];
   let sessionId = "";
+  let sessionServerAvailable = true;
+  let sessionCreatedAt = "";
+  let sessionReviewText = "";
+  let sessionFormattedAnswers = "";
   let statusTimeout = 0;
   let saveTimeout = 0;
   let saveQueue = Promise.resolve();
@@ -50,6 +57,137 @@
   let previousAnswersRequestToken = 0;
   let previousAnswersCache = null;
   let sessionReviewed = false;
+  let activeRecognition = null;
+  let activeSpeakButton = null;
+  const userKey = document.querySelector(".studio-shell").dataset.userKey || "guest";
+  const localFallbackKey = "oddi-interview-studio-local-v1:" + userKey;
+  let localDatabasePromise = null;
+
+  function openLocalSessionDatabase() {
+    if (!window.indexedDB) return Promise.resolve(null);
+    if (localDatabasePromise) return localDatabasePromise;
+    localDatabasePromise = new Promise(function (resolve) {
+      let request;
+      try {
+        request = window.indexedDB.open("oddi-interview-studio", 1);
+      } catch (_) {
+        resolve(null);
+        return;
+      }
+      request.onupgradeneeded = function () {
+        const db = request.result;
+        if (!db.objectStoreNames.contains("sessions")) {
+          const store = db.createObjectStore("sessions", { keyPath: "id" });
+          store.createIndex("user_key", "user_key", { unique: false });
+        }
+      };
+      request.onsuccess = function () { resolve(request.result); };
+      request.onerror = function () { resolve(null); };
+      request.onblocked = function () { resolve(null); };
+    });
+    return localDatabasePromise;
+  }
+
+  function localStorageSessions() {
+    try {
+      const value = JSON.parse(window.localStorage.getItem(localFallbackKey) || "[]");
+      return Array.isArray(value) ? value.filter(function (item) { return item && item.id; }) : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  async function readLocalSessions() {
+    const db = await openLocalSessionDatabase();
+    if (!db) return localStorageSessions();
+    return new Promise(function (resolve) {
+      try {
+        const request = db.transaction("sessions", "readonly").objectStore("sessions").index("user_key").getAll(userKey);
+        request.onsuccess = function () {
+          resolve(Array.isArray(request.result) && request.result.length ? request.result : localStorageSessions());
+        };
+        request.onerror = function () { resolve(localStorageSessions()); };
+      } catch (_) {
+        resolve(localStorageSessions());
+      }
+    });
+  }
+
+  async function readLocalSession(id) {
+    const db = await openLocalSessionDatabase();
+    if (!db) return localStorageSessions().find(function (item) { return String(item.id) === String(id); }) || null;
+    return new Promise(function (resolve) {
+      try {
+        const request = db.transaction("sessions", "readonly").objectStore("sessions").get(String(id));
+        request.onsuccess = function () {
+          const value = request.result;
+          resolve(value && value.user_key === userKey ? value : (localStorageSessions().find(function (item) { return String(item.id) === String(id); }) || null));
+        };
+        request.onerror = function () { resolve(localStorageSessions().find(function (item) { return String(item.id) === String(id); }) || null); };
+      } catch (_) {
+        resolve(localStorageSessions().find(function (item) { return String(item.id) === String(id); }) || null);
+      }
+    });
+  }
+
+  async function writeLocalSession(session) {
+    const record = Object.assign({}, session, { user_key: userKey });
+    const db = await openLocalSessionDatabase();
+    if (db) {
+      const saved = await new Promise(function (resolve) {
+        try {
+          const transaction = db.transaction("sessions", "readwrite");
+          transaction.objectStore("sessions").put(record);
+          transaction.oncomplete = function () { resolve(true); };
+          transaction.onerror = function () { resolve(false); };
+          transaction.onabort = function () { resolve(false); };
+        } catch (_) {
+          resolve(false);
+        }
+      });
+      if (saved) return true;
+    }
+    try {
+      const sessions = localStorageSessions().filter(function (item) { return String(item.id) !== String(record.id); });
+      sessions.push(record);
+      sessions.sort(function (left, right) { return String(right.updated_at || "").localeCompare(String(left.updated_at || "")); });
+      window.localStorage.setItem(localFallbackKey, JSON.stringify(sessions));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function makeLocalSessionId() {
+    const suffix = window.crypto && typeof window.crypto.randomUUID === "function"
+      ? window.crypto.randomUUID()
+      : Date.now().toString(36) + Math.random().toString(36).slice(2);
+    return "local-" + suffix;
+  }
+
+  function buildLocalSessionRecord() {
+    const snapshot = currentSessionSnapshot();
+    const now = new Date().toISOString();
+    return {
+      id: sessionId,
+      profession: profession,
+      context: roleContext,
+      questions: snapshot.questions,
+      answers: snapshot.answers,
+      question_sample_answers: snapshot.question_sample_answers,
+      answer_sources: snapshot.answer_sources,
+      status: sessionReviewed ? "completed" : "in_progress",
+      formatted_answers: sessionFormattedAnswers,
+      review: sessionReviewText,
+      created_at: sessionCreatedAt || now,
+      updated_at: now
+    };
+  }
+
+  async function persistLocalSession() {
+    if (!sessionId || ![5, 10].includes(questions.length)) return false;
+    return writeLocalSession(buildLocalSessionRecord());
+  }
 
   function setStatus(message, kind) {
     window.clearTimeout(statusTimeout);
@@ -146,29 +284,55 @@
     const cards = Array.from(questionList.querySelectorAll(".question-card"));
     const currentAnswers = cards.map(getAnswer);
     answers = currentAnswers;
-    return { questions: questions, answers: currentAnswers };
+    answerSources = currentAnswers.map(function (answer, index) {
+      if (answer) return "candidate";
+      return questionSampleAnswers[index] ? "oddi_sample" : "unanswered";
+    });
+    return {
+      questions: questions,
+      answers: currentAnswers,
+      question_sample_answers: questionSampleAnswers,
+      answer_sources: answerSources
+    };
   }
 
   function saveSessionNow(keepalive) {
     window.clearTimeout(saveTimeout);
     saveTimeout = 0;
-    if (!sessionId || sessionReviewed || ![5, 10].includes(questions.length)) return Promise.resolve();
+    if (!sessionId || ![5, 10].includes(questions.length)) return Promise.resolve();
 
     const savingId = sessionId;
     const snapshot = currentSessionSnapshot();
+    if (sessionReviewed) {
+      void persistLocalSession();
+      return Promise.resolve({ local: true });
+    }
+    if (!sessionServerAvailable) {
+      return persistLocalSession().then(function (saved) {
+        setSaveState(saved ? "Saved on this device." : "This device couldn't save the practice.", saved ? "" : "error");
+        return { local: true };
+      });
+    }
     setSaveState("Saving your progress...", "saving");
     const task = saveQueue.catch(function () {}).then(function () {
+      return persistLocalSession();
+    }).then(function (savedLocally) {
       return requestJson(
         "/api/interview/sessions/" + encodeURIComponent(savingId),
         "PATCH",
         snapshot,
         keepalive
-      );
+      ).then(function (result) {
+        result.local_backup_saved = Boolean(savedLocally);
+        return result;
+      });
     }).then(function (result) {
-      if (sessionId === savingId) setSaveState("Progress saved to this account.");
+      if (sessionId === savingId) {
+        setSaveState(result.local_backup_saved ? "Saved to your account and this device." : "Saved to your account; this device couldn't make a backup.", result.local_backup_saved ? "" : "error");
+      }
       return result;
     }).catch(function (error) {
-      if (sessionId === savingId) setSaveState("Progress couldn't be saved. Try again.", "error");
+      if (sessionId === savingId) setSaveState("Saved on this device; account sync failed. Try again.", "error");
       throw error;
     });
     saveQueue = task;
@@ -210,7 +374,13 @@
       }
       questions = result.questions;
       answers = Array(questions.length).fill("");
-      sessionId = String(result.session_id || "");
+      questionSampleAnswers = Array(questions.length).fill("");
+      answerSources = Array(questions.length).fill("unanswered");
+      sessionServerAvailable = Boolean(result.session_id);
+      sessionId = String(result.session_id || makeLocalSessionId());
+      sessionCreatedAt = new Date().toISOString();
+      sessionReviewText = "";
+      sessionFormattedAnswers = "";
       sessionReviewed = false;
       setSessionUrl(sessionId);
       feedbackText.textContent = "";
@@ -226,13 +396,13 @@
       restoringSession = false;
 
       if (sessionId) {
-        setSaveState("Practice saved. Your answers save automatically.");
-        void loadSavedSessions(true);
+        void persistLocalSession();
+        setSaveState(sessionServerAvailable ? "Practice saved to your account and this device." : "Practice saved on this device.");
+        void loadSavedSessions(false);
         setStatus("Your 10 questions are ready. Take them one at a time.", "success");
-      } else {
-        const saveError = result.session_error || "Questions are ready, but ODDI couldn't save this practice session.";
-        setSaveState("This practice couldn't be saved. Please keep this page open.", "error");
-        setStatus(saveError, "error");
+        if (!sessionServerAvailable) {
+          setStatus(result.session_error || "This practice is saved on this device. It couldn't be synced to your account yet.", "error");
+        }
       }
     } catch (error) {
       restoringSession = false;
@@ -272,16 +442,23 @@
 
   function getAnswer(card) {
     const textArea = card.querySelector("textarea");
-    if (textArea) return textArea.value.trim();
+    const spokenText = textArea ? textArea.value.trim() : "";
     const checked = card.querySelector('input[type="radio"]:checked');
-    return checked ? checked.value : "";
+    if (checked && spokenText) return checked.value + "\nSpoken response: " + spokenText;
+    return checked ? checked.value : spokenText;
   }
 
   function updateProgress() {
     const cards = Array.from(questionList.querySelectorAll(".question-card"));
     const currentAnswers = cards.map(getAnswer);
     answers = currentAnswers;
-    const answered = currentAnswers.filter(Boolean).length;
+    answerSources = currentAnswers.map(function (answer, index) {
+      if (answer) return "candidate";
+      return questionSampleAnswers[index] ? "oddi_sample" : "unanswered";
+    });
+    const answered = currentAnswers.filter(Boolean).length + currentAnswers.reduce(function (count, answer, index) {
+      return count + (!answer && answerSources[index] === "oddi_sample" ? 1 : 0);
+    }, 0);
     const total = cards.length || 10;
     answeredCount.textContent = String(answered);
     totalCount.textContent = String(total);
@@ -289,8 +466,8 @@
     progressTrack.setAttribute("aria-valuenow", String(answered));
     progressFill.style.width = (total ? (answered / total) * 100 : 0) + "%";
     submitHint.textContent = answered === total
-      ? "Your answers are ready for ODDI's review."
-      : "Answer all " + total + " questions to get your ODDI review.";
+      ? "Your responses and ODDI's samples are ready for an oral-style review."
+      : "Answer every question or ask ODDI for a sample answer first.";
     scheduleSessionSave();
   }
 
@@ -299,6 +476,147 @@
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
     return node;
+  }
+
+  function dispatchAnswerInput(textarea) {
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    textarea.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function startAnswerRecognition(textarea, button, status) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      status.textContent = "Voice input isn't available in this browser.";
+      status.classList.add("is-error");
+      return;
+    }
+    if (activeRecognition) {
+      try { activeRecognition.stop(); } catch (_) { /* recognition may already be stopping */ }
+    }
+
+    const recognition = new SpeechRecognition();
+    activeRecognition = recognition;
+    const baseText = textarea.value.trim();
+    recognition.lang = "en-IN";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    button.classList.add("is-listening");
+    button.setAttribute("aria-pressed", "true");
+    button.querySelector(".answer-mic-label").textContent = "Listening... click to stop";
+    status.classList.remove("is-error");
+    status.textContent = "Speak naturally. Your words will appear here.";
+
+    recognition.onresult = function (event) {
+      const transcript = Array.from(event.results).map(function (result) {
+        return result[0] && result[0].transcript ? result[0].transcript.trim() : "";
+      }).filter(Boolean).join(" ");
+      textarea.value = [baseText, transcript].filter(Boolean).join(" ");
+      const card = textarea.closest(".question-card");
+      if (card && card.dataset.questionType === "multiple_choice") {
+        const choiceMatch = transcript.match(/^(?:option|choice|answer)?\s*([a-d])(?:\b|\s|[.,])/i);
+        const options = Array.from(card.querySelectorAll('input[type="radio"]'));
+        if (choiceMatch && options[choiceMatch[1].toUpperCase().charCodeAt(0) - 65]) {
+          options[choiceMatch[1].toUpperCase().charCodeAt(0) - 65].checked = true;
+        } else {
+          const optionIndex = options.findIndex(function (input) {
+            const label = input.closest("label");
+            return label && label.querySelector(".choice-copy").textContent.trim().toLocaleLowerCase() === transcript.toLocaleLowerCase();
+          });
+          if (optionIndex >= 0) options[optionIndex].checked = true;
+        }
+      }
+      dispatchAnswerInput(textarea);
+    };
+    recognition.onerror = function (event) {
+      const messages = {
+        "not-allowed": "Allow microphone access in your browser to use voice input.",
+        "service-not-allowed": "Voice input is blocked by this browser or device.",
+        "no-speech": "No speech was detected. Try again when you're ready.",
+        "audio-capture": "No microphone was found. Check your microphone connection."
+      };
+      status.textContent = messages[event.error] || "Voice input stopped. Please try again.";
+      status.classList.add("is-error");
+    };
+    recognition.onend = function () {
+      if (activeRecognition === recognition) activeRecognition = null;
+      button.classList.remove("is-listening");
+      button.setAttribute("aria-pressed", "false");
+      button.querySelector(".answer-mic-label").textContent = "Speak your answer";
+      if (!status.classList.contains("is-error")) status.textContent = textarea.value.trim() ? "Transcript added to your answer." : "";
+    };
+    try {
+      recognition.start();
+    } catch (_) {
+      if (activeRecognition === recognition) activeRecognition = null;
+      button.classList.remove("is-listening");
+      button.setAttribute("aria-pressed", "false");
+      button.querySelector(".answer-mic-label").textContent = "Speak your answer";
+      status.textContent = "Microphone couldn't start. Please try again.";
+      status.classList.add("is-error");
+    }
+  }
+
+  function makeAnswerInput(index, previousAnswer, multipleChoice) {
+    const block = makeElement("div", "answer-input-block");
+    const label = makeElement("label", "answer-field-label", multipleChoice ? "Optional spoken response or explanation" : "Your spoken or written answer");
+    const textarea = document.createElement("textarea");
+    const textareaId = "interview-answer-text-" + index;
+    textarea.id = textareaId;
+    label.htmlFor = textareaId;
+    textarea.className = "written-answer";
+    textarea.rows = 3;
+    textarea.maxLength = 10000;
+    textarea.placeholder = multipleChoice ? "Say or explain your selected option..." : "Write your answer or use the microphone...";
+    textarea.setAttribute("aria-label", (multipleChoice ? "Optional spoken response" : "Your answer") + " to question " + (index + 1));
+    textarea.value = previousAnswer || "";
+
+    const tools = makeElement("div", "answer-input-tools");
+    const micButton = makeElement("button", "answer-mic-button");
+    micButton.type = "button";
+    micButton.setAttribute("aria-pressed", "false");
+    micButton.innerHTML = '<svg class="answer-mic-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.93V21h2v-3.07A7 7 0 0 0 19 11h-2Z"/></svg><span class="answer-mic-label">Speak your answer</span>';
+    const voiceStatus = makeElement("span", "answer-voice-status");
+    if (!(window.SpeechRecognition || window.webkitSpeechRecognition)) {
+      micButton.disabled = true;
+      voiceStatus.textContent = "Voice input isn't available in this browser.";
+    } else {
+      micButton.addEventListener("click", function () {
+        if (micButton.getAttribute("aria-pressed") === "true" && activeRecognition) {
+          try { activeRecognition.stop(); } catch (_) { /* recognition may already be stopping */ }
+          return;
+        }
+        startAnswerRecognition(textarea, micButton, voiceStatus);
+      });
+    }
+    tools.append(micButton, voiceStatus);
+    block.append(label, textarea, tools);
+    return block;
+  }
+
+  function speakAnswer(text, button) {
+    if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== "function") {
+      setStatus("Spoken answers aren't available in this browser. You can still read the sample answer.", "error");
+      return;
+    }
+    if (window.speechSynthesis.speaking && activeSpeakButton === button) {
+      window.speechSynthesis.cancel();
+      activeSpeakButton = null;
+      button.textContent = "Listen to answer";
+      return;
+    }
+    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+    if (activeSpeakButton) activeSpeakButton.textContent = "Listen to answer";
+    const utterance = new window.SpeechSynthesisUtterance(text);
+    utterance.lang = "en-IN";
+    utterance.onend = utterance.onerror = function () {
+      if (activeSpeakButton === button) {
+        activeSpeakButton = null;
+        button.textContent = "Listen to answer";
+      }
+    };
+    activeSpeakButton = button;
+    button.textContent = "Stop speaking";
+    window.speechSynthesis.speak(utterance);
   }
 
   function appendReviewText(container, text) {
@@ -375,6 +693,7 @@
   function buildQuestionCard(question, index, previousAnswer) {
     const card = makeElement("article", "question-card");
     card.dataset.questionIndex = String(index);
+    card.dataset.questionType = question.type === "multiple_choice" ? "multiple_choice" : "written";
     card.style.animationDelay = Math.min(index * 35, 280) + "ms";
 
     const meta = makeElement("div", "question-meta");
@@ -398,23 +717,18 @@
         radio.type = "radio";
         radio.name = "interview-answer-" + index;
         radio.value = letter + ". " + option;
-        radio.checked = radio.value === previousAnswer;
+        radio.checked = previousAnswer === radio.value || previousAnswer.indexOf(radio.value + "\nSpoken response:") === 0;
         const badge = makeElement("span", "choice-letter", letter);
         const copy = makeElement("span", "choice-copy", option);
         label.append(radio, badge, copy);
         choices.appendChild(label);
       });
       card.appendChild(choices);
-    } else {
-      const answer = document.createElement("textarea");
-      answer.className = "written-answer";
-      answer.rows = 3;
-      answer.maxLength = 10000;
-      answer.placeholder = "Write your answer here...";
-      answer.setAttribute("aria-label", "Your answer to question " + (index + 1));
-      answer.value = previousAnswer || "";
-      card.appendChild(answer);
     }
+    const savedSpokenAnswer = question.type === "multiple_choice"
+      ? (String(previousAnswer || "").match(/\nSpoken response:\s*([\s\S]*)$/) || [])[1] || ""
+      : previousAnswer;
+    card.appendChild(makeAnswerInput(index, savedSpokenAnswer, question.type === "multiple_choice"));
 
     const actions = makeElement("div", "question-actions");
     const answerButton = makeElement("button", "question-action answer-action");
@@ -436,55 +750,77 @@
     const cardStatus = makeElement("div", "card-status");
     cardStatus.setAttribute("role", "status");
     card.appendChild(cardStatus);
+    if (questionSampleAnswers[index]) renderQuestionSampleAnswer(card, index, questionSampleAnswers[index], false);
     return card;
   }
 
-  async function answerQuestion(question, index, card, button) {
-    if (button.disabled) return;
-    const cardStatus = card.querySelector(".card-status");
+  function renderQuestionSampleAnswer(card, index, answer, speakOnDisplay) {
     let answerPanel = card.querySelector(".sample-answer");
     if (!answerPanel) {
       answerPanel = makeElement("section", "sample-answer");
       answerPanel.id = "interview-sample-answer-" + index;
       answerPanel.setAttribute("aria-live", "polite");
-      const heading = makeElement("strong", "sample-answer-title", "ODDI's sample answer");
-      const copy = makeElement("div", "sample-answer-copy");
-      answerPanel.append(heading, copy);
-      card.insertBefore(answerPanel, cardStatus);
-      button.setAttribute("aria-controls", answerPanel.id);
+      card.insertBefore(answerPanel, card.querySelector(".card-status"));
     }
+    answerPanel.replaceChildren(
+      makeElement("strong", "sample-answer-title", "ODDI's sample answer"),
+      makeElement("div", "sample-answer-copy", answer)
+    );
+    answerPanel.dataset.answer = answer;
+    const listen = makeElement("button", "answer-speak-button", "Listen to answer");
+    listen.type = "button";
+    listen.addEventListener("click", function () { speakAnswer(answer, listen); });
+    answerPanel.appendChild(listen);
+    const answerButton = card.querySelector(".answer-action");
+    if (answerButton) {
+      answerButton.setAttribute("aria-controls", answerPanel.id);
+      answerButton.setAttribute("aria-expanded", "true");
+    }
+    questionSampleAnswers[index] = answer;
+    const currentAnswer = getAnswer(card);
+    answerSources[index] = currentAnswer ? "candidate" : "oddi_sample";
+    if (!answerSheetSection.hidden) renderAnswerSheet(questionSampleAnswers, questions);
+    if (speakOnDisplay) speakAnswer(answer, listen);
+    return listen;
+  }
 
+  async function answerQuestion(question, index, card, button) {
+    if (button.disabled) return;
+    const cardStatus = card.querySelector(".card-status");
     const label = button.querySelector("span:last-child");
     const originalLabel = label.textContent;
     button.disabled = true;
     button.setAttribute("aria-expanded", "true");
     label.textContent = "ODDI is answering...";
-    const answerCopy = answerPanel.querySelector(".sample-answer-copy");
-    const previousAnswer = answerPanel.dataset.answer || "";
-    answerCopy.textContent = "ODDI is preparing a sample answer for this question...";
-    answerPanel.classList.remove("is-error");
-    answerPanel.hidden = false;
-    cardStatus.textContent = "";
+    const previousAnswer = questionSampleAnswers[index] || "";
+    cardStatus.textContent = "ODDI is preparing a spoken sample answer...";
     cardStatus.classList.remove("is-error");
 
     try {
+      currentSessionSnapshot();
+      if (sessionServerAvailable) await saveSessionNow();
+      else await persistLocalSession();
       const result = await postJson("/api/interview/answer", {
         profession: profession,
         context: roleContext,
+        session_id: sessionServerAvailable ? sessionId : "",
+        question_index: index,
         question: question.question,
         question_type: question.type === "multiple_choice" ? "multiple_choice" : "written",
         options: question.type === "multiple_choice" ? (question.options || []) : []
       });
       if (!result.answer || typeof result.answer !== "string") throw new Error("ODDI didn't return a sample answer.");
-      answerPanel.dataset.answer = result.answer;
-      answerCopy.textContent = result.answer;
-      answerPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (!questions[index] || questions[index].question !== question.question) return;
+      cardStatus.textContent = "";
+      renderQuestionSampleAnswer(card, index, result.answer, true);
+      await persistLocalSession();
+      if (sessionServerAvailable) await saveSessionNow();
+      answerFollowups.hidden = false;
+      updateProgress();
+      card.querySelector(".sample-answer").scrollIntoView({ behavior: "smooth", block: "nearest" });
     } catch (error) {
-      if (previousAnswer) {
-        answerCopy.textContent = previousAnswer;
-      } else {
-        answerPanel.hidden = true;
-        button.setAttribute("aria-expanded", "false");
+      if (previousAnswer && questions[index] && questions[index].question === question.question) {
+        renderQuestionSampleAnswer(card, index, previousAnswer, false);
       }
       cardStatus.textContent = error.message || "ODDI couldn't answer this question. Please try again.";
       cardStatus.classList.add("is-error");
@@ -497,17 +833,27 @@
   function renderQuestions() {
     clearAnswerSheet();
     const count = questions.length || 10;
-    document.getElementById("answerSheetTitle").textContent = "All " + count + " answers";
+    const existingSampleCount = questionSampleAnswers.filter(Boolean).length;
+    document.getElementById("answerSheetTitle").textContent = existingSampleCount && existingSampleCount < count
+      ? existingSampleCount + " saved model answer" + (existingSampleCount === 1 ? "" : "s")
+      : "All " + count + " answers";
     answerAllQuestionsButton.querySelector(".button-label").textContent = "Get model answers for all " + count + " questions";
     questionList.replaceChildren();
     questions.forEach(function (question, index) {
       questionList.appendChild(buildQuestionCard(question, index, answers[index] || ""));
     });
+    const hasSamples = questionSampleAnswers.some(Boolean);
+    if (hasSamples) {
+      renderAnswerSheet(questionSampleAnswers, questions);
+      answerSheetSection.hidden = false;
+      answerFollowups.hidden = false;
+    }
   }
 
   function clearAnswerSheet() {
     answerSheetRequestToken += 1;
     answerSheetSection.hidden = true;
+    answerFollowups.hidden = true;
     answerAllQuestionsButton.setAttribute("aria-expanded", "false");
     answerSheetContent.replaceChildren();
     if (answerAllQuestionsButton.disabled) setButtonBusy(answerAllQuestionsButton, false);
@@ -529,16 +875,25 @@
   }
 
   function renderAnswerSheet(sampleAnswers, questionSet) {
+    const count = sampleAnswers.filter(Boolean).length;
+    document.getElementById("answerSheetTitle").textContent = count === questionSet.length
+      ? "All " + questionSet.length + " answers"
+      : count + " saved model answer" + (count === 1 ? "" : "s");
     return renderAnswerCards(answerSheetContent, sampleAnswers, questionSet);
   }
 
   function renderAnswerCards(container, sampleAnswers, questionSet) {
     container.replaceChildren();
     sampleAnswers.forEach(function (answer, index) {
+      if (!answer || !questionSet[index]) return;
       const item = makeElement("article", "answer-sheet-item");
       item.appendChild(makeElement("h3", "answer-sheet-question", "Q" + (index + 1) + ". " + questionSet[index].question));
       item.appendChild(makeElement("span", "answer-sheet-label", "ODDI sample answer"));
       item.appendChild(makeElement("p", "answer-sheet-response", answer));
+      const listen = makeElement("button", "answer-speak-button", "Listen to answer");
+      listen.type = "button";
+      listen.addEventListener("click", function () { speakAnswer(answer, listen); });
+      item.appendChild(listen);
       container.appendChild(item);
     });
   }
@@ -564,9 +919,13 @@
       });
       if (!result.question || !result.question.question) throw new Error("ODDI didn't return a replacement question.");
       sessionReviewed = false;
+      sessionReviewText = "";
+      sessionFormattedAnswers = "";
       clearPreviousAnswers();
       questions[index] = result.question;
       answers[index] = "";
+      questionSampleAnswers[index] = "";
+      answerSources[index] = "unanswered";
       clearAnswerSheet();
       const replacement = buildQuestionCard(result.question, index, "");
       card.replaceWith(replacement);
@@ -642,12 +1001,49 @@
     practiceSessionCount.textContent = items.length + (items.length === 1 ? " session saved" : " sessions saved");
   }
 
+  function mergeSavedSessions(serverSessions, localSessions) {
+    const merged = new Map();
+    (Array.isArray(serverSessions) ? serverSessions : []).forEach(function (session) {
+      if (session && session.id) merged.set(String(session.id), session);
+    });
+    (Array.isArray(localSessions) ? localSessions : []).forEach(function (session) {
+      if (!session || !session.id || session.user_key !== userKey) return;
+      const id = String(session.id);
+      const current = merged.get(id);
+      if (!current || String(session.updated_at || "") >= String(current.updated_at || "")) {
+        const storedAnswers = Array.isArray(session.answers) ? session.answers : [];
+        const storedSamples = Array.isArray(session.question_sample_answers) ? session.question_sample_answers : [];
+        const sources = Array.isArray(session.answer_sources) ? session.answer_sources : [];
+        const answered = storedAnswers.reduce(function (count, answer, index) {
+          return count + (String(answer || "").trim() || (
+            sources[index] === "oddi_sample" && String(storedSamples[index] || "").trim()
+          ) ? 1 : 0);
+        }, 0);
+        merged.set(id, {
+          id: id,
+          profession: session.profession || "Interview practice",
+          status: session.status || (session.review ? "completed" : "in_progress"),
+          has_review: Boolean(session.review),
+          answered_count: answered,
+          question_count: Array.isArray(session.questions) ? session.questions.length : 0,
+          created_at: session.created_at,
+          updated_at: session.updated_at
+        });
+      }
+    });
+    return Array.from(merged.values()).sort(function (left, right) {
+      return String(right.updated_at || "").localeCompare(String(left.updated_at || ""));
+    });
+  }
+
   async function loadSavedSessions(showErrors) {
+    const localSessions = await readLocalSessions();
     try {
       const result = await requestJson("/api/interview/sessions", "GET");
-      renderPracticeSessions(result.sessions);
+      renderPracticeSessions(mergeSavedSessions(result.sessions, localSessions));
     } catch (error) {
-      if (showErrors) setStatus(error.message || "Saved practices couldn't be loaded.", "error");
+      renderPracticeSessions(mergeSavedSessions([], localSessions));
+      if (showErrors && !localSessions.length) setStatus(error.message || "Saved practices couldn't be loaded.", "error");
     }
   }
 
@@ -656,25 +1052,54 @@
     clearStatus();
     setStatus("Opening your saved practice...", "success");
     try {
-      const result = await requestJson("/api/interview/sessions/" + encodeURIComponent(id), "GET");
-      const saved = result.session;
+      let saved = null;
+      let serverSession = null;
+      if (String(id).indexOf("local-") !== 0) {
+        try {
+          const result = await requestJson("/api/interview/sessions/" + encodeURIComponent(id), "GET");
+          serverSession = result.session;
+        } catch (_) {
+          serverSession = null;
+        }
+      }
+      const localSession = await readLocalSession(id);
+      if (serverSession && localSession && String(localSession.updated_at || "") > String(serverSession.updated_at || "")) {
+        saved = localSession;
+      } else if (serverSession) {
+        saved = serverSession;
+      } else if (localSession) {
+        saved = localSession;
+      } else {
+        throw new Error("That practice could not be found on your account or this device.");
+      }
       if (!saved || !Array.isArray(saved.questions) || ![5, 10].includes(saved.questions.length)) {
         throw new Error("This saved practice doesn't have a complete question set.");
       }
 
       sessionId = String(saved.id);
+      sessionServerAvailable = Boolean(serverSession);
+      sessionCreatedAt = String(saved.created_at || "");
       profession = String(saved.profession || "");
       roleContext = String(saved.context || "");
       questions = saved.questions;
       sessionReviewed = Boolean(saved.review);
       answers = Array.isArray(saved.answers) ? saved.answers.slice(0, questions.length) : Array(questions.length).fill("");
       while (answers.length < questions.length) answers.push("");
+      questionSampleAnswers = Array.isArray(saved.question_sample_answers)
+        ? saved.question_sample_answers.slice(0, questions.length)
+        : Array(questions.length).fill("");
+      while (questionSampleAnswers.length < questions.length) questionSampleAnswers.push("");
+      answerSources = Array.isArray(saved.answer_sources) ? saved.answer_sources.slice(0, questions.length) : Array(questions.length).fill("unanswered");
+      while (answerSources.length < questions.length) answerSources.push("unanswered");
+      sessionReviewText = String(saved.review || "");
+      sessionFormattedAnswers = String(saved.formatted_answers || "");
       professionInput.value = profession;
       roleDetailsInput.value = roleContext;
       renderFeedback(String(saved.review || ""));
       clearPreviousAnswers();
       feedbackSection.hidden = !saved.review;
       feedbackSection.dataset.visible = saved.review ? "true" : "false";
+      answerFollowups.hidden = !(saved.review || questionSampleAnswers.some(Boolean));
       setAnswerAllMode(false);
       setSessionUrl(sessionId);
       showQuestions();
@@ -683,7 +1108,8 @@
       renderQuestions();
       updateProgress();
       restoringSession = false;
-      setSaveState(saved.review ? "Review and answers saved to this account." : "Progress saved to this account.");
+      setSaveState(serverSession ? "Saved to your account and this device." : "Saved on this device.");
+      void persistLocalSession();
       if (saved.review) {
         window.setTimeout(function () { feedbackSection.scrollIntoView({ behavior: "smooth", block: "start" }); }, 150);
       }
@@ -700,7 +1126,9 @@
     setAnswerAllMode(enabled);
     if (enabled) {
       const cards = Array.from(questionList.querySelectorAll(".question-card"));
-      const firstUnanswered = cards.find(function (card) { return !getAnswer(card); }) || cards[0];
+      const firstUnanswered = cards.find(function (card) {
+        return !getAnswer(card) && !questionSampleAnswers[Number(card.dataset.questionIndex)];
+      }) || cards[0];
       if (firstUnanswered) firstUnanswered.scrollIntoView({ behavior: "smooth", block: "start" });
       const target = firstUnanswered && firstUnanswered.querySelector("textarea, input[type=radio]");
       if (target) window.setTimeout(function () { target.focus({ preventScroll: true }); }, 220);
@@ -715,6 +1143,8 @@
       feedbackSection.dataset.visible = "false";
     }
     sessionReviewed = false;
+    sessionReviewText = "";
+    sessionFormattedAnswers = "";
     updateProgress();
   }
 
@@ -746,9 +1176,13 @@
     );
 
     try {
+      currentSessionSnapshot();
+      if (sessionServerAvailable) await saveSessionNow();
+      else await persistLocalSession();
       const result = await postJson("/api/interview/answers", {
         profession: profession,
         context: roleContext,
+        session_id: sessionServerAvailable ? sessionId : "",
         questions: questionSet
       });
       if (requestToken !== answerSheetRequestToken) return;
@@ -757,7 +1191,13 @@
       })) {
         throw new Error("ODDI didn't return a complete set of " + count + " sample answers.");
       }
+      questionSampleAnswers = result.answers.slice();
+      answerSources = answers.map(function (answer) { return answer ? "candidate" : "oddi_sample"; });
       renderAnswerSheet(result.answers, questionSet);
+      answerFollowups.hidden = false;
+      await persistLocalSession();
+      if (sessionServerAvailable) await saveSessionNow();
+      updateProgress();
       answerSheetSection.scrollIntoView({ behavior: "smooth", block: "start" });
       setStatus("ODDI's sample answers for all " + count + " questions are ready.", "success");
     } catch (error) {
@@ -814,9 +1254,13 @@
     );
 
     try {
+      currentSessionSnapshot();
+      if (sessionServerAvailable) await saveSessionNow();
+      else await persistLocalSession();
       const result = await postJson("/api/interview/answers", {
         profession: profession,
         context: roleContext,
+        session_id: sessionServerAvailable ? sessionId : "",
         questions: questionSet
       });
       if (requestToken !== previousAnswersRequestToken) return;
@@ -826,6 +1270,9 @@
         throw new Error("ODDI didn't return model answers for every question.");
       }
       previousAnswersCache = { answers: result.answers, questions: questionSet };
+      questionSampleAnswers = result.answers.slice();
+      answerSources = answers.map(function (answer) { return answer ? "candidate" : "oddi_sample"; });
+      await persistLocalSession();
       previousAnswersTitle.textContent = "Model answers for your previous " + questionSet.length + " questions";
       renderAnswerCards(previousAnswersContent, result.answers, questionSet);
       openPreviousAnswers();
@@ -881,7 +1328,13 @@
 
       questions = result.questions;
       answers = Array(questions.length).fill("");
-      sessionId = String(result.session_id || "");
+      questionSampleAnswers = Array(questions.length).fill("");
+      answerSources = Array(questions.length).fill("unanswered");
+      sessionServerAvailable = Boolean(result.session_id);
+      sessionId = String(result.session_id || makeLocalSessionId());
+      sessionCreatedAt = new Date().toISOString();
+      sessionReviewText = "";
+      sessionFormattedAnswers = "";
       sessionReviewed = false;
       setSessionUrl(sessionId);
       feedbackText.replaceChildren();
@@ -896,12 +1349,13 @@
       restoringSession = false;
 
       if (sessionId) {
-        setSaveState("New practice saved. Your answers save automatically.");
+        void persistLocalSession();
+        setSaveState(sessionServerAvailable ? "New practice saved to your account and this device." : "New practice saved on this device.");
         void loadSavedSessions(false);
         setStatus("Your next " + questions.length + " questions are ready for " + profession + ".", "success");
-      } else {
-        setSaveState("This practice couldn't be saved. Please keep this page open.", "error");
-        setStatus(result.session_error || "Your questions are ready, but ODDI couldn't save this practice.", "error");
+        if (!sessionServerAvailable) {
+          setStatus(result.session_error || "This practice is saved on this device. It couldn't be synced to your account yet.", "error");
+        }
       }
     } catch (error) {
       restoringSession = false;
@@ -923,7 +1377,12 @@
     const cards = Array.from(questionList.querySelectorAll(".question-card"));
     const currentAnswers = cards.map(function (card) { return getAnswer(card); });
     answers = currentAnswers;
-    const firstUnanswered = cards.findIndex(function (card) { return !getAnswer(card); });
+    answerSources = currentAnswers.map(function (answer, index) {
+      return answer ? "candidate" : (questionSampleAnswers[index] ? "oddi_sample" : "unanswered");
+    });
+    const firstUnanswered = cards.findIndex(function (card, index) {
+      return !getAnswer(card) && !(answerSources[index] === "oddi_sample" && questionSampleAnswers[index]);
+    });
     if (firstUnanswered >= 0) {
       setStatus("Answer every question before submitting your interview.", "error");
       cards[firstUnanswered].scrollIntoView({ behavior: "smooth", block: "center" });
@@ -940,17 +1399,27 @@
       if (sessionId) await saveSessionNow();
       const result = await postJson("/api/interview/review", {
         profession: profession,
-        session_id: sessionId,
+        session_id: sessionServerAvailable ? sessionId : "",
         answers: cards.map(function (card, index) {
-          return { question: questions[index].question, answer: getAnswer(card) };
+          const answer = getAnswer(card);
+          return {
+            question: questions[index].question,
+            answer: answer,
+            sample_answer: questionSampleAnswers[index] || "",
+            answer_source: answer ? "candidate" : "oddi_sample"
+          };
         })
       });
       renderFeedback(result.review || "ODDI received your answers but did not return feedback.");
+      sessionFormattedAnswers = String(result.formatted_answers || "");
+      sessionReviewText = String(result.review || "");
       clearPreviousAnswers();
+      answerFollowups.hidden = false;
       feedbackSection.hidden = false;
       feedbackSection.dataset.visible = "true";
       sessionReviewed = true;
-      setSaveState("Review and answers saved to this account.");
+      await persistLocalSession();
+      setSaveState(sessionServerAvailable ? "Review saved to your account and this device." : "Review saved on this device.");
       feedbackSection.scrollIntoView({ behavior: "smooth", block: "start" });
       setStatus("Your interview review is ready.", "success");
     } catch (error) {
@@ -963,6 +1432,11 @@
   });
 
   window.addEventListener("pagehide", function () {
+    if (activeRecognition) {
+      try { activeRecognition.stop(); } catch (_) { /* recognition may already be stopping */ }
+      activeRecognition = null;
+    }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
     if (sessionId && [5, 10].includes(questions.length)) {
       void saveSessionNow(true).catch(function () {});
     }

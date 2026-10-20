@@ -2,6 +2,31 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script id="oddi-home-first-paint-guard">
+    (() => {
+        const root = document.documentElement;
+        const guardClass = "oddi-home-first-paint-pending";
+        root.classList.add(guardClass);
+
+        const revealHome = () => {
+            const reveal = () => root.classList.remove(guardClass);
+            if (typeof requestAnimationFrame === "function") requestAnimationFrame(reveal);
+            else setTimeout(reveal, 0);
+        };
+
+        if (document.readyState === "loading") {
+            document.addEventListener("DOMContentLoaded", revealHome, { once: true });
+        } else {
+            revealHome();
+        }
+    })();
+    </script>
+    <style id="oddi-home-first-paint-guard-style">
+        html.oddi-home-first-paint-pending #welcomeContainer,
+        html.oddi-home-first-paint-pending #welcomeContainer * {
+            visibility: hidden !important;
+        }
+    </style>
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#20c76b">
     <meta name="mobile-web-app-capable" content="yes">

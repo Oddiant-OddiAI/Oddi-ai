@@ -239,8 +239,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .question-list.is-answer-all-mode .question-number { width: 24px; height: 24px; border-radius: 8px; font-size: 10px; }
 .question-list.is-answer-all-mode .question-type { padding: 4px 7px; font-size: 8px; }
 .question-list.is-answer-all-mode .question-card h2 { grid-column: 1; grid-row: 2; align-self: start; margin: 0; font-size: 14px; line-height: 1.45; }
-.question-list.is-answer-all-mode .written-answer { grid-column: 2; grid-row: 1 / span 2; min-height: 86px; max-height: 170px; resize: vertical; }
+.question-list.is-answer-all-mode .answer-input-block { grid-column: 2; grid-row: 1 / span 2; }
+.question-list.is-answer-all-mode .written-answer { min-height: 86px; max-height: 170px; resize: vertical; }
 .question-list.is-answer-all-mode .choice-list { grid-column: 2; grid-row: 1 / span 2; gap: 5px; }
+.question-list.is-answer-all-mode .choice-list + .answer-input-block { grid-column: 1 / -1; grid-row: 3; }
 .question-list.is-answer-all-mode .choice-option { min-height: 34px; gap: 8px; padding: 5px 9px; border-radius: 9px; font-size: 12px; }
 .question-list.is-answer-all-mode .choice-option input { width: 15px; height: 15px; flex-basis: 15px; }
 .question-list.is-answer-all-mode .choice-letter { width: 21px; height: 21px; flex-basis: 21px; border-radius: 7px; font-size: 10px; }
@@ -277,6 +279,16 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 }
 .written-answer::placeholder { color: #6e7971; }
 .written-answer:focus { border-color: rgba(69,211,139,.62); box-shadow: 0 0 0 3px rgba(49,198,129,.08); outline: none; }
+.answer-input-block { display: grid; gap: 7px; min-width: 0; }
+.answer-field-label { color: var(--studio-muted); font-size: 10px; font-weight: 720; letter-spacing: .06em; text-transform: uppercase; }
+.answer-input-tools { display: flex; min-height: 32px; align-items: center; gap: 10px; }
+.answer-mic-button { display: inline-flex; min-height: 32px; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid rgba(76,203,137,.24); border-radius: 9px; background: rgba(49,198,129,.07); color: #9be5b7; font: inherit; font-size: 10px; font-weight: 720; cursor: pointer; transition: background .16s ease, border-color .16s ease, color .16s ease; }
+.answer-mic-button:hover { border-color: rgba(76,203,137,.48); background: rgba(49,198,129,.14); color: #d6ffe7; }
+.answer-mic-button:disabled { cursor: not-allowed; opacity: .55; }
+.answer-mic-button.is-listening { border-color: rgba(255,120,120,.4); background: rgba(160,45,45,.16); color: #ffc1c1; }
+.answer-mic-icon { width: 14px; height: 14px; fill: currentColor; }
+.answer-voice-status { min-width: 0; color: var(--studio-dim); font-size: 10px; line-height: 1.4; }
+.answer-voice-status.is-error { color: #ffaaaa; }
 .choice-list { display: grid; gap: 8px; }
 .choice-option { display: flex; min-height: 48px; align-items: center; gap: 11px; padding: 10px 13px; border: 1px solid var(--studio-border); border-radius: 11px; background: rgba(3,6,4,.28); color: #dce5df; cursor: pointer; transition: border-color .16s ease, background .16s ease; }
 .choice-option:hover { border-color: rgba(91,206,144,.36); background: rgba(49,198,129,.055); }
@@ -294,6 +306,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .sample-answer[hidden] { display: none; }
 .sample-answer-title { color: #80e0a8; font-size: 11px; font-weight: 780; letter-spacing: .06em; text-transform: uppercase; }
 .sample-answer-copy { color: #e1ebe4; font-size: 13px; line-height: 1.75; white-space: pre-wrap; overflow-wrap: anywhere; }
+.answer-speak-button { justify-self: start; min-height: 31px; padding: 0 10px; border: 1px solid rgba(76,203,137,.23); border-radius: 9px; background: rgba(49,198,129,.07); color: #9be5b7; font: inherit; font-size: 10px; font-weight: 720; cursor: pointer; transition: background .16s ease, border-color .16s ease; }
+.answer-speak-button:hover { border-color: rgba(76,203,137,.45); background: rgba(49,198,129,.13); }
 .sample-answer.is-error { border-color: rgba(255,134,134,.34); }
 .question-list.is-answer-all-mode .sample-answer { display: none; }
 .card-status { min-height: 17px; margin-top: 4px; color: var(--studio-dim); font-size: 11px; }
@@ -348,6 +362,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .feedback-subheading { margin: 22px 0 9px; color: #eff8f2; font-size: 15px; line-height: 1.4; }
 .feedback-list { display: grid; gap: 7px; margin: 8px 0 15px; padding-left: 22px; }
 .feedback-followups { display: grid; gap: 12px; margin-top: 27px; padding-top: 21px; border-top: 1px solid var(--studio-border); }
+.answer-followups { margin: 18px 0 0; padding: 18px 20px 20px; border: 1px solid var(--studio-border); border-radius: 17px; background: rgba(14,19,16,.72); }
+.feedback-followups[hidden] { display: none; }
 .feedback-followups h3 { margin: 0; color: #aebbb2; font-size: 11px; font-weight: 760; letter-spacing: .09em; text-transform: uppercase; }
 .feedback-action-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
 .feedback-action-button { display: flex; min-height: 43px; align-items: center; justify-content: flex-start; gap: 9px; padding: 9px 13px; border: 1px solid var(--studio-border); border-radius: 12px; background: rgba(5,10,7,.32); color: #d8e3db; font: inherit; font-size: 12px; font-weight: 660; line-height: 1.4; text-align: left; cursor: pointer; transition: border-color .16s ease, background .16s ease, color .16s ease, transform .16s ease; }
@@ -391,6 +407,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
   .question-list.is-answer-all-mode .question-meta { grid-row: 1; }
   .question-list.is-answer-all-mode .question-card h2 { grid-row: 2; }
   .question-list.is-answer-all-mode .written-answer, .question-list.is-answer-all-mode .choice-list { grid-column: 1; grid-row: 3; }
+  .question-list.is-answer-all-mode .answer-input-block, .question-list.is-answer-all-mode .choice-list + .answer-input-block { grid-column: 1; grid-row: auto; }
   .submit-dock { align-items: stretch; flex-direction: column; gap: 10px; padding: 13px; }
   .answer-all-questions-button { width: 100%; min-height: 42px; }
   .submit-button { width: 100%; }

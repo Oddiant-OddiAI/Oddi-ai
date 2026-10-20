@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0b100e">
   <title>Interview Studio · ODDI AI</title>
-  <link rel="stylesheet" href="{{ url_for('static', path='oddi-interview-studio.css') }}?v=20261019-3">
+  <link rel="stylesheet" href="{{ url_for('static', path='oddi-interview-studio.css') }}?v=20261020-1">
 </head>
 <body>
-  <div class="studio-shell">
+  <div class="studio-shell" data-user-key="{{ interview_user_key }}">
     <header class="studio-topbar">
       <a class="studio-brand" href="/" aria-label="ODDI Interview Studio home">
         <span class="studio-brand-mark" aria-hidden="true">O</span>
@@ -83,10 +83,10 @@
           <div>
             <div class="studio-hero-kicker"><span class="status-dot"></span> YOUR INTERVIEW SET</div>
             <h1 id="questionsTitle">Take a breath. <span>You’ve got this.</span></h1>
-            <p>Answer the questions below. You can ask ODDI to swap any question before you submit.</p>
+            <p>Treat this like a real oral interview. Speak or type each answer, ask ODDI for a sample, or swap any question before you submit.</p>
           </div>
           <div class="question-intro-tools">
-            <div class="question-count-pill"><span id="answeredCount">0</span><span>/</span><span id="totalCount">10</span><small>answered</small></div>
+            <div class="question-count-pill"><span id="answeredCount">0</span><span>/</span><span id="totalCount">10</span><small>covered</small></div>
             <button id="answerAllToggle" class="studio-secondary-button answer-all-toggle" type="button" aria-pressed="false">
               <span aria-hidden="true">☷</span><span class="answer-all-toggle-label">Answer all at once</span>
             </button>
@@ -104,11 +104,36 @@
             <div>
               <div class="studio-hero-kicker"><span class="status-dot"></span> ODDI'S SAMPLE ANSWERS</div>
               <h2 id="answerSheetTitle">All 10 answers</h2>
-              <p>Each question is included. Your own answers stay unchanged.</p>
+              <p>ODDI's examples are saved separately from your answers.</p>
             </div>
             <button id="hideAnswerSheetButton" class="studio-secondary-button answer-sheet-hide" type="button">Hide answers</button>
           </div>
           <div id="answerSheetContent" class="answer-sheet-content" aria-live="polite"></div>
+        </section>
+
+        <section id="answerFollowups" class="feedback-followups answer-followups" aria-labelledby="feedbackFollowupsTitle" hidden>
+          <h3 id="feedbackFollowupsTitle">Keep practising this role</h3>
+          <div class="feedback-action-list">
+            <button class="feedback-action-button feedback-action-primary" type="button" data-follow-up="more-10">Get 10 more questions</button>
+            <button class="feedback-action-button" type="button" data-follow-up="more-5">Get 5 more questions</button>
+            <button class="feedback-action-button" type="button" data-follow-up="written">Get written questions only</button>
+            <button class="feedback-action-button" type="button" data-follow-up="multiple-choice">Get multiple-choice questions only</button>
+            <button class="feedback-action-button" type="button" data-follow-up="easier">Make the questions easier</button>
+            <button class="feedback-action-button" type="button" data-follow-up="challenging">Make the questions more challenging</button>
+            <button id="showPreviousAnswersButton" class="feedback-action-button feedback-action-answers" type="button">Show model answers for the previous 10 questions</button>
+          </div>
+        </section>
+
+        <section id="previousAnswersSection" class="answer-sheet feedback-answer-sheet" aria-labelledby="previousAnswersTitle" hidden>
+          <div class="answer-sheet-heading">
+            <div>
+              <div class="studio-hero-kicker"><span class="status-dot"></span> MODEL ANSWERS</div>
+              <h2 id="previousAnswersTitle">Answers to your previous questions</h2>
+              <p>Use these examples to compare and strengthen your interview responses.</p>
+            </div>
+            <button id="hidePreviousAnswersButton" class="studio-secondary-button answer-sheet-hide" type="button">Hide answers</button>
+          </div>
+          <div id="previousAnswersContent" class="answer-sheet-content" aria-live="polite"></div>
         </section>
 
         <div class="submit-dock">
@@ -135,35 +160,12 @@
             </div>
           </div>
           <div id="feedbackText" class="feedback-copy" aria-live="polite"></div>
-          <section class="feedback-followups" aria-labelledby="feedbackFollowupsTitle">
-            <h3 id="feedbackFollowupsTitle">Keep practising this role</h3>
-            <div class="feedback-action-list">
-              <button class="feedback-action-button feedback-action-primary" type="button" data-follow-up="more-10">Get 10 more questions</button>
-              <button class="feedback-action-button" type="button" data-follow-up="more-5">Get 5 more questions</button>
-              <button class="feedback-action-button" type="button" data-follow-up="written">Get written questions only</button>
-              <button class="feedback-action-button" type="button" data-follow-up="multiple-choice">Get multiple-choice questions only</button>
-              <button class="feedback-action-button" type="button" data-follow-up="easier">Make the questions easier</button>
-              <button class="feedback-action-button" type="button" data-follow-up="challenging">Make the questions more challenging</button>
-              <button id="showPreviousAnswersButton" class="feedback-action-button feedback-action-answers" type="button">Show model answers for the previous 10 questions</button>
-            </div>
-          </section>
-          <section id="previousAnswersSection" class="answer-sheet feedback-answer-sheet" aria-labelledby="previousAnswersTitle" hidden>
-            <div class="answer-sheet-heading">
-              <div>
-                <div class="studio-hero-kicker"><span class="status-dot"></span> MODEL ANSWERS</div>
-                <h2 id="previousAnswersTitle">Answers to your previous questions</h2>
-                <p>Use these examples to compare and strengthen your interview responses.</p>
-              </div>
-              <button id="hidePreviousAnswersButton" class="studio-secondary-button answer-sheet-hide" type="button">Hide answers</button>
-            </div>
-            <div id="previousAnswersContent" class="answer-sheet-content" aria-live="polite"></div>
-          </section>
         </section>
       </section>
 
       <div id="studioStatus" class="studio-status" role="status" aria-live="polite" hidden></div>
     </main>
   </div>
-  <script src="{{ url_for('static', path='oddi-interview-studio.js') }}?v=20261019-3" defer></script>
+  <script src="{{ url_for('static', path='oddi-interview-studio.js') }}?v=20261020-1" defer></script>
 </body>
 </html>

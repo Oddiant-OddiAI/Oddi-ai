@@ -1214,7 +1214,11 @@ async def interview_studio(request: Request):
         if error.status_code == 401:
             return RedirectResponse(url="/login", status_code=303)
         raise
-    response = render_template(request, "interview_studio.html")
+    response = render_template(
+        request,
+        "interview_studio.html",
+        interview_user_key=str(request.session.get("user_id") or "guest"),
+    )
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
 
@@ -1263,7 +1267,17 @@ def _clean_interview_questions(value):
 def _interview_session_summary(session):
     questions = session.get("questions") if isinstance(session.get("questions"), list) else []
     answers = session.get("answers") if isinstance(session.get("answers"), list) else []
-    answered_count = sum(bool(str(answer or "").strip()) for answer in answers)
+    sample_answers = session.get("question_sample_answers") if isinstance(session.get("question_sample_answers"), list) else []
+    sources = session.get("answer_sources") if isinstance(session.get("answer_sources"), list) else []
+    answered_count = sum(
+        bool(str(answer or "").strip()) or (
+            index < len(sample_answers)
+            and bool(str(sample_answers[index] or "").strip())
+            and index < len(sources)
+            and sources[index] == "oddi_sample"
+        )
+        for index, answer in enumerate(answers)
+    )
     return {
         "id": str(session.get("id") or ""),
         "profession": str(session.get("profession") or "Interview practice"),
@@ -1308,6 +1322,36 @@ async def api_update_interview_session(request: Request, session_id: str):
     answers = [_interview_text(answer, "Answer", 10000, required=False) for answer in raw_answers]
     if sum(map(len, answers)) > 100000:
         raise HTTPException(status_code=400, detail="The combined answers are too long to save.")
+    existing_session = await run_in_threadpool(get_interview_session, str(user_id), session_id)
+    if not existing_session:
+        raise HTTPException(status_code=404, detail="That practice session could not be found.")
+    raw_samples = payload.get("question_sample_answers", existing_session.get("question_sample_answers", []))
+    if not isinstance(raw_samples, list):
+        raw_samples = []
+    if not raw_samples:
+        raw_samples = [""] * len(questions)
+    if len(raw_samples) != len(questions):
+        raise HTTPException(status_code=400, detail="Model answers must match the practice round.")
+    sample_answers = [_interview_text(answer, "Model answer", 2500, required=False) for answer in raw_samples]
+    raw_sources = payload.get("answer_sources", existing_session.get("answer_sources", []))
+    if not isinstance(raw_sources, list):
+        raw_sources = []
+    if not raw_sources:
+        raw_sources = ["candidate" if answers[index] else ("oddi_sample" if sample_answers[index] else "unanswered") for index in range(len(questions))]
+    if len(raw_sources) != len(questions):
+        raise HTTPException(status_code=400, detail="Answer sources must match the practice round.")
+    answer_sources = []
+    for index, source in enumerate(raw_sources):
+        source = str(source or "").strip().casefold()
+        if source not in {"unanswered", "candidate", "oddi_sample"}:
+            raise HTTPException(status_code=400, detail="An answer source is invalid.")
+        if answers[index]:
+            source = "candidate"
+        elif sample_answers[index]:
+            source = "oddi_sample"
+        else:
+            source = "unanswered"
+        answer_sources.append(source)
     session = await run_in_threadpool(
         update_interview_session,
         str(user_id),
@@ -1315,6 +1359,8 @@ async def api_update_interview_session(request: Request, session_id: str):
         {
             "questions": questions,
             "answers": answers,
+            "question_sample_answers": sample_answers,
+            "answer_sources": answer_sources,
             "status": "in_progress",
             "formatted_answers": "",
             "review": "",
@@ -1371,6 +1417,8 @@ async def api_interview_questions(request: Request):
                 logger.exception("Interview Studio generated questions but could not save the practice session.")
                 result["session_error"] = "Questions were created, but this practice could not be saved."
         return JSONResponse(result, headers={"Cache-Control": "no-store"})
+    except HTTPException:
+        raise
     except InterviewStudioError as error:
         return JSONResponse({"error": str(error)}, status_code=502, headers={"Cache-Control": "no-store"})
     except Exception:
@@ -1403,6 +1451,8 @@ async def api_interview_alternate_question(request: Request):
             excluded,
         )
         return JSONResponse({"question": question}, headers={"Cache-Control": "no-store"})
+    except HTTPException:
+        raise
     except InterviewStudioError as error:
         return JSONResponse({"error": str(error)}, status_code=502, headers={"Cache-Control": "no-store"})
     except Exception:
@@ -1421,6 +1471,8 @@ async def api_interview_answer(request: Request):
     profession = _interview_text(payload.get("profession"), "Profession", 160)
     context = _interview_text(payload.get("context"), "Role details", 500, required=False)
     question = _interview_text(payload.get("question"), "Question", 700)
+    session_id = _interview_text(payload.get("session_id"), "Practice session", 100, required=False)
+    question_index = payload.get("question_index")
     question_type = str(payload.get("question_type") or "written").strip().casefold()
     if question_type not in {"written", "multiple_choice"}:
         raise HTTPException(status_code=400, detail="Question type is invalid.")
@@ -1443,7 +1495,34 @@ async def api_interview_answer(request: Request):
             question_type,
             options,
         )
+        if session_id:
+            if type(question_index) is not int or question_index < 0:
+                raise HTTPException(status_code=400, detail="The question number is invalid.")
+            session = await run_in_threadpool(get_interview_session, str(user_id), session_id)
+            if not session or question_index >= len(session.get("questions") or []):
+                raise HTTPException(status_code=404, detail="That question could not be found in this practice.")
+            if str(session["questions"][question_index].get("question") or "") != question:
+                raise HTTPException(status_code=409, detail="This question has changed. Refresh and try again.")
+            samples = session.get("question_sample_answers")
+            sources = session.get("answer_sources")
+            samples = list(samples) if isinstance(samples, list) else []
+            sources = list(sources) if isinstance(sources, list) else []
+            while len(samples) < len(session["questions"]): samples.append("")
+            while len(sources) < len(session["questions"]): sources.append("unanswered")
+            samples[question_index] = answer
+            candidates = session.get("answers") if isinstance(session.get("answers"), list) else []
+            sources[question_index] = "candidate" if question_index < len(candidates) and str(candidates[question_index] or "").strip() else "oddi_sample"
+            updated = await run_in_threadpool(
+                update_interview_session,
+                str(user_id),
+                session_id,
+                {"question_sample_answers": samples, "answer_sources": sources},
+            )
+            if not updated:
+                raise HTTPException(status_code=404, detail="That practice session could not be found.")
         return JSONResponse({"answer": answer}, headers={"Cache-Control": "no-store"})
+    except HTTPException:
+        raise
     except InterviewStudioError as error:
         return JSONResponse({"error": str(error)}, status_code=502, headers={"Cache-Control": "no-store"})
     except Exception:
@@ -1462,6 +1541,7 @@ async def api_interview_answers(request: Request):
     profession = _interview_text(payload.get("profession"), "Profession", 160)
     context = _interview_text(payload.get("context"), "Role details", 500, required=False)
     questions = _clean_interview_questions(payload.get("questions"))
+    session_id = _interview_text(payload.get("session_id"), "Practice session", 100, required=False)
     email = str(request.session.get("email") or "")
     try:
         answers = await run_in_threadpool(
@@ -1472,10 +1552,28 @@ async def api_interview_answers(request: Request):
             context,
             questions,
         )
+        if session_id:
+            session = await run_in_threadpool(get_interview_session, str(user_id), session_id)
+            if not session or len(session.get("questions") or []) != len(questions):
+                raise HTTPException(status_code=404, detail="That practice session could not be found.")
+            if [str(item.get("question") or "") for item in session["questions"]] != [item["question"] for item in questions]:
+                raise HTTPException(status_code=409, detail="This question set has changed. Refresh and try again.")
+            candidates = session.get("answers") if isinstance(session.get("answers"), list) else []
+            sources = ["candidate" if index < len(candidates) and str(candidates[index] or "").strip() else "oddi_sample" for index in range(len(questions))]
+            updated = await run_in_threadpool(
+                update_interview_session,
+                str(user_id),
+                session_id,
+                {"question_sample_answers": answers, "answer_sources": sources},
+            )
+            if not updated:
+                raise HTTPException(status_code=404, detail="That practice session could not be found.")
         return JSONResponse(
             {"answers": answers},
             headers={"Cache-Control": "no-store"},
         )
+    except HTTPException:
+        raise
     except InterviewStudioError as error:
         return JSONResponse({"error": str(error)}, status_code=502, headers={"Cache-Control": "no-store"})
     except Exception:
@@ -1505,15 +1603,49 @@ async def api_interview_review(request: Request):
     if expected_count is not None and len(raw_answers) != expected_count:
         raise HTTPException(status_code=400, detail="The answers do not match this practice round.")
 
+    saved_samples = existing_session.get("question_sample_answers") if existing_session else []
+    saved_sources = existing_session.get("answer_sources") if existing_session else []
     answers = []
-    for answer in raw_answers:
+    candidate_answers = []
+    normalized_samples = []
+    answer_sources = []
+    for index, answer in enumerate(raw_answers):
         if not isinstance(answer, dict):
             raise HTTPException(status_code=400, detail="Every interview answer must include its question and answer.")
         question = _interview_text(answer.get("question"), "Question", 700)
-        response = _interview_text(answer.get("answer"), "Answer", 10000)
-        answers.append({"question": question, "answer": response})
+        if existing_session and str(existing_session["questions"][index].get("question") or "") != question:
+            raise HTTPException(status_code=409, detail="This question set has changed. Refresh and try again.")
+        response = _interview_text(answer.get("answer"), "Answer", 10000, required=False)
+        sample = _interview_text(
+            answer.get("sample_answer") or (saved_samples[index] if index < len(saved_samples) else ""),
+            "Model answer",
+            2500,
+            required=False,
+        )
+        requested_source = str(answer.get("answer_source") or (saved_sources[index] if index < len(saved_sources) else "") or "").strip().casefold()
+        if requested_source and requested_source not in {"candidate", "oddi_sample", "unanswered"}:
+            raise HTTPException(status_code=400, detail="An answer source is invalid.")
+        source = "candidate" if response else ("oddi_sample" if sample else "unanswered")
+        if not response and source != "oddi_sample":
+            raise HTTPException(status_code=400, detail="Answer each question yourself or ask ODDI for its sample answer first.")
+        effective_response = response if response else sample
+        answers.append({
+            "question": question,
+            "answer": effective_response,
+            "answer_source": source,
+            "sample_answer": sample,
+        })
+        candidate_answers.append(response)
+        normalized_samples.append(sample)
+        answer_sources.append(source)
 
-    if sum(len(item["question"]) + len(item["answer"]) for item in answers) > 50000:
+    formatted_size = sum(
+        len(item["question"])
+        + len(item["answer"])
+        + (len(item.get("sample_answer") or "") if item.get("answer_source") == "candidate" else 0)
+        for item in answers
+    )
+    if formatted_size > 50000:
         raise HTTPException(status_code=400, detail="The combined answers are too long to review.")
 
     email = str(request.session.get("email") or "")
@@ -1531,7 +1663,9 @@ async def api_interview_review(request: Request):
                 str(user_id),
                 session_id,
                 {
-                    "answers": [item["answer"] for item in answers],
+                    "answers": candidate_answers,
+                    "question_sample_answers": normalized_samples,
+                    "answer_sources": answer_sources,
                     "formatted_answers": formatted_answers,
                     "review": review,
                     "status": "completed",
@@ -1543,6 +1677,8 @@ async def api_interview_review(request: Request):
             {"session_id": session_id or None, "formatted_answers": formatted_answers, "review": review},
             headers={"Cache-Control": "no-store"},
         )
+    except HTTPException:
+        raise
     except Exception:
         logger.exception("Interview Studio answer review failed.")
         return JSONResponse(

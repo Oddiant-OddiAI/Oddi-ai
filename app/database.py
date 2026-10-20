@@ -574,6 +574,8 @@ def _create_chat_tables():
                 context TEXT NOT NULL DEFAULT '',
                 questions TEXT NOT NULL DEFAULT '[]',
                 answers TEXT NOT NULL DEFAULT '[]',
+                question_sample_answers TEXT NOT NULL DEFAULT '[]',
+                answer_sources TEXT NOT NULL DEFAULT '[]',
                 status TEXT NOT NULL DEFAULT 'in_progress',
                 formatted_answers TEXT NOT NULL DEFAULT '',
                 review TEXT NOT NULL DEFAULT '',
@@ -581,6 +583,15 @@ def _create_chat_tables():
                 updated_at TEXT NOT NULL
             )
         """)
+        if _use_postgres("chat"):
+            conn.execute("ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS question_sample_answers TEXT NOT NULL DEFAULT '[]'")
+            conn.execute("ALTER TABLE interview_sessions ADD COLUMN IF NOT EXISTS answer_sources TEXT NOT NULL DEFAULT '[]'")
+        else:
+            columns = {str(row[1] or "") for row in conn.execute("PRAGMA table_info(interview_sessions)").fetchall()}
+            if "question_sample_answers" not in columns:
+                conn.execute("ALTER TABLE interview_sessions ADD COLUMN question_sample_answers TEXT NOT NULL DEFAULT '[]'")
+            if "answer_sources" not in columns:
+                conn.execute("ALTER TABLE interview_sessions ADD COLUMN answer_sources TEXT NOT NULL DEFAULT '[]'")
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_updated "
             "ON interview_sessions(user_id, updated_at DESC)"
@@ -1030,7 +1041,12 @@ def _create_files_tables():
 
 def _decode_interview_session(value):
     session = dict(value)
-    for key, fallback in (("questions", []), ("answers", [])):
+    for key, fallback in (
+        ("questions", []),
+        ("answers", []),
+        ("question_sample_answers", []),
+        ("answer_sources", []),
+    ):
         raw = session.get(key)
         if isinstance(raw, str):
             try:
@@ -1094,6 +1110,8 @@ def create_interview_session(user_id, profession, context, questions):
         "context": str(context or "").strip()[:500],
         "questions": questions if isinstance(questions, list) else [],
         "answers": [""] * (len(questions) if isinstance(questions, list) else 0),
+        "question_sample_answers": [""] * (len(questions) if isinstance(questions, list) else 0),
+        "answer_sources": ["unanswered"] * (len(questions) if isinstance(questions, list) else 0),
         "status": "in_progress",
         "formatted_answers": "",
         "review": "",
@@ -1113,14 +1131,17 @@ def create_interview_session(user_id, profession, context, questions):
         conn.execute(
             """
             INSERT INTO interview_sessions
-                (id, user_id, profession, context, questions, answers, status,
+                (id, user_id, profession, context, questions, answers, question_sample_answers,
+                 answer_sources, status,
                  formatted_answers, review, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 session["id"], str(user_id), session["profession"], session["context"],
                 json.dumps(session["questions"], ensure_ascii=False),
-                json.dumps(session["answers"], ensure_ascii=False), session["status"],
+                json.dumps(session["answers"], ensure_ascii=False),
+                json.dumps(session["question_sample_answers"], ensure_ascii=False),
+                json.dumps(session["answer_sources"], ensure_ascii=False), session["status"],
                 session["formatted_answers"], session["review"], now, now,
             ),
         )
@@ -1134,7 +1155,10 @@ def update_interview_session(user_id, session_id, patch):
     session_id = str(session_id or "").strip()
     if not session_id or not isinstance(patch, dict):
         return None
-    allowed = {"profession", "context", "questions", "answers", "status", "formatted_answers", "review"}
+    allowed = {
+        "profession", "context", "questions", "answers", "question_sample_answers",
+        "answer_sources", "status", "formatted_answers", "review",
+    }
     changes = {key: value for key, value in patch.items() if key in allowed}
     now = datetime.now(timezone.utc).isoformat(timespec="microseconds")
 
@@ -1165,7 +1189,8 @@ def update_interview_session(user_id, session_id, patch):
         conn.execute(
             """
             UPDATE interview_sessions
-            SET profession = ?, context = ?, questions = ?, answers = ?, status = ?,
+            SET profession = ?, context = ?, questions = ?, answers = ?,
+                question_sample_answers = ?, answer_sources = ?, status = ?,
                 formatted_answers = ?, review = ?, updated_at = ?
             WHERE id = ? AND user_id = ?
             """,
@@ -1173,6 +1198,8 @@ def update_interview_session(user_id, session_id, patch):
                 str(session.get("profession") or "")[:160], str(session.get("context") or "")[:500],
                 json.dumps(session.get("questions") if isinstance(session.get("questions"), list) else [], ensure_ascii=False),
                 json.dumps(session.get("answers") if isinstance(session.get("answers"), list) else [], ensure_ascii=False),
+                json.dumps(session.get("question_sample_answers") if isinstance(session.get("question_sample_answers"), list) else [], ensure_ascii=False),
+                json.dumps(session.get("answer_sources") if isinstance(session.get("answer_sources"), list) else [], ensure_ascii=False),
                 str(session.get("status") or "in_progress")[:32],
                 str(session.get("formatted_answers") or ""), str(session.get("review") or ""), now,
                 session_id, str(user_id),
