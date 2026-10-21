@@ -40765,5 +40765,199 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
   }
 </style>
 
+<style id="oddi-phone-top-controls-polish-v1">
+@media (max-width: 768px) {
+  body:has(#chatbox > #welcomeContainer) {
+    --oddi-phone-top-control-bg: rgba(255, 255, 255, .9);
+    --oddi-phone-top-control-border: rgba(35, 76, 51, .18);
+    --oddi-phone-top-control-color: #203429;
+    --oddi-phone-top-control-shadow: 0 4px 14px rgba(18, 48, 29, .12), inset 0 1px 0 rgba(255, 255, 255, .85);
+    --oddi-phone-top-control-hover: #fff;
+    --oddi-phone-top-control-focus: #19834b;
+  }
+
+  body.dark-mode:has(#chatbox > #welcomeContainer),
+  body.oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) {
+    --oddi-phone-top-control-bg: rgba(24, 31, 27, .94);
+    --oddi-phone-top-control-border: rgba(199, 224, 205, .2);
+    --oddi-phone-top-control-color: #f0f7f1;
+    --oddi-phone-top-control-shadow: 0 4px 15px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(255, 255, 255, .07);
+    --oddi-phone-top-control-hover: #29382f;
+    --oddi-phone-top-control-focus: #81dda0;
+  }
+
+  body:has(#chatbox > #welcomeContainer) .header-controls {
+    position: fixed !important;
+    top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    right: max(12px, env(safe-area-inset-right, 0px)) !important;
+    left: auto !important;
+    z-index: 2147483644 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    width: auto !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    overflow: visible !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) .header-controls > .header-more,
+  body:has(#chatbox > #welcomeContainer) .header-controls > .theme-toggle {
+    position: static !important;
+    display: flex !important;
+    flex: 0 0 44px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) .header-controls #headerMoreBtn,
+  body:has(#chatbox > #welcomeContainer) .header-controls #themeBtn,
+  body:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher,
+  body:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn {
+    box-sizing: border-box !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 1px solid var(--oddi-phone-top-control-border) !important;
+    border-radius: 50% !important;
+    background: var(--oddi-phone-top-control-bg) !important;
+    color: var(--oddi-phone-top-control-color) !important;
+    box-shadow: var(--oddi-phone-top-control-shadow) !important;
+    -webkit-backdrop-filter: blur(12px) saturate(1.1) !important;
+    backdrop-filter: blur(12px) saturate(1.1) !important;
+    touch-action: manipulation !important;
+    transition: background-color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .16s ease !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-rail > .oddi-rs-phone-launcher,
+  body:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn {
+    position: fixed !important;
+    top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: max(12px, env(safe-area-inset-left, 0px)) !important;
+    z-index: 2147483645 !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #headerMoreBtn { font-size: 22px !important; font-weight: 700 !important; line-height: 1 !important; }
+  body:has(#chatbox > #welcomeContainer) #themeBtn { font-size: 19px !important; line-height: 1 !important; }
+  body:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher svg,
+  body:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn svg { width: 18px !important; height: 18px !important; }
+
+  body:has(#chatbox > #welcomeContainer) .header-controls #headerMoreBtn:hover,
+  body:has(#chatbox > #welcomeContainer) .header-controls #themeBtn:hover,
+  body:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher:hover,
+  body:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn:hover {
+    background: var(--oddi-phone-top-control-hover) !important;
+    border-color: color-mix(in srgb, var(--oddi-phone-top-control-focus) 45%, transparent) !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) .header-controls #headerMoreBtn:active,
+  body:has(#chatbox > #welcomeContainer) .header-controls #themeBtn:active,
+  body:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher:active,
+  body:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn:active { transform: scale(.96) !important; }
+
+  body:has(#chatbox > #welcomeContainer) .header-controls #headerMoreBtn:focus-visible,
+  body:has(#chatbox > #welcomeContainer) .header-controls #themeBtn:focus-visible,
+  body:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher:focus-visible,
+  body:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn:focus-visible {
+    outline: 2px solid var(--oddi-phone-top-control-focus) !important;
+    outline-offset: 3px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-phone-launcher,
+  body:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn,
+  body:has(#chatbox > #welcomeContainer) .header-controls #headerMoreBtn,
+  body:has(#chatbox > #welcomeContainer) .header-controls #themeBtn { transition: none !important; }
+}
+</style>
+
+<style id="oddi-phone-top-controls-cascade-fix">
+@media (max-width: 768px) {
+  body:has(#chatbox > #welcomeContainer) .header-controls.header-controls {
+    top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    right: max(12px, env(safe-area-inset-right, 0px)) !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) .header-controls.header-controls > .header-more.header-more,
+  body:has(#chatbox > #welcomeContainer) .header-controls.header-controls > .theme-toggle.theme-toggle {
+    flex: 0 0 44px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) .header-controls.header-controls.header-controls .header-more #headerMoreBtn,
+  body:has(#chatbox > #welcomeContainer) .header-controls.header-controls.header-controls .theme-toggle #themeBtn {
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    border-radius: 50% !important;
+  }
+
+  body:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-rail.oddi-rs-rail > .oddi-rs-phone-launcher,
+  body:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn.menu-btn {
+    top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    left: max(12px, env(safe-area-inset-left, 0px)) !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    max-width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+    max-height: 44px !important;
+    border-radius: 50% !important;
+    z-index: 1000 !important;
+  }
+
+  /* The drawer and its backdrop own the screen while the sidebar is open. */
+  body.oddi-react-sidebar-open:has(#chatbox > #welcomeContainer) .header-controls.header-controls {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  body.oddi-react-sidebar-open:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-rail.oddi-rs-rail > .oddi-rs-phone-launcher,
+  body.oddi-react-sidebar-open:has(#chatbox > #welcomeContainer) #menuBtn.menu-btn.menu-btn {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+}
+</style>
+
 </body>
 </html>
