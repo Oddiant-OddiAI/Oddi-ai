@@ -62,123 +62,126 @@ html[data-oddi-palette="mono"][data-oddi-appearance="system-dark"] {
 }
 
 html[data-oddi-palette="cyber-green"] {
-  --oddi-theme-bg: #f3f9f5;
-  --oddi-theme-surface: #fbfefc;
-  --oddi-theme-raised: #eaf4ed;
-  --oddi-theme-line: #d1e2d6;
-  --oddi-theme-line-strong: #b7d1c0;
-  --oddi-theme-text: #17241b;
-  --oddi-theme-muted: #637568;
-  --oddi-theme-dim: #839487;
-  --oddi-theme-accent: #17834e;
-  --oddi-theme-accent-strong: #0f6d40;
-  --oddi-theme-accent-soft: rgba(23,131,78,.12);
-  --oddi-theme-glow: rgba(36,180,103,.09);
+  --oddi-theme-bg: #f0f6f1;
+  --oddi-theme-surface: #fbfdfb;
+  --oddi-theme-raised: #e6f0e8;
+  --oddi-theme-line: #d0dfd3;
+  --oddi-theme-line-strong: #aec9b5;
+  --oddi-theme-text: #19291f;
+  --oddi-theme-muted: #5e7264;
+  --oddi-theme-dim: #829387;
+  --oddi-theme-accent: #24794b;
+  --oddi-theme-accent-strong: #185f3a;
+  --oddi-theme-accent-soft: rgba(36,121,75,.11);
+  --oddi-theme-glow: rgba(41,139,83,.10);
 }
 html[data-oddi-palette="cyber-green"][data-oddi-appearance="dark"] {
   color-scheme: dark;
-  --oddi-theme-bg: #0a1710;
-  --oddi-theme-surface: #12231a;
-  --oddi-theme-raised: #1b3023;
-  --oddi-theme-line: #294536;
-  --oddi-theme-line-strong: #3c684b;
-  --oddi-theme-text: #eaf6ed;
-  --oddi-theme-muted: #9bb1a1;
-  --oddi-theme-dim: #6d8977;
-  --oddi-theme-accent: #43e890;
-  --oddi-theme-accent-strong: #20c76b;
-  --oddi-theme-accent-soft: rgba(32,199,107,.15);
-  --oddi-theme-glow: rgba(32,199,107,.11);
+  --oddi-theme-bg: #07120b;
+  --oddi-theme-surface: #0e1d14;
+  --oddi-theme-raised: #17291e;
+  --oddi-theme-line: #263d2d;
+  --oddi-theme-line-strong: #3d5e46;
+  --oddi-theme-text: #edf6ef;
+  --oddi-theme-muted: #a1b4a5;
+  --oddi-theme-dim: #738879;
+  --oddi-theme-accent: #59d997;
+  --oddi-theme-accent-strong: #35b979;
+  --oddi-theme-accent-soft: rgba(70,198,128,.15);
+  --oddi-theme-glow: rgba(58,184,116,.13);
 }
 html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] {
-  --oddi-theme-bg: #dce7df;
-  --oddi-theme-surface: #f1f6f2;
-  --oddi-theme-raised: #e5eee7;
-  --oddi-theme-line: #c3d3c7;
-  --oddi-theme-line-strong: #a8c3b1;
-  --oddi-theme-text: #21362a;
-  --oddi-theme-muted: #60776a;
-  --oddi-theme-dim: #829588;
-  --oddi-theme-accent: #237a4e;
-  --oddi-theme-accent-strong: #17643d;
-  --oddi-theme-accent-soft: rgba(35,122,78,.12);
-  --oddi-theme-glow: rgba(35,122,78,.08);
+  --oddi-theme-bg: #e6efe8;
+  --oddi-theme-surface: #f7faf7;
+  --oddi-theme-raised: #dce9df;
+  --oddi-theme-line: #c6d7ca;
+  --oddi-theme-line-strong: #a3c0ab;
+  --oddi-theme-text: #1c3022;
+  --oddi-theme-muted: #5e7464;
+  --oddi-theme-dim: #7f9384;
+  --oddi-theme-accent: #277b4d;
+  --oddi-theme-accent-strong: #1a633d;
+  --oddi-theme-accent-soft: rgba(39,123,77,.12);
+  --oddi-theme-glow: rgba(44,132,78,.10);
 }
 html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-dark"] {
   color-scheme: dark;
-  --oddi-theme-bg: #14251a;
-  --oddi-theme-surface: #203329;
-  --oddi-theme-raised: #294133;
-  --oddi-theme-line: #385443;
-  --oddi-theme-line-strong: #50755e;
-  --oddi-theme-text: #eff8f1;
-  --oddi-theme-muted: #b2c6b7;
-  --oddi-theme-dim: #89a18f;
-  --oddi-theme-accent: #62e8a2;
-  --oddi-theme-accent-strong: #38c87a;
-  --oddi-theme-accent-soft: rgba(82,223,160,.16);
-  --oddi-theme-glow: rgba(82,223,160,.12);
+  --oddi-theme-bg: #0b1710;
+  --oddi-theme-surface: #132319;
+  --oddi-theme-raised: #1c3022;
+  --oddi-theme-line: #2b4533;
+  --oddi-theme-line-strong: #45644b;
+  --oddi-theme-text: #eff7f0;
+  --oddi-theme-muted: #aabdac;
+  --oddi-theme-dim: #809484;
+  --oddi-theme-accent: #68dfa0;
+  --oddi-theme-accent-strong: #40b979;
+  --oddi-theme-accent-soft: rgba(80,199,132,.16);
+  --oddi-theme-glow: rgba(70,186,119,.13);
 }
 
 html[data-oddi-palette="cyber-blue"] {
-  --oddi-theme-bg: #f5f8f9;
-  --oddi-theme-surface: #fcfdfd;
-  --oddi-theme-raised: #eaf1f3;
-  --oddi-theme-line: #d5e0e3;
-  --oddi-theme-line-strong: #b8cbd1;
-  --oddi-theme-text: #1d2b30;
-  --oddi-theme-muted: #5e7076;
-  --oddi-theme-dim: #87979c;
-  --oddi-theme-accent: #477f90;
-  --oddi-theme-accent-strong: #35697a;
-  --oddi-theme-accent-soft: rgba(71,127,144,.11);
-  --oddi-theme-glow: rgba(71,127,144,.07);
+  --oddi-theme-bg: #f1f6ff;
+  --oddi-theme-surface: #fbfdff;
+  --oddi-theme-raised: #e6efff;
+  --oddi-theme-line: #d3e0f3;
+  --oddi-theme-line-strong: #abc3e6;
+  --oddi-theme-text: #162941;
+  --oddi-theme-muted: #586f8d;
+  --oddi-theme-dim: #8294ad;
+  --oddi-theme-accent: #2673e8;
+  --oddi-theme-accent-strong: #1658c4;
+  --oddi-theme-accent-soft: rgba(38,115,232,.11);
+  --oddi-theme-glow: rgba(38,115,232,.12);
 }
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] {
   color-scheme: dark;
-  --oddi-theme-bg: #10171b;
-  --oddi-theme-surface: #171f24;
-  --oddi-theme-raised: #222d33;
-  --oddi-theme-line: #34434a;
-  --oddi-theme-line-strong: #4b6069;
-  --oddi-theme-text: #edf2f4;
-  --oddi-theme-muted: #a6b4ba;
-  --oddi-theme-dim: #7b8b91;
-  --oddi-theme-accent: #83bdcc;
-  --oddi-theme-accent-strong: #5ba4b8;
-  --oddi-theme-accent-soft: rgba(117,181,196,.14);
-  --oddi-theme-glow: rgba(107,173,190,.08);
+  --oddi-theme-bg: #07111f;
+  --oddi-theme-surface: #0d1b2d;
+  --oddi-theme-raised: #142842;
+  --oddi-theme-line: #223b57;
+  --oddi-theme-line-strong: #365a7e;
+  --oddi-theme-text: #ecf5ff;
+  --oddi-theme-muted: #a6bad0;
+  --oddi-theme-dim: #7893ad;
+  --oddi-theme-accent: #60d7ff;
+  --oddi-theme-accent-strong: #3a9cf5;
+  --oddi-theme-accent-soft: rgba(67,181,255,.16);
+  --oddi-theme-glow: rgba(49,164,255,.19);
 }
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] {
-  --oddi-theme-bg: #e5edef;
-  --oddi-theme-surface: #f5f8f9;
-  --oddi-theme-raised: #eaf1f3;
-  --oddi-theme-line: #cfdbdf;
-  --oddi-theme-line-strong: #b2c8ce;
-  --oddi-theme-text: #26383e;
-  --oddi-theme-muted: #62767d;
-  --oddi-theme-dim: #86979d;
-  --oddi-theme-accent: #4c8798;
-  --oddi-theme-accent-strong: #356d7e;
-  --oddi-theme-accent-soft: rgba(76,135,152,.11);
-  --oddi-theme-glow: rgba(76,135,152,.07);
+  --oddi-theme-bg: #e7eef8;
+  --oddi-theme-surface: #f6f9ff;
+  --oddi-theme-raised: #e6eef9;
+  --oddi-theme-line: #ccd9e9;
+  --oddi-theme-line-strong: #a9bfd6;
+  --oddi-theme-text: #1e3042;
+  --oddi-theme-muted: #5d7384;
+  --oddi-theme-dim: #8296a2;
+  --oddi-theme-accent: #2c72ce;
+  --oddi-theme-accent-strong: #1856a6;
+  --oddi-theme-accent-soft: rgba(44,114,206,.11);
+  --oddi-theme-glow: rgba(44,114,206,.11);
 }
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] {
   color-scheme: dark;
-  --oddi-theme-bg: #17252a;
-  --oddi-theme-surface: #22343a;
-  --oddi-theme-raised: #2c4047;
-  --oddi-theme-line: #425961;
-  --oddi-theme-line-strong: #5d7780;
-  --oddi-theme-text: #eef5f6;
-  --oddi-theme-muted: #b2c2c6;
-  --oddi-theme-dim: #8ba2a8;
-  --oddi-theme-accent: #9ac9d4;
-  --oddi-theme-accent-strong: #6bb6c6;
-  --oddi-theme-accent-soft: rgba(121,190,204,.15);
-  --oddi-theme-glow: rgba(121,190,204,.08);
+  --oddi-theme-bg: #0b1726;
+  --oddi-theme-surface: #132338;
+  --oddi-theme-raised: #1b3048;
+  --oddi-theme-line: #2a445e;
+  --oddi-theme-line-strong: #3e607a;
+  --oddi-theme-text: #eff7ff;
+  --oddi-theme-muted: #acc0d0;
+  --oddi-theme-dim: #8199ad;
+  --oddi-theme-accent: #6fe0ff;
+  --oddi-theme-accent-strong: #47b5f5;
+  --oddi-theme-accent-soft: rgba(78,190,255,.16);
+  --oddi-theme-glow: rgba(61,174,255,.18);
 }
 
+html[data-oddi-palette="cyber-green"] .oddi-rs-palette-swatch[data-palette="cyber-green"] span {
+  background: linear-gradient(135deg, var(--oddi-theme-bg), var(--oddi-theme-accent));
+}
 html[data-oddi-palette="cyber-blue"] .oddi-rs-palette-swatch[data-palette="cyber-blue"] span {
   background: linear-gradient(135deg, var(--oddi-theme-bg), var(--oddi-theme-accent));
 }
@@ -736,15 +739,37 @@ html[data-oddi-palette] body[data-oddi-palette] #oddiSourcesModal .oddi-sources-
   }
 }
 
-html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal :is(.oddi-library-head,.oddi-library-toolbar),
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-head {
+  border-color: var(--oddi-theme-line) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 92%, transparent) !important;
+}
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-toolbar {
+  border-color: var(--oddi-theme-line) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 90%, transparent) !important;
+}
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-search-wrap {
+  border-color: var(--oddi-theme-line) !important;
+  background: var(--oddi-theme-raised) !important;
+}
 html[data-oddi-palette] body[data-oddi-palette] #oddiSourcesModal .oddi-sources-head { border-color: var(--oddi-theme-line) !important; }
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-search-wrap svg { stroke: var(--oddi-theme-muted) !important; }
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-search::placeholder { color: var(--oddi-theme-dim) !important; }
 html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal :is(.oddi-library-sub,.oddi-library-detail,.oddi-library-empty,.oddi-library-filters label,.oddi-library-usage),
 html[data-oddi-palette] body[data-oddi-palette] #oddiSourcesModal .oddi-source-row-detail { color: var(--oddi-theme-muted) !important; }
-html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal :is(.oddi-library-item,.oddi-library-close,.oddi-library-search,.oddi-library-refresh,.oddi-library-filters select,.oddi-library-preview,.oddi-library-upload,.oddi-library-download),
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal :is(.oddi-library-item,.oddi-library-close,.oddi-library-refresh,.oddi-library-filters select,.oddi-library-preview,.oddi-library-upload,.oddi-library-download),
 html[data-oddi-palette] body[data-oddi-palette] #oddiSourcesModal :is(.oddi-sources-close,.oddi-source-row) {
   border-color: var(--oddi-theme-line) !important;
   background: var(--oddi-theme-raised) !important;
   color: var(--oddi-theme-text) !important;
+}
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-search,
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-search:focus {
+  border-color: transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: var(--oddi-theme-text) !important;
+  outline: 0 !important;
+  box-shadow: none !important;
 }
 html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal :is(.oddi-library-item,.oddi-library-refresh,.oddi-library-preview,.oddi-library-upload,.oddi-library-download):is(:hover,:focus-visible),
 html[data-oddi-palette] body[data-oddi-palette] #oddiSourcesModal .oddi-source-row:is(:hover,:focus-visible) {
@@ -754,7 +779,10 @@ html[data-oddi-palette] body[data-oddi-palette] #oddiSourcesModal .oddi-source-r
 }
 html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-usage-track { background: var(--oddi-theme-raised) !important; }
 html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-usage-track span { background: var(--oddi-theme-accent) !important; }
-html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-search:focus { border-color: var(--oddi-theme-accent) !important; box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft) !important; }
+html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-search-wrap:focus-within {
+  border-color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft) !important;
+}
 html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-delete:hover { border-color: #d92d20 !important; background: rgba(217,45,32,.12) !important; }
 
 /* Shared workspaces and both studios. */
@@ -997,6 +1025,11 @@ html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-pag
   border-color: var(--oddi-theme-line) !important;
   background: var(--oddi-theme-surface) !important;
 }
+html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal [data-settings-panel="appearance"] .oddi-settings-label:has(+ .oddi-theme-grid) {
+  border-color: var(--oddi-theme-line) !important;
+  color: var(--oddi-theme-text) !important;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--oddi-theme-surface) 90%, var(--oddi-theme-accent) 10%), var(--oddi-theme-surface)) !important;
+}
 html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-theme-choice {
   border-color: var(--oddi-theme-line) !important;
   background: var(--oddi-theme-raised) !important;
@@ -1069,7 +1102,14 @@ html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatb
 }
 
 html[data-oddi-palette="cyber-green"][data-oddi-appearance="dark"] body[data-oddi-palette]:has(#chatbox > #welcomeContainer) #chatbox.chatbox,
-html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-dark"] body[data-oddi-palette]:has(#chatbox > #welcomeContainer) #chatbox.chatbox,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-dark"] body[data-oddi-palette]:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+  background:
+    radial-gradient(ellipse 74% 52% at 15% 83%, color-mix(in srgb, var(--oddi-theme-accent) 12%, transparent), transparent 82%),
+    radial-gradient(ellipse 64% 46% at 91% 23%, color-mix(in srgb, var(--oddi-theme-accent) 10%, transparent), transparent 82%),
+    radial-gradient(ellipse at 54% -8%, color-mix(in srgb, var(--oddi-theme-accent) 13%, transparent), transparent 62%),
+    linear-gradient(150deg, color-mix(in srgb, var(--oddi-theme-bg) 94%, #164326 6%), var(--oddi-theme-bg)) !important;
+}
+
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette]:has(#chatbox > #welcomeContainer) #chatbox.chatbox,
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette]:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
   background:
@@ -1254,7 +1294,7 @@ html:root[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] #oddi
     inset: auto !important;
     top: auto !important;
     right: auto !important;
-    bottom: max(58px, env(safe-area-inset-bottom, 0px)) !important;
+    bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
     left: var(--oddi-composer-left, max(24px, calc((100vw - 920px) / 2))) !important;
     width: var(--oddi-composer-width, min(920px, calc(100vw - 48px))) !important;
     max-width: var(--oddi-composer-width, min(920px, calc(100vw - 48px))) !important;

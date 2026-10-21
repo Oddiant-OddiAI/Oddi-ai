@@ -4791,7 +4791,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
 body.dark-mode .oddi-say-hello{color:#62df91;background:rgba(32,199,107,.1);border-color:rgba(32,199,107,.28)}
 #welcomeContainer > #oddiSayHello{display:block}
 body:not(.oddi-archived-preview) #oddiComposerShell{translate:0 -3px !important}
-#oddiAccuracyNote{position:fixed;z-index:598;top:0;left:50%;width:min(680px,calc(100vw - 32px));transform:translateX(-50%);color:rgba(80,88,83,.68);font:400 10px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;pointer-events:none;white-space:normal}
+#oddiAccuracyNote{position:fixed;z-index:598;top:0;left:50%;width:min(680px,calc(100vw - 32px));transform:translateX(-50%);color:rgba(80,88,83,.68);font:400 10px/1.25 system-ui,-apple-system,"Segoe UI",sans-serif;text-align:center;pointer-events:none;white-space:normal;visibility:hidden}
 #oddiAccuracyNote[hidden]{display:none !important}
 body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyNote{color:rgba(205,214,207,.58)}
 @media(max-width:600px){ #oddiAccuracyNote{width:calc(100vw - 38px);font-size:9px}}
@@ -4868,7 +4868,8 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
       note.hidden=!visible;
       if(!visible)return;
       note.style.left=`${Math.round(rect.left+rect.width/2)}px`;
-      note.style.top=`${Math.max(2,Math.round(rect.top-note.offsetHeight-7))}px`;
+      note.style.top=`${Math.round(rect.bottom+7)}px`;
+      note.style.visibility="visible";
     });
   };
   sync();
@@ -26774,24 +26775,38 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
   const libraryModal = document.createElement("div");
   libraryModal.id = "oddiLibraryModal";
   libraryModal.setAttribute("aria-hidden","true");
+  libraryModal.setAttribute("inert","");
   libraryModal.innerHTML = `
-    <section class="oddi-library-box" role="dialog" aria-modal="true" aria-labelledby="oddiLibraryTitle">
-      <header class="oddi-library-head">
-        <div><h3 id="oddiLibraryTitle">📚 Library</h3><p class="oddi-library-sub">Your uploaded files</p></div>
-        <button type="button" class="oddi-library-close" id="oddiLibraryClose" aria-label="Close Library">✕</button>
-      </header>
-      <div class="oddi-library-toolbar">
-        <input id="oddiLibrarySearch" class="oddi-library-search" type="search" placeholder="Search files..." autocomplete="off">
-        <input id="oddiLibraryUploadInput" type="file" multiple hidden>
-        <button type="button" class="oddi-library-refresh" id="oddiLibraryAdd">Add files</button>
-        <button type="button" class="oddi-library-refresh" id="oddiLibraryRefresh">Refresh</button>
+    <section class="oddi-library-box" role="region" aria-labelledby="oddiLibraryTitle">
+      <div class="oddi-library-shell">
+        <header class="oddi-library-head">
+          <button type="button" class="oddi-library-back" id="oddiLibraryClose" aria-label="Back to home"><span aria-hidden="true">←</span><span>Back to home</span></button>
+          <div class="oddi-library-brand"><span class="oddi-library-brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5h6.2c1.3 0 2.3.9 2.3 2.1V19c0-1.2-1-2.1-2.3-2.1H4z"/><path d="M20 5.5h-6.2c-.7 0-1.3.3-1.7.8V19c0-1.2 1-2.1 2.3-2.1H20z"/></svg></span><span>ODDI <i>FILESPACE</i></span><span class="oddi-library-brand-dot"></span><span class="oddi-library-brand-state">PRIVATE</span></div>
+        </header>
+        <main class="oddi-library-main">
+          <section class="oddi-library-intro" aria-labelledby="oddiLibraryTitle">
+            <div class="oddi-library-intro-copy"><p class="oddi-library-kicker"><span aria-hidden="true"></span> YOUR WORKSPACE</p><h1 id="oddiLibraryTitle">Library</h1><p class="oddi-library-sub">Your files, organized and ready for your next task.</p></div>
+            <div class="oddi-library-storage"><div class="oddi-library-storage-head"><span>LIBRARY CAPACITY</span><strong id="oddiLibraryUsageText">0 of 30 files used</strong></div><div class="oddi-library-usage-track"><span id="oddiLibraryUsageBar"></span></div><small>Capacity updates automatically</small></div>
+          </section>
+          <section class="oddi-library-toolbar" aria-label="Library controls">
+            <label class="oddi-library-search-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.5"/><path d="m16 16 4.2 4.2"/></svg><input id="oddiLibrarySearch" class="oddi-library-search" type="search" placeholder="Search your files..." aria-label="Search files" autocomplete="off"></label>
+            <input id="oddiLibraryUploadInput" type="file" multiple hidden>
+            <button type="button" class="oddi-library-control is-primary" id="oddiLibraryAdd"><span aria-hidden="true">＋</span> Add files</button>
+            <button type="button" class="oddi-library-control" id="oddiLibraryRefresh"><span aria-hidden="true">↻</span> Refresh</button>
+            <button type="button" class="oddi-library-control oddi-library-select-mode" id="oddiLibrarySelect" aria-pressed="false">Select</button>
+          </section>
+          <section class="oddi-library-filter-row" aria-label="Filter files">
+            <label><span>Type</span><select id="oddiLibraryTypeFilter"><option value="all">All types</option><option value="image">Images</option><option value="document">Documents</option><option value="spreadsheet">Spreadsheets</option><option value="presentation">Presentations</option><option value="archive">Archives</option><option value="other">Other</option></select></label>
+            <label><span>Uploaded</span><select id="oddiLibraryDateFilter"><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="365">Last year</option></select></label>
+            <span class="oddi-library-result-count" id="oddiLibraryResultCount" aria-live="polite">Loading files...</span>
+          </section>
+          <section class="oddi-library-bulk" id="oddiLibraryBulk" aria-label="Selected file actions" hidden>
+            <div class="oddi-library-bulk-status"><strong id="oddiLibraryBulkCount">0 selected</strong><span id="oddiLibraryBulkHint">Choose what to do with these files.</span></div>
+            <div class="oddi-library-bulk-actions"><button type="button" class="oddi-library-control" id="oddiLibrarySelectAll">Select visible</button><button type="button" class="oddi-library-control" id="oddiLibraryBulkShare">Share</button><button type="button" class="oddi-library-control is-danger" id="oddiLibraryBulkDelete">Delete</button><button type="button" class="oddi-library-control is-primary" id="oddiLibrarySendToOddi">Send to ODDI</button></div>
+          </section>
+          <div id="oddiLibraryList" class="oddi-library-list" role="list" aria-label="Your Library files"><div class="oddi-library-empty is-loading"><span class="oddi-library-empty-orbit" aria-hidden="true"></span><strong>Loading your files</strong><span>Connecting to your Library...</span></div></div>
+        </main>
       </div>
-      <div class="oddi-library-filters">
-        <label>Type<select id="oddiLibraryTypeFilter"><option value="all">All types</option><option value="image">Images</option><option value="document">Documents</option><option value="spreadsheet">Spreadsheets</option><option value="presentation">Presentations</option><option value="archive">Archives</option><option value="other">Other</option></select></label>
-        <label>Uploaded<select id="oddiLibraryDateFilter"><option value="all">Any time</option><option value="7">Last 7 days</option><option value="30">Last 30 days</option><option value="365">Last year</option></select></label>
-      </div>
-      <div class="oddi-library-usage" role="status" aria-live="polite"><span id="oddiLibraryUsageText">0 of 30 files used</span><div class="oddi-library-usage-track"><span id="oddiLibraryUsageBar"></span></div></div>
-      <div id="oddiLibraryList" class="oddi-library-list"><div class="oddi-library-empty">Loading Library…</div></div>
     </section>`;
   document.body.appendChild(libraryModal);
 
@@ -26891,7 +26906,80 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
   const libraryDateFilter=document.getElementById("oddiLibraryDateFilter");
   const libraryUsageText=document.getElementById("oddiLibraryUsageText");
   const libraryUsageBar=document.getElementById("oddiLibraryUsageBar");
+  const libraryResultCount=document.getElementById("oddiLibraryResultCount");
+  const librarySelectButton=document.getElementById("oddiLibrarySelect");
+  const libraryBulkBar=document.getElementById("oddiLibraryBulk");
+  const libraryBulkCount=document.getElementById("oddiLibraryBulkCount");
+  const libraryBulkHint=document.getElementById("oddiLibraryBulkHint");
+  const librarySelectAllButton=document.getElementById("oddiLibrarySelectAll");
+  const libraryBulkShareButton=document.getElementById("oddiLibraryBulkShare");
+  const libraryBulkDeleteButton=document.getElementById("oddiLibraryBulkDelete");
+  const librarySendToOddiButton=document.getElementById("oddiLibrarySendToOddi");
+  const libraryBackButton=document.getElementById("oddiLibraryClose");
   const libraryLimit=30;
+  const selectedLibraryIds=new Set();
+  let visibleLibraryRows=[];
+  let isSelectingLibrary=false;
+  let libraryOpener=null;
+  let preparedLibraryShareSignature="";
+  let preparedLibraryShareFiles=[];
+  let longPressTimer=0;
+  let longPressPointerId=null;
+  let longPressOrigin=null;
+  let longPressFile=null;
+  let longPressFired=false;
+  let suppressLongPressClick=false;
+  let suppressLongPressClickTimer=0;
+
+  const libraryFileKey=file=>`${file?.source||"server"}:${String(file?.id??"")}`;
+  const selectedLibraryFiles=()=>libraryCache.filter(file=>selectedLibraryIds.has(libraryFileKey(file)));
+  function clearPreparedLibraryShare(){preparedLibraryShareSignature="";preparedLibraryShareFiles=[];}
+  function libraryShareSignature(files){return files.map(libraryFileKey).sort().join("|");}
+  function updateLibrarySelectionUi(){
+    const selected=selectedLibraryFiles();
+    const visible=visibleLibraryRows.map(libraryFileKey);
+    const allVisibleSelected=visible.length>0&&visible.every(id=>selectedLibraryIds.has(id));
+    libraryModal.classList.toggle("is-selecting",isSelectingLibrary);
+    if(librarySelectButton){
+      librarySelectButton.textContent=isSelectingLibrary?"Done":"Select";
+      librarySelectButton.setAttribute("aria-pressed",String(isSelectingLibrary));
+    }
+    if(libraryBulkBar)libraryBulkBar.hidden=!isSelectingLibrary;
+    if(libraryBulkCount)libraryBulkCount.textContent=`${selected.length} selected`;
+    if(libraryBulkHint)libraryBulkHint.textContent=window.matchMedia("(max-width: 700px)").matches?"Tap more files to add them to your selection.":"Choose an action for the selected files.";
+    if(librarySelectAllButton){
+      librarySelectAllButton.textContent=allVisibleSelected?"Clear visible":"Select visible";
+      librarySelectAllButton.disabled=!visible.length;
+    }
+    [libraryBulkShareButton,libraryBulkDeleteButton,librarySendToOddiButton].forEach(button=>{if(button)button.disabled=!selected.length;});
+    const signature=libraryShareSignature(selected);
+    if(signature!==preparedLibraryShareSignature)clearPreparedLibraryShare();
+    if(libraryBulkShareButton)libraryBulkShareButton.textContent=preparedLibraryShareSignature?"Share now":"Share";
+    libraryList.querySelectorAll(".oddi-library-item").forEach(item=>{
+      const file=visibleLibraryRows[Number(item.dataset.libIndex)];
+      const picked=!!file&&selectedLibraryIds.has(libraryFileKey(file));
+      item.classList.toggle("is-selected",picked);
+      const pick=item.querySelector(".oddi-library-pick");
+      if(pick){
+        pick.setAttribute("aria-pressed",String(picked));
+        pick.setAttribute("aria-label",`${picked?"Deselect":"Select"} ${file?.filename||file?.name||"file"}`);
+      }
+    });
+  }
+  function setLibrarySelection(file,selected){
+    if(!file)return;
+    isSelectingLibrary=true;
+    const id=libraryFileKey(file);
+    if(selected===undefined)selected=!selectedLibraryIds.has(id);
+    if(selected)selectedLibraryIds.add(id);else selectedLibraryIds.delete(id);
+    renderLibrary(libraryCache);
+  }
+  function exitLibrarySelection(){
+    isSelectingLibrary=false;
+    selectedLibraryIds.clear();
+    clearPreparedLibraryShare();
+    renderLibrary(libraryCache);
+  }
 
   function fileIcon(name,type){
     if(String(type||"").startsWith("image/")) return "🖼️";
@@ -27008,29 +27096,34 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       }catch(_){ return []; }
     }
   }
+  async function deleteLibraryFileRecord(file){
+    if(!file?.id)throw new Error("This file is no longer available.");
+    if(file.source==="local"){
+      const db=await openOddiFileDB();
+      await new Promise((resolve,reject)=>{
+        const tx=db.transaction(ODDI_FILE_STORE,"readwrite");
+        tx.objectStore(ODDI_FILE_STORE).delete(file.id);
+        tx.oncomplete=()=>{db.close();resolve();};
+        tx.onerror=()=>{db.close();reject(tx.error);};
+      });
+    }else if(file.source==="server"){
+      const r=await fetch(`/api/files/${encodeURIComponent(file.id)}`,{
+        method:"DELETE",credentials:"same-origin",headers:{Accept:"application/json"}
+      });
+      const data=await r.json().catch(()=>({}));
+      if(!r.ok)throw new Error(data?.error||`Delete failed (${r.status})`);
+      await deleteOddiLibraryCachedFile(file).catch(error=>console.warn("Could not clear the deleted Library file from this device:",error));
+    }else throw new Error("This file cannot be deleted from this view.");
+  }
   async function deleteLibraryFile(file){
-    if(!file?.id) return false;
+    if(!file?.id)return false;
     const name=String(file.filename||file.name||"this file");
     const location=file.source==="local"?"this device":"your Library";
-    if(!window.confirm(`Delete “${name}” from ${location}?\n\nThis cannot be undone.`)) return false;
+    if(!window.confirm(`Delete “${name}” from ${location}?\n\nThis cannot be undone.`))return false;
     try{
-      if(file.source==="local"){
-        const db=await openOddiFileDB();
-        await new Promise((resolve,reject)=>{
-          const tx=db.transaction(ODDI_FILE_STORE,"readwrite");
-          tx.objectStore(ODDI_FILE_STORE).delete(file.id);
-          tx.oncomplete=()=>{db.close();resolve();};
-          tx.onerror=()=>{db.close();reject(tx.error);};
-        });
-      }else if(file.source==="server"){
-        const r=await fetch(`/api/files/${encodeURIComponent(file.id)}`,{
-          method:"DELETE",credentials:"same-origin",headers:{Accept:"application/json"}
-        });
-        const data=await r.json().catch(()=>({}));
-        if(!r.ok) throw new Error(data?.error||`Delete failed (${r.status})`);
-        await deleteOddiLibraryCachedFile(file).catch(error=>console.warn("Could not clear the deleted Library file from this device:",error));
-      }else return false;
+      await deleteLibraryFileRecord(file);
       libraryCache=libraryCache.filter(f=>String(f.id)!==String(file.id));
+      selectedLibraryIds.delete(libraryFileKey(file));
       renderLibrary(libraryCache);
       window.dispatchEvent(new CustomEvent("oddi:library-file-deleted",{detail:{id:file.id}}));
       return true;
@@ -27040,34 +27133,160 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       return false;
     }
   }
-  async function attachLibraryFileToChat(file){
-    if(!file?.id) throw new Error("This file is not available for chat upload.");
-    if(document.body.classList.contains("oddi-archived-preview")) throw new Error("Restore this archived chat or open a new chat before attaching a file.");
+  async function deleteSelectedLibraryFiles(){
+    const files=selectedLibraryFiles();
+    if(!files.length)return;
+    const count=files.length;
+    if(!window.confirm(`Delete ${count} selected file${count===1?"":"s"} from your Library?\n\nThis cannot be undone.`))return;
+    if(libraryBulkDeleteButton){libraryBulkDeleteButton.disabled=true;libraryBulkDeleteButton.textContent="Deleting...";}
+    const deleted=[];
+    const failures=[];
+    for(const file of files){
+      try{await deleteLibraryFileRecord(file);deleted.push(file);}
+      catch(error){failures.push({file,error});}
+    }
+    if(deleted.length){
+      const ids=new Set(deleted.map(libraryFileKey));
+      libraryCache=libraryCache.filter(file=>!ids.has(libraryFileKey(file)));
+      deleted.forEach(file=>{
+        selectedLibraryIds.delete(libraryFileKey(file));
+        window.dispatchEvent(new CustomEvent("oddi:library-file-deleted",{detail:{id:file.id}}));
+      });
+    }
+    renderLibrary(libraryCache);
+    if(deleted.length)showOddiToast(`${deleted.length} file${deleted.length===1?"":"s"} deleted from your Library.`,"success");
+    if(failures.length){
+      const first=failures[0];
+      showOddiToast(`${first.file.filename||first.file.name||"A file"}: ${first.error.message||"Could not delete this file."}${failures.length>1?` (+${failures.length-1} more)`:""}`,"error");
+    }
+    if(libraryBulkDeleteButton){libraryBulkDeleteButton.textContent="Delete";libraryBulkDeleteButton.disabled=!selectedLibraryFiles().length;}
+  }
+  async function loadLibraryFileForChat(file,{fetchRemote=false}={}){
+    if(!file?.id)throw new Error("This file is not available for chat upload.");
     let upload=null;
     if(file.source==="server"){
       const stored=await getOddiLibraryCachedFile(file);
       if(stored?.blob) upload=new File([stored.blob],stored.name||file.filename||file.name||"library-file",{type:stored.type||stored.blob.type||"application/octet-stream",lastModified:Date.now()});
       else{
-        file.downloadedOnDevice=false;
-        renderLibrary(libraryCache);
-        throw new Error("Download this file to this device before attaching it.");
+        if(fetchRemote){
+          const response=await fetch(`/api/files/${encodeURIComponent(file.id)}`,{credentials:"same-origin",headers:{Accept:"*/*"},cache:"no-store"});
+          if(!response.ok)throw new Error(`Could not load ${file.filename||file.name||"this file"} (${response.status}).`);
+          const blob=await response.blob();
+          upload=new File([blob],file.filename||file.name||"library-file",{type:file.mime_type||file.type||blob.type||"application/octet-stream",lastModified:Date.now()});
+          try{await storeOddiLibraryFile(file.id,blob,file);file.downloadedOnDevice=true;}
+          catch(error){console.warn("Chat-ready Library file could not be cached on this device:",error);}
+        }else{
+          file.downloadedOnDevice=false;
+          renderLibrary(libraryCache);
+          throw new Error("Download this file to this device before attaching it.");
+        }
       }
     }
     else if(file.source==="local" && typeof getOddiStoredFile==="function"){
       const stored=await getOddiStoredFile(file.id);
       if(stored?.blob) upload=new File([stored.blob],stored.name||file.filename||file.name||"library-file",{type:stored.type||stored.blob.type||"application/octet-stream",lastModified:Date.now()});
     }
-    if(!upload) throw new Error("Could not load this Library file.");
+    if(!upload)throw new Error("Could not load this Library file.");
+    return upload;
+  }
+  async function attachLibraryFileToChat(file){
+    if(document.body.classList.contains("oddi-archived-preview"))throw new Error("Restore this archived chat or open a new chat before attaching a file.");
+    const upload=await loadLibraryFileForChat(file);
     const alreadyAttached=selectedFiles.some(existing=>existing.name===upload.name&&existing.size===upload.size);
-    if(alreadyAttached){closeLibrary();showOddiToast("This file is already attached to the chat.","success");return;}
+    if(alreadyAttached){closeLibrary({restoreFocus:false});showOddiToast("This file is already attached to the chat.","success");return;}
     upload.oddiLibrarySourceId=String(file.id);
     selectedFiles.push(upload);
     if(typeof updateAttachmentPreview==="function") updateAttachmentPreview();
     const input=document.getElementById("userInput");
     input?.focus();
     if(typeof updateActionButton==="function") updateActionButton();
-    closeLibrary();
+    closeLibrary({restoreFocus:false});
     showOddiToast(`File attached from Library: ${upload.name}`,"success");
+  }
+  async function attachSelectedLibraryFiles(files){
+    if(document.body.classList.contains("oddi-archived-preview"))throw new Error("Restore this archived chat or open a new chat before attaching files.");
+    const uploads=[];
+    for(const file of files){
+      const upload=await loadLibraryFileForChat(file,{fetchRemote:true});
+      if(selectedFiles.some(existing=>existing.name===upload.name&&existing.size===upload.size)||uploads.some(existing=>existing.name===upload.name&&existing.size===upload.size))continue;
+      upload.oddiLibrarySourceId=String(file.id);
+      uploads.push(upload);
+    }
+    if(!uploads.length){
+      closeLibrary({restoreFocus:false});
+      showOddiToast("Those files are already attached to this chat.","info");
+      return;
+    }
+    selectedFiles.push(...uploads);
+    if(typeof updateAttachmentPreview==="function")updateAttachmentPreview();
+    const input=document.getElementById("userInput");
+    input?.focus();
+    if(typeof updateActionButton==="function")updateActionButton();
+    closeLibrary({restoreFocus:false});
+    showOddiToast(`${uploads.length} file${uploads.length===1?"":"s"} added to chat. Add a prompt, then send it to ODDI.`,"success");
+  }
+  async function loadLibraryFileForSharing(file){
+    let blob=null;
+    let filename=String(file.filename||file.name||"library-file");
+    let type=String(file.mime_type||file.type||"application/octet-stream");
+    if(file.source==="local"){
+      const stored=await getOddiStoredFile(file.id);
+      blob=stored?.blob||null;
+      filename=stored?.name||filename;
+      type=stored?.type||blob?.type||type;
+    }else if(file.source==="server"){
+      const stored=await getOddiLibraryCachedFile(file);
+      if(stored?.blob){blob=stored.blob;filename=stored.name||filename;type=stored.type||blob.type||type;}
+      else{
+        const response=await fetch(`/api/files/${encodeURIComponent(file.id)}`,{
+          credentials:"same-origin",headers:{Accept:"*/*"},cache:"no-store"
+        });
+        if(!response.ok)throw new Error(`Could not prepare ${filename} for sharing (${response.status}).`);
+        blob=await response.blob();
+        try{await storeOddiLibraryFile(file.id,blob,{name:filename,type});file.downloadedOnDevice=true;}
+        catch(error){console.warn("Share-ready Library file could not be cached on this device:",error);}
+      }
+    }
+    if(!blob)throw new Error(`Could not load ${filename} for sharing.`);
+    return new File([blob],filename,{type:type||blob.type||"application/octet-stream",lastModified:Date.now()});
+  }
+  function shareSelectedLibraryFiles(){
+    const files=selectedLibraryFiles();
+    if(!files.length)return;
+    if(typeof navigator.share!=="function"){
+      showOddiToast("File sharing is not supported in this browser. Download the files to share them.","info");
+      return;
+    }
+    const signature=libraryShareSignature(files);
+    if(preparedLibraryShareSignature===signature&&preparedLibraryShareFiles.length===files.length){
+      const shareData={title:"Files from your ODDI Library",text:`${files.length} file${files.length===1?"":"s"} from ODDI Library`,files:preparedLibraryShareFiles};
+      try{
+        if(typeof navigator.canShare==="function"&&!navigator.canShare({files:preparedLibraryShareFiles})){
+          showOddiToast("This browser cannot share files from a webpage. Download them to share.","info");
+          return;
+        }
+        const result=navigator.share(shareData);
+        Promise.resolve(result).then(()=>showOddiToast("Files shared.","success")).catch(error=>{
+          if(error?.name!=="AbortError")showOddiToast(error?.message||"Could not share these files.","error");
+        });
+      }catch(error){showOddiToast(error?.message||"Could not share these files.","error");}
+      return;
+    }
+    if(libraryBulkShareButton){libraryBulkShareButton.disabled=true;libraryBulkShareButton.textContent="Preparing...";}
+    (async()=>{
+      try{
+        const shareFiles=[];
+        for(let index=0;index<files.length;index++){
+          if(libraryBulkShareButton)libraryBulkShareButton.textContent=`Preparing ${index+1}/${files.length}`;
+          shareFiles.push(await loadLibraryFileForSharing(files[index]));
+        }
+        preparedLibraryShareFiles=shareFiles;
+        preparedLibraryShareSignature=signature;
+        renderLibrary(libraryCache);
+        showOddiToast("Files are ready. Tap Share now to choose an app.","success");
+      }catch(error){showOddiToast(error?.message||"Could not prepare these files for sharing.","error");}
+      finally{updateLibrarySelectionUi();}
+    })();
   }
   async function downloadLibraryFile(file){
     if(!file?.id) return;
@@ -27123,6 +27342,8 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
     window.__oddiPreviewAttachment(upload,trigger);
   }
   function renderLibrary(files){
+    const availableIds=new Set(files.map(libraryFileKey));
+    for(const id of selectedLibraryIds)if(!availableIds.has(id))selectedLibraryIds.delete(id);
     const q=(librarySearch?.value||"").trim().toLowerCase();
     const type=libraryTypeFilter?.value||"all";
     const rangeDays=Number(libraryDateFilter?.value||0);
@@ -27135,23 +27356,34 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       if(cutoff){const uploaded=Date.parse(f.created_at||f.updated_at||"");if(!Number.isFinite(uploaded)||uploaded<cutoff)return false;}
       return true;
     }).sort((a,b)=>String(b.created_at||b.updated_at||"").localeCompare(String(a.created_at||a.updated_at||"")));
-    if(!rows.length){libraryList.innerHTML='<div class="oddi-library-empty">No files found.</div>';return;}
+    visibleLibraryRows=rows;
+    if(libraryResultCount)libraryResultCount.textContent=`${rows.length} ${rows.length===1?"file":"files"}${q||type!=="all"||rangeDays?" found":""}`;
+    if(!rows.length){
+      const hasFiles=files.length>0;
+      libraryList.innerHTML=`<div class="oddi-library-empty"><span class="oddi-library-empty-orbit" aria-hidden="true"></span><strong>${hasFiles?"No matching files":"Your Library is ready"}</strong><span>${hasFiles?"Try a different search or filter.":"Add a file and it will be ready whenever you need it."}</span>${hasFiles?"":"<button type=\"button\" class=\"oddi-library-control is-primary oddi-library-empty-add\">＋ Add your first file</button>"}</div>`;
+      libraryList.querySelector(".oddi-library-empty-add")?.addEventListener("click",()=>libraryAddButton?.click());
+      updateLibrarySelectionUi();
+      return;
+    }
     libraryList.innerHTML=rows.map((f,i)=>{
       const name=escapeLibraryText(f.filename||f.name||"Unnamed file");
       const needsDownload=f.source==="server"&&!f.downloadedOnDevice;
       const detail=escapeLibraryText([formatBytes(f.size_bytes||f.size),f.mime_type||f.type||"",f.status||""].filter(Boolean).join(" · ") || "Uploaded file");
-      return `<div class="oddi-library-item" data-lib-index="${i}">
+      const selected=selectedLibraryIds.has(libraryFileKey(f));
+      return `<article class="oddi-library-item${selected?" is-selected":""}" role="listitem" data-lib-index="${i}" style="--library-order:${Math.min(i,10)}">
         <span class="oddi-library-icon">${fileIcon(name,f.mime_type||f.type)}</span>
         <div class="oddi-library-meta"><div class="oddi-library-name" title="${name}">${name}</div><div class="oddi-library-detail">${detail}<span class="oddi-library-device-state">&middot; ${needsDownload?"Download to this device to open or attach":"On this device"}</span></div></div>
+        <button type="button" class="oddi-library-pick" aria-pressed="${selected}" aria-label="${selected?"Deselect":"Select"} ${name}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7"/></svg></button>
         <div class="oddi-library-actions">
           ${needsDownload?`<button type="button" class="oddi-library-download is-remote" title="Download ${name} to this device">Download</button>`:`<button type="button" class="oddi-library-preview" title="Open this file">Open</button>
           <button type="button" class="oddi-library-upload" title="Attach this Library file to the current chat">Attach</button>
           <button type="button" class="oddi-library-download" title="Download ${name}" aria-label="Download ${name}">&#11015;</button>`}
           <button type="button" class="oddi-library-delete" title="Delete file">Delete</button>
         </div>
-      </div>`;
+      </article>`;
     }).join("");
     const fileForButton=btn=>rows[Number(btn.closest(".oddi-library-item")?.dataset.libIndex)];
+    libraryList.querySelectorAll(".oddi-library-pick").forEach((btn,idx)=>btn.addEventListener("click",()=>setLibrarySelection(rows[idx])));
     libraryList.querySelectorAll(".oddi-library-preview").forEach((btn,idx)=>btn.addEventListener("click",async()=>{
       btn.disabled=true;
       try{await previewLibraryFile(fileForButton(btn),btn);}
@@ -27175,6 +27407,7 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       catch(e){alert(e.message||"Could not download this file.");}
       finally{btn.disabled=false;}
     }));
+    updateLibrarySelectionUi();
   }
   let libraryCache=[];
   const libraryUploadInput=document.getElementById("oddiLibraryUploadInput");
@@ -27239,25 +27472,138 @@ body.dark-mode .input-area #attachmentPreview #removeAttachment{background:rgba(
       if(libraryAddButton){libraryAddButton.disabled=false;libraryAddButton.textContent=buttonLabel;}
     }
   });
+  librarySelectButton?.addEventListener("click",()=>{
+    if(isSelectingLibrary){exitLibrarySelection();return;}
+    selectedLibraryIds.clear();
+    clearPreparedLibraryShare();
+    isSelectingLibrary=true;
+    renderLibrary(libraryCache);
+  });
+  librarySelectAllButton?.addEventListener("click",()=>{
+    const visibleIds=visibleLibraryRows.map(libraryFileKey);
+    const allSelected=visibleIds.length>0&&visibleIds.every(id=>selectedLibraryIds.has(id));
+    visibleIds.forEach(id=>allSelected?selectedLibraryIds.delete(id):selectedLibraryIds.add(id));
+    clearPreparedLibraryShare();
+    renderLibrary(libraryCache);
+  });
+  libraryBulkShareButton?.addEventListener("click",shareSelectedLibraryFiles);
+  libraryBulkDeleteButton?.addEventListener("click",deleteSelectedLibraryFiles);
+  librarySendToOddiButton?.addEventListener("click",async()=>{
+    const files=selectedLibraryFiles();
+    if(!files.length)return;
+    librarySendToOddiButton.disabled=true;
+    librarySendToOddiButton.textContent="Adding files...";
+    try{await attachSelectedLibraryFiles(files);}
+    catch(error){showOddiToast(error?.message||"Could not add these files to the chat.","error");}
+    finally{librarySendToOddiButton.disabled=false;librarySendToOddiButton.textContent="Send to ODDI";}
+  });
+  libraryList.addEventListener("click",event=>{
+    if(!isSelectingLibrary||event.target.closest("button"))return;
+    const item=event.target.closest(".oddi-library-item");
+    if(!item)return;
+    setLibrarySelection(visibleLibraryRows[Number(item.dataset.libIndex)]);
+  });
+  function stopLibraryLongPress(){
+    if(longPressTimer){window.clearTimeout(longPressTimer);longPressTimer=0;}
+    longPressPointerId=null;
+    longPressOrigin=null;
+    longPressFile=null;
+    longPressFired=false;
+  }
+  libraryList.addEventListener("pointerdown",event=>{
+    if(!window.matchMedia("(max-width: 700px)").matches||event.pointerType==="mouse"||event.button!==0)return;
+    const item=event.target.closest(".oddi-library-item");
+    if(!item||event.target.closest("button"))return;
+    stopLibraryLongPress();
+    longPressPointerId=event.pointerId;
+    longPressOrigin={x:event.clientX,y:event.clientY};
+    longPressFile=visibleLibraryRows[Number(item.dataset.libIndex)];
+    longPressFired=false;
+    longPressTimer=window.setTimeout(()=>{
+      longPressTimer=0;
+      if(!longPressFile)return;
+      longPressFired=true;
+      suppressLongPressClick=true;
+      if(navigator.vibrate)navigator.vibrate(12);
+      setLibrarySelection(longPressFile,true);
+    },520);
+  });
+  document.addEventListener("pointermove",event=>{
+    if(longPressPointerId!==event.pointerId||!longPressOrigin||!longPressTimer)return;
+    if(Math.abs(event.clientX-longPressOrigin.x)>10||Math.abs(event.clientY-longPressOrigin.y)>10)stopLibraryLongPress();
+  },true);
+  document.addEventListener("pointerup",event=>{
+    if(longPressPointerId!==event.pointerId)return;
+    if(longPressTimer){window.clearTimeout(longPressTimer);longPressTimer=0;}
+    if(longPressFired){
+      window.clearTimeout(suppressLongPressClickTimer);
+      suppressLongPressClickTimer=window.setTimeout(()=>{suppressLongPressClick=false;},220);
+    }
+    longPressPointerId=null;longPressOrigin=null;longPressFile=null;longPressFired=false;
+  },true);
+  document.addEventListener("pointercancel",event=>{
+    if(longPressPointerId===event.pointerId){
+      stopLibraryLongPress();
+      suppressLongPressClick=false;
+      window.clearTimeout(suppressLongPressClickTimer);
+    }
+  },true);
+  libraryList.addEventListener("contextmenu",event=>{
+    if(window.matchMedia("(max-width: 700px)").matches&&event.target.closest(".oddi-library-item"))event.preventDefault();
+  });
+  document.addEventListener("click",event=>{
+    if(!suppressLongPressClick||!event.target.closest("#oddiLibraryList"))return;
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    suppressLongPressClick=false;
+    window.clearTimeout(suppressLongPressClickTimer);
+  },true);
   async function openLibrary(){
-    document.body.classList.remove("oddi-react-sidebar-open","oddi-react-sidebar-collapsed");
-    document.getElementById("oddi-react-sidebar-root")?.classList.remove("is-open","is-collapsed");
-    document.getElementById("oddi-react-sidebar-root")?.classList.add("is-closed");
-    window.dispatchEvent(new CustomEvent("oddi:sidebar-close"));
-    window.dispatchEvent(new CustomEvent("oddi:keep-sidebar-rail-visible"));
-    libraryModal.classList.add("show"); libraryModal.setAttribute("aria-hidden","false");
-    libraryCache=await collectLibraryFiles(); renderLibrary(libraryCache); librarySearch?.focus();
+    if(libraryModal.classList.contains("show"))return;
+    libraryOpener=document.activeElement;
+    selectedLibraryIds.clear();
+    clearPreparedLibraryShare();
+    isSelectingLibrary=false;
+    libraryModal.removeAttribute("inert");
+    libraryModal.setAttribute("aria-hidden","false");
+    document.body.classList.add("oddi-library-open");
+    // The sidebar's Library nav handler closes its panel before dispatching
+    // this event. On desktop, reopen it so this workspace stays beside the
+    // normal sidebar, like Profile and Settings.
+    if(!window.matchMedia("(max-width: 768px)").matches)window.__oddiOpenSidebar?.();
+    libraryModal.classList.add("show");
+    if(libraryCache.length)renderLibrary(libraryCache);
+    else libraryList.innerHTML='<div class="oddi-library-empty is-loading"><span class="oddi-library-empty-orbit" aria-hidden="true"></span><strong>Loading your files</strong><span>Connecting to your Library...</span></div>';
+    window.requestAnimationFrame(()=>libraryBackButton?.focus({preventScroll:true}));
+    libraryCache=await collectLibraryFiles();
+    if(libraryModal.classList.contains("show"))renderLibrary(libraryCache);
   }
-  function closeLibrary(){
-    const a=document.activeElement; if(a&&libraryModal.contains(a)) a.blur();
-    libraryModal.classList.remove("show"); libraryModal.setAttribute("aria-hidden","true");
+  function closeLibrary({restoreFocus=true}={}){
+    if(!libraryModal.classList.contains("show"))return;
+    const active=document.activeElement;
+    if(active&&libraryModal.contains(active))active.blur();
+    libraryModal.classList.remove("show");
+    libraryModal.setAttribute("aria-hidden","true");
+    libraryModal.setAttribute("inert","");
+    document.body.classList.remove("oddi-library-open");
+    isSelectingLibrary=false;
+    selectedLibraryIds.clear();
+    clearPreparedLibraryShare();
+    if(restoreFocus&&libraryOpener?.isConnected)window.setTimeout(()=>libraryOpener.focus({preventScroll:true}),260);
   }
-  document.getElementById("oddiLibraryClose")?.addEventListener("click",closeLibrary);
-  libraryModal.addEventListener("click",e=>{if(e.target===libraryModal)closeLibrary();});
+  libraryBackButton?.addEventListener("click",()=>closeLibrary());
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape"&&libraryModal.classList.contains("show"))closeLibrary();
+  });
   librarySearch?.addEventListener("input",()=>renderLibrary(libraryCache));
   libraryTypeFilter?.addEventListener("change",()=>renderLibrary(libraryCache));
   libraryDateFilter?.addEventListener("change",()=>renderLibrary(libraryCache));
-  document.getElementById("oddiLibraryRefresh")?.addEventListener("click",async()=>{libraryCache=await collectLibraryFiles();renderLibrary(libraryCache);});
+  document.getElementById("oddiLibraryRefresh")?.addEventListener("click",async event=>{
+    const button=event.currentTarget;
+    button.disabled=true;button.classList.add("is-refreshing");
+    try{libraryCache=await collectLibraryFiles();renderLibrary(libraryCache);showOddiToast("Library refreshed.","success");}
+    catch(error){showOddiToast(error?.message||"Could not refresh the Library.","error");}
+    finally{button.disabled=false;button.classList.remove("is-refreshing");}
+  });
   window.addEventListener("oddi:open-library",openLibrary);
 
   /* ---------------------------------------------------------
@@ -38626,6 +38972,7 @@ body.dark-mode {
   /* Keep the earlier centered Recent Work treatment in fullscreen. */
   body.oddi-fullscreen-home:has(#chatbox > #welcomeContainer) #oddiRecentSection {
     width: min(100%, 980px) !important;
+    margin-top: 12px !important;
     margin-inline: auto !important;
   }
 
@@ -38822,6 +39169,13 @@ body.dark-mode {
     animation-duration: .01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
+  }
+}
+
+/* Lift only the home content in short, windowed desktop views to clear the fixed composer. */
+@media (min-width: 769px) and (max-height: 680px) {
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #chatbox.chatbox > #welcomeContainer {
+    margin-top: -20px !important;
   }
 }
 </style>
@@ -39342,10 +39696,10 @@ body:not(.dark-mode):not(.oddi-system-theme) #oddiComposerShell.input-area.has-a
   width: fit-content !important;
   max-width: min(64ch, calc(100vw - 48px)) !important;
   min-width: min(148px, 100%) !important;
-  min-height: 70px !important;
-  padding: 22px 30px !important;
-  border: 0 !important;
-  border-radius: 999px !important;
+  min-height: 0 !important;
+  padding: 16px 20px !important;
+  border: 1px solid color-mix(in srgb, currentColor 16%, transparent) !important;
+  border-radius: 22px !important;
   background: #181818 !important;
   color: #f4f4f4 !important;
   box-shadow: none !important;
@@ -39401,8 +39755,8 @@ body.oddi-system-theme.dark-mode #chatbox.chatbox:not(:has(> #welcomeContainer))
 @media (max-width: 768px) {
   #chatbox.chatbox:not(:has(> #welcomeContainer)) > .user-message > .user-bubble-main {
     max-width: min(64ch, calc(100vw - 48px)) !important;
-    padding: 22px 30px !important;
-    border-radius: 999px !important;
+    padding: 16px 18px !important;
+    border-radius: 20px !important;
   }
 }
 </style>
@@ -40487,13 +40841,15 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
 </style>
 
 <style id="oddi-interview-card-fit-and-phone-dark-green-v1">
-/* Keep Interview Studio featured without stretching it across the laptop grid. */
+/* Keep Interview Studio featured and centered without filling the laptop grid. */
 @media (min-width: 769px) {
-  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch,
+  body:not(.oddi-fullscreen-home):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
     grid-column: 1 / -1 !important;
     justify-self: center !important;
+    align-self: center !important;
     width: min(640px, 100%) !important;
-    max-width: 100% !important;
+    max-width: 640px !important;
     box-sizing: border-box !important;
     padding-right: 24px !important;
     padding-left: 24px !important;
@@ -40544,7 +40900,7 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
 }
 </style>
 
-<link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261021-chat-composer-theme-v8">
+<link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261021-cyber-blue-premium-v14">
 <script src="/static/oddi-theme-palette.js?v=20261020-palette-v1" defer></script>
 <script src="/static/oddi-account-profile.js?v=20261020-profile-modal-2" defer></script>
 
@@ -40737,7 +41093,7 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
       inset: auto !important;
       top: auto !important;
       right: auto !important;
-      bottom: max(18px, env(safe-area-inset-bottom, 0px)) !important;
+      bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
       left: var(--oddi-composer-left, max(24px, calc((100vw - 920px) / 2))) !important;
       width: var(--oddi-composer-width, min(920px, calc(100vw - 48px))) !important;
       max-width: var(--oddi-composer-width, min(920px, calc(100vw - 48px))) !important;
@@ -40760,7 +41116,10 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
   @media (min-width: 769px) {
     body:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) .app > #oddiComposerShell.input-area,
     body:has(#chatbox.chatbox > #welcomeContainer) .app > #oddiComposerShell.input-area {
-      bottom: max(58px, env(safe-area-inset-bottom, 0px)) !important;
+      bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+    #oddiChatLatestButton {
+      bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
     }
   }
 </style>
@@ -40959,5 +41318,689 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
 }
 </style>
 
+<link rel="stylesheet" href="/static/oddi-library-ui.css?v=20261021-library-workspace-v1">
+<link rel="stylesheet" href="/static/oddi-composer-upload-layout.css?v=20261021-expanded-upload-composer-v4">
+<script id="oddi-expanded-upload-composer-behavior">
+(function () {
+  "use strict";
+  const shell = document.getElementById("oddiComposerShell");
+  const input = document.getElementById("userInput");
+  if (!shell || !input) return;
+
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let attached = shell.classList.contains("has-attachments");
+  let animating = false;
+  let holdPreviousHeight = false;
+  let previousHeight = shell.getBoundingClientRect().height;
+  let animationFrame = 0;
+  let fallbackTimer = 0;
+  let finishAnimation = null;
+
+  function resizeAttachedInput() {
+    if (!shell.classList.contains("has-attachments")) return;
+    input.style.setProperty("height", "auto", "important");
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    const maxHeight = mobile ? Math.min(Math.floor(window.innerHeight * 0.22), 150) : 180;
+    const minHeight = mobile ? 44 : 48;
+    const height = Math.max(minHeight, Math.min(input.scrollHeight, maxHeight));
+    input.style.setProperty("height", `${height}px`, "important");
+  }
+
+  let expandedMessage = shell.classList.contains("has-expanded-message");
+  function syncPhoneMessageLayout() {
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    const hasAttachments = shell.classList.contains("has-attachments");
+    const hasText = !!input.value.trim();
+    let nextExpanded = false;
+
+    if (mobile && !hasAttachments && hasText) {
+      const grewBeyondOneLine = input.scrollHeight > 52;
+      nextExpanded = expandedMessage
+        ? (grewBeyondOneLine || input.value.trim().length >= 20)
+        : grewBeyondOneLine;
+    }
+
+    if (nextExpanded === expandedMessage) return;
+    const fromHeight = shell.getBoundingClientRect().height;
+    expandedMessage = nextExpanded;
+    shell.classList.toggle("has-expanded-message", nextExpanded);
+    if (!hasAttachments) requestAnimationFrame(function () { animateShellToCurrentSize(fromHeight); });
+  }
+
+  function animateShellToCurrentSize(fromOverride) {
+    if (finishAnimation) finishAnimation();
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    clearTimeout(fallbackTimer);
+
+    const to = shell.getBoundingClientRect().height;
+    const from = Number.isFinite(fromOverride) ? fromOverride : previousHeight;
+    if (prefersReducedMotion.matches || !from || Math.abs(to - from) < 1) {
+      shell.style.removeProperty("height");
+      shell.style.removeProperty("transition");
+      animating = false;
+      previousHeight = to;
+      holdPreviousHeight = false;
+      return;
+    }
+
+    shell.style.setProperty("transition", "none", "important");
+    shell.style.setProperty("height", `${from}px`, "important");
+    shell.getBoundingClientRect();
+    animating = true;
+
+    const finish = function () {
+      shell.removeEventListener("transitionend", onTransitionEnd);
+      clearTimeout(fallbackTimer);
+      shell.style.removeProperty("height");
+      shell.style.removeProperty("transition");
+      animating = false;
+      previousHeight = shell.getBoundingClientRect().height;
+      holdPreviousHeight = false;
+      finishAnimation = null;
+    };
+    const onTransitionEnd = function (event) {
+      if (event.target === shell && event.propertyName === "height") finish();
+    };
+    finishAnimation = finish;
+    shell.addEventListener("transitionend", onTransitionEnd);
+    animationFrame = requestAnimationFrame(function () {
+      shell.style.setProperty("transition", "height 280ms cubic-bezier(.2, .75, .25, 1)", "important");
+      shell.style.setProperty("height", `${to}px`, "important");
+    });
+    fallbackTimer = window.setTimeout(finish, 380);
+  }
+
+  input.addEventListener("input", resizeAttachedInput);
+  input.addEventListener("focus", resizeAttachedInput);
+  input.addEventListener("input", syncPhoneMessageLayout);
+  input.addEventListener("focus", syncPhoneMessageLayout);
+  input.addEventListener("change", syncPhoneMessageLayout);
+  window.addEventListener("resize", resizeAttachedInput, { passive: true });
+  window.addEventListener("resize", syncPhoneMessageLayout, { passive: true });
+
+  const classObserver = new MutationObserver(function () {
+    const nextAttached = shell.classList.contains("has-attachments");
+    if (nextAttached === attached) return;
+    const fromHeight = animating ? shell.getBoundingClientRect().height : previousHeight;
+    attached = nextAttached;
+    holdPreviousHeight = true;
+    if (attached) resizeAttachedInput();
+    else input.style.removeProperty("height");
+    syncPhoneMessageLayout();
+    requestAnimationFrame(function () { animateShellToCurrentSize(fromHeight); });
+  });
+  classObserver.observe(shell, { attributes: true, attributeFilter: ["class"] });
+
+  syncPhoneMessageLayout();
+
+  if ("ResizeObserver" in window) {
+    const sizeObserver = new ResizeObserver(function () {
+      if (!animating && !holdPreviousHeight) previousHeight = shell.getBoundingClientRect().height;
+    });
+    sizeObserver.observe(shell);
+  }
+})();
+</script>
+<style id="oddi-chat-premium-dark-and-desktop-spacing-v1">
+/* Keep the laptop composer near the viewport edge while leaving the latest-message control clear. */
+@media (min-width: 769px) {
+  body:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) .app > #oddiComposerShell.input-area,
+  body:has(#chatbox.chatbox > #welcomeContainer) .app > #oddiComposerShell.input-area {
+    bottom: max(24px, env(safe-area-inset-bottom, 0px)) !important;
+  }
+  #oddiChatLatestButton {
+    bottom: calc(132px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
+/* Keep the black-and-white canvas scoped to the Mono palette. */
+html[data-oddi-palette="mono"][data-oddi-appearance="dark"],
+html[data-oddi-palette="mono"][data-oddi-appearance="system-dark"] {
+  --oddi-theme-bg: #000 !important;
+  --oddi-theme-glow: transparent !important;
+  background: #000 !important;
+  background-image: none !important;
+}
+html[data-oddi-palette="mono"][data-oddi-appearance="dark"] body:has(#chatbox),
+html[data-oddi-palette="mono"][data-oddi-appearance="system-dark"] body:has(#chatbox) {
+  background: #000 !important;
+  background-image: none !important;
+}
+html[data-oddi-palette="mono"][data-oddi-appearance="dark"] body:has(#chatbox) :is(.app, .header, #chatbox.chatbox, #sidebar.sidebar, .oddi-account-footer, #oddi-react-sidebar-root .oddi-rs-sidebar, #oddi-react-sidebar-root .oddi-rs-rail, #oddi-react-sidebar-root .oddi-rs-account-footer),
+html[data-oddi-palette="mono"][data-oddi-appearance="system-dark"] body:has(#chatbox) :is(.app, .header, #chatbox.chatbox, #sidebar.sidebar, .oddi-account-footer, #oddi-react-sidebar-root .oddi-rs-sidebar, #oddi-react-sidebar-root .oddi-rs-rail, #oddi-react-sidebar-root .oddi-rs-account-footer) {
+  background-color: #000 !important;
+  background-image: none !important;
+}
+
+/* Cyber Green uses layered forest and emerald surfaces in every appearance. */
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] {
+  --oddi-home-canvas: var(--oddi-theme-bg);
+  --oddi-home-surface: var(--oddi-theme-surface);
+  --oddi-home-surface-elevated: var(--oddi-theme-raised);
+  --oddi-home-border: var(--oddi-theme-line);
+  --oddi-home-text-primary: var(--oddi-theme-text);
+  --oddi-home-text-secondary: var(--oddi-theme-muted);
+  --oddi-home-text-muted: var(--oddi-theme-dim);
+  --oddi-home-accent: var(--oddi-theme-accent);
+  --oddi-home-accent-soft: var(--oddi-theme-accent-soft);
+  --oddi-home-accent-foreground: var(--oddi-theme-bg);
+  --oddi-home-focus: var(--oddi-theme-accent);
+  --oddi-home-card-shadow: 0 8px 24px rgba(0, 0, 0, .14);
+  --oddi-home-float-shadow: 0 16px 38px rgba(0, 0, 0, .2);
+  --os-canvas: var(--oddi-theme-bg);
+  --os-sidebar: var(--oddi-theme-surface);
+  --os-surface: var(--oddi-theme-raised);
+  --os-text: var(--oddi-theme-text);
+  --os-muted: var(--oddi-theme-muted);
+  --os-accent: var(--oddi-theme-accent);
+  --os-border: var(--oddi-theme-line);
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"]:has(#chatbox) .app {
+  background:
+    radial-gradient(ellipse 58% 74% at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 5%, transparent), transparent 80%),
+    linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-bg) 97%, var(--oddi-theme-accent) 3%), var(--oddi-theme-bg)) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] .app > .header {
+  border-bottom: 1px solid var(--oddi-theme-line) !important;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--oddi-theme-surface) 95%, var(--oddi-theme-accent) 5%), var(--oddi-theme-surface) 68%) !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--oddi-theme-accent) 5%, transparent), 0 8px 28px rgba(0, 0, 0, .08) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #sidebar.sidebar,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #oddi-react-sidebar-root .oddi-rs-sidebar {
+  border-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-surface) 96%, var(--oddi-theme-accent) 4%), var(--oddi-theme-surface) 38%, color-mix(in srgb, var(--oddi-theme-surface) 96%, var(--oddi-theme-raised) 4%)) !important;
+  box-shadow: 8px 0 28px rgba(0, 0, 0, .08) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox {
+  background:
+    radial-gradient(ellipse 72% 44% at 14% 82%, color-mix(in srgb, var(--oddi-theme-accent) 8%, transparent), transparent 83%),
+    radial-gradient(ellipse 66% 44% at 92% 20%, color-mix(in srgb, var(--oddi-theme-accent) 6%, transparent), transparent 84%),
+    radial-gradient(ellipse at 52% -5%, color-mix(in srgb, var(--oddi-theme-accent) 7%, transparent), transparent 62%),
+    linear-gradient(150deg, color-mix(in srgb, var(--oddi-theme-bg) 97%, var(--oddi-theme-accent) 3%), var(--oddi-theme-bg)) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-green"] #chatbox.chatbox,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-green"] #chatbox.chatbox {
+  background:
+    radial-gradient(ellipse 76% 50% at 13% 82%, color-mix(in srgb, var(--oddi-theme-accent) 13%, transparent), transparent 82%),
+    radial-gradient(ellipse 64% 46% at 91% 20%, color-mix(in srgb, var(--oddi-theme-accent) 11%, transparent), transparent 84%),
+    radial-gradient(ellipse at 53% -8%, color-mix(in srgb, var(--oddi-theme-accent) 14%, transparent), transparent 64%),
+    linear-gradient(148deg, color-mix(in srgb, var(--oddi-theme-bg) 93%, #164326 7%), var(--oddi-theme-bg)) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] :is(#sidebar .new-chat-btn, #sidebar .sidebar-nav-btn, #sidebar .sidebar-bottom-btn) {
+  border-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oddi-theme-raised) 92%, var(--oddi-theme-accent) 8%), var(--oddi-theme-raised)) !important;
+  color: var(--oddi-theme-text) !important;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] :is(#sidebar .new-chat-btn:hover, #sidebar .sidebar-nav-btn:hover, #sidebar .sidebar-bottom-btn:hover, #sidebar .history-item:hover, #sidebar .history-item.active-chat) {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 70%, var(--oddi-theme-accent)) !important;
+  background: linear-gradient(115deg, color-mix(in srgb, var(--oddi-theme-accent-soft) 74%, var(--oddi-theme-raised)), var(--oddi-theme-raised)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 2px 0 var(--oddi-theme-accent), 0 4px 14px color-mix(in srgb, var(--oddi-theme-glow) 55%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message {
+  padding: 0 !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .bot-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 9px !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 0 9px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .bot-header b {
+  color: color-mix(in srgb, var(--oddi-theme-accent) 58%, var(--oddi-theme-text)) !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+  letter-spacing: .015em !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .oddi-thinking-time {
+  color: var(--oddi-theme-dim) !important;
+  font-size: 11px !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .message-sound-btn {
+  width: 30px !important;
+  height: 30px !important;
+  flex-basis: 30px !important;
+  border: 1px solid var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(145deg, var(--oddi-theme-accent-soft), color-mix(in srgb, var(--oddi-theme-raised) 88%, var(--oddi-theme-accent) 12%)) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 3px 10px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .message-sound-btn:is(:hover,.speaking) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent) !important;
+  color: var(--oddi-theme-bg) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .ai-content {
+  width: min(100%, 82ch) !important;
+  max-width: 82ch !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--oddi-theme-text) !important;
+  text-align: left !important;
+  line-height: 1.62 !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message::before,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message::after,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .ai-content::before,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .ai-content::after {
+  content: none !important;
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .ai-content :is(h1,h2,h3,h4,h5,h6,strong,b) {
+  color: color-mix(in srgb, var(--oddi-theme-accent) 48%, var(--oddi-theme-text)) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .ai-content a {
+  color: var(--oddi-theme-accent) !important;
+  text-decoration-color: color-mix(in srgb, var(--oddi-theme-accent) 46%, transparent) !important;
+  text-underline-offset: 3px !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .ai-content :is(code:not(pre code),blockquote,th) {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 72%, var(--oddi-theme-accent)) !important;
+  background: color-mix(in srgb, var(--oddi-theme-raised) 88%, var(--oddi-theme-accent-soft)) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .ai-content blockquote {
+  border-left: 2px solid color-mix(in srgb, var(--oddi-theme-accent) 60%, var(--oddi-theme-line)) !important;
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .ai-content pre {
+  border: 1px solid var(--oddi-theme-line) !important;
+  border-radius: 10px !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 80%, var(--oddi-theme-raised) 20%) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .bot-actions {
+  justify-content: flex-start !important;
+  width: fit-content !important;
+  margin: 8px 0 0 17px !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .bot-actions .message-action-btn {
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .bot-message .bot-actions .message-action-btn:is(:hover,:focus-visible) {
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-accent) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .user-message > .user-bubble-main,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox.chatbox > .user-message > .user-bubble-main > .user-text {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 72%, var(--oddi-theme-accent)) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-raised) 90%, var(--oddi-theme-accent) 10%), var(--oddi-theme-raised)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .10), inset 0 1px 0 color-mix(in srgb, white 5%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #chatbox:has(> #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+  border-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-surface) 94%, var(--oddi-theme-accent) 6%), var(--oddi-theme-surface)) !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .12), inset 0 1px 0 color-mix(in srgb, white 5%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #oddiComposerShell.input-area > .oddi-composer-field {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 74%, var(--oddi-theme-accent)) !important;
+  background: color-mix(in srgb, color-mix(in srgb, var(--oddi-theme-surface) 93%, var(--oddi-theme-accent) 7%) 91%, transparent) !important;
+  background-color: color-mix(in srgb, color-mix(in srgb, var(--oddi-theme-surface) 93%, var(--oddi-theme-accent) 7%) 91%, transparent) !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .17), inset 0 1px 0 color-mix(in srgb, white 8%, transparent) !important;
+  backdrop-filter: blur(16px) saturate(1.18) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.18) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #oddiComposerShell.input-area > .oddi-composer-field:focus-within {
+  border-color: var(--oddi-theme-accent) !important;
+  background: color-mix(in srgb, color-mix(in srgb, var(--oddi-theme-surface) 88%, var(--oddi-theme-accent) 12%) 93%, transparent) !important;
+  background-color: color-mix(in srgb, color-mix(in srgb, var(--oddi-theme-surface) 88%, var(--oddi-theme-accent) 12%) 93%, transparent) !important;
+  box-shadow: 0 0 0 1px var(--oddi-theme-accent-soft), 0 16px 38px rgba(0, 0, 0, .18), 0 0 24px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #oddiComposerShell :is(#attach-btn, #dictation-btn) {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-accent-soft) 74%, var(--oddi-theme-raised)), var(--oddi-theme-raised)) !important;
+  color: var(--oddi-theme-accent-strong) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #oddiComposerShell :is(#voice-btn, #send-btn):not(:disabled) {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 82%, var(--oddi-theme-surface)) !important;
+  background: linear-gradient(145deg, var(--oddi-theme-accent), var(--oddi-theme-accent-strong)) !important;
+  color: var(--oddi-theme-bg) !important;
+  box-shadow: 0 5px 16px var(--oddi-theme-glow), inset 0 1px 0 color-mix(in srgb, white 18%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] :is(.header-more-btn, #themeBtn):is(:hover, :focus-visible),
+html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palette="cyber-green"] #oddiComposerShell :is(#attach-btn, #dictation-btn, #voice-btn, #send-btn):is(:hover, :focus-visible) {
+  border-color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft), 0 8px 22px var(--oddi-theme-glow) !important;
+}
+
+/* A small type-size lift for ODDI's answer text without changing heading hierarchy. */
+@media (min-width: 769px) {
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .ai-content {
+    font-size: 17px !important;
+    line-height: 1.58 !important;
+  }
+}
+@media (max-width: 768px) {
+  #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .ai-content {
+    font-size: 16px !important;
+    line-height: 1.58 !important;
+  }
+}
+</style>
+<style id="oddi-cyber-blue-premium-v1">
+/* Cyber Blue: midnight navy, electric blue, and cool cyan accents. */
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] {
+  --oddi-home-canvas: var(--oddi-theme-bg);
+  --oddi-home-surface: var(--oddi-theme-surface);
+  --oddi-home-surface-elevated: var(--oddi-theme-raised);
+  --oddi-home-border: var(--oddi-theme-line);
+  --oddi-home-text-primary: var(--oddi-theme-text);
+  --oddi-home-text-secondary: var(--oddi-theme-muted);
+  --oddi-home-text-muted: var(--oddi-theme-dim);
+  --oddi-home-accent: var(--oddi-theme-accent);
+  --oddi-home-accent-soft: var(--oddi-theme-accent-soft);
+  --oddi-home-accent-foreground: var(--oddi-theme-bg);
+  --oddi-home-focus: var(--oddi-theme-accent);
+  --oddi-home-card-shadow: 0 8px 24px rgba(0, 0, 0, .16);
+  --oddi-home-float-shadow: 0 16px 38px rgba(0, 0, 0, .24);
+  --os-canvas: var(--oddi-theme-bg);
+  --os-sidebar: var(--oddi-theme-surface);
+  --os-surface: var(--oddi-theme-raised);
+  --os-text: var(--oddi-theme-text);
+  --os-muted: var(--oddi-theme-muted);
+  --os-accent: var(--oddi-theme-accent);
+  --os-border: var(--oddi-theme-line);
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"]:has(#chatbox) .app {
+  background:
+    radial-gradient(ellipse 68% 72% at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 7%, transparent), transparent 80%),
+    radial-gradient(ellipse 55% 42% at 96% 0%, color-mix(in srgb, var(--oddi-theme-accent-strong) 5%, transparent), transparent 76%),
+    linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-bg) 96%, #1763c5 4%), var(--oddi-theme-bg)) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] .app > .header {
+  border-bottom: 1px solid var(--oddi-theme-line) !important;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--oddi-theme-surface) 91%, var(--oddi-theme-accent) 9%), var(--oddi-theme-surface) 70%) !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--oddi-theme-accent) 8%, transparent), 0 8px 28px rgba(0, 0, 0, .10) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #sidebar.sidebar,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #oddi-react-sidebar-root .oddi-rs-sidebar {
+  border-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-surface) 90%, var(--oddi-theme-accent) 10%), var(--oddi-theme-surface) 38%, color-mix(in srgb, var(--oddi-theme-surface) 92%, var(--oddi-theme-raised) 8%)) !important;
+  box-shadow: 8px 0 30px rgba(0, 0, 0, .10) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox {
+  background:
+    radial-gradient(ellipse 80% 55% at 8% 84%, color-mix(in srgb, var(--oddi-theme-accent-strong) 10%, transparent), transparent 82%),
+    radial-gradient(ellipse 67% 48% at 94% 18%, color-mix(in srgb, var(--oddi-theme-accent) 9%, transparent), transparent 83%),
+    radial-gradient(ellipse 72% 45% at 50% -8%, color-mix(in srgb, var(--oddi-theme-accent) 8%, transparent), transparent 65%),
+    linear-gradient(150deg, color-mix(in srgb, var(--oddi-theme-bg) 95%, #0b4382 5%), var(--oddi-theme-bg)) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox {
+  background:
+    radial-gradient(ellipse 82% 58% at 9% 84%, color-mix(in srgb, var(--oddi-theme-accent-strong) 17%, transparent), transparent 82%),
+    radial-gradient(ellipse 69% 48% at 94% 17%, color-mix(in srgb, var(--oddi-theme-accent) 15%, transparent), transparent 82%),
+    radial-gradient(ellipse 74% 46% at 51% -8%, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), transparent 64%),
+    linear-gradient(148deg, color-mix(in srgb, var(--oddi-theme-bg) 92%, #0b3970 8%), var(--oddi-theme-bg)) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] :is(#sidebar .new-chat-btn, #sidebar .sidebar-nav-btn, #sidebar .sidebar-bottom-btn) {
+  border-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oddi-theme-raised) 89%, var(--oddi-theme-accent) 11%), var(--oddi-theme-raised)) !important;
+  color: var(--oddi-theme-text) !important;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] :is(#sidebar .new-chat-btn:hover, #sidebar .sidebar-nav-btn:hover, #sidebar .sidebar-bottom-btn:hover, #sidebar .history-item:hover, #sidebar .history-item.active-chat) {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 66%, var(--oddi-theme-accent)) !important;
+  background: linear-gradient(115deg, color-mix(in srgb, var(--oddi-theme-accent-soft) 78%, var(--oddi-theme-raised)), var(--oddi-theme-raised)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 2px 0 var(--oddi-theme-accent), 0 4px 16px color-mix(in srgb, var(--oddi-theme-glow) 72%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message {
+  padding: 0 !important;
+  border: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .bot-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 9px !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  margin: 0 0 9px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .bot-header b {
+  color: color-mix(in srgb, var(--oddi-theme-accent) 68%, var(--oddi-theme-text)) !important;
+  font-size: 13px !important;
+  font-weight: 750 !important;
+  letter-spacing: .025em !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .oddi-thinking-time {
+  color: var(--oddi-theme-dim) !important;
+  font-size: 11px !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .message-sound-btn {
+  width: 30px !important;
+  height: 30px !important;
+  flex-basis: 30px !important;
+  border: 1px solid var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(145deg, var(--oddi-theme-accent-soft), color-mix(in srgb, var(--oddi-theme-raised) 82%, var(--oddi-theme-accent) 18%)) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 3px 12px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .message-sound-btn:is(:hover,.speaking) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent) !important;
+  color: var(--oddi-theme-bg) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .ai-content {
+  width: min(100%, 82ch) !important;
+  max-width: 82ch !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  outline: 0 !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: var(--oddi-theme-text) !important;
+  text-align: left !important;
+  line-height: 1.62 !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message::before,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message::after,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .ai-content::before,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .ai-content::after {
+  content: none !important;
+  display: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .ai-content :is(h1,h2,h3,h4,h5,h6,strong,b) {
+  color: color-mix(in srgb, var(--oddi-theme-accent) 48%, var(--oddi-theme-text)) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .ai-content a {
+  color: var(--oddi-theme-accent) !important;
+  text-decoration-color: color-mix(in srgb, var(--oddi-theme-accent) 55%, transparent) !important;
+  text-underline-offset: 3px !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .ai-content :is(code:not(pre code),blockquote,th) {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 68%, var(--oddi-theme-accent)) !important;
+  background: color-mix(in srgb, var(--oddi-theme-raised) 86%, var(--oddi-theme-accent-soft)) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .ai-content blockquote {
+  border-left: 2px solid color-mix(in srgb, var(--oddi-theme-accent) 62%, var(--oddi-theme-line)) !important;
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .ai-content pre {
+  border: 1px solid var(--oddi-theme-line) !important;
+  border-radius: 10px !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-surface) 84%, var(--oddi-theme-accent) 16%), var(--oddi-theme-surface)) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .bot-actions {
+  justify-content: flex-start !important;
+  width: fit-content !important;
+  margin: 8px 0 0 0 !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .bot-actions .message-action-btn {
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .bot-message .bot-actions .message-action-btn:is(:hover,:focus-visible) {
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-accent) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .user-message > .user-bubble-main,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox.chatbox > .user-message > .user-bubble-main > .user-text {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 68%, var(--oddi-theme-accent)) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-raised) 86%, var(--oddi-theme-accent) 14%), var(--oddi-theme-raised)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .14), inset 0 1px 0 color-mix(in srgb, white 7%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #chatbox:has(> #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+  border-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-surface) 91%, var(--oddi-theme-accent) 9%), var(--oddi-theme-surface)) !important;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, .14), inset 0 1px 0 color-mix(in srgb, white 6%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #oddiComposerShell.input-area > .oddi-composer-field {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 68%, var(--oddi-theme-accent)) !important;
+  background: color-mix(in srgb, color-mix(in srgb, var(--oddi-theme-surface) 91%, var(--oddi-theme-accent) 9%) 90%, transparent) !important;
+  background-color: color-mix(in srgb, color-mix(in srgb, var(--oddi-theme-surface) 91%, var(--oddi-theme-accent) 9%) 90%, transparent) !important;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, .20), inset 0 1px 0 color-mix(in srgb, white 9%, transparent) !important;
+  backdrop-filter: blur(16px) saturate(1.2) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #oddiComposerShell.input-area > .oddi-composer-field:focus-within {
+  border-color: var(--oddi-theme-accent) !important;
+  background: color-mix(in srgb, color-mix(in srgb, var(--oddi-theme-surface) 84%, var(--oddi-theme-accent) 16%) 93%, transparent) !important;
+  background-color: color-mix(in srgb, color-mix(in srgb, var(--oddi-theme-surface) 84%, var(--oddi-theme-accent) 16%) 93%, transparent) !important;
+  box-shadow: 0 0 0 1px var(--oddi-theme-accent-soft), 0 16px 38px rgba(0, 0, 0, .22), 0 0 28px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #oddiComposerShell :is(#attach-btn, #dictation-btn) {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-accent-soft) 80%, var(--oddi-theme-raised)), var(--oddi-theme-raised)) !important;
+  color: var(--oddi-theme-accent) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #oddiComposerShell :is(#voice-btn, #send-btn):not(:disabled) {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 80%, var(--oddi-theme-surface)) !important;
+  background: linear-gradient(145deg, var(--oddi-theme-accent), var(--oddi-theme-accent-strong)) !important;
+  color: var(--oddi-theme-bg) !important;
+  box-shadow: 0 5px 18px var(--oddi-theme-glow), inset 0 1px 0 color-mix(in srgb, white 20%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] :is(.header-more-btn, #themeBtn):is(:hover, :focus-visible),
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] #oddiComposerShell :is(#attach-btn, #dictation-btn, #voice-btn, #send-btn):is(:hover, :focus-visible) {
+  border-color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft), 0 8px 24px var(--oddi-theme-glow) !important;
+}
+</style>
 </body>
 </html>

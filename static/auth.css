@@ -708,6 +708,37 @@ body {
     font-size: 11px;
 }
 
+.auth-feedback {
+    display: grid;
+    grid-template-columns: 30px minmax(0, 1fr) 28px;
+    align-items: start;
+    gap: 11px;
+    margin-top: 15px;
+    padding: 13px 12px;
+    border: 1px solid rgba(248, 113, 113, .28);
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(44, 25, 38, .96), rgba(19, 19, 26, .98));
+    color: var(--foreground);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, .18);
+    animation: auth-feedback-in .24s cubic-bezier(.22, 1, .36, 1) both;
+}
+
+.auth-feedback[hidden] { display: none !important; }
+.auth-feedback.is-info { border-color: rgba(139, 92, 246, .32); background: linear-gradient(135deg, rgba(39, 29, 61, .96), rgba(19, 19, 26, .98)); }
+.auth-feedback-icon { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgba(248, 113, 113, .3); border-radius: 10px; background: rgba(248, 113, 113, .11); color: #fca5a5; font-size: 15px; font-weight: 800; }
+.auth-feedback.is-info .auth-feedback-icon { border-color: rgba(167, 139, 250, .35); background: rgba(139, 92, 246, .14); color: #c4b5fd; }
+.auth-feedback-copy { min-width: 0; }
+.auth-feedback-copy strong { display: block; margin: 1px 0 4px; color: var(--foreground); font-size: 12px; font-weight: 750; }
+.auth-feedback-copy p { margin: 0; color: #aaa8bc; font-size: 11px; line-height: 1.5; }
+.auth-feedback-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.auth-feedback-action { display: inline-flex; min-height: 30px; align-items: center; justify-content: center; padding: 0 10px; border: 1px solid rgba(167, 139, 250, .25); border-radius: 8px; background: rgba(255, 255, 255, .035); color: #d8d4e8; font: inherit; font-size: 10px; font-weight: 650; text-decoration: none; cursor: pointer; transition: background .16s ease, border-color .16s ease, transform .16s ease; }
+.auth-feedback-action:hover { transform: translateY(-1px); border-color: rgba(167, 139, 250, .5); background: rgba(139, 92, 246, .13); }
+.auth-feedback-action.is-primary { border-color: transparent; background: linear-gradient(110deg, var(--primary), #9b5cf6); color: #fff; }
+.auth-feedback-action.is-primary:hover { background: linear-gradient(110deg, var(--primary-hover), var(--primary)); }
+.auth-feedback-dismiss { display: grid; width: 28px; height: 28px; place-items: center; border: 0; border-radius: 8px; background: transparent; color: #8e8ba0; font: inherit; font-size: 19px; line-height: 1; cursor: pointer; }
+.auth-feedback-dismiss:hover { background: rgba(255, 255, 255, .07); color: #fff; }
+@keyframes auth-feedback-in { from { opacity: 0; transform: translateY(-7px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
 
 /* =========================================================
    REMEMBER

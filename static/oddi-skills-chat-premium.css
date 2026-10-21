@@ -1,0 +1,257 @@
+/* Skills Studio learning chats: spacious, editorial replies and palette-aware controls. */
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-chat-panel {
+  background:
+    radial-gradient(ellipse 78% 40% at 52% -8%, color-mix(in srgb, var(--oddi-theme-accent) 6%, transparent), transparent 82%),
+    linear-gradient(160deg, color-mix(in srgb, var(--oddi-theme-bg) 97%, var(--oddi-theme-accent) 3%), var(--oddi-theme-bg)) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-chat-heading {
+  min-height: 72px;
+  border-bottom-color: color-mix(in srgb, var(--oddi-theme-line-strong) 58%, transparent) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 76%, transparent) !important;
+  box-shadow: 0 10px 32px color-mix(in srgb, var(--oddi-theme-glow) 36%, transparent);
+  backdrop-filter: blur(20px) saturate(1.18);
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-coach-mark,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-mark {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(145deg, var(--oddi-theme-accent-soft), color-mix(in srgb, var(--oddi-theme-surface) 82%, transparent)) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--oddi-theme-glow) 72%, transparent), inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 8%, transparent);
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-coach-mark {
+  border-radius: 12px;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-coach-copy > strong {
+  font-size: 13px;
+  letter-spacing: -.018em;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-phase-label {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 42%, var(--oddi-theme-line)) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 70%, var(--oddi-theme-surface)) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 7%, transparent);
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-scroll-area,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-messages {
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-messages {
+  gap: clamp(20px, 2.4vh, 30px);
+  padding: clamp(22px, 3.2vw, 42px) clamp(20px, 4vw, 58px) 32px;
+  scrollbar-color: color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) transparent;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message {
+  gap: 11px;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-assistant .room-message-body {
+  position: relative;
+  width: min(100%, 1120px);
+  max-width: min(96%, 1120px);
+  padding-left: 17px;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-assistant .room-message-body::before {
+  position: absolute;
+  top: 3px;
+  bottom: 4px;
+  left: 0;
+  width: 2px;
+  border-radius: 99px;
+  background: linear-gradient(180deg, var(--oddi-theme-accent), color-mix(in srgb, var(--oddi-theme-accent) 12%, transparent));
+  content: "";
+  opacity: .46;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-label {
+  margin: 0 0 7px 1px;
+  color: var(--oddi-theme-accent) !important;
+  font-size: 9px;
+  letter-spacing: .12em;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-label span {
+  color: var(--oddi-theme-muted) !important;
+  font-size: 8px;
+  letter-spacing: .045em;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-user .room-message-label {
+  color: var(--oddi-theme-accent) !important;
+}
+
+/* ODDI keeps the same open reading surface as the main chat across all themes. */
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-assistant .room-message-copy {
+  width: fit-content;
+  max-width: min(100%, 88ch);
+  padding: 2px 0 3px;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--oddi-theme-text) !important;
+  font-size: 14px;
+  line-height: 1.78;
+  overflow-wrap: anywhere;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-user .room-message-body {
+  max-width: min(84%, 820px);
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-user .room-message-copy {
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--oddi-theme-line-strong) 60%, var(--oddi-theme-accent)) !important;
+  border-radius: 17px 6px 17px 17px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-accent-soft) 78%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-raised) 86%, var(--oddi-theme-surface))) !important;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--oddi-theme-glow) 56%, transparent), inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 7%, transparent) !important;
+  color: var(--oddi-theme-text) !important;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy p { margin: 0 0 11px; }
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy p:last-child { margin-bottom: 0; }
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy :is(h2,h3,h4,h5) {
+  margin: 17px 0 7px;
+  color: var(--oddi-theme-accent) !important;
+  font-size: 1.04em;
+  line-height: 1.42;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy :is(h2,h3,h4,h5):first-child { margin-top: 0; }
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy strong { color: color-mix(in srgb, var(--oddi-theme-accent) 43%, var(--oddi-theme-text)) !important; font-weight: 760; }
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy code {
+  padding: 2px 6px;
+  border: 1px solid var(--oddi-theme-line) !important;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--oddi-theme-raised) 82%, var(--oddi-theme-bg)) !important;
+  color: var(--oddi-theme-accent) !important;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: .9em;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy pre {
+  max-width: 100%;
+  overflow: auto;
+  margin: 10px 0;
+  padding: 13px 15px;
+  border: 1px solid var(--oddi-theme-line) !important;
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--oddi-theme-bg) 72%, var(--oddi-theme-surface)) !important;
+  box-shadow: inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 5%, transparent);
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy pre code {
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0;
+  background: transparent !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy blockquote {
+  margin: 10px 0;
+  padding: 9px 13px;
+  border-left: 2px solid var(--oddi-theme-accent);
+  border-radius: 0 10px 10px 0;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 45%, transparent);
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy a { color: var(--oddi-theme-accent) !important; text-decoration-color: color-mix(in srgb, var(--oddi-theme-accent) 48%, transparent); text-underline-offset: 3px; }
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-copy hr { border: 0; border-top: 1px solid var(--oddi-theme-line); margin: 15px 0; }
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-thinking .room-message-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .thinking-dots i {
+  background: var(--oddi-theme-accent);
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer {
+  width: min(calc(100% - 48px), 1080px);
+  min-height: 64px;
+  margin-top: 10px;
+  padding: 8px 9px 14px 18px;
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 70%, transparent) !important;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 88%, transparent) !important;
+  box-shadow: 0 12px 36px color-mix(in srgb, var(--oddi-theme-glow) 48%, transparent), inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 6%, transparent);
+  backdrop-filter: blur(18px) saturate(1.16);
+  transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer:focus-within {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 58%, var(--oddi-theme-line)) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 94%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--oddi-theme-accent-soft) 78%, transparent), 0 14px 38px color-mix(in srgb, var(--oddi-theme-glow) 68%, transparent);
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer textarea {
+  color: var(--oddi-theme-text) !important;
+  caret-color: var(--oddi-theme-accent);
+  font-size: 14px;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer textarea::placeholder { color: var(--oddi-theme-muted) !important; }
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer small { color: var(--oddi-theme-muted) !important; opacity: .78; }
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer button {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 88%, var(--oddi-theme-surface)) !important;
+  background: var(--oddi-theme-accent) !important;
+  color: var(--oddi-theme-bg) !important;
+  box-shadow: 0 5px 18px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 8px 24px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-jump-latest {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 88%, transparent) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--oddi-theme-glow) 56%, transparent);
+  backdrop-filter: blur(14px);
+}
+
+@media (max-width: 760px) {
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-chat-heading { min-height: 59px; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-messages { gap: 18px; padding: 20px 13px 20px; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message { gap: 7px; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-assistant .room-message-body { max-width: 100%; padding-left: 12px; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-user .room-message-body { max-width: 92%; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-assistant .room-message-copy { font-size: 13px; line-height: 1.68; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-user .room-message-copy { padding: 10px 13px; font-size: 13px; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer { width: calc(100% - 24px); min-height: 56px; margin-top: 7px; padding: 6px 7px 12px 12px; border-radius: 17px; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer small { right: 48px; }
+}
+
+@media (max-width: 420px) {
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-assistant .room-message-body { padding-left: 10px; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-message-assistant .room-message-copy { font-size: 12px; }
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer small { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette] .skills-app .room-composer { transition: none; }
+}

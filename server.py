@@ -1815,19 +1815,32 @@ async def login(request: Request):
     email = str(form.get("email", "")).strip()
     password = str(form.get("password", ""))
 
+    def login_error(code):
+        return RedirectResponse(
+            url=f"/login?error={code}&email={quote(email, safe='')}",
+            status_code=303,
+        )
+
+    if not email or not password:
+        return login_error("missing_fields")
+
     user = await run_in_threadpool(get_user_by_email, email)
     if user is None:
         await sync_laptop_accounts_from_drive()
         user = await run_in_threadpool(get_user_by_email, email)
 
     if not user:
-        return PlainTextResponse("Email not found.")
+        return login_error("account_not_found")
 
-    if check_password_hash(user["password_hash"], password):
+    password_hash = str(user["password_hash"] or "")
+    if not password_hash:
+        return login_error("google_only")
+
+    if check_password_hash(password_hash, password):
         set_user_session(request, user)
         return RedirectResponse(url="/", status_code=303)
 
-    return PlainTextResponse("Incorrect password.")
+    return login_error("incorrect_password")
 
 
 @app.get("/logout", name="logout")
@@ -1959,7 +1972,7 @@ async def api_login(request: Request):
     data = await safe_json(request)
 
     email = str(data.get("email", "")).strip()
-    password = data.get("password", "")
+    password = str(data.get("password") or "")
 
     if not email or not password:
         return JSONResponse(
@@ -1978,7 +1991,14 @@ async def api_login(request: Request):
             status_code=401,
         )
 
-    if not check_password_hash(user["password_hash"], password):
+    password_hash = str(user["password_hash"] or "")
+    if not password_hash:
+        return JSONResponse(
+            {"success": False, "error": "This account uses Google sign-in."},
+            status_code=401,
+        )
+
+    if not check_password_hash(password_hash, password):
         return JSONResponse(
             {"success": False, "error": "Incorrect password."},
             status_code=401,
@@ -2233,10 +2253,9 @@ async def google_callback(request: Request):
         user = get_user_by_email(email)
 
     if user is None:
-        temporary_password = secrets.token_urlsafe(32)
-        password_hash = generate_password_hash(temporary_password)
-
-        create_user(name, email, password_hash)
+        # Google-only accounts do not have a local password. Store an empty
+        # hash so password sign-in can explain that Google is the right path.
+        create_user(name, email, "")
         user = get_user_by_email(email)
 
     if user is None:

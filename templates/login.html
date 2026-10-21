@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/auth.css"
+        href="/static/auth.css?v=20261021-login-feedback-v1"
     >
 </head>
 
@@ -384,6 +384,22 @@
 
             </form>
 
+            <section
+                class="auth-feedback"
+                id="authFeedback"
+                role="alert"
+                aria-live="assertive"
+                hidden
+            >
+                <span class="auth-feedback-icon" aria-hidden="true">!</span>
+                <div class="auth-feedback-copy">
+                    <strong id="authFeedbackTitle"></strong>
+                    <p id="authFeedbackMessage"></p>
+                    <div class="auth-feedback-actions" id="authFeedbackActions"></div>
+                </div>
+                <button type="button" class="auth-feedback-dismiss" id="authFeedbackDismiss" aria-label="Dismiss message">×</button>
+            </section>
+
 
             <!-- Signup -->
             <p class="switch-auth-text">
@@ -427,6 +443,111 @@
     const loginSpinner =
         document.getElementById("loginSpinner");
 
+    const emailInput =
+        document.getElementById("email");
+
+    const authFeedback =
+        document.getElementById("authFeedback");
+
+    const authFeedbackTitle =
+        document.getElementById("authFeedbackTitle");
+
+    const authFeedbackMessage =
+        document.getElementById("authFeedbackMessage");
+
+    const authFeedbackActions =
+        document.getElementById("authFeedbackActions");
+
+
+    function addFeedbackAction(label, { href, primary = false, onClick } = {}) {
+        const action = href ? document.createElement("a") : document.createElement("button");
+        action.className = `auth-feedback-action${primary ? " is-primary" : ""}`;
+        action.textContent = label;
+        if (href) {
+            action.href = href;
+        } else {
+            action.type = "button";
+            action.addEventListener("click", onClick);
+        }
+        authFeedbackActions.appendChild(action);
+    }
+
+
+    function showAuthFeedback(kind, email = emailInput.value.trim()) {
+        const messages = {
+            account_not_found: {
+                title: "No account found for this email",
+                message: "Check the address, create a free ODDI account, or continue with Google if you normally use Google to sign in.",
+                tone: "error",
+            },
+            incorrect_password: {
+                title: "That password doesn't match",
+                message: "Your account was found, but this password didn't match. Try again, or use Google if that's how you usually sign in.",
+                tone: "error",
+            },
+            google_only: {
+                title: "This account uses Google sign-in",
+                message: "There isn't a password sign-in set up for this account. Continue with Google to access it.",
+                tone: "info",
+            },
+            missing_fields: {
+                title: "Enter your email and password",
+                message: "Both fields are needed to sign in.",
+                tone: "error",
+            },
+            network: {
+                title: "Sign-in couldn't reach ODDI",
+                message: "Check your connection and try again. Your account details haven't been changed.",
+                tone: "error",
+            },
+        };
+        const state = messages[kind] || messages.network;
+        authFeedback.className = `auth-feedback is-${state.tone}`;
+        authFeedbackTitle.textContent = state.title;
+        authFeedbackMessage.textContent = state.message;
+        authFeedbackActions.replaceChildren();
+
+        if (kind === "account_not_found") {
+            const signup = new URL("/signup", window.location.origin);
+            if (email) signup.searchParams.set("email", email);
+            addFeedbackAction("Create account", signup.pathname + signup.search, { primary: true });
+            addFeedbackAction("Continue with Google", "/auth/google");
+        } else if (kind === "incorrect_password") {
+            addFeedbackAction("Try again", {
+                onClick: () => {
+                    authFeedback.hidden = true;
+                    passwordInput.focus();
+                },
+            });
+            addFeedbackAction("Continue with Google", "/auth/google", { primary: true });
+        } else if (kind === "google_only") {
+            addFeedbackAction("Continue with Google", "/auth/google", { primary: true });
+        } else if (kind === "network") {
+            addFeedbackAction("Try again", {
+                primary: true,
+                onClick: () => loginForm.requestSubmit(),
+            });
+        }
+
+        authFeedback.hidden = false;
+    }
+
+
+    function hideAuthFeedback() {
+        authFeedback.hidden = true;
+        authFeedbackActions.replaceChildren();
+    }
+
+
+    function friendlyErrorKind(error) {
+        const message = String(error || "").toLowerCase();
+        if (message.includes("required")) return "missing_fields";
+        if (message.includes("google") && message.includes("sign-in")) return "google_only";
+        if (message.includes("not found") || message.includes("does not exist")) return "account_not_found";
+        if (message.includes("incorrect") || message.includes("password")) return "incorrect_password";
+        return "network";
+    }
+
 
     /* =====================================================
        PASSWORD VISIBILITY
@@ -457,10 +578,7 @@
        FRONTEND VALIDATION + LOADING STATE
        ===================================================== */
 
-    loginForm.addEventListener("submit", function (event) {
-
-        const email =
-            document.getElementById("email");
+    loginForm.addEventListener("submit", async function (event) {
 
         const password =
             document.getElementById("passwordInput");
@@ -472,6 +590,9 @@
             document.getElementById("passwordError");
 
 
+        event.preventDefault();
+        hideAuthFeedback();
+
         emailError.textContent = "";
         passwordError.textContent = "";
 
@@ -479,7 +600,7 @@
         let valid = true;
 
 
-        if (!email.value.trim()) {
+        if (!emailInput.value.trim()) {
 
             emailError.textContent =
                 "Email is required.";
@@ -488,7 +609,7 @@
 
         } else if (
             !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-                email.value.trim()
+                emailInput.value.trim()
             )
         ) {
 
@@ -512,23 +633,53 @@
 
         if (!valid) {
 
-            event.preventDefault();
-
             return;
 
         }
 
-
-        /* Let ODDI handle the actual authentication. */
-
         loginButton.disabled = true;
-
         loginButtonText.textContent =
             "Signing in...";
-
         loginSpinner.hidden = false;
 
+        try {
+            const response = await fetch("/api/auth/login", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify({ email: emailInput.value.trim(), password: password.value }),
+            });
+            let result = {};
+            try { result = await response.json(); } catch (_) {}
+
+            if (!response.ok || !result.success) {
+                password.value = "";
+                showAuthFeedback(friendlyErrorKind(result.error), emailInput.value.trim());
+                return;
+            }
+
+            window.location.assign("/");
+        } catch (_) {
+            showAuthFeedback("network", emailInput.value.trim());
+        } finally {
+            loginButton.disabled = false;
+            loginButtonText.textContent = "Sign In to ODDI";
+            loginSpinner.hidden = true;
+        }
+
     });
+
+
+    document.getElementById("authFeedbackDismiss").addEventListener("click", hideAuthFeedback);
+
+    const query = new URLSearchParams(window.location.search);
+    const emailFromQuery = query.get("email");
+    const errorFromQuery = query.get("error");
+    if (emailFromQuery) emailInput.value = emailFromQuery;
+    if (errorFromQuery) {
+        showAuthFeedback(errorFromQuery, emailInput.value.trim());
+        window.history.replaceState({}, "", window.location.pathname);
+    }
 
 })();
 </script>
