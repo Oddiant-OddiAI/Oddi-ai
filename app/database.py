@@ -596,6 +596,25 @@ def _create_chat_tables():
             "CREATE INDEX IF NOT EXISTS idx_interview_sessions_user_updated "
             "ON interview_sessions(user_id, updated_at DESC)"
         )
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS skills_learning_sessions (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL,
+                conversation_id TEXT NOT NULL,
+                skill TEXT NOT NULL,
+                goal TEXT NOT NULL DEFAULT '',
+                current_level TEXT NOT NULL DEFAULT '',
+                phase_progress TEXT NOT NULL DEFAULT '{}',
+                active_phase TEXT NOT NULL DEFAULT 'assess',
+                status TEXT NOT NULL DEFAULT 'in_progress',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_skills_learning_user_updated "
+            "ON skills_learning_sessions(user_id, updated_at DESC)"
+        )
         if _use_postgres("chat"):
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS help_feedback_submissions (
@@ -720,7 +739,25 @@ def _create_shared_workspace_tables():
                     ai_status TEXT NULL,
                     ai_error TEXT NULL,
                     ai_started_at TEXT NULL,
+                    attachments_json TEXT NOT NULL DEFAULT '[]',
+                    reply_to_seq BIGINT NULL,
+                    edited_at TEXT NULL,
+                    deleted_at TEXT NULL,
+                    pinned_until TEXT NULL,
+                    forwarded_from_sender TEXT NULL,
+                    forwarded_from_workspace TEXT NULL,
+                    updated_at TEXT NULL,
                     UNIQUE(workspace_id, client_message_id)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_message_reactions (
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    message_id TEXT NOT NULL REFERENCES shared_workspace_messages(id) ON DELETE CASCADE,
+                    user_id BIGINT NOT NULL,
+                    emoji TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (message_id, user_id, emoji)
                 )
             """)
             conn.execute("""
@@ -821,7 +858,25 @@ def _create_shared_workspace_tables():
                     ai_status TEXT NULL,
                     ai_error TEXT NULL,
                     ai_started_at TEXT NULL,
+                    attachments_json TEXT NOT NULL DEFAULT '[]',
+                    reply_to_seq INTEGER NULL,
+                    edited_at TEXT NULL,
+                    deleted_at TEXT NULL,
+                    pinned_until TEXT NULL,
+                    forwarded_from_sender TEXT NULL,
+                    forwarded_from_workspace TEXT NULL,
+                    updated_at TEXT NULL,
                     UNIQUE(workspace_id, client_message_id)
+                )
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS shared_workspace_message_reactions (
+                    workspace_id TEXT NOT NULL REFERENCES shared_workspaces(id) ON DELETE CASCADE,
+                    message_id TEXT NOT NULL REFERENCES shared_workspace_messages(id) ON DELETE CASCADE,
+                    user_id INTEGER NOT NULL,
+                    emoji TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    PRIMARY KEY (message_id, user_id, emoji)
                 )
             """)
             conn.execute("""
@@ -873,10 +928,34 @@ def _create_shared_workspace_tables():
             conn.execute(
                 "ALTER TABLE shared_workspace_projects ADD COLUMN IF NOT EXISTS team_size TEXT NOT NULL DEFAULT 'individual'"
             )
+            for column, definition in (
+                ("attachments_json", "TEXT NOT NULL DEFAULT '[]'"),
+                ("reply_to_seq", "BIGINT NULL"),
+                ("edited_at", "TEXT NULL"),
+                ("deleted_at", "TEXT NULL"),
+                ("pinned_until", "TEXT NULL"),
+                ("forwarded_from_sender", "TEXT NULL"),
+                ("forwarded_from_workspace", "TEXT NULL"),
+                ("updated_at", "TEXT NULL"),
+            ):
+                conn.execute(f"ALTER TABLE shared_workspace_messages ADD COLUMN IF NOT EXISTS {column} {definition}")
         else:
             project_columns = {str(row[1] or "") for row in conn.execute("PRAGMA table_info(shared_workspace_projects)").fetchall()}
             if "team_size" not in project_columns:
                 conn.execute("ALTER TABLE shared_workspace_projects ADD COLUMN team_size TEXT NOT NULL DEFAULT 'individual'")
+            message_columns = {str(row[1] or "") for row in conn.execute("PRAGMA table_info(shared_workspace_messages)").fetchall()}
+            for column, definition in (
+                ("attachments_json", "TEXT NOT NULL DEFAULT '[]'"),
+                ("reply_to_seq", "INTEGER NULL"),
+                ("edited_at", "TEXT NULL"),
+                ("deleted_at", "TEXT NULL"),
+                ("pinned_until", "TEXT NULL"),
+                ("forwarded_from_sender", "TEXT NULL"),
+                ("forwarded_from_workspace", "TEXT NULL"),
+                ("updated_at", "TEXT NULL"),
+            ):
+                if column not in message_columns:
+                    conn.execute(f"ALTER TABLE shared_workspace_messages ADD COLUMN {column} {definition}")
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_shared_workspace_members_user "
             "ON shared_workspace_members(user_id, workspace_id)"
@@ -896,6 +975,14 @@ def _create_shared_workspace_tables():
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_shared_workspace_messages_queue "
             "ON shared_workspace_messages(workspace_id, ai_status, seq)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_message_reactions_message "
+            "ON shared_workspace_message_reactions(workspace_id, message_id)"
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_shared_workspace_messages_updated "
+            "ON shared_workspace_messages(workspace_id, updated_at)"
         )
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_shared_workspace_projects_group "
@@ -1284,6 +1371,156 @@ def update_interview_session(user_id, session_id, patch):
     finally:
         conn.close()
 
+
+def _decode_skills_learning_session(value):
+    session = dict(value)
+    raw_progress = session.get("phase_progress")
+    if isinstance(raw_progress, str):
+        try:
+            session["phase_progress"] = json.loads(raw_progress)
+        except (TypeError, json.JSONDecodeError):
+            session["phase_progress"] = {}
+    elif not isinstance(raw_progress, dict):
+        session["phase_progress"] = {}
+    return session
+
+
+def _skills_learning_sessions_from_settings(settings):
+    sessions = settings.get("skills_learning_sessions", []) if isinstance(settings, dict) else []
+    if not isinstance(sessions, list):
+        return []
+    return [dict(item) for item in sessions if isinstance(item, dict) and item.get("id")]
+
+
+def list_skills_learning_sessions(user_id):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        sessions = _skills_learning_sessions_from_settings(get_user_settings(user_id))
+        return sorted(sessions, key=lambda item: str(item.get("updated_at") or ""), reverse=True)
+    conn = get_db("chat")
+    try:
+        rows = _fetchall(
+            conn,
+            "SELECT * FROM skills_learning_sessions WHERE user_id = ? ORDER BY updated_at DESC, created_at DESC",
+            (str(user_id),),
+        )
+        return [_decode_skills_learning_session(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_skills_learning_session(user_id, session_id):
+    session_id = str(session_id or "").strip()
+    if not session_id:
+        return None
+    if ODDI_DRIVE_CHAT_STORAGE:
+        sessions = _skills_learning_sessions_from_settings(get_user_settings(user_id))
+        return next((item for item in sessions if str(item.get("id")) == session_id), None)
+    conn = get_db("chat")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT * FROM skills_learning_sessions WHERE id = ? AND user_id = ?",
+            (session_id, str(user_id)),
+        )
+        return _decode_skills_learning_session(row) if row else None
+    finally:
+        conn.close()
+
+
+def create_skills_learning_session(user_id, conversation_id, skill, goal="", current_level=""):
+    now = datetime.now(timezone.utc).isoformat(timespec="microseconds")
+    phases = ("assess", "learn", "practice", "build", "prove", "improve")
+    session = {
+        "id": secrets.token_urlsafe(18),
+        "conversation_id": str(conversation_id),
+        "skill": str(skill or "").strip()[:120],
+        "goal": str(goal or "").strip()[:500],
+        "current_level": str(current_level or "").strip()[:80],
+        "phase_progress": {phase: 0 for phase in phases},
+        "active_phase": "assess",
+        "status": "in_progress",
+        "created_at": now,
+        "updated_at": now,
+    }
+    if ODDI_DRIVE_CHAT_STORAGE:
+        settings = get_user_settings(user_id)
+        sessions = _skills_learning_sessions_from_settings(settings)
+        sessions.append(session)
+        settings["skills_learning_sessions"] = sessions
+        save_user_settings(user_id, settings)
+        return session
+    conn = get_db("chat")
+    try:
+        conn.execute(
+            """
+            INSERT INTO skills_learning_sessions
+                (id, user_id, conversation_id, skill, goal, current_level,
+                 phase_progress, active_phase, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                session["id"], str(user_id), session["conversation_id"], session["skill"],
+                session["goal"], session["current_level"],
+                json.dumps(session["phase_progress"], ensure_ascii=False),
+                session["active_phase"], session["status"], now, now,
+            ),
+        )
+        conn.commit()
+        return session
+    finally:
+        conn.close()
+
+
+def update_skills_learning_session(user_id, session_id, patch):
+    session_id = str(session_id or "").strip()
+    if not session_id or not isinstance(patch, dict):
+        return None
+    allowed = {"phase_progress", "active_phase", "status", "goal", "current_level"}
+    changes = {key: value for key, value in patch.items() if key in allowed}
+    now = datetime.now(timezone.utc).isoformat(timespec="microseconds")
+    if not changes:
+        return get_skills_learning_session(user_id, session_id)
+    if ODDI_DRIVE_CHAT_STORAGE:
+        settings = get_user_settings(user_id)
+        sessions = _skills_learning_sessions_from_settings(settings)
+        session = next((item for item in sessions if str(item.get("id")) == session_id), None)
+        if session is None:
+            return None
+        session.update(changes)
+        session["updated_at"] = now
+        settings["skills_learning_sessions"] = sessions
+        save_user_settings(user_id, settings)
+        return session
+    conn = get_db("chat")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT * FROM skills_learning_sessions WHERE id = ? AND user_id = ?",
+            (session_id, str(user_id)),
+        )
+        if not row:
+            return None
+        session = _decode_skills_learning_session(row)
+        session.update(changes)
+        session["updated_at"] = now
+        conn.execute(
+            """
+            UPDATE skills_learning_sessions
+            SET goal = ?, current_level = ?, phase_progress = ?, active_phase = ?, status = ?, updated_at = ?
+            WHERE id = ? AND user_id = ?
+            """,
+            (
+                str(session.get("goal") or "")[:500], str(session.get("current_level") or "")[:80],
+                json.dumps(session.get("phase_progress") if isinstance(session.get("phase_progress"), dict) else {}, ensure_ascii=False),
+                str(session.get("active_phase") or "assess")[:24], str(session.get("status") or "in_progress")[:32],
+                now, session_id, str(user_id),
+            ),
+        )
+        conn.commit()
+        return session
+    finally:
+        conn.close()
+
 def create_user(username, email, password_hash):
     if ODDI_DRIVE_CHAT_STORAGE:
         return google_drive_storage.create_account(username, email, password_hash)
@@ -1509,6 +1746,7 @@ def delete_user_record(user_id):
         )
         conn.execute("DELETE FROM help_feedback_submissions WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM interview_sessions WHERE user_id = ?", (str(user_id),))
+        conn.execute("DELETE FROM skills_learning_sessions WHERE user_id = ?", (str(user_id),))
         conn.execute("DELETE FROM user_settings WHERE user_id = ?", (user_id,))
         conn.execute("DELETE FROM users WHERE id = ?", (user_id,))
         conn.commit()

@@ -91,6 +91,10 @@ from app.database import (
     list_interview_sessions,
     get_interview_session,
     update_interview_session,
+    create_skills_learning_session,
+    list_skills_learning_sessions,
+    get_skills_learning_session,
+    update_skills_learning_session,
 )
 from app.google_drive_storage import (
     DriveStorageError,
@@ -98,7 +102,7 @@ from app.google_drive_storage import (
     user_id_for_email as drive_user_id_for_email,
 )
 
-from app.engine import process_message
+from app.engine import process_message, PROVIDER_UNAVAILABLE_RESPONSE
 from app.shared_workspaces import (
     cleanup_deleted_account as cleanup_shared_workspaces_for_account,
     router as shared_workspaces_router,
@@ -1223,6 +1227,117 @@ async def interview_studio(request: Request):
     return response
 
 
+@app.get("/skills-studio", response_class=HTMLResponse, name="skills_studio")
+async def skills_studio(request: Request):
+    try:
+        await require_user_id_async(request)
+    except HTTPException as error:
+        if error.status_code == 401:
+            return RedirectResponse(url="/login", status_code=303)
+        raise
+    response = render_template(
+        request,
+        "skills_studio.html",
+        skills_user_key=str(request.session.get("user_id") or "guest"),
+        skills_browser_local_chats=ODDI_BROWSER_LOCAL_CHATS,
+    )
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+SKILLS_STUDIO_PHASES = {"assess", "learn", "practice", "build", "prove", "improve"}
+
+
+@app.get("/api/skills/sessions", name="api_skills_sessions")
+async def api_skills_sessions(request: Request):
+    user_id = await require_user_id_async(request)
+    sessions = await run_in_threadpool(list_skills_learning_sessions, str(user_id))
+    return JSONResponse({"sessions": sessions}, headers={"Cache-Control": "no-store"})
+
+
+@app.post("/api/skills/sessions", name="api_create_skills_session")
+async def api_create_skills_session(request: Request):
+    user_id = await require_user_id_async(request)
+    payload = await _read_interview_json(request)
+    skill = _interview_text(payload.get("skill"), "Skill", 120)
+    goal = _interview_text(payload.get("goal"), "Learning goal", 500, required=False)
+    current_level = _interview_text(payload.get("current_level"), "Current experience", 80, required=False)
+    conversation_title = f"Skills Studio • {skill}"[:180]
+    conversation_id = await run_in_threadpool(create_conversation, user_id, conversation_title)
+    try:
+        session = await run_in_threadpool(
+            create_skills_learning_session,
+            str(user_id),
+            conversation_id,
+            skill,
+            goal,
+            current_level,
+        )
+    except Exception:
+        logger.exception("Could not create Skills Studio session for user %s", user_id)
+        await run_in_threadpool(delete_conversation, conversation_id, user_id)
+        raise HTTPException(status_code=500, detail="Your learning room could not be saved. Please try again.")
+    return JSONResponse({"session": session}, status_code=201, headers={"Cache-Control": "no-store"})
+
+
+@app.get("/api/skills/sessions/{session_id}", name="api_get_skills_session")
+async def api_get_skills_session(request: Request, session_id: str):
+    user_id = await require_user_id_async(request)
+    session = await run_in_threadpool(get_skills_learning_session, str(user_id), session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="That learning room could not be found.")
+    try:
+        conversation_id = int(session.get("conversation_id"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=404, detail="That learning room has no saved chat.")
+    conversation = await run_in_threadpool(get_conversation, conversation_id, user_id)
+    if not conversation or conversation.get("deleted"):
+        raise HTTPException(status_code=404, detail="That learning room's saved chat could not be found.")
+    return JSONResponse(
+        {"session": session, "messages": conversation.get("messages") or []},
+        headers={"Cache-Control": "no-store"},
+    )
+
+
+@app.patch("/api/skills/sessions/{session_id}", name="api_update_skills_session")
+async def api_update_skills_session(request: Request, session_id: str):
+    user_id = await require_user_id_async(request)
+    payload = await _read_interview_json(request)
+    existing = await run_in_threadpool(get_skills_learning_session, str(user_id), session_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="That learning room could not be found.")
+    patch = {}
+    if "phase_progress" in payload:
+        progress = payload.get("phase_progress")
+        if not isinstance(progress, dict) or any(str(key) not in SKILLS_STUDIO_PHASES for key in progress):
+            raise HTTPException(status_code=400, detail="The phase progress is invalid.")
+        clean_progress = {phase: 0 for phase in SKILLS_STUDIO_PHASES}
+        clean_progress.update(existing.get("phase_progress") if isinstance(existing.get("phase_progress"), dict) else {})
+        for phase, value in progress.items():
+            if type(value) is not int or value < 0 or value > 100:
+                raise HTTPException(status_code=400, detail="Phase progress must be between 0 and 100.")
+            clean_progress[phase] = value
+        patch["phase_progress"] = clean_progress
+    if "active_phase" in payload:
+        phase = str(payload.get("active_phase") or "").strip().casefold()
+        if phase not in SKILLS_STUDIO_PHASES:
+            raise HTTPException(status_code=400, detail="The active learning phase is invalid.")
+        patch["active_phase"] = phase
+    if "status" in payload:
+        status = str(payload.get("status") or "").strip().casefold()
+        if status not in {"in_progress", "completed"}:
+            raise HTTPException(status_code=400, detail="The learning room status is invalid.")
+        patch["status"] = status
+    if "goal" in payload:
+        patch["goal"] = _interview_text(payload.get("goal"), "Learning goal", 500, required=False)
+    if "current_level" in payload:
+        patch["current_level"] = _interview_text(payload.get("current_level"), "Current experience", 80, required=False)
+    session = await run_in_threadpool(update_skills_learning_session, str(user_id), session_id, patch)
+    if not session:
+        raise HTTPException(status_code=404, detail="That learning room could not be saved.")
+    return JSONResponse({"session": session}, headers={"Cache-Control": "no-store"})
+
+
 async def _read_interview_json(request: Request):
     try:
         payload = await request.json()
@@ -1721,18 +1836,89 @@ def logout(request: Request):
     return RedirectResponse(url="/login", status_code=303)
 
 
-@app.get("/profile", response_class=HTMLResponse, name="profile")
+@app.get("/profile", name="profile")
 def profile(request: Request):
     if "user_id" not in request.session:
-        return PlainTextResponse("Not logged in.")
+        return RedirectResponse(url="/login", status_code=303)
+    return RedirectResponse(url="/?openProfile=1", status_code=303)
 
-    return HTMLResponse(
-        f"""
-        User ID: {request.session['user_id']}<br>
-        Username: {request.session['username']}<br>
-        Email: {request.session['email']}
-        """
-    )
+
+@app.get("/api/account/stats", name="api_account_stats")
+def api_account_stats(request: Request):
+    user_id = require_user_id(request)
+    conversations = get_conversations(user_id)
+    lifetime_tokens = 0
+    peak_tokens = 0
+    longest_task_seconds = 0
+    activity_timestamps = []
+
+    def parse_timestamp(value):
+        if not value:
+            return None
+        if isinstance(value, datetime):
+            parsed = value
+        else:
+            try:
+                parsed = datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+            except (TypeError, ValueError):
+                return None
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed
+
+    for conversation in conversations if isinstance(conversations, list) else []:
+        if not isinstance(conversation, dict) or conversation.get("deleted") or conversation.get("deleted_at"):
+            continue
+        messages = conversation.get("messages") if isinstance(conversation.get("messages"), list) else []
+        conversation_tokens = 0
+        conversation_times = []
+        for message in messages:
+            if not isinstance(message, dict):
+                continue
+            role = str(message.get("role") or "").lower()
+            text = str(message.get("text") or message.get("content") or message.get("message") or "")
+            if role == "assistant":
+                response_meta = message.get("response_meta") if isinstance(message.get("response_meta"), dict) else {}
+                try:
+                    token_count = max(0, int(response_meta.get("token_estimate") or 0))
+                except (TypeError, ValueError, OverflowError):
+                    token_count = 0
+                conversation_tokens += token_count or ((len(text) + 3) // 4)
+                try:
+                    elapsed_ms = max(0, int(response_meta.get("elapsed_ms") or response_meta.get("latency_ms") or 0))
+                except (TypeError, ValueError, OverflowError):
+                    elapsed_ms = 0
+                longest_task_seconds = max(longest_task_seconds, elapsed_ms // 1000)
+            elif role == "user":
+                conversation_tokens += (len(text) + 3) // 4
+
+            for key in ("completed_at", "created_at", "timestamp", "sent_at"):
+                parsed = parse_timestamp(message.get(key))
+                if parsed:
+                    conversation_times.append(parsed)
+                    activity_timestamps.append(parsed.isoformat())
+                    break
+
+        lifetime_tokens += conversation_tokens
+        peak_tokens = max(peak_tokens, conversation_tokens)
+
+        if not conversation_times:
+            for key in ("created_at", "updated_at"):
+                parsed = parse_timestamp(conversation.get(key))
+                if parsed:
+                    conversation_times.append(parsed)
+                    activity_timestamps.append(parsed.isoformat())
+        if len(conversation_times) > 1:
+            span_seconds = max(0, int((max(conversation_times) - min(conversation_times)).total_seconds()))
+            longest_task_seconds = max(longest_task_seconds, span_seconds)
+
+    return JSONResponse({
+        "lifetime_tokens": lifetime_tokens,
+        "peak_tokens": peak_tokens,
+        "longest_task_seconds": longest_task_seconds,
+        "activity_timestamps": sorted(set(activity_timestamps)),
+        "token_estimates": True,
+    })
 
 
 @app.get("/signup", response_class=HTMLResponse, name="signup_page")
@@ -3903,6 +4089,22 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         with _chat_generation_lock:
             _active_chat_generations.pop(generation_id, None)
 
+    if str(reply or "").strip() == str(PROVIDER_UNAVAILABLE_RESPONSE).strip():
+        logger.warning(
+            "No configured provider completed chat request_id=%s user=%s",
+            chat_request_id,
+            user_id,
+        )
+        return JSONResponse(
+            {
+                "error": "ODDI-AI providers are unavailable right now. Please try again in a moment.",
+                "code": "providers_unavailable",
+                "request_id": chat_request_id,
+            },
+            status_code=503,
+            headers={"Cache-Control": "no-store"},
+        )
+
     if upload_library_plan.get("uploads"):
         try:
             file_record_ids = await run_in_threadpool(
@@ -4199,11 +4401,27 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 # =========================================================
 
 if __name__ == "__main__":
+    import socket
     import uvicorn
+
+    host = "127.0.0.1" if ODDI_LOCAL_ONLY_STORAGE else "0.0.0.0"
+    port = int(os.getenv("PORT", "8000"))
+
+    # Avoid starting a second local copy and turning a normal duplicate launch
+    # into Uvicorn's noisy WinError 10048 bind failure.
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as port_probe:
+        port_probe.settimeout(0.35)
+        port_is_live = port_probe.connect_ex(("127.0.0.1", port)) == 0
+    if port_is_live:
+        print(
+            f"A server is already accepting connections at http://127.0.0.1:{port}. "
+            "Use the running ODDI instance, or stop the process holding this port before restarting."
+        )
+        raise SystemExit(0)
 
     uvicorn.run(
         "server:app",
-        host="127.0.0.1" if ODDI_LOCAL_ONLY_STORAGE else "0.0.0.0",
-        port=int(os.getenv("PORT", "8000")),
+        host=host,
+        port=port,
         reload=not ODDI_LOCAL_ONLY_STORAGE,
     )

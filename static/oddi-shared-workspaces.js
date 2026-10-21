@@ -6,6 +6,10 @@
 
   const MAX_NAME_LENGTH = 80;
   const MAX_MESSAGE_LENGTH = 8000;
+  const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+  const MAX_TOTAL_IMAGE_BYTES = 10 * 1024 * 1024;
+  const MAX_MESSAGE_ATTACHMENTS = 5;
+  const MESSAGE_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏', '🎉', '🔥', '👏', '✅'];
   const MAX_TASK_TITLE_LENGTH = 180;
   const MAX_PROJECT_GOAL_LENGTH = 4000;
   const PROJECT_TEAM_SIZE_LABELS = Object.freeze({
@@ -34,6 +38,7 @@
     details: null,
     messages: new Map(),
     messageCursor: 0,
+    messageSyncCursor: '',
     lastInviteCount: null,
     infoOpen: false,
     sending: false,
@@ -43,6 +48,16 @@
     toastTimer: null,
     refreshingMessages: false,
     expandedProjectIds: new Set(),
+    replyTargetSeq: null,
+    pendingAttachments: [],
+    selectedMessageSeqs: new Set(),
+    openMessageMenuSeq: null,
+    reactionPickerSeq: null,
+    forwardSeqs: [],
+    messageHoldTimer: null,
+    messageHoldSeq: null,
+    messageHoldPoint: null,
+    messageHoldTriggered: false,
   };
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -134,6 +149,20 @@
     }
   }
 
+  function resetMessageDraft() {
+    window.clearTimeout(state.messageHoldTimer);
+    state.messageHoldTimer = null;
+    state.messageHoldSeq = null;
+    state.messageHoldPoint = null;
+    state.messageHoldTriggered = false;
+    state.replyTargetSeq = null;
+    state.pendingAttachments = [];
+    state.selectedMessageSeqs.clear();
+    state.openMessageMenuSeq = null;
+    state.reactionPickerSeq = null;
+    state.forwardSeqs = [];
+  }
+
   function closeWorkspaceView() {
     stopPolling();
     root.hidden = true;
@@ -143,6 +172,8 @@
     state.details = null;
     state.messages.clear();
     state.messageCursor = 0;
+    state.messageSyncCursor = '';
+    resetMessageDraft();
     state.infoOpen = false;
   }
 
@@ -289,23 +320,58 @@
     if (!target) return;
     const wasNearBottom = target.scrollHeight - target.scrollTop - target.clientHeight < 100;
     const messages = [...state.messages.values()].sort((a, b) => a.seq - b.seq);
-    if (!messages.length) {
-      target.innerHTML = '<div class="oddi-sw-empty-inline" style="padding-top:45px">Start with a message. Use <strong>@ODDI</strong> when you want an AI reply.</div>';
-      return;
-    }
-    target.innerHTML = `<div class="oddi-sw-date-divider"><span>Messages in this shared group</span></div>${messages.map(message => {
+    const selectedCount = state.selectedMessageSeqs.size;
+    const selectedToolbar = selectedCount ? `<div class="oddi-sw-selection-toolbar" role="toolbar" aria-label="Selected message actions"><strong>${selectedCount} selected</strong><button type="button" data-action="forward-selected">Forward</button><button type="button" class="is-danger" data-action="delete-selected">Delete</button><button type="button" data-action="clear-selection" aria-label="Clear selection">Cancel</button></div>` : '';
+    const pinned = messages.filter(message => !message.deleted && message.pinned_until && Date.parse(message.pinned_until) > Date.now());
+    const pinnedBanner = pinned.length ? `<button type="button" class="oddi-sw-pinned-banner${selectedCount ? ' has-selection' : ''}" data-action="jump-message" data-seq="${Number(pinned[0].seq)}"><span aria-hidden="true">📌</span><span><strong>${pinned.length > 1 ? `${pinned.length} pinned messages` : 'Pinned message'}</strong><small>${escapeHtml(String(pinned[0].text || 'Image').slice(0, 120))}</small></span></button>` : '';
+    target.innerHTML = `${selectedToolbar}${pinnedBanner}<div class="oddi-sw-date-divider"><span>Messages in this shared group</span></div>${messages.length ? messages.map(message => {
       const isAssistant = message.kind === 'assistant';
       const mine = !!message.sender?.is_me;
+      const isForwarded = message.kind === 'forwarded';
       const meta = isAssistant ? 'ODDI' : `${message.sender?.name || 'Member'}${mine ? ' · You' : ''}`;
       const time = message.created_at ? new Date(message.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-      const content = isAssistant ? safeMarkdown(message.text) : escapeHtml(message.text).replace(/\n/g, '<br>');
+      const forwardedAssistant = isForwarded && message.forwarded_from_sender === 'ODDI';
+      const content = isAssistant || forwardedAssistant ? safeMarkdown(message.text) : escapeHtml(message.text).replace(/\n/g, '<br>');
+      const reply = message.reply_to ? `<button type="button" class="oddi-sw-reply-quote" data-action="jump-message" data-seq="${Number(message.reply_to.seq)}"><strong>${escapeHtml(message.reply_to.sender_name || 'Member')}</strong><span>${escapeHtml(message.reply_to.text || (message.reply_to.has_attachments ? 'Image' : 'Message'))}</span></button>` : '';
+      const attachments = (message.attachments || []).map(attachment => `<a class="oddi-sw-image-attachment" href="${escapeHtml(attachment.data)}" target="_blank" rel="noopener noreferrer" download="${escapeHtml(attachment.name || 'image')}"><img src="${escapeHtml(attachment.data)}" alt="${escapeHtml(attachment.name || 'Shared image')}" loading="lazy"></a>`).join('');
+      const forwardedLabel = isForwarded ? `<div class="oddi-sw-forwarded-label">Forwarded from ${escapeHtml(message.forwarded_from_sender || 'a member')} · ${escapeHtml(message.forwarded_from_workspace || 'another group')}</div>` : '';
+      const reactions = (message.reactions || []).map(reaction => `<button type="button" class="oddi-sw-reaction-chip${reaction.me ? ' mine' : ''}" data-action="react-message" data-seq="${Number(message.seq)}" data-emoji="${escapeHtml(reaction.emoji)}" aria-label="${escapeHtml(reaction.emoji)} ${Number(reaction.count)} reactions">${escapeHtml(reaction.emoji)} <span>${Number(reaction.count)}</span></button>`).join('');
+      const isSelected = state.selectedMessageSeqs.has(Number(message.seq));
+      const showSelectors = selectedCount > 0;
+      const isAdmin = ['admin', 'owner'].includes(state.details?.workspace?.my_role);
+      const canEdit = mine && !isAssistant && !message.deleted;
+      const canDelete = (mine || isAdmin) && !message.deleted;
+      const isPinned = !!message.pinned_until && Date.parse(message.pinned_until) > Date.now();
+      const menuOpen = Number(state.openMessageMenuSeq) === Number(message.seq);
+      const pickerOpen = Number(state.reactionPickerSeq) === Number(message.seq);
+      const menu = menuOpen ? `<div class="oddi-sw-message-menu" role="menu"><button type="button" data-action="reply-message" data-seq="${Number(message.seq)}">↩ <span>Reply</span></button><button type="button" data-action="copy-message" data-seq="${Number(message.seq)}">▢ <span>Copy</span></button><button type="button" data-action="forward-message" data-seq="${Number(message.seq)}">➦ <span>Forward</span></button><button type="button" data-action="${isPinned ? 'unpin-message' : 'pin-message'}" data-seq="${Number(message.seq)}">♧ <span>${isPinned ? 'Unpin' : 'Pin'}</span></button>${canEdit ? `<button type="button" data-action="edit-message" data-seq="${Number(message.seq)}">✎ <span>Edit</span></button>` : ''}${canDelete ? `<button type="button" class="is-danger" data-action="delete-message" data-seq="${Number(message.seq)}">⌫ <span>Delete</span></button>` : ''}</div>` : '';
+      const picker = pickerOpen ? `<div class="oddi-sw-reaction-picker" role="group" aria-label="Choose a reaction">${MESSAGE_REACTIONS.map(emoji => `<button type="button" data-action="react-message" data-seq="${Number(message.seq)}" data-emoji="${escapeHtml(emoji)}" aria-label="React ${escapeHtml(emoji)}">${escapeHtml(emoji)}</button>`).join('')}</div>` : '';
+      const canReact = !message.deleted;
+      const reactionTrigger = canReact ? `<button type="button" class="oddi-sw-message-tools-button oddi-sw-message-reaction-trigger" data-action="toggle-reaction-picker" data-seq="${Number(message.seq)}" aria-label="React to message" aria-expanded="${pickerOpen}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r=".7"/><circle cx="15" cy="10" r=".7"/><path d="M8.5 14.2c.8 1.4 2 2.1 3.5 2.1s2.7-.7 3.5-2.1"/></svg></button>` : '';
+      const moreButton = canReact ? `<button type="button" class="oddi-sw-message-tools-button oddi-sw-message-more" data-action="toggle-message-menu" data-seq="${Number(message.seq)}" aria-label="Message options" aria-expanded="${menuOpen}">⋯</button>` : '';
+      const messageBody = `<div class="oddi-sw-message-bubble">${reply}${forwardedLabel}${message.deleted ? '<span class="oddi-sw-deleted">This message was deleted.</span>' : `${attachments}${content}`}${moreButton}</div>`;
       let status = '';
       if (message.ai_status === 'queued') status = '<div class="oddi-sw-message-state">Waiting for ODDI<span class="oddi-sw-typing"><i></i><i></i><i></i></span></div>';
       if (message.ai_status === 'processing') status = '<div class="oddi-sw-message-state">ODDI is preparing a reply<span class="oddi-sw-typing"><i></i><i></i><i></i></span></div>';
       if (message.ai_status === 'failed') status = `<div class="oddi-sw-message-state error">${escapeHtml(message.ai_error || 'ODDI could not complete this reply.')}</div>`;
-      return `<article class="oddi-sw-message${mine ? ' mine' : ''}${isAssistant ? ' assistant' : ''}" data-seq="${Number(message.seq)}"><div class="oddi-sw-message-meta"><strong>${escapeHtml(meta)}</strong><time>${escapeHtml(time)}</time></div><div class="oddi-sw-message-bubble">${content}</div>${status}</article>`;
-    }).join('')}`;
+      const actionOpenClass = `${menuOpen ? ' has-menu-open' : ''}${pickerOpen ? ' has-picker-open' : ''}`;
+      return `<article class="oddi-sw-message${mine ? ' mine' : ''}${isAssistant ? ' assistant' : ''}${isForwarded ? ' forwarded' : ''}${isSelected ? ' is-selected' : ''}${actionOpenClass}" data-seq="${Number(message.seq)}">${showSelectors ? `<button type="button" class="oddi-sw-message-select${isSelected ? ' selected' : ''}" data-action="toggle-select-message" data-seq="${Number(message.seq)}" aria-label="${isSelected ? 'Deselect' : 'Select'} message">${isSelected ? '✓' : ''}</button>` : ''}<div class="oddi-sw-message-main"><div class="oddi-sw-message-meta"><strong>${escapeHtml(meta)}</strong>${message.edited_at ? '<span>edited</span>' : ''}<time>${escapeHtml(time)}</time></div><div class="oddi-sw-message-content-row"><div class="oddi-sw-message-stack">${messageBody}${reactions ? `<div class="oddi-sw-message-reactions">${reactions}</div>` : ''}<div class="oddi-sw-message-reaction-row">${reactionTrigger}${picker}</div></div>${menu}</div>${status}</div></article>`;
+    }).join('') : '<div class="oddi-sw-empty-inline" style="padding-top:45px">Start with a message. Use <strong>@ODDI</strong> when you want an AI reply.</div>'}`;
     if (scrollToBottom || wasNearBottom) target.scrollTop = target.scrollHeight;
+  }
+
+  function renderComposerState() {
+    const replySlot = root.querySelector('.oddi-sw-reply-preview');
+    const attachmentSlot = root.querySelector('.oddi-sw-attachment-preview');
+    const reply = state.replyTargetSeq ? state.messages.get(Number(state.replyTargetSeq)) : null;
+    if (replySlot) {
+      replySlot.hidden = !reply;
+      if (reply) replySlot.innerHTML = `<button type="button" data-action="jump-message" data-seq="${Number(reply.seq)}"><strong>Replying to ${escapeHtml(reply.sender?.name || 'Member')}</strong><span>${escapeHtml(reply.text || ((reply.attachments || []).length ? 'Image' : 'Message'))}</span></button><button type="button" data-action="clear-reply" aria-label="Cancel reply">×</button>`;
+    }
+    if (attachmentSlot) {
+      attachmentSlot.innerHTML = state.pendingAttachments.map((item, index) => `<div class="oddi-sw-attachment-preview-item"><img src="${escapeHtml(item.data)}" alt=""><span>${escapeHtml(item.name)}</span><button type="button" data-action="remove-attachment" data-index="${index}" aria-label="Remove ${escapeHtml(item.name)}">×</button></div>`).join('');
+      attachmentSlot.hidden = !state.pendingAttachments.length;
+    }
   }
 
   function renderChat() {
@@ -317,11 +383,12 @@
         ${renderChatSidebar(workspace.id)}
         <main class="oddi-sw-chat" aria-label="${escapeHtml(workspace.name)} group chat"><button type="button" class="oddi-sw-chat-header" data-action="group-info" aria-label="Open group info"><span class="oddi-sw-avatar-stack">${members.slice(0, 4).map(member => avatar(member.name, true)).join('')}</span><span class="oddi-sw-chat-title"><strong>${escapeHtml(workspace.name)}</strong><small>${members.length} ${members.length === 1 ? 'member' : 'members'} · tap for group info</small></span><span class="oddi-sw-icon-btn" aria-hidden="true">•••</span></button>
           <div class="oddi-sw-messages" role="log" aria-label="Group messages" aria-live="polite"></div>
-          <div class="oddi-sw-composer-wrap"><div class="oddi-sw-ai-hint"><strong>To talk with ODDI, start your message with @ODDI.</strong> Otherwise, chat freely with your group.<span class="oddi-sw-ai-hint-sub">ODDI replies use the sender's remaining daily limit.</span><button class="oddi-sw-prefix" type="button" data-action="add-prefix">Add @ODDI</button></div><form class="oddi-sw-compose" data-form="message"><textarea name="text" rows="1" maxlength="${MAX_MESSAGE_LENGTH}" placeholder="Message your group…" aria-label="Message your group"></textarea><button type="submit" aria-label="Send message">↑</button></form></div>
+          <div class="oddi-sw-composer-wrap"><div class="oddi-sw-ai-hint"><strong>To talk with ODDI, start your message with @ODDI.</strong> Otherwise, chat freely with your group.<span class="oddi-sw-ai-hint-sub">ODDI replies use the sender's remaining daily limit.</span><button class="oddi-sw-prefix" type="button" data-action="add-prefix">Add @ODDI</button></div><div class="oddi-sw-reply-preview" hidden></div><div class="oddi-sw-attachment-preview" hidden></div><form class="oddi-sw-compose" data-form="message"><input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple hidden data-image-input><button type="button" class="oddi-sw-attach-button" data-action="attach-image" aria-label="Attach images" title="Attach images">＋</button><textarea name="text" rows="1" maxlength="${MAX_MESSAGE_LENGTH}" placeholder="Message your group…" aria-label="Message your group"></textarea><button type="submit" aria-label="Send message">↑</button></form></div>
         </main>
       </div>
     </section>`;
     renderMessages(true);
+    renderComposerState();
     if (state.infoOpen) renderInfoPanel();
   }
 
@@ -382,11 +449,13 @@
 
   async function selectWorkspace(workspaceId) {
     stopPolling();
+    resetMessageDraft();
     state.page = 'chat';
     state.workspaceId = workspaceId;
     state.projectId = null;
     state.messages.clear();
     state.messageCursor = 0;
+    state.messageSyncCursor = '';
     state.details = null;
     state.infoOpen = false;
     root.innerHTML = '<section class="oddi-sw-shell"><header class="oddi-sw-top"><button type="button" data-action="back-to-list" aria-label="Back to groups">‹</button><span class="oddi-sw-brand">ODDI</span><span class="oddi-sw-kicker">Loading group…</span></header><main class="oddi-sw-empty"><span class="oddi-sw-empty-icon">⌁</span><p>Opening your shared conversation…</p></main></section>';
@@ -410,6 +479,7 @@
 
   async function openProject(workspaceId, projectId) {
     stopPolling();
+    resetMessageDraft();
     state.page = 'project';
     state.workspaceId = workspaceId;
     state.projectId = projectId;
@@ -433,12 +503,18 @@
   }
 
   function mergeMessages(messages) {
+    let changed = false;
     (Array.isArray(messages) ? messages : []).forEach(message => {
       const seq = Number(message?.seq || 0);
       if (!seq) return;
+      const previous = state.messages.get(seq);
+      if (!previous || JSON.stringify(previous) !== JSON.stringify(message)) changed = true;
       state.messages.set(seq, message);
       state.messageCursor = Math.max(state.messageCursor, seq);
+      const changedAt = String(message.updated_at || message.created_at || '');
+      if (changedAt > state.messageSyncCursor) state.messageSyncCursor = changedAt;
     });
+    return changed;
   }
 
   async function markCurrentWorkspaceRead() {
@@ -455,10 +531,11 @@
     state.refreshingMessages = true;
     try {
       const previousCursor = state.messageCursor;
-      const payload = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages?after_seq=${Math.max(0, state.messageCursor - 20)}&limit=200`);
-      const before = state.messages.size;
-      mergeMessages(payload.messages || []);
-      if (state.messages.size !== before || (payload.messages || []).some(item => item.ai_status === 'queued' || item.ai_status === 'processing')) renderMessages(false);
+      const params = new URLSearchParams({ after_seq: String(state.messageCursor), limit: '200' });
+      if (state.messageSyncCursor) params.set('updated_after', state.messageSyncCursor);
+      const payload = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages?${params.toString()}`);
+      const changed = mergeMessages(payload.messages || []);
+      if (changed) { renderMessages(false); renderComposerState(); }
       const incoming = (payload.messages || []).some(item => Number(item.seq || 0) > previousCursor && !item.sender?.is_me);
       if (incoming && !document.hidden && !root.hidden) void markCurrentWorkspaceRead();
     } catch (error) {
@@ -527,7 +604,7 @@
     backdrop.innerHTML = `<section class="oddi-sw-modal" role="dialog" aria-modal="true"><h2>${escapeHtml(title)}</h2><p>${escapeHtml(description)}</p>${formMarkup}</section>`;
     root.appendChild(backdrop);
     backdrop.addEventListener('click', event => { if (event.target === backdrop) backdrop.remove(); });
-    window.setTimeout(() => backdrop.querySelector('input')?.focus(), 40);
+    window.setTimeout(() => backdrop.querySelector('input:not([type="hidden"]),textarea,select,button')?.focus(), 40);
   }
 
   function openCreateProjectModal() {
@@ -558,18 +635,26 @@
     if (state.sending || !state.workspaceId) return;
     const input = form.elements.namedItem('text');
     const text = String(input?.value || '').trim();
-    if (!text) return;
+    if (!text && !state.pendingAttachments.length) return;
     state.sending = true;
     const submit = form.querySelector('button[type="submit"]');
     if (submit) submit.disabled = true;
     try {
       const clientId = window.crypto?.randomUUID ? window.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const payload = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages`, {
-        method: 'POST', body: JSON.stringify({ text, client_message_id: clientId }),
+        method: 'POST', body: JSON.stringify({
+          text,
+          client_message_id: clientId,
+          reply_to_seq: state.replyTargetSeq,
+          attachments: state.pendingAttachments.map(({ name, type, data }) => ({ name, type, data })),
+        }),
       });
       if (input && input.value.trim() === text) input.value = '';
+      state.pendingAttachments = [];
+      state.replyTargetSeq = null;
       mergeMessages([payload.message]);
       renderMessages(true);
+      renderComposerState();
       if (input) input.style.height = '38px';
       void refreshListQuietly();
     } catch (error) { showToast(error.message); }
@@ -578,6 +663,123 @@
       if (submit) submit.disabled = false;
       input?.focus();
     }
+  }
+
+  function readImageFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error(`Could not read ${file.name || 'that image'}.`));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function addImageFiles(fileList) {
+    const files = [...(fileList || [])];
+    if (!files.length) return;
+    for (const file of files) {
+      if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(file.type)) {
+        showToast('Attach a PNG, JPEG, WebP, or GIF image.');
+        continue;
+      }
+      if (file.size > MAX_IMAGE_BYTES) { showToast('Each image must be smaller than 5 MB.'); continue; }
+      if (state.pendingAttachments.length >= MAX_MESSAGE_ATTACHMENTS) { showToast(`Attach up to ${MAX_MESSAGE_ATTACHMENTS} images per message.`); break; }
+      const total = state.pendingAttachments.reduce((sum, item) => sum + Number(item.size || 0), 0);
+      if (total + file.size > MAX_TOTAL_IMAGE_BYTES) { showToast('Images in one message must total 10 MB or less.'); break; }
+      try {
+        const data = await readImageFile(file);
+        state.pendingAttachments.push({ name: file.name || 'Image', type: file.type, data, size: file.size });
+      } catch (error) { showToast(error.message); }
+    }
+    renderComposerState();
+  }
+
+  async function toggleMessageReaction(seq, emoji) {
+    if (!state.workspaceId || !emoji) return;
+    try {
+      const payload = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages/${encodeURIComponent(seq)}/reactions`, {
+        method: 'POST', body: JSON.stringify({ emoji }),
+      });
+      mergeMessages([payload.message]);
+      state.reactionPickerSeq = null;
+      state.openMessageMenuSeq = null;
+      renderMessages(false);
+    } catch (error) { showToast(error.message); }
+  }
+
+  async function deleteMessages(seqs) {
+    const requested = [...new Set((seqs || []).map(Number).filter(Number.isFinite))];
+    const isAdmin = ['admin', 'owner'].includes(state.details?.workspace?.my_role);
+    const selected = requested.filter(seq => {
+      const message = state.messages.get(seq);
+      return message && !message.deleted && (message.sender?.is_me || isAdmin);
+    });
+    if (requested.length > selected.length) showToast('Only your own messages can be deleted. Group admins can delete any message.');
+    if (!selected.length || !state.workspaceId) return;
+    if (selected.length > 100) { showToast('Delete up to 100 messages at a time.'); return; }
+    const prompt = selected.length === 1
+      ? 'Delete this message for everyone in the group?'
+      : `Delete these ${selected.length} messages for everyone in the group?`;
+    if (!window.confirm(prompt)) return;
+    try {
+      const payload = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages/delete`, {
+        method: 'POST', body: JSON.stringify({ seqs: selected }),
+      });
+      mergeMessages(payload.messages || []);
+      state.selectedMessageSeqs.clear();
+      state.openMessageMenuSeq = null;
+      renderMessages(false);
+      void refreshListQuietly();
+      showToast(selected.length === 1 ? 'Message deleted.' : 'Messages deleted.');
+    } catch (error) { showToast(error.message); }
+  }
+
+  function openForwardModal(seqs) {
+    state.forwardSeqs = [...new Set((seqs || []).map(Number).filter(Number.isFinite))];
+    if (state.forwardSeqs.length > 50) { state.forwardSeqs = []; showToast('Forward up to 50 messages at a time.'); return; }
+    const groups = state.workspaces.filter(group => group.id !== state.workspaceId);
+    if (!groups.length) { showToast('Join another group before forwarding messages.'); return; }
+    const options = groups.map(group => `<option value="${escapeHtml(group.id)}">${escapeHtml(group.name)}</option>`).join('');
+    renderModal('Forward message', 'Choose a group where you are a member.', `<form class="oddi-sw-forward-form" data-form="forward"><label><span>Forward to</span><select name="target_workspace_id" required>${options}</select></label><p>${state.forwardSeqs.length} ${state.forwardSeqs.length === 1 ? 'message' : 'messages'} selected</p><button class="oddi-sw-primary" type="submit">Forward</button></form>`);
+  }
+
+  function openPinModal(seq) {
+    renderModal('Pin message', 'Choose how long this message should stay pinned. You can unpin it at any time.', `<form class="oddi-sw-pin-form" data-form="pin-message"><input type="hidden" name="seq" value="${Number(seq)}"><label><span><input type="radio" name="duration_hours" value="24" checked> 24 hours</span></label><label><span><input type="radio" name="duration_hours" value="168"> 7 days</span></label><label><span><input type="radio" name="duration_hours" value="720"> 30 days</span></label><button class="oddi-sw-primary" type="submit">Pin message</button></form>`);
+  }
+
+  function openEditModal(seq) {
+    const message = state.messages.get(Number(seq));
+    if (!message) return;
+    renderModal('Edit message', 'Your change will be visible to everyone in this group.', `<form class="oddi-sw-edit-message-form" data-form="edit-message"><input type="hidden" name="seq" value="${Number(seq)}"><label><span>Message</span><textarea name="text" rows="4" maxlength="${MAX_MESSAGE_LENGTH}">${escapeHtml(message.text)}</textarea></label><button class="oddi-sw-primary" type="submit">Save changes</button></form>`);
+  }
+
+  async function jumpToMessage(seq) {
+    const number = Number(seq);
+    if (!Number.isFinite(number) || !number) return;
+    let article = root.querySelector(`.oddi-sw-message[data-seq="${number}"]`);
+    if (!article && state.workspaceId) {
+      try {
+        const payload = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages?after_seq=${Math.max(0, number - 1)}&limit=1`);
+        mergeMessages(payload.messages || []);
+        renderMessages(false);
+        article = root.querySelector(`.oddi-sw-message[data-seq="${number}"]`);
+      } catch (error) { showToast(error.message); return; }
+    }
+    if (!article) { showToast('That message is no longer in this group.'); return; }
+    article.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    article.classList.add('is-highlighted');
+    window.setTimeout(() => article?.classList.remove('is-highlighted'), 1600);
+  }
+
+  function openReply(seq) {
+    const message = state.messages.get(Number(seq));
+    if (!message || message.deleted) return;
+    state.replyTargetSeq = Number(seq);
+    state.openMessageMenuSeq = null;
+    state.reactionPickerSeq = null;
+    renderMessages(false);
+    renderComposerState();
+    root.querySelector('.oddi-sw-compose textarea')?.focus();
   }
 
   function applyProjectSnapshot(snapshot) {
@@ -591,7 +793,69 @@
     state.details.projects = projects;
   }
 
+  function clearMessageHold() {
+    window.clearTimeout(state.messageHoldTimer);
+    state.messageHoldTimer = null;
+    state.messageHoldSeq = null;
+    state.messageHoldPoint = null;
+  }
+
+  function onMessagePointerDown(event) {
+    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+    const article = event.target.closest('.oddi-sw-message');
+    if (!article || event.target.closest('button,a,input,textarea,video,[data-action]')) return;
+    clearMessageHold();
+    state.messageHoldSeq = Number(article.dataset.seq);
+    state.messageHoldPoint = { x: event.clientX, y: event.clientY };
+    state.messageHoldTriggered = false;
+    state.messageHoldTimer = window.setTimeout(() => {
+      const seq = Number(state.messageHoldSeq);
+      state.messageHoldTimer = null;
+      if (!seq) return;
+      state.messageHoldTriggered = true;
+      state.selectedMessageSeqs.add(seq);
+      state.openMessageMenuSeq = seq;
+      state.reactionPickerSeq = null;
+      renderMessages(false);
+      window.setTimeout(() => { state.messageHoldTriggered = false; }, 800);
+    }, 550);
+  }
+
+  function onMessagePointerMove(event) {
+    if (!state.messageHoldTimer || !state.messageHoldPoint) return;
+    if (Math.hypot(event.clientX - state.messageHoldPoint.x, event.clientY - state.messageHoldPoint.y) > 12) clearMessageHold();
+  }
+
+  function onMessagePointerEnd() {
+    clearMessageHold();
+  }
+
+  function toggleSelectedMessage(seq) {
+    const messageSeq = Number(seq);
+    if (!messageSeq) return;
+    if (state.selectedMessageSeqs.has(messageSeq)) state.selectedMessageSeqs.delete(messageSeq);
+    else state.selectedMessageSeqs.add(messageSeq);
+    state.openMessageMenuSeq = null;
+    state.reactionPickerSeq = null;
+    renderMessages(false);
+  }
+
   async function handleClick(event) {
+    if (state.messageHoldTriggered) {
+      state.messageHoldTriggered = false;
+      if (event.target.closest('.oddi-sw-message')) { event.preventDefault(); return; }
+    }
+    const isMessageActionClick = event.target.closest('.oddi-sw-message-tools-button,.oddi-sw-message-menu,.oddi-sw-reaction-picker');
+    if ((state.openMessageMenuSeq || state.reactionPickerSeq) && !isMessageActionClick) {
+      state.openMessageMenuSeq = null;
+      state.reactionPickerSeq = null;
+      renderMessages(false);
+    }
+    const messageArticle = event.target.closest('.oddi-sw-message');
+    if (event.shiftKey && messageArticle && !event.target.closest('button,a,input,textarea,[data-action]')) {
+      toggleSelectedMessage(messageArticle.dataset.seq);
+      return;
+    }
     const button = event.target.closest('[data-action]');
     if (!button) {
       const workspaceCard = event.target.closest('[data-workspace-id]');
@@ -599,6 +863,54 @@
       return;
     }
     const action = button.dataset.action;
+    const messageSeq = Number(button.dataset.seq || 0);
+    if (action === 'toggle-message-menu') {
+      state.openMessageMenuSeq = Number(state.openMessageMenuSeq) === messageSeq ? null : messageSeq;
+      state.reactionPickerSeq = null;
+      renderMessages(false);
+      return;
+    }
+    if (action === 'reply-message') { openReply(messageSeq); return; }
+    if (action === 'jump-message') { void jumpToMessage(messageSeq); return; }
+    if (action === 'clear-reply') { state.replyTargetSeq = null; renderComposerState(); return; }
+    if (action === 'copy-message') {
+      const message = state.messages.get(messageSeq);
+      if (!message) return;
+      try {
+        if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(message.text || '');
+        else {
+          const copyField = document.createElement('textarea'); copyField.value = message.text || ''; document.body.appendChild(copyField); copyField.select(); document.execCommand('copy'); copyField.remove();
+        }
+        showToast('Message copied.');
+      } catch { showToast('Could not copy that message.'); }
+      state.openMessageMenuSeq = null; renderMessages(false); return;
+    }
+    if (action === 'toggle-reaction-picker') {
+      state.openMessageMenuSeq = null;
+      state.reactionPickerSeq = Number(state.reactionPickerSeq) === messageSeq ? null : messageSeq;
+      renderMessages(false);
+      return;
+    }
+    if (action === 'react-message') { void toggleMessageReaction(messageSeq, button.dataset.emoji); return; }
+    if (action === 'forward-message') { state.openMessageMenuSeq = null; openForwardModal([messageSeq]); return; }
+    if (action === 'forward-selected') { openForwardModal([...state.selectedMessageSeqs]); return; }
+    if (action === 'pin-message') { state.openMessageMenuSeq = null; openPinModal(messageSeq); return; }
+    if (action === 'unpin-message') {
+      try {
+        const payload = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages/${messageSeq}/pin`, { method: 'POST', body: JSON.stringify({ duration_hours: null }) });
+        mergeMessages([payload.message]); renderMessages(false); showToast('Message unpinned.');
+      } catch (error) { showToast(error.message); }
+      return;
+    }
+    if (action === 'edit-message') { state.openMessageMenuSeq = null; openEditModal(messageSeq); return; }
+    if (action === 'delete-message') { state.openMessageMenuSeq = null; void deleteMessages([messageSeq]); return; }
+    if (action === 'toggle-select-message') { toggleSelectedMessage(messageSeq); return; }
+    if (action === 'clear-selection') { state.selectedMessageSeqs.clear(); renderMessages(false); return; }
+    if (action === 'delete-selected') { void deleteMessages([...state.selectedMessageSeqs]); return; }
+    if (action === 'attach-image') { root.querySelector('[data-image-input]')?.click(); return; }
+    if (action === 'remove-attachment') {
+      state.pendingAttachments.splice(Number(button.dataset.index), 1); renderComposerState(); return;
+    }
     if (action === 'close') {
       closeWorkspaceView();
       if (typeof window.__oddiOpenSidebar === 'function') window.__oddiOpenSidebar();
@@ -608,7 +920,7 @@
     if (action === 'reload') { stopPolling(); await refreshList(); state.page = 'list'; if (!root.querySelector('.oddi-sw-shell.is-error')) state.listTimer = window.setInterval(() => { if (!root.hidden && state.page === 'list') void refreshList(); }, 10000); return; }
     if (action === 'reload-page') { window.location.reload(); return; }
     if (action === 'signin') { window.location.assign('/login'); return; }
-    if (action === 'back-to-list') { state.page = 'list'; state.workspaceId = null; state.projectId = null; state.details = null; stopPolling(); await refreshList(); if (!root.querySelector('.oddi-sw-shell.is-error')) state.listTimer = window.setInterval(() => { if (!root.hidden && state.page === 'list') void refreshList(); }, 10000); return; }
+    if (action === 'back-to-list') { resetMessageDraft(); state.page = 'list'; state.workspaceId = null; state.projectId = null; state.details = null; stopPolling(); await refreshList(); if (!root.querySelector('.oddi-sw-shell.is-error')) state.listTimer = window.setInterval(() => { if (!root.hidden && state.page === 'list') void refreshList(); }, 10000); return; }
     if (action === 'create-project' || action === 'new-workspace') { openCreateProjectModal(); return; }
     if (action === 'open-workspace') { void selectWorkspace(button.dataset.workspaceId); return; }
     if (action === 'toggle-project') {
@@ -772,6 +1084,29 @@
         showToast('Group name updated.');
       } else if (kind === 'message') {
         await sendMessage(form);
+      } else if (kind === 'forward') {
+        const response = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages/forward`, {
+          method: 'POST', body: JSON.stringify({ target_workspace_id: values.get('target_workspace_id'), seqs: state.forwardSeqs }),
+        });
+        root.querySelector('.oddi-sw-modal-backdrop')?.remove();
+        state.selectedMessageSeqs.clear(); state.forwardSeqs = [];
+        await refreshListQuietly();
+        showToast(`Forwarded ${response.messages?.length || 0} ${response.messages?.length === 1 ? 'message' : 'messages'}.`);
+      } else if (kind === 'pin-message') {
+        const seq = Number(values.get('seq'));
+        const duration = Number(values.get('duration_hours'));
+        const response = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages/${seq}/pin`, {
+          method: 'POST', body: JSON.stringify({ duration_hours: duration }),
+        });
+        root.querySelector('.oddi-sw-modal-backdrop')?.remove();
+        mergeMessages([response.message]); renderMessages(false); showToast('Message pinned.');
+      } else if (kind === 'edit-message') {
+        const seq = Number(values.get('seq'));
+        const response = await api(`/api/shared-workspaces/${encodeURIComponent(state.workspaceId)}/messages/${seq}`, {
+          method: 'PATCH', body: JSON.stringify({ text: values.get('text') }),
+        });
+        root.querySelector('.oddi-sw-modal-backdrop')?.remove();
+        mergeMessages([response.message]); renderMessages(false); void refreshListQuietly(); showToast('Message updated.');
       }
     } catch (error) { showToast(error.message); }
   }
@@ -796,6 +1131,12 @@
   }
 
   async function onChange(event) {
+    const imageInput = event.target.closest('[data-image-input]');
+    if (imageInput) {
+      await addImageFiles(imageInput.files);
+      imageInput.value = '';
+      return;
+    }
     const groupSelect = event.target.closest('[data-project-group]');
     if (groupSelect) {
       const field = groupSelect.form?.querySelector('.oddi-sw-new-group-field');
@@ -827,12 +1168,14 @@
 
   async function openWorkspaceList() {
     stopPolling();
+    resetMessageDraft();
     state.page = 'list';
     state.workspaceId = null;
     state.projectId = null;
     state.details = null;
     state.messages.clear();
     state.messageCursor = 0;
+    state.messageSyncCursor = '';
     state.infoOpen = false;
     root.hidden = false;
     document.body.classList.add('oddi-shared-workspace-open');
@@ -845,6 +1188,10 @@
   }
 
   root.addEventListener('click', event => { void handleClick(event); });
+  root.addEventListener('pointerdown', onMessagePointerDown, { passive: true });
+  root.addEventListener('pointermove', onMessagePointerMove, { passive: true });
+  root.addEventListener('pointerup', onMessagePointerEnd, { passive: true });
+  root.addEventListener('pointercancel', onMessagePointerEnd, { passive: true });
   root.addEventListener('submit', event => { void handleSubmit(event); });
   root.addEventListener('keydown', onKeyDown);
   root.addEventListener('input', onInput);

@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Archive, Briefcase, ChevronLeft, ChevronRight, Download, FolderOpen,
+  Archive, Briefcase, Check, ChevronLeft, ChevronRight, Download, FolderOpen,
   Home, LogOut, MessageSquare, MoreHorizontal, Pin, Plus, Search, List,
-  Settings, X, Pencil, Trash2, Menu, Share2, UsersRound
+  Palette, Settings, X, Pencil, Trash2, Menu, Share2, UsersRound, GraduationCap, UserRound
 } from 'lucide-react';
 
 type Conversation = {
@@ -33,6 +33,7 @@ type OddiWindow = Window & {
   __oddiSharedWorkspaceNotify?: (message: string) => void;
   showOddiToast?: (message: string, type?: string) => void;
   __oddiOpenExportShare?: (ids: Array<string | number>, intent?: 'share' | 'download') => boolean;
+  __oddiCurrentChatAction?: (action: 'rename' | 'pin', id: string | number) => boolean;
   __oddiFreshChatActive?: boolean;
   __oddiFreshChatLockUntil?: number;
   __oddiKeepSidebarOnFreshHome?: boolean;
@@ -76,6 +77,10 @@ function isProjectConversation(conversation: Conversation) {
 function hasConversationMessages(conversation: Conversation) {
   return (Array.isArray(conversation.messages) && conversation.messages.length > 0) ||
     Number(conversation.message_count || 0) > 0;
+}
+
+function isSkillsStudioConversation(conversation: Conversation) {
+  return String(conversation.title || '').startsWith('Skills Studio • ');
 }
 
 function getPendingConversationId() {
@@ -226,6 +231,13 @@ export default function Sidebar() {
     } catch {}
     return document.body.classList.contains('dark-mode') ? 'dark' : 'light';
   });
+  const [palette, setPalette] = useState<'mono' | 'cyber-green' | 'cyber-blue'>(() => {
+    try {
+      const saved = localStorage.getItem('oddi_palette_v1');
+      if (saved === 'cyber-green' || saved === 'cyber-blue') return saved;
+    } catch {}
+    return 'mono';
+  });
   const [isDarkAppearance, setIsDarkAppearance] = useState(() => document.body.classList.contains('dark-mode'));
   const loggedIn = document.body.dataset.loggedIn === 'true';
   const accountId = document.body.dataset.userId?.trim() || '';
@@ -234,6 +246,9 @@ export default function Sidebar() {
   const [sharedInviteCount, setSharedInviteCount] = useState(0);
   const [sharedUnreadCount, setSharedUnreadCount] = useState(0);
   const [installReady, setInstallReady] = useState(false);
+  const accountButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
+  const [accountMenuPosition, setAccountMenuPosition] = useState<{ left: number; top: number } | null>(null);
   const [isPhone, setIsPhone] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches
   );
@@ -242,6 +257,56 @@ export default function Sidebar() {
   const [splashReady, setSplashReady] = useState(() =>
     typeof document === 'undefined' || !document.getElementById('oddi-video-splash')
   );
+
+  useEffect(() => {
+    if (!accountMenuOpen) return;
+    const placeMenu = () => {
+      const rect = accountButtonRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const width = Math.min(232, Math.max(190, window.innerWidth - 24));
+      const menuHeight = document.querySelector('.oddi-rs-account-menu')?.getBoundingClientRect().height ?? 270;
+      setAccountMenuPosition({
+        left: Math.max(12, Math.min(rect.left, window.innerWidth - width - 12)),
+        top: Math.max(12, rect.top - menuHeight - 8),
+      });
+    };
+    const closeOutside = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (accountButtonRef.current?.contains(target)) return;
+      if (document.querySelector('.oddi-rs-account-menu')?.contains(target)) return;
+      setAccountMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setAccountMenuOpen(false);
+    };
+    placeMenu();
+    document.addEventListener('pointerdown', closeOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('resize', placeMenu);
+    window.addEventListener('scroll', placeMenu, true);
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('resize', placeMenu);
+      window.removeEventListener('scroll', placeMenu, true);
+    };
+  }, [accountMenuOpen]);
+
+  useEffect(() => {
+    const syncPalette = () => {
+      let saved: string | null = null;
+      try { saved = localStorage.getItem('oddi_palette_v1'); } catch {}
+      const next = saved === 'cyber-green' || saved === 'cyber-blue' ? saved : 'mono';
+      setPalette(next);
+    };
+    window.addEventListener('oddi:palette-changed', syncPalette);
+    window.addEventListener('storage', syncPalette);
+    return () => {
+      window.removeEventListener('oddi:palette-changed', syncPalette);
+      window.removeEventListener('storage', syncPalette);
+    };
+  }, []);
 
   useEffect(() => {
     setSharedInviteCount(0);
@@ -423,6 +488,20 @@ export default function Sidebar() {
       window.removeEventListener('oddi:conversation-opened', onConversationOpened);
     };
   }, []);
+
+  useEffect(() => {
+    const runCurrentChatAction = (action: 'rename' | 'pin', id: string | number) => {
+      const conversation = items.find(item => String(item.id) === String(id));
+      if (!conversation) return false;
+      if (action === 'rename') rename(conversation);
+      else void pin(conversation);
+      return true;
+    };
+    WIN().__oddiCurrentChatAction = runCurrentChatAction;
+    return () => {
+      if (WIN().__oddiCurrentChatAction === runCurrentChatAction) delete WIN().__oddiCurrentChatAction;
+    };
+  }, [items]);
 
   // Phone-only behavior: keep the desktop/sidebar rail exactly as it is.
   useEffect(() => {
@@ -618,7 +697,7 @@ export default function Sidebar() {
       const data = await r.json();
       const list = Array.isArray(data) ? data : (Array.isArray(data?.conversations) ? data.conversations : []);
       await Promise.resolve(WIN().__oddiWorkspaceReady).catch(() => undefined);
-      const normalizedList = list.map(normalizeConversation).filter(c => !isProjectConversation(c));
+      const normalizedList = list.map(normalizeConversation).filter(c => !isProjectConversation(c) && !isSkillsStudioConversation(c));
       setItems(normalizedList);
       const preferredId = getLastOpenConversationId();
       const preferred = preferredId && normalizedList.find((c: Conversation) => String(c.id) === String(preferredId));
@@ -636,7 +715,7 @@ export default function Sidebar() {
         : Array.isArray(WIN().oddiConversations) ? WIN().oddiConversations! : [];
       const apply = () => {
         const latest = Array.isArray(WIN().oddiConversations) ? WIN().oddiConversations! : source;
-        const normalizedList = latest.map(normalizeConversation).filter(c => !isProjectConversation(c));
+        const normalizedList = latest.map(normalizeConversation).filter(c => !isProjectConversation(c) && !isSkillsStudioConversation(c));
         setItems(normalizedList);
         const preferredId = getLastOpenConversationId();
         const preferred = preferredId && normalizedList.find(c => String(c.id) === String(preferredId));
@@ -1069,9 +1148,39 @@ export default function Sidebar() {
     window.location.assign('/interview-studio');
   }
 
+  function openSkillsStudio() {
+    setMenuId(null);
+    window.location.assign('/skills-studio');
+  }
+
   function openSettings() {
     if (document.getElementById('settingsBtn')) { document.getElementById('settingsBtn')!.click(); return; }
-    openExistingModal('settingsModal');
+    if (document.getElementById('settingsModal')) { openExistingModal('settingsModal'); return; }
+    window.location.assign('/?openSettings=1');
+  }
+
+  function openProfile() {
+    setAccountMenuOpen(false);
+    if (document.getElementById('oddiProfileModal')) {
+      document.dispatchEvent(new CustomEvent('oddi:profile-open'));
+      return;
+    }
+    window.location.assign('/?openProfile=1');
+  }
+
+  function choosePalette(next: 'mono' | 'cyber-green' | 'cyber-blue') {
+    setPalette(next);
+    try { localStorage.setItem('oddi_palette_v1', next); } catch {}
+    document.documentElement.dataset.oddiPalette = next;
+    document.body.dataset.oddiPalette = next;
+    document.dispatchEvent(new CustomEvent('oddi:palette-changed', { detail: { palette: next } }));
+  }
+
+  function chooseAccountAction(action: 'profile' | 'theme' | 'settings' | 'logout') {
+    setAccountMenuOpen(false);
+    if (action === 'profile') { openProfile(); return; }
+    if (action === 'theme' || action === 'settings') { openSettings(); return; }
+    window.location.assign('/logout');
   }
 
   async function installOddi() {
@@ -1318,6 +1427,7 @@ export default function Sidebar() {
               invitationDot: sharedInviteCount > 0, unreadDot: sharedUnreadCount > 0,
               notificationLabel: `Shared workspaces${sharedInviteCount ? `, ${sharedInviteCount} pending invitation${sharedInviteCount === 1 ? '' : 's'}` : ''}${sharedUnreadCount ? `, ${sharedUnreadCount} unread message${sharedUnreadCount === 1 ? '' : 's'}` : ''}`,
             },
+            { label: 'Skills Studio', icon: <GraduationCap size={14} />, action: openSkillsStudio },
             { label: 'Interview Studio', icon: <Briefcase size={14} />, action: openInterviewStudio },
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
             { label: 'Settings', icon: <Settings size={14} />, action: openSettings },
@@ -1356,10 +1466,16 @@ export default function Sidebar() {
 
       <footer className="oddi-rs-profile" style={{ display:'flex', alignItems:'center', gap:8, padding: collapsed ? '9px 7px' : '9px 10px', borderTop:'1px solid rgba(255,255,255,.10)', minHeight:54, boxSizing:'border-box' }}>
         <button
+          ref={accountButtonRef}
           className="oddi-rs-profile-main"
           type="button"
-          onClick={() => document.getElementById('headerMoreBtn')?.click()}
-          title={loggedIn ? 'Account settings' : 'Sign in'}
+          aria-haspopup={loggedIn ? 'menu' : undefined}
+          aria-expanded={loggedIn ? accountMenuOpen : undefined}
+          onClick={() => {
+            if (!loggedIn) { window.location.assign('/login'); return; }
+            setAccountMenuOpen(value => !value);
+          }}
+          title={loggedIn ? 'Account menu' : 'Sign in'}
           style={{ flex:1, minWidth:0, display:'flex', alignItems:'center', gap:9, padding:0, border:0, background:'transparent', color:'#f5f5f5', font:'inherit', textAlign:'left', cursor:'pointer' }}
         >
           <div className="oddi-rs-avatar" style={{ width:30, height:30, minWidth:30, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f5f5f5', color:'#111', fontSize:12, fontWeight:700 }}>
@@ -1370,9 +1486,46 @@ export default function Sidebar() {
             <small style={{ fontSize:9, lineHeight:1.15, color:theme === 'dark' ? '#777' : '#777', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{loggedIn ? (email || 'Your profile') : 'Sign in to ODDI AI'}</small>
           </div>}
         </button>
-        {loggedIn && <button className="oddi-rs-logout" type="button" onClick={() => document.getElementById('logoutBtn')?.click()} title="Sign out" style={{ width:26, height:26, display:'inline-flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:0, borderRadius:6, background:'transparent', color:'#777', cursor:'pointer' }}><LogOut size={13} /></button>}
       </footer>
     </aside>
+
+    {accountMenuOpen && accountMenuPosition && loggedIn && createPortal(
+      <div
+        className="oddi-rs-account-menu"
+        role="menu"
+        aria-label="Account menu"
+        style={{ left: accountMenuPosition.left, top: accountMenuPosition.top }}
+        onClick={event => event.stopPropagation()}
+      >
+        <button type="button" role="menuitem" onClick={() => chooseAccountAction('profile')}>
+          <UserRound size={16} /> <span>Profile</span>
+        </button>
+        <div className="oddi-rs-account-divider" />
+        <div className="oddi-rs-palette-picker" role="group" aria-label="Website color theme">
+          <button type="button" className="oddi-rs-palette-swatch" data-palette="mono" aria-label="Black & White" aria-pressed={palette === 'mono'} title="Black & White" onClick={() => choosePalette('mono')}>
+            <span>{palette === 'mono' ? <Check size={13} /> : null}</span>
+          </button>
+          <button type="button" className="oddi-rs-palette-swatch" data-palette="cyber-green" aria-label="Cyber Green" aria-pressed={palette === 'cyber-green'} title="Cyber Green" onClick={() => choosePalette('cyber-green')}>
+            <span>{palette === 'cyber-green' ? <Check size={13} /> : null}</span>
+          </button>
+          <button type="button" className="oddi-rs-palette-swatch" data-palette="cyber-blue" aria-label="Cyber Blue" aria-pressed={palette === 'cyber-blue'} title="Cyber Blue" onClick={() => choosePalette('cyber-blue')}>
+            <span>{palette === 'cyber-blue' ? <Check size={13} /> : null}</span>
+          </button>
+        </div>
+        <button type="button" role="menuitem" onClick={() => chooseAccountAction('theme')}>
+          <Palette size={16} /> <span>Theme</span>
+        </button>
+        <div className="oddi-rs-account-divider" />
+        <button type="button" role="menuitem" onClick={() => chooseAccountAction('settings')}>
+          <Settings size={16} /> <span>Settings</span>
+        </button>
+        <div className="oddi-rs-account-divider" />
+        <button type="button" role="menuitem" onClick={() => chooseAccountAction('logout')}>
+          <LogOut size={16} /> <span>Logout</span>
+        </button>
+      </div>,
+      document.body
+    )}
 
     {menuConversation && menuPosition && createPortal(
       <div

@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <script id="oddi-theme-palette-first-paint">
+    (() => {
+        const root = document.documentElement;
+        try {
+            const palette = localStorage.getItem("oddi_palette_v1");
+            root.dataset.oddiPalette = palette === "cyber-green" || palette === "cyber-blue" ? palette : "mono";
+            const preference = localStorage.getItem("oddi_theme_v1");
+            const system = preference === "system";
+            const dark = preference === "dark" || (system && matchMedia("(prefers-color-scheme: dark)").matches);
+            root.dataset.oddiAppearance = system ? (dark ? "system-dark" : "system-light") : (dark ? "dark" : "light");
+        } catch (_) {
+            root.dataset.oddiPalette = "mono";
+            root.dataset.oddiAppearance = "light";
+        }
+    })();
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script id="oddi-home-first-paint-guard">
     (() => {
@@ -2866,9 +2882,10 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261019-shared-workspaces-1">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261020-site-palette-1">
+    <link rel="stylesheet" href="/static/oddi-profile.css?v=20261020-profile-inline-v3">
     <link rel="stylesheet" href="/static/oddi-help-feedback.css?v=20261019-3">
-    <link rel="stylesheet" href="/static/oddi-shared-workspaces.css?v=20261020-projects-2">
+    <link rel="stylesheet" href="/static/oddi-shared-workspaces.css?v=20261021-themed-composer-v1">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -4124,6 +4141,39 @@ body:not(.dark-mode) #accountSettingsModal .app-password-btn,
 body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:#ffffff !important; color:#171717 !important; border-color:#dddddd !important; }
 </style>
 
+<style id="oddi-phone-muted-surfaces">
+@media (max-width: 768px) and (pointer: coarse) {
+  body.dark-mode .app { background:#09090b !important; }
+  body.dark-mode .chatbox { background:radial-gradient(circle at 50% 0%,rgba(255,255,255,.018),transparent 38%),#09090b !important; }
+  body.dark-mode .header { background:rgba(11,11,13,.96) !important; }
+  body.dark-mode #oddiSuggestionCards .oddi-suggestion-card,
+  body.dark-mode #oddiLastMessageCard {
+    color:#e7e8ea !important;
+    background:#17181b !important;
+    border-color:#303136 !important;
+    box-shadow:0 4px 13px rgba(0,0,0,.26) !important;
+  }
+  body.dark-mode #oddiSuggestionCards .suggestion-blue,
+  body.dark-mode #oddiSuggestionCards .suggestion-purple,
+  body.dark-mode #oddiSuggestionCards .suggestion-green,
+  body.dark-mode #oddiSuggestionCards .suggestion-orange,
+  body.dark-mode #oddiSuggestionCards .oddi-interview-launch {
+    color:#e7e8ea !important;
+    background:#17181b !important;
+    border-color:#303136 !important;
+  }
+  body.dark-mode #oddiSuggestionCards .oddi-suggestion-icon,
+  body.dark-mode #oddiLastMessageCard .oddi-last-message-arrow {
+    color:#c4c6ca !important;
+    background:#25262a !important;
+  }
+  body.dark-mode #oddiSuggestionCards .oddi-interview-launch .oddi-suggestion-icon {
+    color:#c4c6ca !important;
+    background:#25262a !important;
+  }
+}
+</style>
+
 </head>
 <body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}" data-browser-local-chats="{{ 'true' if browser_local_chats else 'false' }}" data-library-sync-enabled="{{ 'true' if library_sync_enabled else 'false' }}">
 <!-- ODDI-AI Video Splash Screen -->
@@ -4513,22 +4563,42 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
     <section
         id="headerMorePanel"
         class="header-more-panel"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="headerMoreTitle">
+        role="menu"
+        aria-label="Current chat actions">
         <button
             id="headerMoreClose"
             class="header-more-close"
             type="button"
-            aria-label="Close menu">
-            ×
+            aria-label="Close menu"
+            aria-hidden="true"
+            tabindex="-1">Close</button>
+        <button type="button" class="header-more-action" id="headerMoreRename" role="menuitem" disabled>
+            <span class="header-more-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m15 5 4 4M4 20l4-.9L19 8.1a2.12 2.12 0 0 0-3-3L5 16z"/><path d="M4 20h6"/></svg></span>
+            <span class="header-more-label">Rename</span>
         </button>
-        <div id="headerMoreTitle" class="header-more-user">
-            <span class="header-more-avatar">👤</span>
-            <span class="header-more-username">{{ username if logged_in else 'Guest' }}</span>
-        </div>
-        <div class="header-more-divider"></div>
-        <button type="button" class="header-more-action" id="headerMoreExport">↗ <span>Export &amp; Share Current Chat</span></button>
+        <button type="button" class="header-more-action" id="headerMorePin" role="menuitem" disabled>
+            <span class="header-more-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M16 3v5l3 3v2h-6v7l-1 1-1-1v-7H5v-2l3-3V3z"/></svg></span>
+            <span class="header-more-label" id="headerMorePinLabel">Pin chat</span>
+        </button>
+        <div class="header-more-divider" id="headerMoreUtilitiesDivider" role="separator"></div>
+        <button type="button" class="header-more-action" id="headerMoreShortcuts" role="menuitem">
+            <span class="header-more-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9h1m3 0h1m3 0h1m3 0h.01M7 13h.01m3 0h1m3 0h1m3 0h.01M8 16h8"/></svg></span>
+            <span class="header-more-label">Keyboard shortcuts</span>
+            <kbd class="header-more-shortcut-hint">Ctrl / ⌘ + /</kbd>
+        </button>
+        <button type="button" class="header-more-action" id="headerMoreBin" role="menuitem">
+            <span class="header-more-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg></span>
+            <span class="header-more-label">Recently Deleted</span>
+        </button>
+        <button type="button" class="header-more-action" id="oddiWorkspaceOpen" role="menuitem">
+            <span class="header-more-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"/><rect x="14" y="4" width="6" height="6" rx="1"/><rect x="4" y="14" width="6" height="6" rx="1"/><rect x="14" y="14" width="6" height="6" rx="1"/></svg></span>
+            <span class="header-more-label">Workspace &amp; Prompts</span>
+        </button>
+        <div class="header-more-divider" role="separator"></div>
+        <button type="button" class="header-more-action" id="headerMoreExport" role="menuitem">
+            <span class="header-more-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 15V3m0 0L7 8m5-5 5 5"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></span>
+            <span class="header-more-label">Share</span>
+        </button>
     </section>
 </div>
 <div class="app">
@@ -4992,12 +5062,12 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
     </div>
 </div>
 <div id="deleteModal" class="rename-modal">
-    <div class="rename-box">
-        <h3>Move Conversation to Bin?</h3>
-        <p>You can restore it later from the Bin.</p>
+    <div class="rename-box" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle" aria-describedby="deleteModalDescription">
+        <h3 id="deleteModalTitle">Move this chat to Bin?</h3>
+        <p id="deleteModalDescription">You can restore it later from the Bin.</p>
         <div class="rename-buttons">
-            <button id="cancelDelete">Cancel</button>
-            <button id="confirmDelete" class="delete-confirm">
+            <button id="cancelDelete" type="button">Cancel</button>
+            <button id="confirmDelete" class="delete-confirm" type="button">
                 Move to Bin
             </button>
         </div>
@@ -17853,81 +17923,181 @@ loadConversations();
     const panel = document.getElementById("headerMorePanel");
     const closeBtn = document.getElementById("headerMoreClose");
     const exportBtn = document.getElementById("headerMoreExport");
-    const accountBtn = document.getElementById("headerMoreAccount");
+    const renameBtn = document.getElementById("headerMoreRename");
+    const pinBtn = document.getElementById("headerMorePin");
     if (!moreBtn || !overlayEl || !panel || !closeBtn) return;
-    function closeHeaderMore() {
-        /* Move focus out of the overlay BEFORE aria-hidden is applied.
-           Otherwise Chrome correctly warns that a focused descendant is
-           being hidden from assistive technology. */
+    const isEnabledFlag = value => typeof value === "string"
+        ? ["true", "1", "yes"].includes(value.trim().toLowerCase())
+        : value === true || value === 1;
+
+    function getCurrentChat() {
+        let activeId = String(window.__oddiActiveConversationId || "");
+        try {
+            const savedId = sessionStorage.getItem("oddi_last_open_conversation_v1") || "";
+            if (!activeId && savedId && savedId !== "__oddi_fresh_chat__") activeId = savedId;
+            if (!activeId && savedId === "__oddi_fresh_chat__") return null;
+        } catch (_) {}
+
+        let list = Array.isArray(window.oddiConversations) ? window.oddiConversations : [];
+        try { if (Array.isArray(conversations)) list = conversations; } catch (_) {}
+        if (activeId) {
+            return list.find(item => String(item?.id) === activeId && !isEnabledFlag(item?.deleted)) || null;
+        }
+        try {
+            if (Number.isInteger(currentConversation) && list[currentConversation] && !isEnabledFlag(list[currentConversation].deleted)) {
+                return list[currentConversation];
+            }
+        } catch (_) {}
+        return null;
+    }
+
+    function syncChatActions() {
+        const chat = getCurrentChat();
+        const hasChat = !!chat;
+        const isPinned = isEnabledFlag(chat?.pinned);
+        const pinLabel = document.getElementById("headerMorePinLabel");
+        if (renameBtn) {
+            renameBtn.disabled = !hasChat;
+            renameBtn.title = hasChat ? `Rename ${chat.title || "current chat"}` : "Open a chat to rename it";
+        }
+        if (pinBtn) {
+            pinBtn.disabled = !hasChat;
+            pinBtn.title = hasChat ? `${isPinned ? "Unpin" : "Pin"} ${chat.title || "current chat"}` : "Open a chat to pin it";
+            pinBtn.setAttribute("aria-label", hasChat ? `${isPinned ? "Unpin" : "Pin"} current chat` : "Pin current chat");
+        }
+        if (pinLabel) pinLabel.textContent = isPinned ? "Unpin chat" : "Pin chat";
+        if (exportBtn) {
+            exportBtn.disabled = !hasChat;
+            exportBtn.title = hasChat ? "Share the current chat" : "Open a chat to share it";
+        }
+    }
+
+    function placeMenu() {
+        if (!overlayEl.classList.contains("show")) return;
+        const anchor = moreBtn.getBoundingClientRect();
+        const menu = panel.getBoundingClientRect();
+        const viewport = window.visualViewport;
+        const leftEdge = (viewport?.offsetLeft || 0) + 8;
+        const topEdge = (viewport?.offsetTop || 0) + 8;
+        const width = viewport?.width || document.documentElement.clientWidth || window.innerWidth;
+        const height = viewport?.height || window.innerHeight;
+        const left = Math.max(leftEdge, Math.min(leftEdge + width - menu.width - 8, anchor.right - menu.width));
+        const below = anchor.bottom + 8;
+        const top = below + menu.height <= topEdge + height - 8
+            ? below
+            : Math.max(topEdge, anchor.top - menu.height - 8);
+        panel.style.left = `${left}px`;
+        panel.style.right = "auto";
+        panel.style.top = `${top}px`;
+        panel.style.bottom = "auto";
+    }
+
+    function closeHeaderMore(restoreFocus = false) {
+        /* Move focus out before aria-hidden so screen readers never keep a
+           focused action inside a closed menu. */
         const active = document.activeElement;
         if (active && overlayEl.contains(active)) {
-            if (document.body.contains(moreBtn)) {
-                moreBtn.focus({ preventScroll: true });
-            } else {
-                active.blur();
-            }
+            if (restoreFocus && document.body.contains(moreBtn)) moreBtn.focus({ preventScroll: true });
+            else active.blur();
         }
         overlayEl.classList.remove("show");
         overlayEl.setAttribute("aria-hidden", "true");
         moreBtn.setAttribute("aria-expanded", "false");
     }
+
     function openHeaderMore() {
-        /* Always open from a clean state; nothing is persisted across refresh. */
+        syncChatActions();
         overlayEl.classList.add("show");
         overlayEl.setAttribute("aria-hidden", "false");
         moreBtn.setAttribute("aria-expanded", "true");
-        requestAnimationFrame(() => closeBtn.focus());
+        requestAnimationFrame(() => {
+            placeMenu();
+            panel.querySelector('[role="menuitem"]:not(:disabled)')?.focus({ preventScroll: true });
+        });
     }
+
     closeHeaderMore();
     moreBtn.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation();
-        if (overlayEl.classList.contains("show")) closeHeaderMore();
+        if (overlayEl.classList.contains("show")) closeHeaderMore(true);
         else openHeaderMore();
     });
     closeBtn.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation();
-        closeHeaderMore();
+        closeHeaderMore(true);
     });
-    overlayEl.addEventListener("click", function (event) {
-        if (event.target === overlayEl) closeHeaderMore();
+    panel.addEventListener("pointerdown", function (event) {
+        event.stopPropagation();
     });
     panel.addEventListener("click", function (event) {
         event.stopPropagation();
     });
-    document.addEventListener("click", function (event) {
+    document.addEventListener("pointerdown", function (event) {
         if (!overlayEl.classList.contains("show")) return;
-        if (panel.contains(event.target) || moreBtn.contains(event.target)) return;
-        closeHeaderMore();
+        const target = event.target;
+        if (target instanceof Node && (panel.contains(target) || moreBtn.contains(target))) return;
+        closeHeaderMore(false);
     }, true);
     document.addEventListener("keydown", function (event) {
         if (event.key === "Escape" && overlayEl.classList.contains("show")) {
             event.preventDefault();
             event.stopPropagation();
-            closeHeaderMore();
+            closeHeaderMore(true);
         }
     }, true);
+
+    renameBtn?.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const chat = getCurrentChat();
+        if (!chat) return;
+        closeHeaderMore(false);
+        if (typeof window.__oddiCurrentChatAction === "function" && window.__oddiCurrentChatAction("rename", chat.id)) return;
+        const modal = document.getElementById("renameModal");
+        const input = document.getElementById("renameInput");
+        if (!modal || !input) return;
+        let list = Array.isArray(window.oddiConversations) ? window.oddiConversations : [];
+        try { if (Array.isArray(conversations)) list = conversations; } catch (_) {}
+        renameIndex = list.findIndex(item => String(item?.id) === String(chat.id));
+        renameConversationId = String(chat.id);
+        input.value = chat.title || "";
+        modal.classList.add("show");
+        modal.setAttribute("aria-hidden", "false");
+        requestAnimationFrame(() => { input.focus(); input.select(); });
+    });
+
+    pinBtn?.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        const chat = getCurrentChat();
+        if (!chat) return;
+        closeHeaderMore(false);
+        if (typeof window.__oddiCurrentChatAction === "function" && window.__oddiCurrentChatAction("pin", chat.id)) return;
+        if (typeof window.togglePinConversation === "function") {
+            void window.togglePinConversation(chat);
+        }
+    });
+
     exportBtn?.addEventListener("click", function (event) {
         event.preventDefault();
         event.stopPropagation();
-        closeHeaderMore();
+        closeHeaderMore(false);
         const existingExport = document.getElementById("exportChatBtn");
         if (existingExport) existingExport.click();
     });
-    accountBtn?.addEventListener("click", function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-        closeHeaderMore();
-        const accountModal = document.getElementById("accountSettingsModal");
-        if (accountModal) {
-            accountModal.classList.add("show");
-            accountModal.setAttribute("aria-hidden", "false");
-            requestAnimationFrame(() => document.getElementById("closeAccountSettings")?.focus());
-        }
-    });
-    window.addEventListener("pageshow", closeHeaderMore);
-    window.addEventListener("pagehide", closeHeaderMore);
+
+    window.addEventListener("oddi:conversation-opened", syncChatActions);
+    window.addEventListener("oddi:conversations-loaded", syncChatActions);
+    window.addEventListener("oddi:conversations-changed", syncChatActions);
+    window.addEventListener("resize", placeMenu, { passive: true });
+    window.addEventListener("scroll", placeMenu, { passive: true, capture: true });
+    window.visualViewport?.addEventListener("resize", placeMenu, { passive: true });
+    window.visualViewport?.addEventListener("scroll", placeMenu, { passive: true });
+    window.addEventListener("pageshow", () => closeHeaderMore(false));
+    window.addEventListener("pagehide", () => closeHeaderMore(false));
+    window.__oddiCloseHeaderMore = closeHeaderMore;
 })();
 </script>
 
@@ -17940,14 +18110,11 @@ loadConversations();
     const moreBtn = document.getElementById("headerMoreBtn");
     if (!panel || !overlay || !moreBtn) return;
 
-    const isPhone = window.matchMedia("(max-width: 768px) and (pointer: coarse)").matches;
-
     function closeMenu() {
-        const active = document.activeElement;
-        if (active && overlay.contains(active)) {
-            moreBtn.focus({ preventScroll: true });
+        if (typeof window.__oddiCloseHeaderMore === "function") {
+            window.__oddiCloseHeaderMore(false);
+            return;
         }
-        panel.classList.remove("show");
         overlay.classList.remove("show");
         overlay.setAttribute("aria-hidden", "true");
         moreBtn.setAttribute("aria-expanded", "false");
@@ -17964,13 +18131,16 @@ loadConversations();
     }
 
     function addAction(id, label, icon, modalId) {
-        if (document.getElementById(id)) return;
-
-        const button = document.createElement("button");
-        button.type = "button";
-        button.id = id;
-        button.className = "header-more-action";
-        button.innerHTML = `${icon} <span>${label}</span>`;
+        let button = document.getElementById(id);
+        if (!button) {
+            button = document.createElement("button");
+            button.type = "button";
+            button.id = id;
+            button.className = "header-more-action";
+            button.setAttribute("role", "menuitem");
+            button.innerHTML = `<span class="header-more-icon" aria-hidden="true">${icon}</span><span class="header-more-label">${label}</span>`;
+            panel.appendChild(button);
+        }
 
         button.addEventListener("click", function (event) {
             event.preventDefault();
@@ -17982,27 +18152,9 @@ loadConversations();
                mounted while the sidebar is collapsed. */
             openModal(modalId);
         });
-
-        panel.appendChild(button);
     }
 
-    /* Phone: Recently Deleted only. The existing mobile block normally
-       creates this; this fallback guarantees it remains available even if
-       that mobile enhancement initializes late. */
-    if (isPhone) {
-        addAction("mobileRecentlyDeletedBtn", "Recently Deleted", "🗑️", "binModal");
-        return;
-    }
-
-    /* Laptop/desktop: both utilities are available from ⋮. */
-    if (!document.getElementById("headerMoreUtilitiesDivider")) {
-        const divider = document.createElement("div");
-        divider.id = "headerMoreUtilitiesDivider";
-        divider.className = "header-more-divider";
-        panel.appendChild(divider);
-    }
-
-    addAction("headerMoreShortcuts", "Keyboard Shortcuts", "⌨️", "shortcutsModal");
+    addAction("headerMoreShortcuts", "Keyboard shortcuts", "⌨️", "shortcutsModal");
     addAction("headerMoreBin", "Recently Deleted", "🗑️", "binModal");
 })();
 </script>
@@ -19690,7 +19842,7 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
        RECENTLY DELETED INSIDE THE EXISTING ⋮ MENU
        ========================================================= */
 
-    if (morePanel && !document.getElementById("mobileRecentlyDeletedBtn")) {
+    if (morePanel && !document.getElementById("headerMoreBin") && !document.getElementById("mobileRecentlyDeletedBtn")) {
         const divider = document.createElement("div");
         divider.className = "header-more-divider mobile-more-divider";
 
@@ -23881,7 +24033,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261019-shared-workspaces-6"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261021-chat-actions-menu-v1"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -24357,6 +24509,47 @@ body.dark-mode .home-goal-chip:focus-visible {
 
 <div id="oddi-react-sidebar-root"></div>
 
+<div id="oddiProfileModal" class="oddi-profile-modal" aria-hidden="true">
+  <button class="oddi-profile-backdrop" type="button" data-profile-dismiss aria-label="Close profile"></button>
+  <section id="oddi-profile-screen" class="oddi-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="oddi-profile-name">
+    <div class="oddi-profile-wrap">
+      <header class="oddi-profile-topbar">
+        <button class="oddi-profile-back" type="button" data-profile-close><span aria-hidden="true">←</span> Close profile</button>
+        <span class="oddi-profile-brand">ODDI <i>ACCOUNT</i></span>
+      </header>
+
+      <section class="oddi-profile-identity">
+        <div id="oddi-profile-avatar" class="oddi-profile-avatar" aria-hidden="true">U</div>
+        <p class="oddi-profile-eyebrow">YOUR PROFILE</p>
+        <h1 id="oddi-profile-name">Your profile</h1>
+        <p id="oddi-profile-handle" class="oddi-profile-handle"></p>
+      </section>
+
+      <section class="oddi-profile-stats" aria-label="Account stats">
+        <article class="oddi-profile-stat"><strong id="oddi-stat-lifetime">—</strong><span>Lifetime tokens</span><small>Estimated from saved chats</small></article>
+        <article class="oddi-profile-stat"><strong id="oddi-stat-peak">—</strong><span>Peak tokens</span><small>Highest in one chat</small></article>
+        <article class="oddi-profile-stat"><strong id="oddi-stat-task">—</strong><span>Longest task</span><small>Longest saved chat session</small></article>
+        <article class="oddi-profile-stat"><strong id="oddi-stat-best-streak">—</strong><span>Longest streak</span><small>Active days in a row</small></article>
+        <article class="oddi-profile-stat"><strong id="oddi-stat-current-streak">—</strong><span>Current streak</span><small>Active days in a row</small></article>
+      </section>
+
+      <section class="oddi-working-hours" aria-labelledby="oddi-working-hours-title">
+        <div class="oddi-working-heading">
+          <div><p class="oddi-profile-eyebrow">YOUR ACTIVITY</p><h2 id="oddi-working-hours-title">Working hours</h2><p class="oddi-working-subtitle">Active time in ODDI on this device</p></div>
+          <div class="oddi-working-total"><strong id="oddi-working-hours-total">0m</strong><span id="oddi-working-hours-caption">in the last 14 days</span></div>
+        </div>
+        <div class="oddi-working-tabs" role="tablist" aria-label="Working hours range">
+          <button type="button" role="tab" aria-selected="true" data-range="daily">Daily</button>
+          <button type="button" role="tab" aria-selected="false" data-range="monthly">Monthly</button>
+          <button type="button" role="tab" aria-selected="false" data-range="yearly">Yearly</button>
+        </div>
+        <div id="oddi-working-chart" class="oddi-working-chart" role="img" aria-label="Working hours activity chart"></div>
+        <p class="oddi-working-note">Activity is counted while ODDI is open and you are using this device. It starts recording from today.</p>
+      </section>
+    </div>
+  </section>
+</div>
+
 <!-- ODDI permanent sidebar opener: deliberately outside the React root so
      Library/Memory/legacy DOM operations can never remove the reopen control. -->
 <style id="oddi-permanent-sidebar-opener">
@@ -24391,6 +24584,7 @@ body.dark-mode .home-goal-chip:focus-visible {
   body.oddi-splash-active #oddi-hard-sidebar-launcher,
   body.oddi-react-sidebar-open #oddi-hard-sidebar-launcher,
   body.oddi-memory-workspace-open #oddi-hard-sidebar-launcher,
+  body:has(#oddiProfileModal.show) #oddi-hard-sidebar-launcher,
   body:has(#memoryModal.show) #oddi-hard-sidebar-launcher,
   body:has(#settingsModal.show) #oddi-hard-sidebar-launcher,
   body:has(#oddiShareModal.show) #oddi-hard-sidebar-launcher,
@@ -32914,7 +33108,7 @@ body:not(.dark-mode) .oddi-message-select-menu{border-color:rgba(20,30,24,.14);b
   function open(opener,mode="tools"){projectScreen=mode==="projects";selectedProjectId="";tab=projectScreen?"projects":"tasks";dialog.dataset.workspaceMode=projectScreen?"projects":"tools";document.getElementById("oddiWorkspaceTitle").textContent=projectScreen?"Projects":"ODDI Workspace";dialog.querySelector(".oddi-workspace-tabs").hidden=projectScreen;content.innerHTML='<div class="oddi-workspace-empty">Loading account workspace...</div>';overlay.inert=false;overlay.classList.add("is-open");overlay.setAttribute("aria-hidden","false");document.body.classList.add("oddi-workspace-open");document.body.classList.toggle("oddi-project-workspace-open",projectScreen);workspaceReturnFocus=opener||document.getElementById("headerMoreBtn");dialog.querySelector(".oddi-workspace-close")?.focus({preventScroll:true});Promise.resolve(window.__oddiWorkspaceReady).then(()=>loadState()).then(()=>{if(overlay.classList.contains("is-open"))render()})}
   function close(){document.body.classList.remove("oddi-workspace-open","oddi-project-workspace-open");projectScreen=false;dialog.dataset.workspaceMode="tools";dialog.querySelector(".oddi-workspace-tabs").hidden=false;document.getElementById("oddiWorkspaceTitle").textContent="ODDI Workspace";if(dialog.contains(document.activeElement)){const target=workspaceReturnFocus?.isConnected&&!overlay.contains(workspaceReturnFocus)?workspaceReturnFocus:document.getElementById("headerMoreBtn");target?.focus({preventScroll:true});if(dialog.contains(document.activeElement)){document.body.tabIndex=-1;document.body.focus({preventScroll:true})}}overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");overlay.inert=true}
   let workspaceReturnFocus=null;
-  const workspaceBtn=document.createElement("button");workspaceBtn.type="button";workspaceBtn.className="header-more-action";workspaceBtn.id="oddiWorkspaceOpen";workspaceBtn.innerHTML='▦ <span>Workspace &amp; Prompts</span>';panel.append(workspaceBtn);workspaceBtn.addEventListener("click",()=>{const opener=document.getElementById("headerMoreBtn");document.getElementById("headerMoreClose")?.click();open(opener)});
+  let workspaceBtn=document.getElementById("oddiWorkspaceOpen");if(!workspaceBtn){workspaceBtn=document.createElement("button");workspaceBtn.type="button";workspaceBtn.className="header-more-action";workspaceBtn.id="oddiWorkspaceOpen";workspaceBtn.innerHTML='<span class="header-more-icon" aria-hidden="true">▦</span><span class="header-more-label">Workspace &amp; Prompts</span>';workspaceBtn.setAttribute("role","menuitem");panel.append(workspaceBtn)}workspaceBtn.addEventListener("click",()=>{const opener=document.getElementById("headerMoreBtn");document.getElementById("headerMoreClose")?.click();open(opener)});
   window.addEventListener("oddi:open-projects",()=>open(null,"projects"));
   dialog.querySelector(".oddi-workspace-close").addEventListener("click",close);overlay.addEventListener("click",e=>{if(e.target===overlay)close()});document.addEventListener("keydown",e=>{if(e.key==="Escape"&&overlay.classList.contains("is-open"))close()});
   dialog.querySelector(".oddi-workspace-tabs").addEventListener("click",e=>{const b=e.target.closest("[data-workspace-tab]");if(!b)return;tab=b.dataset.workspaceTab;render()});
@@ -35013,16 +35207,23 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
 <script id="oddi-fullscreen-home-detection-v1">
 (()=>{
   const desktop=window.matchMedia("(min-width: 769px)");
-  const fullscreenMode=window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)");
+  const fullscreenMode=window.matchMedia("(display-mode: fullscreen)");
+  const resetHomeScroll=()=>{
+    const chat=document.getElementById("chatbox");
+    if(!chat?.querySelector("#welcomeContainer"))return;
+    chat.scrollTop=0;
+    requestAnimationFrame(()=>{ if(chat.isConnected)chat.scrollTop=0; });
+  };
   const sync=()=>{
     const screenHeight=window.screen?.height||window.screen?.availHeight||window.innerHeight;
     const screenWidth=window.screen?.width||window.innerWidth;
     const fullscreenApi=!!document.fullscreenElement||fullscreenMode.matches;
-    const edgeToEdge=window.innerHeight>=screenHeight-72&&window.innerWidth>=screenWidth-120;
+    const edgeToEdge=window.innerHeight>=screenHeight-24&&window.innerWidth>=screenWidth-24;
     const expanded=desktop.matches&&(fullscreenApi||edgeToEdge);
     if(document.body.classList.contains("oddi-fullscreen-home")!==expanded){
       document.body.classList.toggle("oddi-fullscreen-home",expanded);
       window.dispatchEvent(new Event("oddi:display-mode-changed"));
+      resetHomeScroll();
     }
   };
   sync();
@@ -39775,7 +39976,7 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
 }
 </style>
 <script src="/static/oddi-help-feedback.js?v=20261019-7" defer></script>
-<script src="/static/oddi-shared-workspaces.js?v=20261020-projects-3" defer></script>
+<script src="/static/oddi-shared-workspaces.js?v=20261020-message-tools-3" defer></script>
 
 <style id="oddi-rocket-inspired-phone-home-v2">
 /* Phone home layout follows the supplied reference while leaving the composer intact. */
@@ -40341,6 +40542,227 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
     color: #a1f0bb !important;
   }
 }
+</style>
+
+<link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261021-chat-composer-theme-v8">
+<script src="/static/oddi-theme-palette.js?v=20261020-palette-v1" defer></script>
+<script src="/static/oddi-account-profile.js?v=20261020-profile-modal-2" defer></script>
+
+<style id="oddi-hide-normal-home-recent-work">
+  html body:not(.oddi-fullscreen-home) #chatbox #welcomeContainer #oddiRecentSection {
+    display: none !important;
+  }
+</style>
+
+<style id="oddi-header-more-popover-v1">
+  #headerMoreOverlay {
+    position: fixed !important;
+    inset: 0 !important;
+    display: none !important;
+    align-items: initial !important;
+    justify-content: initial !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    pointer-events: none !important;
+  }
+  #headerMoreOverlay.show {
+    display: block !important;
+    visibility: visible !important;
+  }
+  #headerMorePanel.header-more-panel {
+    position: fixed !important;
+    inset: auto;
+    left: auto;
+    right: 62px;
+    top: 72px;
+    bottom: auto;
+    width: min(292px, calc(100vw - 24px)) !important;
+    min-width: min(260px, calc(100vw - 24px)) !important;
+    max-width: calc(100vw - 24px) !important;
+    min-height: 0 !important;
+    max-height: calc(100vh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    margin: 0 !important;
+    padding: 7px !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    border: 1px solid var(--oddi-theme-line) !important;
+    border-radius: 16px !important;
+    background: var(--oddi-theme-surface) !important;
+    color: var(--oddi-theme-text) !important;
+    box-shadow: 0 20px 55px rgba(0, 0, 0, .28), 0 0 26px var(--oddi-theme-glow) !important;
+    transform: none !important;
+    isolation: isolate !important;
+    pointer-events: auto !important;
+    overscroll-behavior: contain !important;
+    scrollbar-color: var(--oddi-theme-line-strong) transparent;
+  }
+  #headerMoreClose { display: none !important; }
+  #headerMorePanel .header-more-action {
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 42px !important;
+    margin: 1px 0 !important;
+    padding: 0 11px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 11px !important;
+    border: 1px solid transparent !important;
+    border-radius: 10px !important;
+    background: transparent !important;
+    color: var(--oddi-theme-text) !important;
+    font: inherit !important;
+    font-size: 13px !important;
+    font-weight: 620 !important;
+    line-height: 1.25 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    cursor: pointer !important;
+    transition: background-color .14s ease, border-color .14s ease, color .14s ease !important;
+  }
+  #headerMorePanel .header-more-action:not(:disabled):is(:hover, :focus-visible) {
+    border-color: var(--oddi-theme-line) !important;
+    background: var(--oddi-theme-accent-soft) !important;
+    color: var(--oddi-theme-text) !important;
+  }
+  #headerMorePanel .header-more-action:focus-visible {
+    outline: 2px solid var(--oddi-theme-accent) !important;
+    outline-offset: 1px !important;
+  }
+  #headerMorePanel .header-more-action:disabled {
+    opacity: .45 !important;
+    cursor: not-allowed !important;
+  }
+  #headerMorePanel .header-more-icon {
+    width: 18px !important;
+    height: 18px !important;
+    flex: 0 0 18px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: var(--oddi-theme-accent) !important;
+  }
+  #headerMorePanel .header-more-icon svg {
+    width: 17px !important;
+    height: 17px !important;
+    fill: none !important;
+    stroke: currentColor !important;
+    stroke-width: 1.8 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+  }
+  #headerMorePanel .header-more-label { min-width: 0; flex: 1 1 auto; }
+  #headerMorePanel .header-more-divider {
+    height: 1px !important;
+    margin: 5px 8px !important;
+    background: var(--oddi-theme-line) !important;
+  }
+  #headerMorePanel .header-more-shortcut-hint {
+    flex: 0 0 auto;
+    padding: 3px 6px;
+    border: 1px solid var(--oddi-theme-line);
+    border-radius: 6px;
+    background: var(--oddi-theme-raised);
+    color: var(--oddi-theme-muted);
+    font: inherit;
+    font-size: 9px;
+    line-height: 1.2;
+  }
+  @media (max-width: 380px) {
+    #headerMorePanel.header-more-panel {
+      width: calc(100vw - 20px) !important;
+      min-width: 0 !important;
+      max-width: calc(100vw - 20px) !important;
+    }
+    #headerMorePanel .header-more-action { min-height: 44px !important; }
+  }
+</style>
+
+<style id="oddi-final-transparent-ai-messages-v1">
+  /* Assistant messages are plain conversation content, never filled cards. */
+  #chatbox.chatbox > .bot-message,
+  #chatbox.chatbox > .bot-message:is(.pinned-message,.stopped-message,.document-output-message) {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    filter: none !important;
+  }
+  #chatbox.chatbox > .bot-message::before,
+  #chatbox.chatbox > .bot-message::after,
+  #chatbox.chatbox > .bot-message .ai-content::before,
+  #chatbox.chatbox > .bot-message .ai-content::after {
+    content: none !important;
+    display: none !important;
+  }
+  #chatbox.chatbox > .bot-message .ai-content,
+  #chatbox.chatbox > .bot-message .bot-header,
+  #chatbox.chatbox > .bot-message .bot-actions {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+  }
+
+  /* The pill is the only visible composer surface; remove its outer shell. */
+  html:root[data-oddi-palette][data-oddi-appearance] #oddiComposerShell.input-area,
+  html:root[data-oddi-palette][data-oddi-appearance] #oddiComposerShell.input-area:focus-within {
+    border: 0 !important;
+    outline: 0 !important;
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+  html:root[data-oddi-palette][data-oddi-appearance] #oddiComposerShell.input-area::before,
+  html:root[data-oddi-palette][data-oddi-appearance] #oddiComposerShell.input-area::after {
+    content: none !important;
+    display: none !important;
+  }
+</style>
+
+<style id="oddi-desktop-composer-dock-v2">
+  /* Keep the desktop composer docked even when fullscreen-home mode is active. */
+  @media (min-width: 769px) {
+    body .app > #oddiComposerShell.input-area {
+      position: fixed !important;
+      inset: auto !important;
+      top: auto !important;
+      right: auto !important;
+      bottom: max(18px, env(safe-area-inset-bottom, 0px)) !important;
+      left: var(--oddi-composer-left, max(24px, calc((100vw - 920px) / 2))) !important;
+      width: var(--oddi-composer-width, min(920px, calc(100vw - 48px))) !important;
+      max-width: var(--oddi-composer-width, min(920px, calc(100vw - 48px))) !important;
+      flex: none !important;
+      align-self: auto !important;
+      margin: 0 !important;
+      transform: none !important;
+      z-index: 610 !important;
+    }
+
+    body:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) #chatbox.chatbox {
+      padding-bottom: max(148px, var(--oddi-home-safe-bottom, 0px)) !important;
+      scroll-padding-bottom: max(148px, var(--oddi-home-safe-bottom, 0px)) !important;
+    }
+  }
+</style>
+
+<style id="oddi-desktop-composer-taskbar-clearance-v2">
+  /* Keep the composer clear of the Windows taskbar in short and windowed browser views. */
+  @media (min-width: 769px) {
+    body:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) .app > #oddiComposerShell.input-area,
+    body:has(#chatbox.chatbox > #welcomeContainer) .app > #oddiComposerShell.input-area {
+      bottom: max(58px, env(safe-area-inset-bottom, 0px)) !important;
+    }
+  }
 </style>
 
 </body>

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
 import json
 import logging
 import re
@@ -37,6 +39,11 @@ MAX_MESSAGE_LENGTH = 8000
 MAX_NAME_LENGTH = 80
 MAX_PROJECT_GOAL_LENGTH = 4000
 MAX_TASK_TITLE_LENGTH = 180
+MAX_MESSAGE_ATTACHMENTS = 5
+MAX_IMAGE_BYTES = 5 * 1024 * 1024
+MAX_TOTAL_IMAGE_BYTES = 10 * 1024 * 1024
+ALLOWED_IMAGE_TYPES = frozenset({"image/png", "image/jpeg", "image/webp", "image/gif"})
+ALLOWED_REACTIONS = frozenset({"👍", "❤️", "😂", "😮", "😢", "🙏", "🎉", "🔥", "👏", "✅"})
 PROJECT_TEAM_SIZE_CHOICES = frozenset({"individual", "2-15", "16+"})
 INVITE_LIFETIME = timedelta(days=14)
 _AI_PREFIX = re.compile(r"^\s*@oddi(?=$|\s|[:,])\s*[:,]?\s*(.*)$", re.IGNORECASE | re.DOTALL)
@@ -178,7 +185,7 @@ def _workspace_projects(conn, workspace_id: str, include_tasks: bool = True) -> 
                FROM shared_workspace_project_tasks WHERE workspace_id = ? GROUP BY project_id""",
             (workspace_id,),
         )
-        count_by_project = {str(row["project_id"]): row for row in counts}
+        count_by_project = {str(row["project_id"]): (_dict(row) or {}) for row in counts}
         for project in projects:
             counts_row = count_by_project.get(str(project.get("id") or ""), {})
             project["task_count"] = int(counts_row.get("task_count") or 0)
@@ -222,14 +229,32 @@ def _quota_payload(user_id: int, email: str) -> dict[str, Any]:
     }
 
 
-def _public_message(row: Any, viewer_id: int) -> dict[str, Any]:
+def _public_message(row: Any, viewer_id: int, reactions: list[dict[str, Any]] | None = None,
+                    reply_to: dict[str, Any] | None = None) -> dict[str, Any]:
     item = _dict(row) or {}
+    deleted = bool(item.get("deleted_at"))
+    try:
+        attachments = json.loads(item.get("attachments_json") or "[]")
+    except (TypeError, ValueError):
+        attachments = []
+    if not isinstance(attachments, list):
+        attachments = []
     return {
         "seq": int(item.get("seq") or 0),
         "id": str(item.get("id") or ""),
         "kind": str(item.get("kind") or "user"),
-        "text": str(item.get("body") or ""),
+        "text": "This message was deleted." if deleted else str(item.get("body") or ""),
         "created_at": str(item.get("created_at") or ""),
+        "attachments": [] if deleted else attachments,
+        "reply_to_seq": int(item["reply_to_seq"]) if item.get("reply_to_seq") is not None else None,
+        "reply_to": reply_to,
+        "reactions": reactions or [],
+        "edited_at": item.get("edited_at"),
+        "deleted": deleted,
+        "pinned_until": item.get("pinned_until"),
+        "forwarded_from_sender": item.get("forwarded_from_sender"),
+        "forwarded_from_workspace": item.get("forwarded_from_workspace"),
+        "updated_at": item.get("updated_at") or item.get("created_at"),
         "sender": {
             "name": str(item.get("sender_name") or "ODDI"),
             "email": str(item.get("sender_email") or ""),
@@ -240,11 +265,81 @@ def _public_message(row: Any, viewer_id: int) -> dict[str, Any]:
     }
 
 
-def _get_messages(workspace_id: str, viewer_id: int, after_seq: int = 0, limit: int = 100):
+def _public_messages(conn: Any, rows: list[Any], viewer_id: int) -> list[dict[str, Any]]:
+    if not rows:
+        return []
+    items = [_dict(row) or {} for row in rows]
+    workspace_id = str(items[0]["workspace_id"])
+    message_ids = [str(row["id"]) for row in items]
+    message_marks = ",".join("?" for _ in message_ids)
+    reaction_rows = _fetchall(
+        conn,
+        f"""SELECT message_id, user_id, emoji FROM shared_workspace_message_reactions
+            WHERE workspace_id = ? AND message_id IN ({message_marks}) ORDER BY created_at""",
+        (workspace_id, *message_ids),
+    )
+    reaction_groups: dict[str, dict[str, dict[str, Any]]] = {}
+    for reaction in reaction_rows:
+        message_id = str(reaction["message_id"])
+        emoji = str(reaction["emoji"])
+        group = reaction_groups.setdefault(message_id, {})
+        item = group.setdefault(emoji, {"emoji": emoji, "count": 0, "me": False})
+        item["count"] += 1
+        item["me"] = item["me"] or int(reaction["user_id"]) == viewer_id
+
+    reply_seqs = sorted({int(row["reply_to_seq"]) for row in items if row.get("reply_to_seq") is not None})
+    reply_rows: dict[int, Any] = {}
+    if reply_seqs:
+        reply_marks = ",".join("?" for _ in reply_seqs)
+        related = _fetchall(
+            conn,
+            f"""SELECT seq, kind, body, sender_name, deleted_at, attachments_json
+                FROM shared_workspace_messages WHERE workspace_id = ? AND seq IN ({reply_marks})""",
+            (workspace_id, *reply_seqs),
+        )
+        reply_rows = {int(row["seq"]): _dict(row) or {} for row in related}
+
+    result = []
+    for row in items:
+        reply = None
+        reply_seq = row.get("reply_to_seq")
+        if reply_seq is not None:
+            related = reply_rows.get(int(reply_seq))
+            if related:
+                try:
+                    related_attachments = json.loads(related.get("attachments_json") or "[]")
+                except (TypeError, ValueError):
+                    related_attachments = []
+                reply = {
+                    "seq": int(related["seq"]),
+                    "sender_name": str(related.get("sender_name") or "ODDI"),
+                    "text": "This message was deleted." if related.get("deleted_at") else str(related.get("body") or "")[:240],
+                    "deleted": bool(related.get("deleted_at")),
+                    "has_attachments": bool(related_attachments) and not bool(related.get("deleted_at")),
+                }
+        message_id = str(row["id"])
+        reactions = list(reaction_groups.get(message_id, {}).values())
+        result.append(_public_message(row, viewer_id, reactions, reply))
+    return result
+
+
+def _get_messages(workspace_id: str, viewer_id: int, after_seq: int = 0, limit: int = 100,
+                  updated_after: str | None = None):
     conn = _connection()
     try:
         _require_membership(conn, workspace_id, viewer_id)
-        if after_seq > 0:
+        now = _timestamp()
+        if updated_after:
+            rows = _fetchall(
+                conn,
+                """SELECT * FROM shared_workspace_messages
+                   WHERE workspace_id = ?
+                     AND (updated_at >= ? OR seq > ?
+                          OR ai_status IN ('queued', 'processing') OR pinned_until > ?)
+                   ORDER BY seq ASC LIMIT ?""",
+                (workspace_id, updated_after, after_seq, now, min(200, max(1, limit))),
+            )
+        elif after_seq > 0:
             rows = _fetchall(
                 conn,
                 """SELECT * FROM shared_workspace_messages
@@ -256,15 +351,70 @@ def _get_messages(workspace_id: str, viewer_id: int, after_seq: int = 0, limit: 
         else:
             rows = _fetchall(
                 conn,
-                """SELECT * FROM (
-                     SELECT * FROM shared_workspace_messages
-                     WHERE workspace_id = ? ORDER BY seq DESC LIMIT ?
-                   ) recent ORDER BY seq ASC""",
-                (workspace_id, limit),
+                """SELECT * FROM shared_workspace_messages
+                   WHERE workspace_id = ?
+                     AND (seq IN (
+                           SELECT seq FROM shared_workspace_messages
+                           WHERE workspace_id = ? ORDER BY seq DESC LIMIT ?
+                         ) OR pinned_until > ?)
+                   ORDER BY seq ASC LIMIT ?""",
+                (workspace_id, workspace_id, limit, now, limit + 50),
             )
-        return [_public_message(row, viewer_id) for row in rows]
+        return _public_messages(conn, rows, viewer_id)
     finally:
         conn.close()
+
+
+def _validate_message_attachments(raw: Any) -> list[dict[str, str]]:
+    if raw in (None, ""):
+        return []
+    if not isinstance(raw, list) or len(raw) > MAX_MESSAGE_ATTACHMENTS:
+        raise HTTPException(status_code=400, detail=f"Attach up to {MAX_MESSAGE_ATTACHMENTS} images per message.")
+    attachments: list[dict[str, str]] = []
+    total_bytes = 0
+    pattern = re.compile(r"^data:(image/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/]+={0,2})$", re.IGNORECASE)
+    for item in raw:
+        if not isinstance(item, dict):
+            raise HTTPException(status_code=400, detail="One of the image attachments is invalid.")
+        data = str(item.get("data") or "")
+        match = pattern.fullmatch(data)
+        if not match:
+            raise HTTPException(status_code=400, detail="Attach a PNG, JPEG, WebP, or GIF image.")
+        content_type = match.group(1).lower()
+        if content_type not in ALLOWED_IMAGE_TYPES:
+            raise HTTPException(status_code=400, detail="That image type is not supported.")
+        try:
+            decoded = base64.b64decode(match.group(2), validate=True)
+        except (binascii.Error, ValueError) as error:
+            raise HTTPException(status_code=400, detail="One of the image attachments is invalid.") from error
+        if not decoded or len(decoded) > MAX_IMAGE_BYTES:
+            raise HTTPException(status_code=413, detail="Each image must be smaller than 5 MB.")
+        signatures = {
+            "image/png": decoded.startswith(b"\x89PNG\r\n\x1a\n"),
+            "image/jpeg": decoded.startswith(b"\xff\xd8\xff"),
+            "image/webp": decoded.startswith(b"RIFF") and decoded[8:12] == b"WEBP",
+            "image/gif": decoded.startswith((b"GIF87a", b"GIF89a")),
+        }
+        if not signatures.get(content_type, False):
+            raise HTTPException(status_code=400, detail="The file contents do not match the image type.")
+        total_bytes += len(decoded)
+        if total_bytes > MAX_TOTAL_IMAGE_BYTES:
+            raise HTTPException(status_code=413, detail="Images in one message must total 10 MB or less.")
+        name = str(item.get("name") or "Image")[:180].replace("\\", "/").split("/")[-1]
+        name = re.sub(r"[\x00-\x1f\x7f]", "", name).strip() or "Image"
+        attachments.append({"name": name, "type": content_type, "data": data})
+    return attachments
+
+
+def _get_message_for_viewer(conn: Any, workspace_id: str, seq: int, viewer_id: int):
+    row = _fetchone(
+        conn,
+        "SELECT * FROM shared_workspace_messages WHERE workspace_id = ? AND seq = ?",
+        (workspace_id, seq),
+    )
+    if not row:
+        raise HTTPException(status_code=404, detail="That message is no longer available.")
+    return _public_messages(conn, [row], viewer_id)[0]
 
 
 def _workspace_details(workspace_id: str, viewer_id: int):
@@ -419,12 +569,6 @@ def _invitations_for_email(email: str):
     conn = _connection()
     try:
         now = _timestamp()
-        conn.execute(
-            """UPDATE shared_workspace_invitations SET status = 'expired', responded_at = ?
-               WHERE lower(invitee_email) = ? AND status = 'pending' AND expires_at <= ?""",
-            (now, email, now),
-        )
-        conn.commit()
         rows = _fetchall(
             conn,
             """SELECT i.id, i.workspace_id, i.inviter_name, i.inviter_email,
@@ -1230,11 +1374,21 @@ def _revoke_invitation(user: dict[str, Any], workspace_id: str, invitation_id: s
         conn.close()
 
 
-def _insert_user_message(user: dict[str, Any], workspace_id: str, body: str, client_id: str, ai_request: str | None):
+def _insert_user_message(user: dict[str, Any], workspace_id: str, body: str, client_id: str,
+                         ai_request: str | None, attachments: list[dict[str, str]] | None = None,
+                         reply_to_seq: int | None = None):
     conn = _connection()
     try:
         _begin_write(conn, "shared")
         _require_membership(conn, workspace_id, user["id"])
+        if reply_to_seq is not None:
+            reply_target = _fetchone(
+                conn,
+                "SELECT seq FROM shared_workspace_messages WHERE workspace_id = ? AND seq = ? AND deleted_at IS NULL",
+                (workspace_id, reply_to_seq),
+            )
+            if not reply_target:
+                raise HTTPException(status_code=400, detail="Choose a message in this group to reply to.")
         previous = _fetchone(
             conn,
             "SELECT * FROM shared_workspace_messages WHERE workspace_id = ? AND client_message_id = ?",
@@ -1244,21 +1398,23 @@ def _insert_user_message(user: dict[str, Any], workspace_id: str, body: str, cli
             if previous["sender_user_id"] is None or int(previous["sender_user_id"]) != user["id"]:
                 raise HTTPException(status_code=409, detail="That message ID has already been used.")
             conn.commit()
-            return _public_message(previous, user["id"])
+            return _public_messages(conn, [previous], user["id"])[0]
 
         message_id = str(uuid.uuid4())
         now = _timestamp()
         conn.execute(
             """INSERT INTO shared_workspace_messages
                (id, workspace_id, sender_user_id, sender_name, sender_email, kind,
-                body, created_at, client_message_id, ai_status)
-               VALUES (?, ?, ?, ?, ?, 'user', ?, ?, ?, ?)""",
-            (message_id, workspace_id, user["id"], user["name"], user["email"], body, now, client_id, "queued" if ai_request is not None else None),
+                body, created_at, client_message_id, ai_status, attachments_json, reply_to_seq, updated_at)
+               VALUES (?, ?, ?, ?, ?, 'user', ?, ?, ?, ?, ?, ?, ?)""",
+            (message_id, workspace_id, user["id"], user["name"], user["email"], body, now, client_id,
+             "queued" if ai_request is not None else None, json.dumps(attachments or []), reply_to_seq, now),
         )
         saved = _fetchone(conn, "SELECT * FROM shared_workspace_messages WHERE id = ?", (message_id,))
         conn.execute("UPDATE shared_workspaces SET updated_at = ? WHERE id = ?", (now, workspace_id))
+        public = _public_messages(conn, [saved], user["id"])[0]
         conn.commit()
-        return _public_message(saved, user["id"])
+        return public
     except HTTPException:
         conn.rollback()
         raise
@@ -1274,7 +1430,7 @@ def _insert_user_message(user: dict[str, Any], workspace_id: str, body: str, cli
                 (workspace_id, client_id),
             )
             if previous and previous["sender_user_id"] is not None and int(previous["sender_user_id"]) == user["id"]:
-                return _public_message(previous, user["id"])
+                return _public_messages(conn, [previous], user["id"])[0]
             if previous:
                 raise HTTPException(status_code=409, detail="That message ID has already been used.")
         except HTTPException:
@@ -1283,6 +1439,241 @@ def _insert_user_message(user: dict[str, Any], workspace_id: str, body: str, cli
             pass
         logger.exception("Could not save shared workspace message in %s", workspace_id)
         raise HTTPException(status_code=500, detail="ODDI could not send that message. Please try again.")
+    finally:
+        conn.close()
+
+
+def _toggle_message_reaction(user: dict[str, Any], workspace_id: str, seq: int, emoji: str):
+    if emoji not in ALLOWED_REACTIONS:
+        raise HTTPException(status_code=400, detail="Choose one of the available reactions.")
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        _require_membership(conn, workspace_id, user["id"])
+        message = _fetchone(
+            conn,
+            "SELECT id, deleted_at FROM shared_workspace_messages WHERE workspace_id = ? AND seq = ?",
+            (workspace_id, seq),
+        )
+        if not message:
+            raise HTTPException(status_code=404, detail="That message is no longer available.")
+        if message["deleted_at"]:
+            raise HTTPException(status_code=400, detail="Deleted messages cannot be reacted to.")
+        previous = _fetchone(
+            conn,
+            "SELECT 1 AS present FROM shared_workspace_message_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?",
+            (message["id"], user["id"], emoji),
+        )
+        if previous:
+            conn.execute(
+                "DELETE FROM shared_workspace_message_reactions WHERE message_id = ? AND user_id = ? AND emoji = ?",
+                (message["id"], user["id"], emoji),
+            )
+        else:
+            conn.execute(
+                """INSERT INTO shared_workspace_message_reactions
+                   (workspace_id, message_id, user_id, emoji, created_at) VALUES (?, ?, ?, ?, ?)""",
+                (workspace_id, message["id"], user["id"], emoji, _timestamp()),
+            )
+        conn.execute("UPDATE shared_workspace_messages SET updated_at = ? WHERE id = ?", (_timestamp(), message["id"]))
+        updated = _get_message_for_viewer(conn, workspace_id, seq, user["id"])
+        conn.commit()
+        return updated
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not update reaction on shared message %s", seq)
+        raise HTTPException(status_code=500, detail="ODDI could not update that reaction.")
+    finally:
+        conn.close()
+
+
+def _set_message_pin(user: dict[str, Any], workspace_id: str, seq: int, duration_hours: int | None):
+    if duration_hours not in (None, 24, 168, 720):
+        raise HTTPException(status_code=400, detail="Choose a pin duration of 24 hours, 7 days, or 30 days.")
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        _require_membership(conn, workspace_id, user["id"])
+        message = _fetchone(
+            conn,
+            "SELECT deleted_at FROM shared_workspace_messages WHERE workspace_id = ? AND seq = ?",
+            (workspace_id, seq),
+        )
+        if not message:
+            raise HTTPException(status_code=404, detail="That message is no longer available.")
+        if message["deleted_at"]:
+            raise HTTPException(status_code=400, detail="Deleted messages cannot be pinned.")
+        until = _timestamp(_now() + timedelta(hours=duration_hours)) if duration_hours else None
+        conn.execute(
+            "UPDATE shared_workspace_messages SET pinned_until = ?, updated_at = ? WHERE workspace_id = ? AND seq = ?",
+            (until, _timestamp(), workspace_id, seq),
+        )
+        updated = _get_message_for_viewer(conn, workspace_id, seq, user["id"])
+        conn.commit()
+        return updated
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not update pin on shared message %s", seq)
+        raise HTTPException(status_code=500, detail="ODDI could not update that pin.")
+    finally:
+        conn.close()
+
+
+def _edit_shared_message(user: dict[str, Any], workspace_id: str, seq: int, body: str):
+    body = str(body or "").strip()
+    if len(body) > MAX_MESSAGE_LENGTH:
+        raise HTTPException(status_code=413, detail=f"Messages are limited to {MAX_MESSAGE_LENGTH} characters.")
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        _require_membership(conn, workspace_id, user["id"])
+        message = _dict(_fetchone(
+            conn,
+            "SELECT * FROM shared_workspace_messages WHERE workspace_id = ? AND seq = ?",
+            (workspace_id, seq),
+        )) or {}
+        if not message:
+            raise HTTPException(status_code=404, detail="That message is no longer available.")
+        if message["deleted_at"] or message["sender_user_id"] is None or int(message["sender_user_id"]) != user["id"]:
+            raise HTTPException(status_code=403, detail="You can edit your own messages only.")
+        if str(message["kind"]) not in {"user", "forwarded"}:
+            raise HTTPException(status_code=403, detail="That message cannot be edited.")
+        try:
+            has_attachments = bool(json.loads(message.get("attachments_json") or "[]"))
+        except (TypeError, ValueError):
+            has_attachments = False
+        if not body and not has_attachments:
+            raise HTTPException(status_code=400, detail="A message needs text or an image.")
+        now = _timestamp()
+        conn.execute(
+            "UPDATE shared_workspace_messages SET body = ?, edited_at = ?, updated_at = ? WHERE workspace_id = ? AND seq = ?",
+            (body, now, now, workspace_id, seq),
+        )
+        updated = _get_message_for_viewer(conn, workspace_id, seq, user["id"])
+        conn.commit()
+        return updated
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not edit shared message %s", seq)
+        raise HTTPException(status_code=500, detail="ODDI could not edit that message.")
+    finally:
+        conn.close()
+
+
+def _delete_shared_messages(user: dict[str, Any], workspace_id: str, seqs: list[int]):
+    if not seqs or len(seqs) > 100:
+        raise HTTPException(status_code=400, detail="Select between 1 and 100 messages to delete.")
+    seqs = list(dict.fromkeys(int(seq) for seq in seqs))
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        membership = _require_membership(conn, workspace_id, user["id"])
+        is_admin = str(membership["my_role"]) == "owner"
+        placeholders = ",".join("?" for _ in seqs)
+        rows = _fetchall(
+            conn,
+            f"SELECT seq, sender_user_id, deleted_at FROM shared_workspace_messages WHERE workspace_id = ? AND seq IN ({placeholders})",
+            (workspace_id, *seqs),
+        )
+        by_seq = {int(row["seq"]): row for row in rows}
+        if any(seq not in by_seq for seq in seqs):
+            raise HTTPException(status_code=404, detail="One of the selected messages is no longer available.")
+        for seq in seqs:
+            row = by_seq[seq]
+            if row["deleted_at"]:
+                continue
+            authored_by_user = row["sender_user_id"] is not None and int(row["sender_user_id"]) == user["id"]
+            if not is_admin and not authored_by_user:
+                raise HTTPException(status_code=403, detail="You can delete your own messages only.")
+        now = _timestamp()
+        conn.execute(
+            f"""UPDATE shared_workspace_messages SET body = '', attachments_json = '[]', pinned_until = NULL,
+                deleted_at = ?, updated_at = ?
+                WHERE workspace_id = ? AND seq IN ({placeholders}) AND deleted_at IS NULL""",
+            (now, now, workspace_id, *seqs),
+        )
+        conn.execute(
+            f"DELETE FROM shared_workspace_message_reactions WHERE workspace_id = ? AND message_id IN (SELECT id FROM shared_workspace_messages WHERE workspace_id = ? AND seq IN ({placeholders}))",
+            (workspace_id, workspace_id, *seqs),
+        )
+        updated_rows = _fetchall(
+            conn,
+            f"SELECT * FROM shared_workspace_messages WHERE workspace_id = ? AND seq IN ({placeholders}) ORDER BY seq",
+            (workspace_id, *seqs),
+        )
+        messages = _public_messages(conn, updated_rows, user["id"])
+        conn.commit()
+        return {"messages": messages}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not delete shared messages in %s", workspace_id)
+        raise HTTPException(status_code=500, detail="ODDI could not delete those messages.")
+    finally:
+        conn.close()
+
+
+def _forward_shared_messages(user: dict[str, Any], source_workspace_id: str, target_workspace_id: str,
+                             seqs: list[int]):
+    if not seqs or len(seqs) > 50:
+        raise HTTPException(status_code=400, detail="Select between 1 and 50 messages to forward.")
+    seqs = list(dict.fromkeys(int(seq) for seq in seqs))
+    conn = _connection()
+    try:
+        _begin_write(conn, "shared")
+        source = _require_membership(conn, source_workspace_id, user["id"])
+        target = _require_membership(conn, target_workspace_id, user["id"])
+        placeholders = ",".join("?" for _ in seqs)
+        rows = _fetchall(
+            conn,
+            f"SELECT * FROM shared_workspace_messages WHERE workspace_id = ? AND seq IN ({placeholders})",
+            (source_workspace_id, *seqs),
+        )
+        by_seq = {int(row["seq"]): _dict(row) or {} for row in rows}
+        if any(seq not in by_seq for seq in seqs):
+            raise HTTPException(status_code=404, detail="One of the selected messages is no longer available.")
+        saved_rows = []
+        now = _timestamp()
+        for seq in seqs:
+            original = by_seq[seq]
+            if original["deleted_at"]:
+                raise HTTPException(status_code=400, detail="Deleted messages cannot be forwarded.")
+            original_sender = str(original.get("forwarded_from_sender") or original.get("sender_name") or "ODDI")
+            original_workspace = str(original.get("forwarded_from_workspace") or source["name"])
+            message_id = str(uuid.uuid4())
+            conn.execute(
+                """INSERT INTO shared_workspace_messages
+                   (id, workspace_id, sender_user_id, sender_name, sender_email, kind, body,
+                    created_at, client_message_id, attachments_json, forwarded_from_sender,
+                    forwarded_from_workspace, updated_at)
+                   VALUES (?, ?, ?, ?, ?, 'forwarded', ?, ?, ?, ?, ?, ?, ?)""",
+                (message_id, target_workspace_id, user["id"], user["name"], user["email"],
+                 str(original["body"] or ""), now, str(uuid.uuid4()),
+                 str(original.get("attachments_json") or "[]"), original_sender, original_workspace, now),
+            )
+            saved_rows.append(_fetchone(conn, "SELECT * FROM shared_workspace_messages WHERE id = ?", (message_id,)))
+        conn.execute("UPDATE shared_workspaces SET updated_at = ? WHERE id = ?", (now, target_workspace_id))
+        messages = _public_messages(conn, saved_rows, user["id"])
+        conn.commit()
+        return {"messages": messages}
+    except HTTPException:
+        conn.rollback()
+        raise
+    except Exception:
+        conn.rollback()
+        logger.exception("Could not forward shared messages from %s to %s", source_workspace_id, target_workspace_id)
+        raise HTTPException(status_code=500, detail="ODDI could not forward those messages.")
     finally:
         conn.close()
 
@@ -1338,8 +1729,8 @@ def _claim_next_job(workspace_id: str):
             conn.commit()
             return None
         conn.execute(
-            "UPDATE shared_workspace_messages SET ai_status = 'processing', ai_started_at = ?, ai_error = NULL WHERE id = ? AND ai_status = 'queued'",
-            (now, message_id),
+            "UPDATE shared_workspace_messages SET ai_status = 'processing', ai_started_at = ?, ai_error = NULL, updated_at = ? WHERE id = ? AND ai_status = 'queued'",
+            (now, now, message_id),
         )
         conn.commit()
         return _dict(message)
@@ -1400,20 +1791,20 @@ def _save_ai_result(job: dict[str, Any], result: str, failed: bool = False):
         if failed:
             text = "I couldn't complete that reply because of a temporary issue. Please try your `@ODDI` request again."
             conn.execute(
-                "UPDATE shared_workspace_messages SET ai_status = 'failed', ai_error = ? WHERE id = ?",
-                ("ODDI could not complete this response.", job["id"]),
+                "UPDATE shared_workspace_messages SET ai_status = 'failed', ai_error = ?, updated_at = ? WHERE id = ?",
+                ("ODDI could not complete this response.", now, job["id"]),
             )
         else:
             text = str(result or "").strip() or "I couldn't produce a reply for that message. Please try again."
             conn.execute(
-                "UPDATE shared_workspace_messages SET ai_status = 'completed', ai_error = NULL WHERE id = ?",
-                (job["id"],),
+                "UPDATE shared_workspace_messages SET ai_status = 'completed', ai_error = NULL, updated_at = ? WHERE id = ?",
+                (now, job["id"]),
             )
         conn.execute(
             """INSERT INTO shared_workspace_messages
-               (id, workspace_id, sender_name, kind, body, created_at, client_message_id)
-               VALUES (?, ?, 'ODDI', 'assistant', ?, ?, ?)""",
-            (str(uuid.uuid4()), job["workspace_id"], text[:60000], now, str(uuid.uuid4())),
+               (id, workspace_id, sender_name, kind, body, created_at, client_message_id, updated_at)
+               VALUES (?, ?, 'ODDI', 'assistant', ?, ?, ?, ?)""",
+            (str(uuid.uuid4()), job["workspace_id"], text[:60000], now, str(uuid.uuid4()), now),
         )
         conn.execute(
             "UPDATE shared_workspaces SET ai_active_message_id = NULL, updated_at = ? WHERE id = ? AND ai_active_message_id = ?",
@@ -1738,11 +2129,13 @@ async def api_mark_shared_workspace_read(request: Request, workspace_id: str):
 
 
 @router.get("/{workspace_id}/messages")
-async def api_shared_workspace_messages(request: Request, workspace_id: str, after_seq: int = 0, limit: int = 100):
+async def api_shared_workspace_messages(request: Request, workspace_id: str, after_seq: int = 0,
+                                        limit: int = 100, updated_after: str | None = None):
     account = await _account(request)
     after_seq = max(0, int(after_seq or 0))
     limit = min(200, max(1, int(limit or 100)))
-    messages = await run_in_threadpool(_get_messages, workspace_id, account["id"], after_seq, limit)
+    updated_after = str(updated_after or "")[:40] or None
+    messages = await run_in_threadpool(_get_messages, workspace_id, account["id"], after_seq, limit, updated_after)
     return {"messages": messages}
 
 
@@ -1753,19 +2146,111 @@ async def api_send_shared_workspace_message(request: Request, workspace_id: str)
         payload = await request.json()
     except Exception:
         payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
     body = str(payload.get("text") or "").strip()
-    if not body:
-        raise HTTPException(status_code=400, detail="Write a message before sending.")
+    attachments = _validate_message_attachments(payload.get("attachments"))
+    if not body and not attachments:
+        raise HTTPException(status_code=400, detail="Write a message or attach an image before sending.")
     if len(body) > MAX_MESSAGE_LENGTH:
         raise HTTPException(status_code=413, detail=f"Messages are limited to {MAX_MESSAGE_LENGTH} characters.")
     match = _AI_PREFIX.match(body)
     ai_request = match.group(1).strip() if match else None
     if match and not ai_request:
         raise HTTPException(status_code=400, detail="Add a question after `@ODDI`.")
+    reply_to_seq = payload.get("reply_to_seq")
+    if reply_to_seq not in (None, ""):
+        try:
+            reply_to_seq = int(reply_to_seq)
+            if reply_to_seq < 1:
+                raise ValueError
+        except (TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(status_code=400, detail="Choose a valid message to reply to.") from error
+    else:
+        reply_to_seq = None
     client_id = str(payload.get("client_message_id") or "").strip()
     try:
         client_id = str(uuid.UUID(client_id))
     except (ValueError, AttributeError, TypeError):
         client_id = str(uuid.uuid4())
-    message = await run_in_threadpool(_insert_user_message, account, workspace_id, body, client_id, ai_request)
+    message = await run_in_threadpool(
+        _insert_user_message, account, workspace_id, body, client_id, ai_request, attachments, reply_to_seq
+    )
     return {"message": message}
+
+
+@router.post("/{workspace_id}/messages/{seq}/reactions")
+async def api_toggle_shared_message_reaction(request: Request, workspace_id: str, seq: int):
+    account = await _account(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    emoji = str(payload.get("emoji") or "")
+    message = await run_in_threadpool(_toggle_message_reaction, account, workspace_id, seq, emoji)
+    return {"message": message}
+
+
+@router.post("/{workspace_id}/messages/{seq}/pin")
+async def api_set_shared_message_pin(request: Request, workspace_id: str, seq: int):
+    account = await _account(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    duration = payload.get("duration_hours")
+    if duration not in (None, ""):
+        try:
+            duration = int(duration)
+        except (TypeError, ValueError, OverflowError) as error:
+            raise HTTPException(status_code=400, detail="Choose a valid pin duration.") from error
+    else:
+        duration = None
+    message = await run_in_threadpool(_set_message_pin, account, workspace_id, seq, duration)
+    return {"message": message}
+
+
+@router.patch("/{workspace_id}/messages/{seq}")
+async def api_edit_shared_workspace_message(request: Request, workspace_id: str, seq: int):
+    account = await _account(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        payload = {}
+    if not isinstance(payload, dict):
+        payload = {}
+    message = await run_in_threadpool(_edit_shared_message, account, workspace_id, seq, payload.get("text", ""))
+    return {"message": message}
+
+
+@router.post("/{workspace_id}/messages/delete")
+async def api_delete_shared_workspace_messages(request: Request, workspace_id: str):
+    account = await _account(request)
+    try:
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            payload = {}
+        seqs = [int(seq) for seq in payload.get("seqs", [])]
+    except (TypeError, ValueError, OverflowError):
+        raise HTTPException(status_code=400, detail="Choose valid messages to delete.")
+    return await run_in_threadpool(_delete_shared_messages, account, workspace_id, seqs)
+
+
+@router.post("/{workspace_id}/messages/forward")
+async def api_forward_shared_workspace_messages(request: Request, workspace_id: str):
+    account = await _account(request)
+    try:
+        payload = await request.json()
+        if not isinstance(payload, dict):
+            payload = {}
+        seqs = [int(seq) for seq in payload.get("seqs", [])]
+    except (TypeError, ValueError, OverflowError):
+        raise HTTPException(status_code=400, detail="Choose valid messages to forward.")
+    target_workspace_id = str(payload.get("target_workspace_id") or "").strip()
+    if not target_workspace_id:
+        raise HTTPException(status_code=400, detail="Choose a group to forward to.")
+    return await run_in_threadpool(_forward_shared_messages, account, workspace_id, target_workspace_id, seqs)

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#06100b">
+  <title>Skills Studio · ODDI AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='oddi-skills-studio.css') }}?v=20261021-room-chat-workspace-v3">
+  <link rel="stylesheet" href="{{ url_for('static', path='oddi-theme-palette.css') }}?v=20261021-blue-palette-refine-v4">
+  <script src="{{ url_for('static', path='oddi-theme-palette.js') }}?v=20261020-palette-v1" defer></script>
+</head>
+<body>
+  <div class="skills-app" data-user-key="{{ skills_user_key }}" data-browser-local-chats="{{ 'true' if skills_browser_local_chats else 'false' }}">
+    <header class="skills-topbar">
+      <div class="skills-topbar-left">
+        <a id="skillsBackButton" class="skills-back-home" href="/" aria-label="Back to home"><span aria-hidden="true">←</span><span id="skillsBackLabel">Back to home</span></a>
+        <a class="skills-brand" href="/skills-studio" aria-label="Skills Studio dashboard">
+          <span class="skills-brand-mark" aria-hidden="true">O</span>
+          <span><small>ODDI · LEARNING LAB</small><strong>Skills Studio</strong></span>
+        </a>
+      </div>
+      <button id="learnNewSkillButton" class="skills-new-button" type="button"><span aria-hidden="true">＋</span><span>Learn new skill</span></button>
+    </header>
+
+    <main class="skills-layout">
+      <aside class="skills-library" aria-label="Your saved skills">
+        <div class="skills-library-heading">
+          <div><span class="section-eyebrow">YOUR LEARNING ROOMS</span><h1>Your skills</h1></div>
+          <span id="skillCount" class="skill-count">0</span>
+        </div>
+        <p id="skillsLibraryIntro" class="skills-library-intro">Each skill has its own saved chat and learning progress.</p>
+        <div id="skillSessionList" class="skill-session-list" aria-live="polite"></div>
+        <div id="skillsLibraryEmpty" class="skills-library-empty" hidden>
+          <span class="empty-orbit" aria-hidden="true">✳</span>
+          <strong>Your first skill starts here</strong>
+          <span>Choose a skill and ODDI will build a learning path around you.</span>
+          <button class="text-action" type="button" data-open-skill-form>Start learning <span aria-hidden="true">→</span></button>
+        </div>
+        <div class="skills-library-footer"><span class="live-indicator"></span> Your rooms save automatically</div>
+      </aside>
+
+      <section class="skills-workspace" aria-label="Skills Studio workspace">
+        <section id="skillsDashboard" class="skills-dashboard" aria-labelledby="dashboardTitle">
+          <div class="dashboard-copy">
+            <span class="section-eyebrow"><span class="live-indicator"></span> YOUR SKILLS LAP</span>
+            <h2 id="dashboardTitle">Make progress <span>you can prove.</span></h2>
+            <p id="dashboardSubtitle">Choose a skill. ODDI will assess where you are, then guide you through a practical learning path.</p>
+          </div>
+          <div id="dashboardStage" class="dashboard-stage">
+            <div class="dashboard-wheel-wrap">
+              <div class="wheel-caption"><span>ASSESS → LEARN → PRACTICE → BUILD → PROVE → IMPROVE</span><i>Click or tap a phase to explore</i></div>
+              <div id="dashboardWheel" class="skills-wheel" data-wheel-mode="dashboard" aria-label="Skills Lap progress wheel"></div>
+            </div>
+            <aside id="dashboardPhaseInsight" class="phase-insight dashboard-phase-panel" aria-live="polite" hidden></aside>
+          </div>
+          <div class="dashboard-bottomline">
+            <span class="dashboard-stat-mark" aria-hidden="true">⌁</span>
+            <span id="dashboardProgressSummary">Your learning path moves from a quick assessment to real proof of skill.</span>
+          </div>
+        </section>
+
+        <section id="learningRoom" class="learning-room" aria-label="Learning room" hidden>
+          <div class="room-grid">
+            <section class="room-chat-panel" aria-label="Learning conversation with ODDI">
+              <header class="room-chat-heading">
+                <div class="room-chat-identity">
+                  <button id="allSkillsButton" class="room-back-button" type="button" aria-label="Back to all skills" title="All skills"><span aria-hidden="true">←</span><span>All skills</span></button>
+                  <span class="room-coach-mark" aria-hidden="true">O</span>
+                  <span class="room-coach-copy"><strong id="roomCoachTitle">ODDI learning coach</strong><small><span class="oddi-presence"></span> Your private learning chat</small></span>
+                </div>
+                <div class="room-chat-meta">
+                  <span id="roomPhaseLabel" class="room-phase-label">ASSESS</span>
+                  <span class="room-save-status"><span class="save-dot"></span><span id="roomSaveText">Saved</span></span>
+                </div>
+              </header>
+              <div class="room-message-scroll-area">
+                <div id="roomMessages" class="room-messages" aria-live="polite"></div>
+                <button id="roomJumpLatest" class="room-jump-latest" type="button" aria-label="Jump to latest message" title="Latest message" hidden>
+                  <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3.5v12m-5-5 5 5 5-5"/></svg>
+                </button>
+              </div>
+              <form id="roomComposer" class="room-composer">
+                <label class="sr-only" for="roomMessageInput">Message ODDI</label>
+                <textarea id="roomMessageInput" rows="1" maxlength="12000" placeholder="Ask ODDI about your skill…" required></textarea>
+                <button id="roomSendButton" type="submit" aria-label="Send message"><span aria-hidden="true">↑</span></button>
+                <small>Enter to send · Shift + Enter for a new line</small>
+              </form>
+            </section>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div id="skillSetupOverlay" class="skill-setup-overlay" hidden>
+      <div class="skill-setup-backdrop" data-close-skill-form></div>
+      <section class="skill-setup-card" role="dialog" aria-modal="true" aria-labelledby="skillSetupTitle" aria-describedby="skillSetupDescription">
+        <button class="setup-close" type="button" data-close-skill-form aria-label="Close">×</button>
+        <span class="section-eyebrow"><span class="live-indicator"></span> A NEW SKILL PATH</span>
+        <h2 id="skillSetupTitle">What do you want to <span>learn?</span></h2>
+        <p id="skillSetupDescription">ODDI will shape the path around your goal and start with a short assessment.</p>
+        <form id="skillSetupForm">
+          <label for="skillNameInput">Skill</label>
+          <input id="skillNameInput" name="skill" maxlength="120" autocomplete="off" placeholder="e.g. Python, public speaking, data analysis" required>
+          <label for="skillGoalInput">What would you like to do with it? <span>Optional</span></label>
+          <textarea id="skillGoalInput" name="goal" rows="3" maxlength="500" placeholder="e.g. Build a personal finance tracker"></textarea>
+          <label for="skillLevelSelect">Your experience <span>Optional</span></label>
+          <select id="skillLevelSelect" name="current_level">
+            <option value="">Let ODDI find out in Assess</option>
+            <option value="beginner">New to this</option>
+            <option value="some experience">I know a little</option>
+            <option value="intermediate">I have some experience</option>
+            <option value="advanced">I am fairly experienced</option>
+          </select>
+          <button id="startSkillPathButton" class="start-path-button" type="submit"><span class="button-label">Start learning</span><span aria-hidden="true">↗</span></button>
+          <p id="skillSetupError" class="setup-error" role="alert" hidden></p>
+        </form>
+        <div class="setup-path-preview" aria-label="Learning path phases">
+          <span>Assess</span><b>→</b><span>Learn</span><b>→</b><span>Practice</span><b>→</b><span>Build</span><b>→</b><span>Prove</span><b>→</b><span>Improve</span>
+        </div>
+      </section>
+    </div>
+
+    <div id="skillsStudioStatus" class="skills-toast" role="status" aria-live="polite" hidden></div>
+  </div>
+  <script src="{{ url_for('static', path='oddi-skills-studio.js') }}?v=20261021-room-chat-workspace-v2" defer></script>
+</body>
+</html>

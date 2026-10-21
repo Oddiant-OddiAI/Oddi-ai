@@ -47,6 +47,95 @@ body.oddi-system-theme.dark-mode #oddi-react-sidebar-root {
 
 #oddi-react-sidebar-root * { box-sizing: border-box; }
 
+.oddi-rs-account-menu {
+  --rs-border: #dedede;
+  --rs-hover: #f1f1f1;
+  --rs-muted: #727272;
+  position: fixed;
+  z-index: 2147483647;
+  width: 232px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 6px 9px;
+  border: 1px solid var(--rs-border, #333);
+  border-radius: 14px;
+  background: #fff;
+  color: #161616;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, .34);
+  font-family: inherit;
+}
+
+body.dark-mode .oddi-rs-account-menu {
+  --rs-border: #333;
+  --rs-hover: #222;
+  --rs-muted: #aaa;
+  background: #151515;
+  color: #f4f4f4;
+}
+
+.oddi-rs-account-menu button {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 550;
+  text-align: left;
+  cursor: pointer;
+}
+
+.oddi-rs-account-menu button:hover,
+.oddi-rs-account-menu button:focus-visible {
+  outline: none;
+  background: var(--rs-hover, rgba(255,255,255,.09));
+}
+
+.oddi-rs-account-menu button svg { flex: 0 0 16px; color: var(--rs-muted, #999); }
+.oddi-rs-account-divider { height: 1px; margin: 3px 4px; background: var(--rs-border, #333); }
+.oddi-rs-palette-picker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 48px;
+  padding: 5px 8px;
+}
+.oddi-rs-account-menu .oddi-rs-palette-swatch {
+  display: grid;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--rs-border, #333);
+  border-radius: 50%;
+  background: transparent;
+}
+.oddi-rs-account-menu .oddi-rs-palette-swatch:hover,
+.oddi-rs-account-menu .oddi-rs-palette-swatch[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--rs-hover, #eee);
+}
+.oddi-rs-palette-swatch span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.28);
+  border-radius: 50%;
+  color: #fff;
+}
+.oddi-rs-palette-swatch[data-palette="mono"] span { background: linear-gradient(135deg, #050505 0 50%, #f5f5f5 50% 100%); border-color: #8a8a8a; color: #fff; }
+.oddi-rs-palette-swatch[data-palette="cyber-green"] span { background: linear-gradient(135deg, #062013, #28dc82); }
+.oddi-rs-palette-swatch[data-palette="cyber-blue"] span { background: linear-gradient(135deg, #061b2b, #35c9ff); }
+
 /* The legacy page hamburger is a separate control from the React sidebar.
    The React rail owns the mobile opener; desktop keeps its existing sidebar. */
 #menuBtn.menu-btn { display: none !important; }

@@ -35,6 +35,18 @@ RESUME_ANALYSIS_TRIGGERS = {
     "review my cv",
 }
 
+SKILLS_STUDIO_ROUTING_CONTEXT_PATTERN = re.compile(
+    r"\s*\[Skills Studio coach instructions:.*\]\s*$",
+    re.DOTALL,
+)
+
+
+def _request_analysis_text(message):
+    """Keep Skills Studio's private coach prompt out of intent routing."""
+    text = str(message or "")
+    cleaned = SKILLS_STUDIO_ROUTING_CONTEXT_PATTERN.sub("", text).strip()
+    return cleaned or text
+
 
 def is_resume_analysis_request(message):
     if not message:
@@ -605,6 +617,8 @@ def process_message(
     allow_user_knowledge=True,
     allow_account_actions=True,
 ):
+    request_analysis_message = _request_analysis_text(user_message)
+
     # The HTTP layer resolves identity from the authenticated session. Keep
     # identity optional so existing internal/legacy callers remain compatible.
     if identity is not None:
@@ -665,7 +679,7 @@ def process_message(
         )
 
     resume_export_followup = _is_resume_export_followup(
-        user_message,
+        request_analysis_message,
         conversation_history,
     )
 
@@ -673,7 +687,7 @@ def process_message(
     if (
         not uploaded_files
         and not resume_export_followup
-        and analyze_request(user_message).get("intent")
+        and analyze_request(request_analysis_message).get("intent")
         not in {"resume_create", "resume_edit"}
     ):
 
@@ -687,14 +701,14 @@ def process_message(
     # even when job files are uploaded.
     if uploaded_files:
 
-        if is_job_context_question(user_message):
+        if is_job_context_question(request_analysis_message):
 
             fast_reply = fast_response(user_message, message)
 
             if fast_reply:
                 return fast_reply
     # 2.5 Resume Intelligence
-    resume_analysis = is_resume_analysis_request(user_message)
+    resume_analysis = is_resume_analysis_request(request_analysis_message)
     
     if resume_analysis:
 
@@ -1009,7 +1023,7 @@ def process_message(
     # web requests can use the same configured model as ordinary responses.
     #
     request_for_routing = analyze_request(
-        user_message,
+        request_analysis_message,
         uploaded_files=uploaded_files,
         images=images,
         video_frames=video_frames,
