@@ -885,6 +885,12 @@ html[data-oddi-palette] body[data-oddi-palette] .studio-shell .studio-primary-bu
   filter: none !important;
 }
 
+/* Keep labels legible when the active palette uses a light accent surface. */
+html[data-oddi-palette] body[data-oddi-palette] .studio-shell :is(.studio-primary-button,.answer-all-questions-button),
+html[data-oddi-palette] body[data-oddi-palette] .studio-shell :is(.studio-primary-button,.answer-all-questions-button) > * {
+  color: var(--oddi-theme-bg) !important;
+}
+
 /* Assistant replies never get a card background. Keep this selector independent
    of body theme attributes so legacy dark-mode rules cannot restore the block. */
 #chatbox.chatbox > .bot-message,
