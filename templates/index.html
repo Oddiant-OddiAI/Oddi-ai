@@ -2885,7 +2885,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
     <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261020-site-palette-1">
     <link rel="stylesheet" href="/static/oddi-profile.css?v=20261020-profile-inline-v3">
     <link rel="stylesheet" href="/static/oddi-help-feedback.css?v=20261019-3">
-    <link rel="stylesheet" href="/static/oddi-shared-workspaces.css?v=20261021-themed-composer-v1">
+    <link rel="stylesheet" href="/static/oddi-shared-workspaces.css?v=20261022-hide-home-actions-v1">
 <style id="oddi-final-ui-touchups">
 /* Final homepage UI touches: goal helper placement + compact circular send button. */
 .home-next-move p{
@@ -5203,6 +5203,7 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
     <header class="oddi-settings-page-header">
       <div class="oddi-settings-page-title-wrap">
         <button id="closeSettings" class="oddi-settings-back" type="button" aria-label="Back"><span aria-hidden="true">&#8592;</span><span>Back</span></button>
+        <button id="oddiSettingsSectionsToggle" class="oddi-settings-sections-toggle" type="button" aria-controls="oddi-settings-nav" aria-expanded="false"><span aria-hidden="true">☷</span><span>Sections</span></button>
         <div class="oddi-settings-page-icon">⚙</div>
         <div>
           <h3 id="oddiSettingsTitle">Settings</h3>
@@ -5212,7 +5213,14 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
     </header>
 
     <div class="oddi-settings-page-body">
-      <aside class="oddi-settings-nav" aria-label="Settings navigation">
+      <aside id="oddi-settings-nav" class="oddi-settings-nav" aria-label="Settings navigation">
+        <div class="oddi-settings-nav-head">
+          <div class="oddi-settings-nav-heading-copy"><span class="oddi-settings-nav-eyebrow">ODDI PREFERENCES</span><strong>Settings</strong><small>Choose a section to personalize your space.</small></div>
+          <button id="oddiSettingsSectionsClose" class="oddi-settings-nav-close" type="button" aria-label="Go back to the previous screen"><span aria-hidden="true">&#8592;</span> Back</button>
+        </div>
+        <label class="oddi-settings-nav-search"><span aria-hidden="true">&#9906;</span><input id="oddiSettingsNavSearch" type="search" placeholder="Search settings..." aria-label="Search settings sections"></label>
+        <div class="oddi-settings-nav-group-title"><span>PERSONAL</span><small id="oddiSettingsNavCount">9 SECTIONS</small></div>
+        <div id="oddiSettingsNavEmpty" class="oddi-settings-nav-empty" hidden>No matching section</div>
         <button type="button" class="oddi-settings-nav-item is-active" data-settings-tab="appearance"><span>◉</span>Appearance</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="personalize"><span>✦</span>Personalize</button>
         <button type="button" class="oddi-settings-nav-item" data-settings-tab="voice"><span>♬</span>Voice &amp; Response</button>
@@ -42214,6 +42222,444 @@ html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-pag
   }
 }
 </style>
+<style id="oddi-settings-phone-redesign-v1">
+/* Mobile Settings: give navigation and controls a deliberate phone layout. */
+@media (max-width: 768px) {
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal,
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.show {
+    inset: 0 !important;
+    width: 100vw !important;
+    height: 100dvh !important;
+    overflow: hidden !important;
+    background: var(--oddi-theme-bg, #080808) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    background: var(--oddi-theme-bg, #080808) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-header {
+    position: relative !important;
+    z-index: 2 !important;
+    display: flex !important;
+    align-items: center !important;
+    flex: 0 0 calc(76px + env(safe-area-inset-top, 0px)) !important;
+    height: calc(76px + env(safe-area-inset-top, 0px)) !important;
+    min-height: calc(76px + env(safe-area-inset-top, 0px)) !important;
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 16px 8px !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 0 !important;
+    background: var(--oddi-theme-surface, #111) !important;
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--oddi-theme-bg, #080808) 55%, transparent) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-title-wrap {
+    display: grid !important;
+    grid-template-columns: auto minmax(0, 1fr) !important;
+    grid-template-rows: auto auto !important;
+    align-items: center !important;
+    column-gap: 13px !important;
+    row-gap: 2px !important;
+    width: 100% !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal #closeSettings.oddi-settings-back {
+    grid-column: 1 !important;
+    grid-row: 1 / span 2 !important;
+    min-width: 82px !important;
+    width: 82px !important;
+    height: 42px !important;
+    padding: 0 11px !important;
+    border-radius: 14px !important;
+    background: var(--oddi-theme-raised, #191919) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-icon {
+    display: none !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-title-wrap > div:last-child {
+    grid-column: 2 !important;
+    grid-row: 1 / span 2 !important;
+    min-width: 0 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-header h3 {
+    font-size: 21px !important;
+    line-height: 1.15 !important;
+    letter-spacing: -.035em !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-header p {
+    display: block !important;
+    margin: 3px 0 0 !important;
+    overflow: hidden !important;
+    color: var(--oddi-theme-muted, #999) !important;
+    font-size: 10.5px !important;
+    line-height: 1.25 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-body {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: column !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    background: var(--oddi-theme-bg, #080808) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-nav {
+    position: relative !important;
+    z-index: 1 !important;
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    height: 60px !important;
+    min-height: 60px !important;
+    margin: 0 !important;
+    padding: 9px 16px 10px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 0 !important;
+    background: var(--oddi-theme-surface, #111) !important;
+    scrollbar-width: none !important;
+    overscroll-behavior-x: contain !important;
+    scroll-snap-type: x proximity !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-nav::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    width: auto !important;
+    min-width: max-content !important;
+    height: 40px !important;
+    min-height: 40px !important;
+    padding: 0 13px !important;
+    border: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 999px !important;
+    background: var(--oddi-theme-raised, #191919) !important;
+    color: var(--oddi-theme-muted, #aaa) !important;
+    font-size: 12px !important;
+    font-weight: 650 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    scroll-snap-align: start !important;
+    box-shadow: none !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item > span {
+    display: inline-grid !important;
+    place-items: center !important;
+    flex: 0 0 16px !important;
+    width: 16px !important;
+    height: 16px !important;
+    color: var(--oddi-theme-accent, currentColor) !important;
+    font-size: 13px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item.is-active {
+    border-color: var(--oddi-theme-accent, currentColor) !important;
+    background: var(--oddi-theme-accent-soft, rgba(255,255,255,.09)) !important;
+    color: var(--oddi-theme-accent, currentColor) !important;
+    box-shadow: inset 0 0 0 1px var(--oddi-theme-accent-soft, transparent) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-nav-item:is(:hover,:focus-visible) {
+    border-color: var(--oddi-theme-accent, currentColor) !important;
+    outline: none !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-content {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 20px 16px calc(30px + env(safe-area-inset-bottom, 0px)) !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    background: var(--oddi-theme-bg, #080808) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    overscroll-behavior-y: contain !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-tab {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-content-heading {
+    margin: 0 0 18px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-content-heading h4 {
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    font-size: 22px !important;
+    font-weight: 750 !important;
+    letter-spacing: -.035em !important;
+    line-height: 1.15 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-content-heading p {
+    margin: 5px 0 0 !important;
+    color: var(--oddi-theme-muted, #aaa) !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-group {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 10px !important;
+    overflow: visible !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-label:has(+ .oddi-theme-grid) {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: var(--oddi-theme-muted, #aaa) !important;
+    font-size: 11px !important;
+    font-weight: 750 !important;
+    letter-spacing: .09em !important;
+    line-height: 1.2 !important;
+    text-transform: uppercase !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-theme-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 0 0 2px !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-theme-choice {
+    display: flex !important;
+    min-width: 0 !important;
+    min-height: 74px !important;
+    gap: 6px !important;
+    padding: 9px 5px !important;
+    border: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 15px !important;
+    background: var(--oddi-theme-surface, #111) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    box-shadow: none !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-theme-choice > span {
+    color: var(--oddi-theme-accent, currentColor) !important;
+    font-size: 20px !important;
+    line-height: 1 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-theme-choice > strong {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-theme-choice.is-active {
+    border-color: var(--oddi-theme-accent, currentColor) !important;
+    background: var(--oddi-theme-accent-soft, rgba(255,255,255,.09)) !important;
+    color: var(--oddi-theme-accent, currentColor) !important;
+    box-shadow: inset 0 0 0 1px var(--oddi-theme-accent-soft, transparent) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-setting-row:not(.oddi-setting-row-stack) {
+    display: grid !important;
+    grid-template-columns: 32px minmax(0, 1fr) auto !important;
+    align-items: center !important;
+    gap: 9px !important;
+    width: 100% !important;
+    min-height: 70px !important;
+    margin: 0 !important;
+    padding: 11px 10px !important;
+    border: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 16px !important;
+    background: var(--oddi-theme-surface, #111) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    text-align: left !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-setting-icon {
+    width: 32px !important;
+    height: 32px !important;
+    flex-basis: 32px !important;
+    border-radius: 11px !important;
+    background: var(--oddi-theme-raised, #191919) !important;
+    color: var(--oddi-theme-accent, currentColor) !important;
+    font-size: 14px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-setting-copy {
+    min-width: 0 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-setting-copy strong {
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-setting-copy small {
+    margin-top: 3px !important;
+    color: var(--oddi-theme-muted, #aaa) !important;
+    font-size: 10.5px !important;
+    line-height: 1.35 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal #languageSetting.oddi-setting-select {
+    width: 108px !important;
+    min-width: 0 !important;
+    max-width: 108px !important;
+    height: 40px !important;
+    padding: 0 9px !important;
+    border: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 12px !important;
+    background: var(--oddi-theme-raised, #191919) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    font-size: 12px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-toggle-control {
+    width: 48px !important;
+    min-width: 48px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    flex-basis: 48px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-toggle-control:after {
+    top: 3px !important;
+    left: 3px !important;
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-toggle-control.is-on:after {
+    transform: translateX(19px) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-pref-card {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 14px !important;
+    border: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 16px !important;
+    background: var(--oddi-theme-surface, #111) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-pref-card strong {
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    font-size: 13px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-pref-card small,
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-font-preview {
+    color: var(--oddi-theme-muted, #aaa) !important;
+    font-size: 10.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-font-size-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    margin-top: 11px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button {
+    min-width: 0 !important;
+    min-height: 42px !important;
+    padding: 0 6px !important;
+    border: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 12px !important;
+    background: var(--oddi-theme-raised, #191919) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+    font-size: 11px !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-font-size-grid button.is-active {
+    border-color: var(--oddi-theme-accent, currentColor) !important;
+    background: var(--oddi-theme-accent-soft, rgba(255,255,255,.09)) !important;
+    color: var(--oddi-theme-accent, currentColor) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-font-preview {
+    margin: 10px 0 0 !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-voice-panel {
+    width: 100% !important;
+    flex: 1 0 100% !important;
+    margin: 2px 0 0 !important;
+    border: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 15px !important;
+    background: var(--oddi-theme-surface, #111) !important;
+  }
+
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal :is(.oddi-danger-action,.oddi-logout-action,.oddi-account-route) {
+    min-height: 62px !important;
+    padding: 11px 12px !important;
+    border: 1px solid var(--oddi-theme-line, #292929) !important;
+    border-radius: 15px !important;
+    background: var(--oddi-theme-surface, #111) !important;
+    color: var(--oddi-theme-text, #f3f3f3) !important;
+  }
+}
+
+@media (max-width: 360px) {
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-content {
+    padding-inline: 12px !important;
+  }
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-setting-row:not(.oddi-setting-row-stack) {
+    grid-template-columns: 30px minmax(0, 1fr) auto !important;
+    gap: 7px !important;
+    padding-inline: 8px !important;
+  }
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal #languageSetting.oddi-setting-select {
+    width: 96px !important;
+    max-width: 96px !important;
+  }
+}
+</style>
 <style id="oddi-desktop-conversation-lane-alignment-v1">
 /* Reserve the top-right control lane for Find and balance the chat columns. */
 @media (min-width: 769px) {
@@ -42227,5 +42673,224 @@ html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-pag
   }
 }
 </style>
+<style id="oddi-normal-window-home-cards-lower-v1">
+/* Lower the complete welcome stack in a regular desktop window only. */
+@media (min-width: 769px) {
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer {
+    position: relative !important;
+    top: clamp(18px, 3vh, 26px) !important;
+  }
+
+  body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) #oddiSuggestionCards {
+    margin-top: 38px !important;
+  }
+}
+</style>
+<style id="oddi-settings-phone-sections-panel-v1">
+/* Phone navigation: put every Settings section in a searchable full-screen list. */
+.oddi-settings-sections-toggle,.oddi-settings-nav-head,.oddi-settings-nav-search,.oddi-settings-nav-group-title,.oddi-settings-nav-empty{display:none}
+@media(max-width:768px){
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-page-title-wrap{grid-template-columns:92px minmax(0,1fr)!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal #oddiSettingsSectionsToggle{display:none!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal #closeSettings.oddi-settings-back{width:92px!important;min-width:92px!important;grid-column:1!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal #oddiSettingsSectionsToggle>span:first-child{color:var(--oddi-theme-accent,currentColor)!important;font-size:17px!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal #oddiSettingsSectionsToggle:is(:hover,:focus-visible,[aria-expanded="true"]){border-color:var(--oddi-theme-accent,currentColor)!important;background:var(--oddi-theme-accent-soft,rgba(255,255,255,.09))!important;outline:none!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal .oddi-settings-nav{display:none!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav{position:fixed!important;inset:0!important;z-index:2147483647!important;display:flex!important;flex:none!important;flex-direction:column!important;align-items:stretch!important;gap:8px!important;width:100vw!important;height:100dvh!important;min-height:100dvh!important;max-height:100dvh!important;margin:0!important;padding:calc(14px + env(safe-area-inset-top,0px)) 18px calc(20px + env(safe-area-inset-bottom,0px))!important;overflow-x:hidden!important;overflow-y:auto!important;overscroll-behavior:contain!important;border:0!important;border-radius:0!important;background:var(--oddi-theme-bg,#080808)!important;color:var(--oddi-theme-text,#f3f3f3)!important;box-shadow:none!important;scrollbar-width:thin!important;scrollbar-color:var(--oddi-theme-line-strong,#555) transparent!important;-webkit-overflow-scrolling:touch!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-head{display:flex!important;flex:none!important;align-items:center!important;justify-content:space-between!important;gap:14px!important;min-height:69px!important;padding:2px 0 14px!important;border-bottom:1px solid var(--oddi-theme-line,#292929)!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-heading-copy{display:grid!important;min-width:0!important;gap:3px!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-eyebrow{color:var(--oddi-theme-accent,currentColor)!important;font-size:9px!important;font-weight:800!important;letter-spacing:.15em!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-heading-copy strong{color:var(--oddi-theme-text,#f3f3f3)!important;font-size:21px!important;letter-spacing:-.035em!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-heading-copy small{overflow:hidden!important;color:var(--oddi-theme-muted,#999)!important;font-size:11px!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-close{display:inline-flex!important;flex:none!important;align-items:center!important;justify-content:center!important;gap:6px!important;min-width:80px!important;min-height:40px!important;padding:0 11px!important;border:1px solid var(--oddi-theme-line-strong,var(--oddi-theme-line,#333))!important;border-radius:12px!important;background:var(--oddi-theme-raised,#191919)!important;color:var(--oddi-theme-text,#f3f3f3)!important;font-family:inherit!important;font-size:12px!important;font-weight:700!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-close span{color:var(--oddi-theme-accent,currentColor)!important;font-size:15px!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-search{display:flex!important;flex:none!important;align-items:center!important;gap:11px!important;height:50px!important;margin:8px 0 7px!important;padding:0 13px!important;border:1px solid var(--oddi-theme-line,#292929)!important;border-radius:15px!important;background:var(--oddi-theme-surface,#111)!important;color:var(--oddi-theme-muted,#999)!important;box-shadow:inset 0 1px 0 color-mix(in srgb,var(--oddi-theme-text,#fff) 3%,transparent)!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-search>span{color:var(--oddi-theme-accent,currentColor)!important;font-size:23px!important;line-height:1!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-search input{flex:1 1 auto!important;width:100%!important;min-width:0!important;height:100%!important;padding:0!important;border:0!important;outline:0!important;background:transparent!important;color:var(--oddi-theme-text,#f3f3f3)!important;font-family:inherit!important;font-size:14px!important;font-weight:500!important;line-height:1.2!important;box-shadow:none!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-search input::placeholder{color:var(--oddi-theme-muted,#999)!important;opacity:.85!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-search kbd{display:grid!important;place-items:center!important;width:25px!important;height:25px!important;border:1px solid var(--oddi-theme-line,#292929)!important;border-radius:8px!important;color:var(--oddi-theme-muted,#999)!important;font-size:12px!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-group-title{display:flex!important;flex:none!important;align-items:center!important;justify-content:space-between!important;margin:11px 4px 4px!important;color:var(--oddi-theme-accent,currentColor)!important;font-size:10px!important;font-weight:800!important;letter-spacing:.14em!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-group-title small{color:var(--oddi-theme-muted,#999)!important;font-size:9px!important;font-weight:650!important;letter-spacing:.08em!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-item{display:flex!important;flex:none!important;align-items:center!important;justify-content:flex-start!important;gap:13px!important;width:100%!important;min-width:0!important;min-height:53px!important;height:53px!important;padding:0 14px!important;border:1px solid transparent!important;border-radius:14px!important;background:transparent!important;color:var(--oddi-theme-text,#f3f3f3)!important;font-size:14px!important;font-weight:620!important;line-height:1.2!important;text-align:left!important;white-space:normal!important;box-shadow:none!important;scroll-snap-align:none!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-item>span{display:inline-grid!important;place-items:center!important;flex:0 0 34px!important;width:34px!important;height:34px!important;border:1px solid var(--oddi-theme-line,#292929)!important;border-radius:11px!important;background:var(--oddi-theme-raised,#191919)!important;color:var(--oddi-theme-accent,currentColor)!important;font-size:16px!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-item.is-active{border-color:var(--oddi-theme-line,#292929)!important;background:var(--oddi-theme-accent-soft,rgba(255,255,255,.08))!important;color:var(--oddi-theme-accent,currentColor)!important;box-shadow:inset 2px 0 var(--oddi-theme-accent,currentColor)!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-item:is(:hover,:focus-visible){border-color:var(--oddi-theme-line-strong,var(--oddi-theme-line,#333))!important;outline:none!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-item[hidden]{display:none!important}
+  html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-page-modal.is-phone-sections-open .oddi-settings-nav-empty:not([hidden]){display:block!important;padding:18px 8px!important;color:var(--oddi-theme-muted,#999)!important;font-size:13px!important;text-align:center!important}
+}
+</style>
+<script id="oddi-settings-phone-sections-panel-v1-script">
+(function () {
+  "use strict";
+  function init() {
+    const settings = document.getElementById("settingsModal");
+    const nav = document.getElementById("oddi-settings-nav");
+    const backButton = document.getElementById("closeSettings");
+    const sectionsToggle = document.getElementById("oddiSettingsSectionsToggle");
+    const exitButton = document.getElementById("oddiSettingsSectionsClose");
+    const search = document.getElementById("oddiSettingsNavSearch");
+    const empty = document.getElementById("oddiSettingsNavEmpty");
+    const count = document.getElementById("oddiSettingsNavCount");
+    if (!settings || !nav || !backButton || !sectionsToggle || !exitButton || !search || !empty || !count || settings.dataset.phoneSectionsReady === "1") return;
+    settings.dataset.phoneSectionsReady = "1";
+
+    const phone = window.matchMedia("(max-width: 768px)");
+    const sectionButtons = Array.from(nav.querySelectorAll("[data-settings-tab]"));
+    let wasOpen = settings.classList.contains("show");
+    let suppressSectionHistory = false;
+
+    function filterSections() {
+      const query = search.value.trim().toLocaleLowerCase();
+      let visible = 0;
+      sectionButtons.forEach(function (button) {
+        const matches = !query || button.textContent.toLocaleLowerCase().includes(query);
+        button.hidden = !matches;
+        if (matches) visible += 1;
+      });
+      empty.hidden = visible !== 0;
+      count.textContent = query ? visible + (visible === 1 ? " RESULT" : " RESULTS") : visible + " SECTIONS";
+    }
+
+    function savePhoneStep(step, tab, push) {
+      const current = window.history.state && typeof window.history.state === "object" ? window.history.state : {};
+      const next = { ...current, oddiSettings: true, tab: tab || current.tab || "appearance", oddiPhoneSettingsStep: step };
+      const url = window.location.pathname + window.location.search + window.location.hash;
+      try {
+        if (push) window.history.pushState(next, "", url);
+        else window.history.replaceState(next, "", url);
+      } catch (_) {}
+    }
+
+    function activeSettingsTab() {
+      return settings.querySelector("[data-settings-tab].is-active")?.getAttribute("data-settings-tab") || "appearance";
+    }
+
+    function openSections() {
+      if (!phone.matches || !settings.classList.contains("show")) return;
+      if (window.history.state?.oddiPhoneSettingsStep !== "sections") savePhoneStep("sections", activeSettingsTab(), false);
+      settings.classList.add("is-phone-sections-open");
+      sectionsToggle.setAttribute("aria-expanded", "true");
+      nav.setAttribute("aria-hidden", "false");
+      search.value = "";
+      filterSections();
+      exitButton.focus({ preventScroll: true });
+    }
+
+    function closeSections(restoreFocus) {
+      settings.classList.remove("is-phone-sections-open");
+      sectionsToggle.setAttribute("aria-expanded", "false");
+      nav.setAttribute("aria-hidden", phone.matches ? "true" : "false");
+      search.value = "";
+      filterSections();
+      if (restoreFocus && phone.matches && settings.classList.contains("show")) backButton.focus({ preventScroll: true });
+    }
+
+    function updateBackLabel() {
+      const label = backButton.querySelector("span:last-child");
+      if (label) label.textContent = phone.matches ? "Sections" : "Back";
+      backButton.setAttribute("aria-label", phone.matches ? "Open settings sections" : "Back");
+    }
+
+    function goToPreviousScreen() {
+      const step = window.history.state?.oddiPhoneSettingsStep;
+      if (phone.matches && step === "sections" && window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      closeSections(false);
+      if (typeof window.__oddiCloseSettings === "function") window.__oddiCloseSettings();
+      else {
+        settings.classList.remove("show");
+        settings.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    sectionsToggle.addEventListener("click", openSections);
+    exitButton.addEventListener("click", goToPreviousScreen);
+    search.addEventListener("input", filterSections);
+
+    /* On a phone, the page Back control returns to the section picker. */
+    settings.addEventListener("click", function (event) {
+      const target = event.target instanceof Element ? event.target : null;
+      if (!target) return;
+      if (target.closest("#closeSettings") && phone.matches && settings.classList.contains("show")) {
+        event.preventDefault();
+        event.stopPropagation();
+        if (window.history.state?.oddiPhoneSettingsStep === "section" && window.history.length > 1) window.history.back();
+        else openSections();
+        return;
+      }
+      const section = target.closest("[data-settings-tab]");
+      if (section && phone.matches && event.isTrusted && !suppressSectionHistory) window.setTimeout(function () {
+        if (phone.matches) savePhoneStep("section", section.getAttribute("data-settings-tab"), true);
+        closeSections(true);
+      }, 0);
+    }, true);
+
+    document.getElementById("settingsBtn")?.addEventListener("click", function () {
+      if (phone.matches) window.setTimeout(openSections, 0);
+    }, true);
+
+    /* Any route or app action that opens Settings starts at the section list. */
+    const originalOpen = window.__oddiOpenSettings;
+    if (typeof originalOpen === "function" && !originalOpen.__oddiPhoneSectionsWrapped) {
+      const wrappedOpen = function (tab) {
+        const result = originalOpen.apply(this, arguments);
+        if (phone.matches) openSections();
+        return result;
+      };
+      wrappedOpen.__oddiPhoneSectionsWrapped = true;
+      window.__oddiOpenSettings = wrappedOpen;
+    }
+
+    new MutationObserver(function () {
+      const nowOpen = settings.classList.contains("show");
+      if (phone.matches && nowOpen && !wasOpen) openSections();
+      if (!nowOpen && wasOpen) closeSections(false);
+      wasOpen = nowOpen;
+    }).observe(settings, { attributes: true, attributeFilter: ["class"] });
+
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape" && settings.classList.contains("is-phone-sections-open")) {
+        event.preventDefault();
+        event.stopPropagation();
+        goToPreviousScreen();
+      }
+    }, true);
+    window.addEventListener("popstate", function () {
+      suppressSectionHistory = true;
+      Promise.resolve().then(function () { suppressSectionHistory = false; });
+    }, true);
+    window.addEventListener("popstate", function (event) {
+      if (!phone.matches) return;
+      window.setTimeout(function () {
+        const state = event.state || {};
+        if (state.oddiPhoneSettingsStep === "sections") {
+          if (!settings.classList.contains("show")) window.__oddiOpenSettings?.(state.tab || "appearance");
+          openSections();
+        } else if (state.oddiPhoneSettingsStep === "section") {
+          if (!settings.classList.contains("show")) window.__oddiOpenSettings?.(state.tab || "appearance");
+          window.__oddiSettingsActivateTab?.(state.tab || "appearance");
+          closeSections(false);
+        } else if (!settings.classList.contains("show")) {
+          closeSections(false);
+        }
+      }, 0);
+    });
+    phone.addEventListener("change", function (event) {
+      updateBackLabel();
+      if (!event.matches) closeSections(false);
+      else if (settings.classList.contains("show")) openSections();
+    });
+
+    updateBackLabel();
+    nav.setAttribute("aria-hidden", phone.matches ? "true" : "false");
+    filterSections();
+    if (phone.matches && wasOpen) openSections();
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init, { once: true });
+  else init();
+})();
+</script>
 </body>
 </html>
