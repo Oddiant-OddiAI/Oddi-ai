@@ -1,17 +1,22 @@
 import io
 import asyncio
+import copy
 from contextlib import nullcontext
+from email.message import EmailMessage
 import hashlib
 import json
 import logging
 import os
+import re
 import secrets
+import smtplib
+import ssl
 import threading
 import time
 import uuid
 from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
-from urllib.parse import quote
+from urllib.parse import quote, urlsplit
 
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.gzip import GZipMiddleware
@@ -72,6 +77,7 @@ from app.database import (
     FileLimitExceeded,
     USER_FILE_LIMIT,
     purge_expired_deleted_conversations,
+    purge_expired_conversation_history,
     update_file_record,
     get_files,
     get_file,
@@ -80,6 +86,11 @@ from app.database import (
     get_user_settings,
     get_user_by_id,
     save_user_settings,
+    store_password_reset_token,
+    get_password_reset_email,
+    consume_password_reset_token,
+    clear_password_reset_token,
+    update_user_password,
     update_user_profile,
     clear_memory,
     get_vector_store_id,
@@ -127,7 +138,7 @@ from app.help_feedback import (
     unread_feedback_replies as get_unread_help_feedback_replies,
     user_feedback_state as get_help_feedback_state,
 )
-from app.attachments import MAX_UPLOAD_BYTES
+from app.attachments import AttachmentReadError, MAX_UPLOAD_BYTES, read_attachments
 from app.config import client
 from app.fast_responses import fast_response
 from identity.identity import create_identity
@@ -141,6 +152,18 @@ from app.memory_ai import (
     set_memory_user_opt_out,
     normalize_memory_settings,
     process_one_memory_batch,
+)
+from app.swarm import (
+    AGENT_REGISTRY as SWARM_AGENT_REGISTRY,
+    MAX_AGENT_CONCURRENCY as SWARM_MAX_AGENT_CONCURRENCY,
+    MAX_AGENT_COUNT as SWARM_MAX_AGENT_COUNT,
+    SPECIALISTS as SWARM_SPECIALISTS,
+    SwarmFile,
+    auto_route as swarm_auto_route,
+    create_execution_plan as create_swarm_execution_plan,
+    get_agent_registry as get_swarm_agent_registry,
+    run_task as run_swarm_task,
+    validate_agent_ids as validate_swarm_agent_ids,
 )
 from app.storage import (
     storage_router,
@@ -633,6 +656,23 @@ async def start_bin_retention_cleanup():
 
     app.state.bin_retention_task = asyncio.create_task(cleanup_expired_bin_chats())
 
+    async def cleanup_expired_conversation_history():
+        # Expired active/archived chats are hard-deleted. Keep this sweep
+        # separate from the existing seven-day Bin cleanup and avoid loading
+        # Drive account data during application startup.
+        await asyncio.sleep(5 * 60 if ODDI_DRIVE_CHAT_STORAGE else 60)
+        cleanup_interval = 24 * 60 * 60 if ODDI_DRIVE_CHAT_STORAGE else 60 * 60
+        while True:
+            try:
+                removed = await run_in_threadpool(purge_expired_conversation_history)
+                if removed:
+                    logger.info("Conversation retention removed %s expired chats", removed)
+            except Exception:
+                logger.exception("Automatic conversation retention cleanup failed")
+            await asyncio.sleep(cleanup_interval)
+
+    app.state.conversation_retention_task = asyncio.create_task(cleanup_expired_conversation_history())
+
     if not ODDI_DRIVE_CHAT_STORAGE or os.getenv("ODDI_SHARED_WORKSPACES_DATABASE_URL", "").strip():
         app.state.shared_workspace_task = asyncio.create_task(shared_workspace_queue_worker())
 
@@ -699,7 +739,7 @@ async def start_bin_retention_cleanup():
 
 @app.on_event("shutdown")
 async def stop_bin_retention_cleanup():
-    for task_name in ("bin_retention_task", "drive_sync_task", "memory_extraction_task", "shared_workspace_task"):
+    for task_name in ("bin_retention_task", "conversation_retention_task", "drive_sync_task", "memory_extraction_task", "shared_workspace_task"):
         task = getattr(app.state, task_name, None)
         if task:
             task.cancel()
@@ -1243,6 +1283,70 @@ async def skills_studio(request: Request):
     )
     response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
     return response
+
+
+@app.get("/swarm-intelligence", response_class=HTMLResponse, name="swarm_intelligence")
+async def swarm_intelligence(request: Request):
+    try:
+        user_id = await require_user_id_async(request)
+    except HTTPException as error:
+        if error.status_code == 401:
+            return RedirectResponse(url="/login", status_code=303)
+        raise
+    return _render_swarm_page(request, user_id, "home")
+
+
+@app.get("/swarm-intelligence/chat", response_class=HTMLResponse, name="swarm_chat_workspace")
+async def swarm_chat_workspace(request: Request):
+    return await _swarm_page_or_login(request, "chat")
+
+
+def _render_swarm_page(request: Request, user_id, page_mode="home", agent_id=""):
+    response = render_template(
+        request,
+        "swarm_intelligence.html",
+        swarm_user_key=str(user_id),
+        swarm_user_id=str(user_id),
+        swarm_username=str(request.session.get("username") or "ODDI User"),
+        swarm_email=str(request.session.get("email") or ""),
+        swarm_browser_local_chats=ODDI_BROWSER_LOCAL_CHATS,
+        swarm_page_mode=page_mode,
+        swarm_agent_id=agent_id,
+    )
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return response
+
+
+async def _swarm_page_or_login(request: Request, page_mode="home", agent_id=""):
+    try:
+        user_id = await require_user_id_async(request)
+    except HTTPException as error:
+        if error.status_code == 401:
+            return RedirectResponse(url="/login", status_code=303)
+        raise
+    return _render_swarm_page(request, user_id, page_mode, agent_id)
+
+
+@app.get("/swarm-intelligence/central", response_class=HTMLResponse, name="swarm_central_workspace")
+async def swarm_central_workspace(request: Request):
+    return await _swarm_page_or_login(request, "central")
+
+
+@app.get("/swarm-intelligence/runs", response_class=HTMLResponse, name="swarm_runs_page")
+async def swarm_runs_page(request: Request):
+    return await _swarm_page_or_login(request, "runs")
+
+
+@app.get("/swarm-intelligence/runs/{run_id}", response_class=HTMLResponse, name="swarm_run_page")
+async def swarm_run_page(request: Request, run_id: str):
+    return await _swarm_page_or_login(request, "run", run_id)
+
+
+@app.get("/swarm-intelligence/agents/{agent_id}", response_class=HTMLResponse, name="swarm_agent_page")
+async def swarm_agent_page(request: Request, agent_id: str):
+    if agent_id not in SWARM_AGENT_REGISTRY:
+        raise HTTPException(status_code=404, detail="That Swarm specialist does not exist.")
+    return await _swarm_page_or_login(request, "agent", agent_id)
 
 
 SKILLS_STUDIO_PHASES = {"assess", "learn", "practice", "build", "prove", "improve"}
@@ -1808,6 +1912,270 @@ def login_page(request: Request):
     return render_template(request, "login.html")
 
 
+LEGAL_TERMS_VERSION = "2026-10-22"
+LEGAL_PRIVACY_VERSION = "2026-10-22"
+_AUTH_EMAIL_RE = re.compile(r"^[^\s@]+@[^\s@]+\.[^\s@]+$")
+_PASSWORD_RESET_RATE_LOCK = threading.Lock()
+_PASSWORD_RESET_ATTEMPTS = {}
+
+
+def _valid_email(value):
+    value = str(value or "").strip()
+    return len(value) <= 254 and bool(_AUTH_EMAIL_RE.fullmatch(value))
+
+
+def _terms_accepted(value):
+    return value is True or str(value or "").strip().lower() in {"1", "true", "yes", "on", "accepted"}
+
+
+def _validate_signup(username, email, password, accepted_terms):
+    username = str(username or "").strip()
+    email = str(email or "").strip().casefold()
+    if len(username) < 2:
+        return username, email, "Name must be at least 2 characters."
+    if len(username) > 80:
+        return username, email, "Name must be 80 characters or fewer."
+    if not _valid_email(email):
+        return username, email, "Enter a valid email address."
+    if not isinstance(password, str) or len(password) < 8:
+        return username, email, "Password must be at least 8 characters."
+    if len(password) > 128:
+        return username, email, "Password must be 128 characters or fewer."
+    if not _terms_accepted(accepted_terms):
+        return username, email, "Accept the Terms of Service and Privacy Policy to create an account."
+    return username, email, None
+
+
+def _signup_legal_settings():
+    return {
+        "legal": {
+            "terms_version": LEGAL_TERMS_VERSION,
+            "privacy_version": LEGAL_PRIVACY_VERSION,
+            "accepted_at": datetime.now(timezone.utc).isoformat(),
+        }
+    }
+
+
+def _password_reset_base_url(request):
+    configured = os.getenv("ODDI_PUBLIC_BASE_URL", "").strip().rstrip("/")
+    if configured:
+        try:
+            parsed = urlsplit(configured)
+            parsed.port
+        except ValueError:
+            return ""
+        local_http = parsed.hostname in {"localhost", "127.0.0.1", "::1"} and parsed.scheme == "http"
+        if (parsed.scheme != "https" and not local_http) or not parsed.hostname or not parsed.netloc or parsed.username or parsed.password or parsed.query or parsed.fragment:
+            return ""
+        return configured
+    if _IS_PRODUCTION_SERVER:
+        return ""
+    return str(request.base_url).rstrip("/") if request else ""
+
+
+def _password_reset_email_configured(request):
+    return bool(
+        os.getenv("ODDI_SMTP_HOST", "").strip()
+        and (os.getenv("ODDI_SMTP_FROM", "").strip() or os.getenv("ODDI_SMTP_USER", "").strip())
+        and _password_reset_base_url(request)
+    )
+
+
+def _send_password_reset_email(email, reset_url):
+    host = os.getenv("ODDI_SMTP_HOST", "").strip()
+    sender = os.getenv("ODDI_SMTP_FROM", "").strip() or os.getenv("ODDI_SMTP_USER", "").strip()
+    username = os.getenv("ODDI_SMTP_USER", "").strip()
+    password = os.getenv("ODDI_SMTP_PASSWORD", "")
+    port = int(os.getenv("ODDI_SMTP_PORT", "587").strip() or "587")
+    use_ssl = os.getenv("ODDI_SMTP_USE_SSL", "").strip().lower() in {"1", "true", "yes", "on"}
+    use_starttls = os.getenv("ODDI_SMTP_STARTTLS", "true").strip().lower() in {"1", "true", "yes", "on"}
+
+    message = EmailMessage()
+    message["Subject"] = "Reset your ODDI password"
+    message["From"] = sender
+    message["To"] = email
+    message.set_content(
+        "We received a request to reset the password for your ODDI account.\n\n"
+        f"Use this one-time link within 30 minutes:\n{reset_url}\n\n"
+        "If you did not request this, you can ignore this message."
+    )
+
+    context = ssl.create_default_context()
+    smtp = (
+        smtplib.SMTP_SSL(host, port, timeout=20, context=context)
+        if use_ssl
+        else smtplib.SMTP(host, port, timeout=20)
+    )
+    try:
+        smtp.ehlo()
+        if not use_ssl and use_starttls:
+            smtp.starttls(context=context)
+            smtp.ehlo()
+        if username:
+            smtp.login(username, password)
+        smtp.send_message(message)
+    finally:
+        try:
+            smtp.quit()
+        except Exception:
+            smtp.close()
+
+
+def _rate_limit_password_reset(request, email):
+    now = time.monotonic()
+    client_host = request.client.host if request.client else "unknown"
+    keys = (
+        ("ip:" + hashlib.sha256(client_host.encode("utf-8")).hexdigest(), 20),
+        ("email:" + hashlib.sha256(email.encode("utf-8")).hexdigest(), 4),
+    )
+    with _PASSWORD_RESET_RATE_LOCK:
+        for key, _ in keys:
+            recent = [stamp for stamp in _PASSWORD_RESET_ATTEMPTS.get(key, []) if now - stamp < 3600]
+            _PASSWORD_RESET_ATTEMPTS[key] = recent
+            limit = 20 if key.startswith("ip:") else 4
+            if len(recent) >= limit:
+                return False
+        for key, _ in keys:
+            _PASSWORD_RESET_ATTEMPTS[key].append(now)
+        if len(_PASSWORD_RESET_ATTEMPTS) > 5000:
+            for key in list(_PASSWORD_RESET_ATTEMPTS):
+                recent = [stamp for stamp in _PASSWORD_RESET_ATTEMPTS[key] if now - stamp < 3600]
+                if recent:
+                    _PASSWORD_RESET_ATTEMPTS[key] = recent
+                else:
+                    _PASSWORD_RESET_ATTEMPTS.pop(key, None)
+        return True
+
+
+def _issue_password_reset(email, base_url):
+    user = get_user_by_email(email)
+    if not user or not str(user["password_hash"] or ""):
+        return
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
+    expires_at = (datetime.now(timezone.utc) + timedelta(minutes=30)).isoformat()
+    reset_url = f"{base_url.rstrip('/')}/reset-password?token={quote(token, safe='')}"
+    try:
+        store_password_reset_token(email, token_hash, expires_at)
+        _send_password_reset_email(email, reset_url)
+    except Exception:
+        try:
+            clear_password_reset_token(email, token_hash)
+        except Exception:
+            logger.exception("Could not remove an undelivered password reset token")
+        logger.exception("Password reset request could not be completed")
+
+
+def _no_store(response):
+    response.headers["Cache-Control"] = "no-store"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    return response
+
+
+@app.get("/forgot-password", response_class=HTMLResponse, name="forgot_password_page")
+def forgot_password_page(request: Request):
+    return _no_store(render_template(
+        request,
+        "forgot_password.html",
+        email_configured=_password_reset_email_configured(request),
+        submitted=False,
+        message="",
+        is_error=False,
+        email_value="",
+    ))
+
+
+@app.post("/forgot-password", response_class=HTMLResponse, name="request_password_reset")
+async def request_password_reset(request: Request, background_tasks: BackgroundTasks):
+    form = await request.form()
+    email = str(form.get("email") or "").strip().casefold()
+    configured = _password_reset_email_configured(request)
+    message = ""
+    is_error = False
+    if not _valid_email(email):
+        message = "Enter a valid email address."
+        is_error = True
+    elif not configured:
+        message = "Email recovery is not configured on this server yet. If you normally use Google, continue with Google sign-in."
+        is_error = True
+    elif not _rate_limit_password_reset(request, email):
+        message = "Too many reset requests. Wait a while before trying again."
+        is_error = True
+    else:
+        base_url = _password_reset_base_url(request)
+        background_tasks.add_task(_issue_password_reset, email, base_url)
+        message = "If this email belongs to an account with password sign-in and delivery is available, a reset link will arrive shortly. If it doesn’t, try Google sign-in when linked to your account."
+
+    return _no_store(render_template(
+        request,
+        "forgot_password.html",
+        email_configured=configured,
+        submitted=True,
+        message=message,
+        is_error=is_error,
+        email_value=email,
+    ))
+
+
+@app.get("/reset-password", response_class=HTMLResponse, name="reset_password_page")
+def reset_password_page(request: Request):
+    token = str(request.query_params.get("token") or "").strip()
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest() if 20 <= len(token) <= 256 else ""
+    valid = bool(token_hash and get_password_reset_email(token_hash))
+    return _no_store(render_template(request, "reset_password.html", token=token if valid else "", valid=valid, message="", is_error=False))
+
+
+@app.post("/reset-password", response_class=HTMLResponse, name="reset_password")
+async def reset_password(request: Request):
+    form = await request.form()
+    token = str(form.get("token") or "").strip()
+    password = str(form.get("password") or "")
+    confirm = str(form.get("confirm_password") or "")
+    token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest() if 20 <= len(token) <= 256 else ""
+    valid = bool(token_hash and get_password_reset_email(token_hash))
+    message = ""
+    is_error = False
+
+    if not valid:
+        message = "This reset link is invalid or expired. Request a new one to continue."
+        is_error = True
+    elif len(password) < 8 or len(password) > 128:
+        message = "Choose a password between 8 and 128 characters."
+        is_error = True
+    elif password != confirm:
+        message = "The passwords do not match."
+        is_error = True
+    else:
+        email = consume_password_reset_token(token_hash)
+        if not email:
+            valid = False
+            message = "This reset link has already been used or expired. Request a new one to continue."
+            is_error = True
+        else:
+            updated = await run_in_threadpool(
+                update_user_password,
+                email,
+                generate_password_hash(password),
+            )
+            if updated:
+                return RedirectResponse(url="/login?password_reset=1", status_code=303)
+            valid = False
+            message = "The account could not be updated. Request a fresh reset link and try again."
+            is_error = True
+
+    return _no_store(render_template(request, "reset_password.html", token=token if valid else "", valid=valid, message=message, is_error=is_error))
+
+
+@app.get("/terms", response_class=HTMLResponse, name="terms_page")
+def terms_page(request: Request):
+    return render_template(request, "legal.html", legal_page="terms", version=LEGAL_TERMS_VERSION)
+
+
+@app.get("/privacy", response_class=HTMLResponse, name="privacy_page")
+def privacy_page(request: Request):
+    return render_template(request, "legal.html", legal_page="privacy", version=LEGAL_PRIVACY_VERSION)
+
+
 @app.post("/login", name="login")
 async def login(request: Request):
     form = await request.form()
@@ -1936,24 +2304,41 @@ def api_account_stats(request: Request):
 
 @app.get("/signup", response_class=HTMLResponse, name="signup_page")
 def signup_page(request: Request):
-    return render_template(request, "signup.html")
+    email = str(request.query_params.get("email") or "").strip()
+    return render_template(request, "signup.html", signup_email=email, signup_error="")
 
 
 @app.post("/signup", name="signup")
 async def signup(request: Request):
     form = await request.form()
 
-    username = str(form.get("username", "")).strip()
-    email = str(form.get("email", "")).strip()
-    password = str(form.get("password", ""))
+    username, email, validation_error = _validate_signup(
+        form.get("username"),
+        form.get("email"),
+        form.get("password"),
+        form.get("accept_terms"),
+    )
+    password = form.get("password") if isinstance(form.get("password"), str) else ""
+    if validation_error:
+        return render_template(
+            request,
+            "signup.html",
+            signup_email=email,
+            signup_error=validation_error,
+        )
 
     await sync_laptop_accounts_from_drive()
 
     if get_user_by_email(email):
-        return PlainTextResponse("Email already exists.")
+        return render_template(
+            request,
+            "signup.html",
+            signup_email=email,
+            signup_error="An account with this email already exists. Sign in instead, or use Google if that is how you normally access ODDI.",
+        )
 
     password_hash = generate_password_hash(password)
-    create_user(username, email, password_hash)
+    create_user(username, email, password_hash, initial_settings=_signup_legal_settings())
 
     user = get_user_by_email(email)
     if user is None:
@@ -2022,20 +2407,24 @@ async def api_login(request: Request):
 async def api_register(request: Request):
     data = await safe_json(request)
 
-    username = str(data.get("name", "")).strip()
-    email = str(data.get("email", "")).strip()
-    password = data.get("password", "")
+    username, email, validation_error = _validate_signup(
+        data.get("name"),
+        data.get("email"),
+        data.get("password"),
+        data.get("accept_terms", data.get("terms_accepted")),
+    )
+    password = data.get("password") if isinstance(data.get("password"), str) else ""
 
-    await sync_laptop_accounts_from_drive()
-
-    if not username or not email or not password:
+    if validation_error:
         return JSONResponse(
             {
                 "success": False,
-                "error": "Name, email and password are required.",
+                "error": validation_error,
             },
             status_code=400,
         )
+
+    await sync_laptop_accounts_from_drive()
 
     existing_user = get_user_by_email(email)
 
@@ -2049,7 +2438,7 @@ async def api_register(request: Request):
         )
 
     password_hash = generate_password_hash(password)
-    create_user(username, email, password_hash)
+    create_user(username, email, password_hash, initial_settings=_signup_legal_settings())
 
     user = get_user_by_email(email)
 
@@ -2430,6 +2819,11 @@ async def api_update_settings(request: Request):
     incoming = data.get("settings")
     if not isinstance(incoming, dict):
         return JSONResponse({"error": "Settings must be an object."}, status_code=400)
+    privacy_update = incoming.get("privacy")
+    if isinstance(privacy_update, dict) and "retention_days" in privacy_update:
+        retention_value = str(privacy_update.get("retention_days") or "").strip().lower()
+        if retention_value not in {"30", "90", "365", "forever"}:
+            return JSONResponse({"error": "Choose a valid conversation retention period."}, status_code=400)
     memory_update = incoming.get("memory")
     requested_memory = (
         normalize_memory_settings(memory_update)
@@ -2462,7 +2856,15 @@ async def api_update_settings(request: Request):
                 for key in allowed:
                     value = incoming.get(key)
                     if isinstance(value, dict):
-                        if key == "chat_preferences":
+                        if key == "privacy":
+                            merged_privacy = current.get("privacy") if isinstance(current.get("privacy"), dict) else {}
+                            for preference in ("analytics", "training", "request_logging", "crash_reporting"):
+                                if isinstance(value.get(preference), bool):
+                                    merged_privacy[preference] = value[preference]
+                            if "retention_days" in value:
+                                merged_privacy["retention_days"] = str(value["retention_days"]).strip().lower()
+                            value = merged_privacy
+                        elif key == "chat_preferences":
                             value = {name: item for name, item in value.items() if name != "default_provider"}
                         elif key == "memory":
                             value = normalize_memory_settings(value)
@@ -2479,6 +2881,11 @@ async def api_update_settings(request: Request):
                 return current
 
     current = await run_in_threadpool(update_settings)
+    if isinstance(privacy_update, dict) and "retention_days" in privacy_update:
+        try:
+            await run_in_threadpool(purge_expired_conversation_history, user_id=user_id)
+        except Exception:
+            logger.exception("Could not immediately apply the saved conversation retention preference")
     return JSONResponse({"success": True, "settings": current})
 
 
@@ -3752,6 +4159,825 @@ async def cancel_chat_generation(request: Request, generation_id: str):
     return JSONResponse({"success": True, "cancelled": False})
 
 
+_SWARM_RUNS_LOCK = threading.RLock()
+_SWARM_ACTIVE_RUNS = {}
+_SWARM_RUN_HISTORY_LIMIT = 20
+_SWARM_SETTINGS_DEFAULTS = {"auto_route": True, "agents": [], "output_format": "answer", "max_concurrency": 3}
+
+
+def _swarm_flag(value, default=False):
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return bool(default)
+    return str(value).strip().casefold() in {"1", "true", "yes", "on"}
+
+
+def _swarm_cache_headers():
+    return {"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"}
+
+
+def _swarm_settings(user_id):
+    settings = get_user_settings(user_id)
+    return settings if isinstance(settings, dict) else {}
+
+
+def _swarm_runs_from(settings):
+    runs = settings.get("swarm_runs", []) if isinstance(settings, dict) else []
+    return runs if isinstance(runs, list) else []
+
+
+def _swarm_find_run(user_id, run_id):
+    settings = _swarm_settings(user_id)
+    for item in _swarm_runs_from(settings):
+        if isinstance(item, dict) and str(item.get("id")) == str(run_id):
+            return copy.deepcopy(item)
+    return None
+
+
+def _swarm_save_run(user_id, record):
+    with _SWARM_RUNS_LOCK:
+        settings = _swarm_settings(user_id)
+        runs = [item for item in _swarm_runs_from(settings) if isinstance(item, dict) and item.get("id") != record.get("id")]
+        runs.insert(0, copy.deepcopy(record))
+        settings["swarm_runs"] = sorted(runs, key=lambda item: str(item.get("created_at") or ""), reverse=True)[:_SWARM_RUN_HISTORY_LIMIT]
+        save_user_settings(user_id, settings)
+
+
+def _swarm_mutate_run(user_id, run_id, mutation):
+    with _SWARM_RUNS_LOCK:
+        settings = _swarm_settings(user_id)
+        runs = _swarm_runs_from(settings)
+        for index, item in enumerate(runs):
+            if isinstance(item, dict) and str(item.get("id")) == str(run_id):
+                record = copy.deepcopy(item)
+                mutation(record)
+                record["updated_at"] = datetime.now(timezone.utc).isoformat()
+                runs[index] = record
+                settings["swarm_runs"] = runs
+                save_user_settings(user_id, settings)
+                return copy.deepcopy(record)
+    return None
+
+
+def _swarm_public_run(record, *, summary=False):
+    value = copy.deepcopy(record)
+    value.pop("idempotency_key", None)
+    if summary:
+        value.pop("task", None)
+        value.pop("result", None)
+        value.pop("reports", None)
+        value.pop("plan", None)
+        value.pop("attachments", None)
+        value.pop("artifacts", None)
+    else:
+        for report in value.get("reports", []):
+            if isinstance(report, dict):
+                for key in list(report):
+                    if key.startswith("_"):
+                        report.pop(key, None)
+    return value
+
+
+def _swarm_updated_task(user_id, run_id, task_record):
+    def update(record):
+        for entry in record.get("plan", []):
+            if entry.get("id") == task_record.get("id"):
+                entry.update({key: task_record.get(key) for key in ("status", "attempts", "output", "error", "retryable")})
+                break
+        record["status"] = "cancelling" if record.get("cancel_requested") else "running"
+        record["current_task"] = task_record.get("name") if task_record.get("status") in {"running", "retrying"} else ""
+    try:
+        _swarm_mutate_run(user_id, run_id, update)
+    except Exception as error:
+        logger.warning("Swarm progress could not be saved for user %s (%s).", user_id, type(error).__name__)
+
+
+def _swarm_load_run_files(user_id, attachments):
+    blobs = []
+    for item in attachments or []:
+        key = str(item.get("storage_key") or "")
+        if not key:
+            continue
+        data = storage_router.read_file(user_id, key)
+        blobs.append((str(item.get("name") or "attachment"), str(item.get("mime_type") or "application/octet-stream"), data))
+    return blobs
+
+
+MAX_SWARM_LIBRARY_SEARCH_BYTES = 64 * 1024 * 1024
+MAX_SWARM_LIBRARY_CONTEXT_CHARS = 300_000
+
+
+def _chat_requests_library_content(message, history=None):
+    """Return whether this turn asks to inspect Library file contents."""
+    current = str(message or "").casefold()
+    recent = []
+    for item in (history or [])[-12:]:
+        if isinstance(item, dict):
+            role = str(item.get("role") or "").casefold()
+            content = str(item.get("text") or item.get("content") or "")
+            if role and role not in {"user", "assistant"}:
+                continue
+        else:
+            content = str(item or "")
+        if content.strip():
+            recent.append(content.casefold())
+
+    library_pattern = r"\blibrary\b|\bmy\s+(?:uploaded\s+)?(?:files|documents|uploads)\b"
+    mentions_library = bool(re.search(library_pattern, current))
+    mentions_library_in_history = any(re.search(library_pattern, text) for text in recent)
+    content_action = bool(re.search(
+        r"\b(check|read|open|search|find|scan|review|compare|analy[sz]e|summari[sz]e|extract|inspect|look\s+through|go\s+through)\b",
+        current,
+    ))
+    content_target = bool(re.search(
+        r"\b(company|companies|employer|employers|name|names|contents?|details?|skills?|experience|education|job|jobs|application|applications|summary|information)\b",
+        current,
+    ))
+    all_files = bool(re.search(
+        r"\b(?:all|every|each|entire|whole)\b.{0,60}\b(?:library\s+)?(?:files?|documents?|uploads?)\b|"
+        r"\blibrary\s+(?:files?|documents?|uploads?)\b.{0,40}\b(?:all|every|each)\b",
+        current,
+    ))
+    inventory_only = bool(re.search(r"\b(how\s+many|count|list|show|which|available)\b", current)) and not content_action and not content_target
+    prior_content_request = any(
+        re.search(library_pattern, text)
+        and re.search(r"\b(check|read|open|search|find|scan|review|compare|analy[sz]e|summari[sz]e|extract|inspect|company|companies|employer|names?)\b", text)
+        for text in recent
+    )
+
+    if inventory_only:
+        return False
+    return (
+        (mentions_library and (content_action or content_target))
+        or (all_files and mentions_library_in_history and prior_content_request)
+    )
+
+
+def _swarm_search_library(user_id, query):
+    """Search the authenticated user's Library locally and return bounded excerpts."""
+    stop_words = {
+        "about", "after", "also", "and", "are", "because", "before", "between", "could", "does", "from", "have", "into",
+        "any", "can", "get", "how", "just", "many", "me", "more", "most", "only", "please", "search", "should", "tell", "that", "their", "them", "there", "these", "this", "will",
+        "through", "under", "using", "what", "when", "where", "which", "with", "would", "your", "मेरे", "मेरा", "मेरी",
+        "में", "का", "की", "के", "और", "है", "हैं", "क्या", "कौन", "किस", "मुझे", "करो", "करना", "बताओ",
+    }
+    query_terms = list(dict.fromkeys(
+        normalized
+        for token in re.findall(r"[\w'-]{2,}", str(query or "").casefold())
+        if token not in stop_words
+        for normalized in (
+            token[:-3] + "y" if token.endswith("ies") and len(token) > 4
+            else token[:-1] if token.endswith("s") and len(token) > 4
+            else token,
+        )
+    ))[:80]
+    document_relevance_terms = (
+        "achievement", "application", "candidate", "certification", "company",
+        "degree", "education", "employment", "experience", "job", "position",
+        "project", "qualification", "requirement", "responsibility", "role",
+        "salary", "skill", "summary", "technology", "tool", "work",
+    )
+    records = get_files(user_id)
+    context_parts = []
+    files_searched = []
+    file_references = []
+    files_skipped = []
+    total_bytes = 0
+    max_chars_per_file = max(900, MAX_SWARM_LIBRARY_CONTEXT_CHARS // max(1, len(records)) - 300)
+
+    for record in records[:30]:
+        filename = os.path.basename(str(record.get("filename") or "Library file").replace("\\", "/"))[:180]
+        try:
+            reported_size = max(0, int(record.get("size_bytes") or 0))
+        except (TypeError, ValueError):
+            reported_size = 0
+        if reported_size > MAX_SWARM_LIBRARY_SEARCH_BYTES or total_bytes + reported_size > MAX_SWARM_LIBRARY_SEARCH_BYTES:
+            files_skipped.append(filename)
+            continue
+        try:
+            storage_key = str(record.get("storage_key") or "")
+            if storage_key:
+                data = storage_router.read_file(user_id, storage_key)
+            else:
+                full_record = get_file(record.get("id"), user_id)
+                data = (full_record or {}).get("file_data")
+                if isinstance(data, memoryview):
+                    data = data.tobytes()
+            if not isinstance(data, bytes) or not data:
+                files_skipped.append(filename)
+                continue
+            if len(data) > MAX_SWARM_LIBRARY_SEARCH_BYTES or total_bytes + len(data) > MAX_SWARM_LIBRARY_SEARCH_BYTES:
+                files_skipped.append(filename)
+                continue
+            total_bytes += len(data)
+            mime = str(record.get("mime_type") or "application/octet-stream")
+            extracted = read_attachments([SwarmFile(filename, mime, data)])
+            document = str(extracted.get("documents") or "").strip()
+            if not document:
+                files_skipped.append(filename)
+                continue
+            files_searched.append(filename)
+            if record.get("id") is not None:
+                file_references.append({
+                    "type": "file",
+                    "id": str(record.get("id")),
+                    "name": filename,
+                })
+
+            document_lines = [part.strip() for part in re.split(r"\n+", document) if part.strip()]
+            blocks = [
+                "\n".join(document_lines[index:index + 4])
+                for index in range(0, len(document_lines), 4)
+            ] or [document]
+            ranked = []
+            for index, block in enumerate(blocks):
+                lowered = block.casefold()
+                score = sum(min(3, lowered.count(term)) for term in query_terms)
+                score += sum(
+                    min(2, lowered.count(term))
+                    for term in document_relevance_terms
+                )
+                if filename.casefold() in lowered:
+                    score += 2
+                if score:
+                    ranked.append((score, index, block))
+            if ranked:
+                passage_limit = max(500, min(2200, max_chars_per_file // 5))
+                chosen = []
+                for _, _, block in sorted(ranked, key=lambda item: (-item[0], item[1]))[:5]:
+                    if len(block) > passage_limit:
+                        lowered = block.casefold()
+                        positions = [lowered.find(term) for term in query_terms if term in lowered]
+                        start = max(0, min(positions, default=0) - passage_limit // 3)
+                        end = min(len(block), start + passage_limit)
+                        excerpt_block = ("..." if start else "") + block[start:end] + ("..." if end < len(block) else "")
+                    else:
+                        excerpt_block = block
+                    chosen.append(excerpt_block)
+                excerpt = "\n\n--- Relevant passage ---\n\n".join(chosen)
+            else:
+                excerpt = "No exact query terms matched this file; opening context follows.\n\n" + "\n\n".join(blocks[:2])
+            excerpt = excerpt[:max_chars_per_file].strip()
+            context_parts.append(f"===== LIBRARY FILE: {filename} =====\n{excerpt}")
+        except Exception as error:
+            logger.warning("Swarm Library search skipped one file for user %s: %s", user_id, type(error).__name__)
+            files_skipped.append(filename)
+
+    context = "\n\n".join(context_parts)[:MAX_SWARM_LIBRARY_CONTEXT_CHARS]
+    return {
+        "context": context,
+        "files_searched": files_searched,
+        "file_references": file_references,
+        "files_skipped": files_skipped,
+    }
+
+
+def _execute_swarm_run(user_id, run_id, identity_email, memory_enabled, max_concurrency, cancel_event, seed_reports=None):
+    try:
+        record = _swarm_find_run(user_id, run_id)
+        if not record:
+            return
+        file_blobs = _swarm_load_run_files(user_id, record.get("attachments", []))
+        identity = create_identity(user_id=str(user_id), email=str(identity_email or ""))
+        outcome = run_swarm_task(
+            record["task"],
+            list(record.get("agent_ids") or []),
+            file_blobs,
+            str(user_id),
+            identity,
+            bool(memory_enabled),
+            web_search=bool(record.get("web_search")),
+            output_format=str(record.get("output_format") or "answer"),
+            max_concurrency=max_concurrency,
+            cancel_event=cancel_event,
+            on_task_update=lambda task: _swarm_updated_task(user_id, run_id, task),
+            seed_reports=seed_reports,
+            library_file_loader=lambda query: _swarm_search_library(user_id, query),
+        )
+        reports = []
+        artifact_save_errors = []
+        for raw_report in outcome.get("reports", []):
+            report = {key: value for key, value in raw_report.items() if not key.startswith("_")}
+            artifact_bytes = raw_report.get("_artifact_bytes")
+            if artifact_bytes:
+                try:
+                    stored = storage_router.save_file(user_id, artifact_bytes, raw_report.get("_artifact_name") or "swarm-artifact")
+                    artifact = {
+                        "id": uuid.uuid4().hex,
+                        "filename": os.path.basename(str(raw_report.get("_artifact_name") or "swarm-artifact"))[:180],
+                        "media_type": str(raw_report.get("_artifact_mime_type") or "application/octet-stream"),
+                        "storage_key": stored["storage_key"],
+                        "size_bytes": int(stored.get("size_bytes") or len(artifact_bytes)),
+                    }
+                    report["artifacts"] = [artifact]
+                except Exception as error:
+                    if report.get("id") == "writing":
+                        report.setdefault("data", {})["word_export"] = "unavailable"
+                        report["error"] = "The draft completed, but its Word file could not be saved. The editable Markdown is still available."
+                    else:
+                        report["status"] = "failed"
+                        report["error"] = f"The generated file could not be saved to your private file storage: {type(error).__name__}."
+                        report["output"] = "The specialist output was created, but its generated file could not be saved."
+                        artifact_save_errors.append(report["error"])
+            reports.append(report)
+        result_text = str(outcome.get("result") or "")
+        status = str(outcome.get("status") or "failed")
+        if artifact_save_errors and status == "completed":
+            status = "partial"
+            result_text = (result_text + "\n\nA generated artifact could not be saved to private storage.").strip()
+        now = datetime.now(timezone.utc).isoformat()
+
+        def finish(run):
+            run.update(
+                status=status,
+                reports=reports,
+                agents=[{"id": item["id"], "name": item.get("name", item["id"]), "status": item.get("status", "failed")} for item in reports],
+                plan=outcome.get("plan", run.get("plan", [])),
+                result=result_text,
+                error=str(outcome.get("error") or ""),
+                artifacts=[artifact for report in reports for artifact in report.get("artifacts", [])],
+                current_task="",
+                cancel_requested=False,
+                finished_at=now,
+            )
+        _swarm_mutate_run(user_id, run_id, finish)
+    except Exception as error:
+        logger.warning("Swarm execution failed for user %s (%s).", user_id, type(error).__name__)
+        try:
+            _swarm_mutate_run(user_id, run_id, lambda run: run.update(
+                status="failed",
+                error="ODDI could not complete this Swarm run. You can retry its failed specialists.",
+                current_task="",
+                finished_at=datetime.now(timezone.utc).isoformat(),
+            ))
+        except Exception as save_error:
+            logger.warning("Swarm failure state could not be saved for user %s (%s).", user_id, type(save_error).__name__)
+    finally:
+        with _SWARM_RUNS_LOCK:
+            active = _SWARM_ACTIVE_RUNS.get(str(run_id))
+            if active and active.get("user_id") == str(user_id):
+                _SWARM_ACTIVE_RUNS.pop(str(run_id), None)
+
+
+def _swarm_prepare_run(user_id, *, task, agent_ids, web_search, output_format, automatic, attachments, background_tasks, request_email, max_concurrency=None, seed_reports=None, retry_of="", idempotency_key=""):
+    now = datetime.now(timezone.utc).isoformat()
+    plan = create_swarm_execution_plan(agent_ids)
+    run_id = uuid.uuid4().hex
+    record = {
+        "id": run_id,
+        "title": task[:88].strip() or "Swarm task",
+        "task": task,
+        "created_at": now,
+        "updated_at": now,
+        "status": "pending",
+        "auto_route": bool(automatic),
+        "web_search": bool(web_search),
+        "output_format": output_format,
+        "agent_ids": list(agent_ids),
+        "agents": [{"id": agent_id, "name": SWARM_AGENT_REGISTRY[agent_id].name, "status": "pending"} for agent_id in agent_ids],
+        "plan": plan,
+        "reports": [copy.deepcopy(item) for item in (seed_reports or [])],
+        "result": "",
+        "error": "",
+        "artifacts": [],
+        "attachments": copy.deepcopy(attachments or []),
+        "retry_of": retry_of,
+        "current_task": "",
+        "cancel_requested": False,
+        "idempotency_key": idempotency_key,
+    }
+    try:
+        _swarm_save_run(user_id, record)
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="Swarm run history could not be saved. Please try again.") from error
+    cancel_event = threading.Event()
+    with _SWARM_RUNS_LOCK:
+        _SWARM_ACTIVE_RUNS[run_id] = {"user_id": str(user_id), "cancel_event": cancel_event}
+    try:
+        settings = _swarm_settings(user_id)
+        memory_config = normalize_memory_settings(settings.get("memory") if isinstance(settings, dict) else {})
+        memory_enabled = bool(memory_config["enabled"] and not memory_user_disabled(user_id) and not memory_user_opted_out(user_id))
+        concurrency = max(1, min(SWARM_MAX_AGENT_CONCURRENCY, int(max_concurrency or SWARM_MAX_AGENT_CONCURRENCY)))
+        background_tasks.add_task(
+            _execute_swarm_run,
+            str(user_id), run_id, request_email, memory_enabled, concurrency, cancel_event, seed_reports,
+        )
+    except Exception:
+        with _SWARM_RUNS_LOCK:
+            _SWARM_ACTIVE_RUNS.pop(run_id, None)
+        _swarm_mutate_run(user_id, run_id, lambda run: run.update(status="failed", error="The run could not be queued."))
+        raise
+    return record
+
+
+@app.get("/api/swarm/agents", name="api_swarm_agents")
+async def api_swarm_agents(request: Request):
+    await require_user_id_async(request)
+    return JSONResponse({"agents": get_swarm_agent_registry(), "max_agents": SWARM_MAX_AGENT_COUNT}, headers=_swarm_cache_headers())
+
+
+@app.get("/api/swarm/settings", name="api_swarm_settings")
+async def api_swarm_settings(request: Request):
+    user_id = await require_user_id_async(request)
+    settings = await run_in_threadpool(_swarm_settings, user_id)
+    preferences = settings.get("swarm_preferences", {}) if isinstance(settings, dict) else {}
+    merged = {**_SWARM_SETTINGS_DEFAULTS, **(preferences if isinstance(preferences, dict) else {})}
+    valid_agent_ids = set(SWARM_AGENT_REGISTRY)
+    stored_agents = merged.get("agents")
+    merged["agents"] = [str(agent_id).strip().casefold() for agent_id in stored_agents if str(agent_id).strip().casefold() in valid_agent_ids] if isinstance(stored_agents, list) else []
+    if merged.get("output_format") not in {"answer", "markdown", "report"}:
+        merged["output_format"] = "answer"
+    return JSONResponse({"settings": merged}, headers=_swarm_cache_headers())
+
+
+@app.post("/api/swarm/settings", name="api_update_swarm_settings")
+async def api_update_swarm_settings(request: Request):
+    user_id = await require_user_id_async(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Settings must be sent as JSON.")
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="Settings must be a JSON object.")
+    current = await run_in_threadpool(_swarm_settings, user_id)
+    preferences = {**_SWARM_SETTINGS_DEFAULTS, **(current.get("swarm_preferences", {}) if isinstance(current.get("swarm_preferences"), dict) else {})}
+    valid_agent_ids = set(SWARM_AGENT_REGISTRY)
+    stored_agents = preferences.get("agents")
+    preferences["agents"] = [str(agent_id).strip().casefold() for agent_id in stored_agents if str(agent_id).strip().casefold() in valid_agent_ids] if isinstance(stored_agents, list) else []
+    if preferences.get("output_format") not in {"answer", "markdown", "report"}:
+        preferences["output_format"] = "answer"
+    if "auto_route" in payload:
+        preferences["auto_route"] = _swarm_flag(payload["auto_route"])
+    if "agents" in payload:
+        try:
+            preferences["agents"] = validate_swarm_agent_ids(payload["agents"], max_count=SWARM_MAX_AGENT_COUNT) if payload["agents"] else []
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+    if "output_format" in payload:
+        output_format = str(payload["output_format"] or "answer").strip().casefold()
+        if output_format not in {"answer", "markdown", "report"}:
+            raise HTTPException(status_code=400, detail="Choose a supported text output format.")
+        preferences["output_format"] = output_format
+    if "max_concurrency" in payload:
+        try:
+            preferences["max_concurrency"] = max(1, min(SWARM_MAX_AGENT_CONCURRENCY, int(payload["max_concurrency"])))
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=400, detail="Concurrency must be between one and three.")
+    current["swarm_preferences"] = preferences
+    try:
+        await run_in_threadpool(save_user_settings, user_id, current)
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="Swarm settings could not be saved.") from error
+    return JSONResponse({"settings": preferences}, headers=_swarm_cache_headers())
+
+
+@app.post("/api/swarm/plan", name="api_swarm_plan")
+async def api_swarm_plan(request: Request):
+    user_id = await require_user_id_async(request)
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="The Swarm plan request must be JSON.")
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="The Swarm plan request must be a JSON object.")
+    task = str(payload.get("task") or "").strip()
+    if not task:
+        raise HTTPException(status_code=400, detail="Describe the task you want the Swarm to handle.")
+    if len(task) > 6000:
+        raise HTTPException(status_code=413, detail="Keep the task under 6,000 characters.")
+    settings = await run_in_threadpool(_swarm_settings, user_id)
+    preferences = settings.get("swarm_preferences", {}) if isinstance(settings, dict) else {}
+    auto_mode = _swarm_flag(payload.get("auto_route"), preferences.get("auto_route", True))
+    web_search = _swarm_flag(payload.get("web_search"))
+    file_names = payload.get("file_names") or []
+    if not isinstance(file_names, list):
+        file_names = []
+    if auto_mode:
+        agent_ids = swarm_auto_route(task, _swarm_flag(payload.get("has_files")), web_search, str(payload.get("output_format") or "answer"), [str(name)[:180] for name in file_names[:5]])
+    else:
+        try:
+            agent_ids = validate_swarm_agent_ids(payload.get("agents") or [], max_count=SWARM_MAX_AGENT_COUNT)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+    return JSONResponse({"agent_ids": agent_ids, "plan": create_swarm_execution_plan(agent_ids), "auto_route": auto_mode}, headers=_swarm_cache_headers())
+
+
+@app.get("/api/swarm/runs", name="api_swarm_runs")
+async def api_swarm_runs(request: Request):
+    user_id = await require_user_id_async(request)
+    settings = await run_in_threadpool(_swarm_settings, user_id)
+    runs = sorted((item for item in _swarm_runs_from(settings) if isinstance(item, dict)), key=lambda item: str(item.get("created_at") or ""), reverse=True)
+    recovered = []
+    for item in runs[:_SWARM_RUN_HISTORY_LIMIT]:
+        recovered.append(await run_in_threadpool(_recover_interrupted_swarm_run, user_id, item))
+    return JSONResponse({"runs": [_swarm_public_run(item, summary=True) for item in recovered]}, headers=_swarm_cache_headers())
+
+
+def _recover_interrupted_swarm_run(user_id, run):
+    active_states = {"pending", "running", "retrying", "cancelling"}
+    recovery_prefix = "The Swarm stopped responding before this run finished."
+    is_active_run = run.get("status") in active_states
+    is_recovered_run = run.get("status") == "failed" and str(run.get("error") or "").startswith(recovery_prefix)
+    unfinished_snapshot = any(
+        isinstance(item, dict) and item.get("status") in active_states
+        for key in ("reports", "agents", "plan")
+        for item in (run.get(key) or [])
+    )
+    if not is_active_run and not (is_recovered_run and unfinished_snapshot):
+        return run
+    if is_active_run:
+        with _SWARM_RUNS_LOCK:
+            active = _SWARM_ACTIVE_RUNS.get(str(run.get("id")))
+        if active and active.get("user_id") == str(user_id):
+            return run
+        try:
+            updated = datetime.fromisoformat(str(run.get("updated_at") or run.get("created_at") or "").replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            updated = datetime.min.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - updated).total_seconds() < 900:
+            return run
+    def mark_interrupted(value):
+        reports = value.get("reports") if isinstance(value.get("reports"), list) else []
+        value["reports"] = reports
+        report_by_id = {report.get("id"): report for report in reports if isinstance(report, dict)}
+        agent_by_id = {agent.get("id"): agent for agent in value.get("agents", []) if isinstance(agent, dict)}
+        plan_by_agent = {task.get("agent_id"): task for task in value.get("plan", []) if isinstance(task, dict)}
+        agent_ids = list(dict.fromkeys(str(agent_id) for agent_id in (value.get("agent_ids") or [])))
+        for agent_id in agent_ids:
+            report = report_by_id.get(agent_id)
+            summary = agent_by_id.get(agent_id, {})
+            task = plan_by_agent.get(agent_id, {})
+            unfinished = (
+                summary.get("status") in active_states
+                or task.get("status") in active_states
+                or (report and report.get("status") in active_states)
+            )
+            if not unfinished:
+                continue
+            specialist = SWARM_AGENT_REGISTRY.get(agent_id)
+            retryable = bool(specialist and specialist.available)
+            specialist_error = (
+                "The server stopped before this specialist returned a response."
+                if retryable else "This specialist is no longer available. Start a new task with a current specialist."
+            )
+            if report is None:
+                report = {"id": agent_id, "name": getattr(specialist, "name", summary.get("name") or agent_id),
+                          "output": "", "sources": [], "artifacts": [], "data": {}, "attempts": 1}
+                reports.append(report)
+                report_by_id[agent_id] = report
+            report.update(status="failed" if retryable else "unavailable", error=specialist_error, retryable=retryable)
+            if summary:
+                summary["status"] = report["status"]
+            if task:
+                task.update(status=report["status"], error=specialist_error, retryable=retryable)
+        for report in reports:
+            if isinstance(report, dict) and report.get("status") in active_states:
+                specialist = SWARM_AGENT_REGISTRY.get(str(report.get("id") or ""))
+                retryable = bool(specialist and specialist.available)
+                report.update(status="failed" if retryable else "unavailable",
+                              error="The server stopped before this specialist returned a response." if retryable else "This specialist is no longer available. Start a new task with a current specialist.",
+                              retryable=retryable)
+        retryable_reports = [report for report in reports if isinstance(report, dict) and report.get("retryable")]
+        error = (
+            "The Swarm stopped responding before this run finished. Retry the incomplete specialists to continue."
+            if retryable_reports else
+            "The Swarm stopped responding before this run finished. Start a new task with a current specialist."
+        )
+        for task in value.get("plan", []):
+            if isinstance(task, dict) and task.get("agent_id") == "central" and task.get("status") in active_states:
+                task.update(status="failed", error=error, retryable=False)
+        report_by_id = {report.get("id"): report for report in value.get("reports", []) if isinstance(report, dict)}
+        for agent in value.get("agents", []):
+            if isinstance(agent, dict) and agent.get("id") in report_by_id:
+                agent["status"] = report_by_id[agent["id"]].get("status", agent.get("status"))
+        value.update(status="failed", error=error, current_task="", cancel_requested=False,
+                     finished_at=datetime.now(timezone.utc).isoformat())
+    return _swarm_mutate_run(user_id, run["id"], mark_interrupted) or run
+
+
+@app.get("/api/swarm/runs/{run_id}", name="api_swarm_run_detail")
+async def api_swarm_run_detail(request: Request, run_id: str):
+    user_id = await require_user_id_async(request)
+    run = await run_in_threadpool(_swarm_find_run, user_id, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Swarm run not found.")
+    run = await run_in_threadpool(_recover_interrupted_swarm_run, user_id, run)
+    return JSONResponse({"run": _swarm_public_run(run)}, headers=_swarm_cache_headers())
+
+
+@app.patch("/api/swarm/runs/{run_id}/writing", name="api_save_swarm_writing_draft")
+async def api_save_swarm_writing_draft(request: Request, run_id: str):
+    user_id = await require_user_id_async(request)
+    try:
+        payload = await request.json()
+    except Exception as error:
+        raise HTTPException(status_code=400, detail="The writing draft could not be read.") from error
+    markdown = payload.get("markdown") if isinstance(payload, dict) else None
+    if not isinstance(markdown, str) or not markdown.strip():
+        raise HTTPException(status_code=400, detail="The writing draft cannot be empty.")
+    if len(markdown) > 50_000:
+        raise HTTPException(status_code=413, detail="Keep the writing draft under 50,000 characters.")
+
+    def save_draft(record):
+        report = next((
+            item for item in record.get("reports", [])
+            if isinstance(item, dict) and item.get("id") == "writing"
+        ), None)
+        if not report or report.get("status") != "completed":
+            raise ValueError("This run has no completed Writing Agent draft to edit.")
+        report["output"] = markdown.strip()
+        data = report.get("data")
+        if not isinstance(data, dict):
+            data = {}
+            report["data"] = data
+        data["edited_at"] = datetime.now(timezone.utc).isoformat()
+
+    try:
+        run = await run_in_threadpool(_swarm_mutate_run, user_id, run_id, save_draft)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    if not run:
+        raise HTTPException(status_code=404, detail="Swarm run not found.")
+    return JSONResponse({"run": _swarm_public_run(run)}, headers=_swarm_cache_headers())
+
+
+@app.get("/api/swarm/runs/{run_id}/artifacts/{artifact_id}", name="api_swarm_artifact")
+async def api_swarm_artifact(request: Request, run_id: str, artifact_id: str):
+    user_id = await require_user_id_async(request)
+    run = await run_in_threadpool(_swarm_find_run, user_id, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Swarm run not found.")
+    artifact = next((item for item in run.get("artifacts", []) if str(item.get("id")) == str(artifact_id)), None)
+    if not artifact:
+        raise HTTPException(status_code=404, detail="Swarm artifact not found.")
+    try:
+        path = await run_in_threadpool(storage_router.get_file_path, user_id, artifact["storage_key"])
+    except (StorageFileNotFound, KeyError):
+        raise HTTPException(status_code=404, detail="Swarm artifact is no longer available.")
+    media_type = artifact.get("media_type") or "application/octet-stream"
+    inline_preview = request.query_params.get("inline") == "1"
+    if inline_preview and media_type not in {"image/png", "image/jpeg", "image/webp"}:
+        raise HTTPException(status_code=400, detail="Only generated images can be opened as a preview.")
+    return FileResponse(
+        path,
+        media_type=media_type,
+        filename=os.path.basename(artifact.get("filename") or "swarm-output"),
+        headers={"Cache-Control": "private, no-store"},
+        content_disposition_type="inline" if inline_preview else "attachment",
+    )
+
+
+@app.post("/api/swarm/run", name="api_create_swarm_run")
+async def api_create_swarm_run(request: Request, background_tasks: BackgroundTasks):
+    user_id = await require_user_id_async(request)
+    try:
+        form = await request.form()
+    except Exception as error:
+        raise HTTPException(status_code=400, detail="The Swarm request could not be read.") from error
+    task = str(form.get("task") or "").strip()
+    if not task:
+        raise HTTPException(status_code=400, detail="Describe the task you want the Swarm to handle.")
+    if len(task) > 6000:
+        raise HTTPException(status_code=413, detail="Keep the task under 6,000 characters.")
+    idem = str(form.get("idempotency_key") or "").strip()[:100]
+    if idem:
+        settings = await run_in_threadpool(_swarm_settings, user_id)
+        duplicate = next((item for item in _swarm_runs_from(settings) if isinstance(item, dict) and item.get("idempotency_key") == idem), None)
+        if duplicate:
+            return JSONResponse({"run": _swarm_public_run(duplicate)}, headers=_swarm_cache_headers())
+    raw_agents = form.get("agents")
+    try:
+        requested_agents = json.loads(str(raw_agents)) if raw_agents else []
+    except (json.JSONDecodeError, TypeError):
+        raise HTTPException(status_code=400, detail="The selected agent list could not be read.")
+    web_search = str(form.get("web_search") or "").strip().casefold() in {"1", "true", "yes", "on"}
+    settings = await run_in_threadpool(_swarm_settings, user_id)
+    preferences = settings.get("swarm_preferences", {}) if isinstance(settings, dict) else {}
+    automatic = _swarm_flag(form.get("auto_route"), preferences.get("auto_route", True))
+    selection_mode = str(form.get("selection_mode") or "").strip().casefold()
+    if selection_mode == "manual_chat" and automatic:
+        raise HTTPException(status_code=400, detail="A selected-agent chat must use the specialists chosen by the user.")
+    max_selected_agents = 3 if selection_mode == "manual_chat" else SWARM_MAX_AGENT_COUNT
+    output_format = str(form.get("output_format") or preferences.get("output_format") or "answer").strip().casefold()
+    if output_format not in {"answer", "markdown", "report"}:
+        raise HTTPException(status_code=400, detail="Choose a supported output format.")
+    preferred_output_format = str(form.get("preferred_output_format") or output_format).strip().casefold()
+    if preferred_output_format not in {"answer", "markdown", "report"}:
+        raise HTTPException(status_code=400, detail="Choose a supported saved output format.")
+    uploads = [item for item in form.getlist("files") if hasattr(item, "read") and getattr(item, "filename", "")]
+    if len(uploads) > 5:
+        raise HTTPException(status_code=413, detail="Attach up to five files per Swarm run.")
+    file_blobs = []
+    total_bytes = 0
+    for upload in uploads:
+        content = await upload.read(MAX_UPLOAD_BYTES + 1)
+        total_bytes += len(content)
+        if len(content) > MAX_UPLOAD_BYTES or total_bytes > MAX_UPLOAD_BYTES:
+            raise HTTPException(status_code=413, detail="Swarm attachments have a combined 64 MB limit.")
+        if not content:
+            raise HTTPException(status_code=400, detail="An attached file is empty.")
+        filename = os.path.basename(str(upload.filename or "attachment").replace("\\", "/"))[:180] or "attachment"
+        mime = str(upload.content_type or "application/octet-stream")[:160]
+        file_blobs.append((filename, mime, content))
+    try:
+        if file_blobs:
+            await run_in_threadpool(read_attachments, [SwarmFile(*item) for item in file_blobs])
+    except AttachmentReadError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    if automatic:
+        agent_ids = swarm_auto_route(task, bool(file_blobs), web_search, output_format, [item[0] for item in file_blobs])
+    else:
+        try:
+            agent_ids = validate_swarm_agent_ids(requested_agents, max_count=max_selected_agents)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+    if not agent_ids:
+        raise HTTPException(status_code=400, detail="Choose at least one specialist agent.")
+    stored_attachments = []
+    try:
+        for filename, mime, content in file_blobs:
+            stored = await run_in_threadpool(storage_router.save_file, user_id, content, filename)
+            stored_attachments.append({"name": filename, "mime_type": mime, "storage_key": stored["storage_key"], "size_bytes": stored["size_bytes"]})
+        settings["swarm_preferences"] = {
+            **_SWARM_SETTINGS_DEFAULTS,
+            **(settings.get("swarm_preferences", {}) if isinstance(settings.get("swarm_preferences"), dict) else {}),
+            "auto_route": automatic,
+            "agents": [] if automatic else agent_ids,
+            "output_format": preferred_output_format,
+        }
+        await run_in_threadpool(save_user_settings, user_id, settings)
+        record = _swarm_prepare_run(
+            str(user_id), task=task, agent_ids=agent_ids, web_search=web_search, output_format=output_format,
+            automatic=automatic, attachments=stored_attachments, background_tasks=background_tasks,
+            request_email=request.session.get("email", ""), max_concurrency=preferences.get("max_concurrency"), idempotency_key=idem,
+        )
+    except StorageQuotaExceeded as error:
+        for item in stored_attachments:
+            try:
+                await run_in_threadpool(storage_router.delete_file, user_id, item["storage_key"])
+            except Exception:
+                pass
+        raise HTTPException(status_code=413, detail="Your private file storage does not have enough space for these Swarm attachments.") from error
+    except HTTPException:
+        for item in stored_attachments:
+            try:
+                await run_in_threadpool(storage_router.delete_file, user_id, item["storage_key"])
+            except Exception:
+                pass
+        raise
+    except Exception as error:
+        for item in stored_attachments:
+            try:
+                await run_in_threadpool(storage_router.delete_file, user_id, item["storage_key"])
+            except Exception:
+                pass
+        logger.warning("Swarm run could not be queued for user %s (%s).", user_id, type(error).__name__)
+        raise HTTPException(status_code=503, detail="The Swarm run could not be queued. Please try again.") from error
+    return JSONResponse({"run": _swarm_public_run(record)}, status_code=202, headers=_swarm_cache_headers())
+
+
+@app.post("/api/swarm/runs/{run_id}/cancel", name="api_cancel_swarm_run")
+async def api_cancel_swarm_run(request: Request, run_id: str):
+    user_id = await require_user_id_async(request)
+    run = await run_in_threadpool(_swarm_find_run, user_id, run_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="Swarm run not found.")
+    if run.get("status") not in {"pending", "running", "cancelling"}:
+        return JSONResponse({"run": _swarm_public_run(run), "cancelled": False}, headers=_swarm_cache_headers())
+    with _SWARM_RUNS_LOCK:
+        active = _SWARM_ACTIVE_RUNS.get(str(run_id))
+        if active and active.get("user_id") == str(user_id):
+            active["cancel_event"].set()
+    updated = await run_in_threadpool(_swarm_mutate_run, user_id, run_id, lambda item: item.update(status="cancelling", cancel_requested=True))
+    return JSONResponse({"run": _swarm_public_run(updated or run), "cancelled": True}, headers=_swarm_cache_headers())
+
+
+@app.post("/api/swarm/runs/{run_id}/retry", name="api_retry_swarm_run")
+async def api_retry_swarm_run(request: Request, run_id: str, background_tasks: BackgroundTasks):
+    user_id = await require_user_id_async(request)
+    prior = await run_in_threadpool(_swarm_find_run, user_id, run_id)
+    if not prior:
+        raise HTTPException(status_code=404, detail="Swarm run not found.")
+    if prior.get("status") in {"pending", "running", "cancelling"}:
+        raise HTTPException(status_code=409, detail="Cancel or wait for this run before retrying it.")
+    retryable = any(item.get("status") in {"failed", "blocked"} and item.get("retryable") for item in prior.get("reports", []) if isinstance(item, dict))
+    if not retryable:
+        raise HTTPException(status_code=409, detail="This run has no failed specialist that can be retried.")
+    try:
+        record = _swarm_prepare_run(
+            str(user_id), task=str(prior.get("task") or ""), agent_ids=list(prior.get("agent_ids") or []),
+            web_search=bool(prior.get("web_search")), output_format=str(prior.get("output_format") or "answer"),
+            automatic=False, attachments=list(prior.get("attachments") or []), background_tasks=background_tasks,
+            request_email=request.session.get("email", ""), retry_of=run_id, seed_reports=list(prior.get("reports") or []),
+        )
+    except HTTPException:
+        raise
+    except Exception as error:
+        raise HTTPException(status_code=503, detail="The failed Swarm tasks could not be queued for retry.") from error
+    return JSONResponse({"run": _swarm_public_run(record)}, status_code=202, headers=_swarm_cache_headers())
+
+
 @app.post("/chat", name="chat")
 async def chat(request: Request, background_tasks: BackgroundTasks):
     generation_started = time.perf_counter()
@@ -3763,6 +4989,10 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         return JSONResponse({"error": "Message is required."}, status_code=400)
     message = str(message)
     response_style = str(form.get("response_style") or "").strip().casefold()
+    incognito_mode = str(form.get("incognito") or "").strip().casefold() in {"1", "true", "yes", "on"}
+    specialist_agent = str(form.get("specialist_agent") or "").strip().casefold()
+    if specialist_agent not in {"research", "search", "coding", "document_search"}:
+        specialist_agent = ""
     response_style_instructions = {
         "concise": "Answer concisely, prioritizing the most useful information.",
         "step_by_step": "Explain the answer as clear, numbered steps.",
@@ -3790,9 +5020,9 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         if auto_extract_value is not None
         else None
     )
-    if ODDI_BROWSER_LOCAL_CHATS:
+    if ODDI_BROWSER_LOCAL_CHATS or incognito_mode:
         # A cloud process may generate a response, but it must not persist
-        # chat-derived memory alongside the browser-local conversation.
+        # chat-derived memory alongside a browser-local or Incognito chat.
         client_memory_enabled = False
         client_memory_auto_extract = False
 
@@ -3800,6 +5030,10 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     try:
         conversation_id = int(raw_conversation_id) if raw_conversation_id else None
     except (TypeError, ValueError):
+        conversation_id = None
+    if incognito_mode:
+        # Incognito replies are generated without creating or consulting an
+        # account conversation row, even if a stale client ID is submitted.
         conversation_id = None
     if ODDI_BROWSER_LOCAL_CHATS:
         # Client-generated IDs are intentionally not mapped to a server row.
@@ -3827,10 +5061,64 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
         if str(raw_id).strip() and len(str(raw_id).strip()) <= 128
     ))
     requested_source_file_id_set = set(requested_source_file_ids)
+    try:
+        library_request_history = json.loads(str(form.get("history", "[]")))
+    except (json.JSONDecodeError, TypeError):
+        library_request_history = []
+    if not isinstance(library_request_history, list):
+        library_request_history = []
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = await require_user_id_async(request)
-    persist_library_uploads = not is_temporary_browser_account(request)
+    external_document_context = ""
+    external_document_sources = []
+    search_library_for_turn = (
+        specialist_agent == "document_search"
+        or _chat_requests_library_content(memory_message, library_request_history)
+    )
+    if search_library_for_turn:
+        try:
+            library_search = await run_in_threadpool(
+                _swarm_search_library,
+                user_id,
+                memory_message,
+            )
+            external_document_context = str(library_search.get("context") or "")
+            external_document_sources = list(library_search.get("file_references") or [])
+            if not external_document_context:
+                searched_names = library_search.get("files_searched") or []
+                skipped_names = library_search.get("files_skipped") or []
+                if searched_names:
+                    external_document_context = (
+                        "[ODDI LIBRARY CONTENT SEARCH: NO READABLE CONTENT EXTRACTED]\n"
+                        "The Library entries were found, but no readable text could be extracted. "
+                        "Tell the user that file contents could not be read and name any skipped files; "
+                        "do not infer their contents.\n"
+                        + "\n".join(f"- {name}" for name in [*searched_names, *skipped_names][:30])
+                    )
+                else:
+                    external_document_context = (
+                        "[ODDI LIBRARY CONTENT SEARCH: NO READABLE FILES FOUND]\n"
+                        "No readable Library files were available for this request. Tell the user clearly; "
+                        "do not answer from filenames alone or claim to have read files."
+                    )
+            logger.info(
+                "Library content lookup request_id=%s user=%s agent=%s files=%s skipped=%s context_chars=%s",
+                chat_request_id,
+                user_id,
+                specialist_agent or "none",
+                len(library_search.get("files_searched") or []),
+                len(library_search.get("files_skipped") or []),
+                len(external_document_context),
+            )
+        except Exception as library_search_error:
+            logger.warning(
+                "Document Search Agent Library lookup failed request_id=%s user=%s (%s)",
+                chat_request_id,
+                user_id,
+                type(library_search_error).__name__,
+            )
+    persist_library_uploads = not is_temporary_browser_account(request) and not incognito_mode
     verified_library_records = {}
     if requested_source_file_ids:
         try:
@@ -3842,7 +5130,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             }
         except Exception as source_lookup_error:
             logger.warning("Could not verify cited Library files for user %s: %s", user_id, type(source_lookup_error).__name__)
-    fast_reply = fast_response(memory_message) if not engine_files else None
+    fast_reply = fast_response(memory_message) if not engine_files and not specialist_agent and not search_library_for_turn else None
     settings_loaded = fast_reply is None
     user_settings = {}
     if settings_loaded:
@@ -3871,6 +5159,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     privacy_settings = user_settings.get("privacy", {}) if isinstance(user_settings, dict) else {}
     request_logging_enabled = (
         not ODDI_BROWSER_LOCAL_CHATS
+        and not incognito_mode
         and fast_reply is None
         and privacy_settings.get("request_logging", True) is not False
     )
@@ -4088,6 +5377,9 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 user_id=user_id,
                 identity=identity,
                 long_term_memory_enabled=memory_enabled,
+                specialist_agent=specialist_agent,
+                external_document_context=external_document_context,
+                external_document_sources=external_document_sources,
             )
         if cancel_event.is_set():
             return PlainTextResponse("Generation stopped.", status_code=409)
@@ -4210,7 +5502,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     ]
     capability_sources = getattr(reply, "sources", []) or []
     has_file_search_citations = any(
-        isinstance(source, dict) and source.get("type") == "file_reference"
+        isinstance(source, dict) and source.get("type") in {"file", "file_reference"}
         for source in capability_sources
     )
     if file_record_ids or library_file_ids_by_index or has_file_search_citations:

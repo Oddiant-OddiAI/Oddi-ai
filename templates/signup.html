@@ -15,7 +15,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/auth.css"
+        href="/static/auth.css?v=20261022-auth-recovery-v1"
     >
 </head>
 
@@ -46,7 +46,7 @@
                 <h1>ODDI-AI</h1>
 
                 <p>
-                    Your personal AI companion
+                    Personal Career AI by ODDI AI
                 </p>
             </div>
 
@@ -56,14 +56,13 @@
         <div class="brand-hero">
 
             <h2>
-                Intelligence that
-                <span>grows with you.</span>
+                Your Personal Career AI,
+                <span>built around your goals.</span>
             </h2>
 
             <p>
-                Create your ODDI account and start building
-                a personal AI companion that remembers your
-                preferences, goals, conversations, and ideas.
+                Get practical support with career goals, applications,
+                interview preparation, and building skills for your next role.
             </p>
 
         </div>
@@ -78,11 +77,10 @@
                 </div>
 
                 <div>
-                    <strong>Persistent Memory</strong>
+                    <strong>Career Memory</strong>
 
                     <span>
-                        ODDI remembers your preferences,
-                        goals, and context.
+                        Keep your goals, strengths, and target roles in context.
                     </span>
                 </div>
 
@@ -96,11 +94,10 @@
                 </div>
 
                 <div>
-                    <strong>Intelligent Conversations</strong>
+                    <strong>Job Search Support</strong>
 
                     <span>
-                        Context-aware conversations
-                        that feel personal.
+                        Understand roles and plan focused applications.
                     </span>
                 </div>
 
@@ -114,11 +111,10 @@
                 </div>
 
                 <div>
-                    <strong>File Understanding</strong>
+                    <strong>Interview Preparation</strong>
 
                     <span>
-                        Upload documents and let ODDI
-                        understand them.
+                        Practice role-specific questions and improve your answers.
                     </span>
                 </div>
 
@@ -279,6 +275,10 @@
                 id="signupForm"
             >
 
+                {% if signup_error %}
+                <div class="signup-server-feedback" role="alert">{{ signup_error }}</div>
+                {% endif %}
+
                 <!-- Username -->
 
                 <div class="field-group">
@@ -318,6 +318,7 @@
                         id="email"
                         name="email"
                         placeholder="you@example.com"
+                        value="{{ signup_email|default('', true) }}"
                         autocomplete="email"
                         required
                     >
@@ -441,22 +442,18 @@
                     <input
                         type="checkbox"
                         id="agreeTerms"
+                        name="accept_terms"
+                        value="yes"
                         required
                     >
 
                     <span>
                         I agree to ODDI's
-                        <a
-                            href="#"
-                            onclick="return false;"
-                        >
+                        <a href="/terms" target="_blank" rel="noopener">
                             Terms of Service
                         </a>
                         and
-                        <a
-                            href="#"
-                            onclick="return false;"
-                        >
+                        <a href="/privacy" target="_blank" rel="noopener">
                             Privacy Policy
                         </a>
                     </span>

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import {
   Archive, Briefcase, Check, ChevronLeft, ChevronRight, Download, FolderOpen,
   Home, LogOut, MessageSquare, MoreHorizontal, Pin, Plus, Search, List,
-  Palette, Settings, X, Pencil, Trash2, Menu, Share2, UsersRound, GraduationCap, UserRound
+  Palette, Settings, X, Pencil, Trash2, Menu, Share2, UsersRound, GraduationCap, UserRound, Network
 } from 'lucide-react';
 
 type Conversation = {
@@ -52,8 +52,20 @@ type OddiWindow = Window & {
 const WIN = () => window as OddiWindow;
 const PENDING_GENERATION_KEY = 'oddi_pending_chat_generation_v1';
 const LAST_OPEN_CONVERSATION_KEY = 'oddi_last_open_conversation_v1';
+const SWARM_RETURN_ACTION_KEY = 'oddi_sidebar_return_action_v1';
 const FRESH_CHAT_MARKER = '__oddi_fresh_chat__';
 const MAX_PINNED_CHATS = 8;
+
+function isSwarmPage() {
+  return window.location.pathname === '/swarm-intelligence' || window.location.pathname.startsWith('/swarm-intelligence/');
+}
+
+function returnFromSwarm(action?: string) {
+  if (action) {
+    try { sessionStorage.setItem(SWARM_RETURN_ACTION_KEY, action); } catch {}
+  }
+  window.location.assign('/');
+}
 
 function isEnabledFlag(value: unknown) {
   if (typeof value === 'string') return ['true', '1', 'yes'].includes(value.trim().toLowerCase());
@@ -805,6 +817,11 @@ export default function Sidebar() {
   }, [compactList]);
 
   function newChat() {
+    if (isSwarmPage()) {
+      try { sessionStorage.setItem(LAST_OPEN_CONVERSATION_KEY, FRESH_CHAT_MARKER); } catch {}
+      returnFromSwarm();
+      return;
+    }
     const startNewChat = WIN().newChat;
     if (startNewChat) {
       void startNewChat().catch(error => console.error('ODDI New Chat failed:', error));
@@ -822,6 +839,11 @@ export default function Sidebar() {
   }
 
   function select(c: Conversation) {
+    if (isSwarmPage()) {
+      try { sessionStorage.setItem(LAST_OPEN_CONVERSATION_KEY, String(c.id)); } catch {}
+      returnFromSwarm();
+      return;
+    }
     WIN().__oddiKeepSidebarOnFreshHome = false;
     WIN().__oddiFreshChatActive = false;
     WIN().__oddiFreshChatLockUntil = 0;
@@ -1135,12 +1157,19 @@ export default function Sidebar() {
     setMenuId(null);
     setCollapsed(false);
     setOpen(false);
+    if (isSwarmPage()) { returnFromSwarm('library'); return; }
     window.dispatchEvent(new CustomEvent('oddi:open-library'));
   }
 
   function openSharedWorkspaces() {
     setMenuId(null);
+    if (isSwarmPage()) { returnFromSwarm('shared'); return; }
     window.dispatchEvent(new CustomEvent('oddi:shared-workspaces-open'));
+  }
+
+  function openSwarm() {
+    setMenuId(null);
+    window.location.assign('/swarm-intelligence');
   }
 
   function openInterviewStudio() {
@@ -1156,6 +1185,7 @@ export default function Sidebar() {
   function openSettings() {
     if (document.getElementById('settingsBtn')) { document.getElementById('settingsBtn')!.click(); return; }
     if (document.getElementById('settingsModal')) { openExistingModal('settingsModal'); return; }
+    if (isSwarmPage()) { returnFromSwarm('settings'); return; }
     window.location.assign('/?openSettings=1');
   }
 
@@ -1165,6 +1195,7 @@ export default function Sidebar() {
       document.dispatchEvent(new CustomEvent('oddi:profile-open'));
       return;
     }
+    if (isSwarmPage()) { returnFromSwarm('profile'); return; }
     window.location.assign('/?openProfile=1');
   }
 
@@ -1329,7 +1360,7 @@ export default function Sidebar() {
       aria-label="ODDI AI sidebar"
     >
       <header className="oddi-rs-header">
-        <button className="oddi-rs-brand" onClick={() => collapsed && setCollapsed(false)} aria-label="ODDI AI">
+        <button className="oddi-rs-brand" onClick={() => isSwarmPage() ? returnFromSwarm() : collapsed && setCollapsed(false)} aria-label="ODDI AI">
           <img
             src={isDarkAppearance ? '/static/symbol-dark.png' : '/static/symbol.png'}
             alt="ODDI"
@@ -1429,15 +1460,18 @@ export default function Sidebar() {
             },
             { label: 'Skills Studio', icon: <GraduationCap size={14} />, action: openSkillsStudio },
             { label: 'Interview Studio', icon: <Briefcase size={14} />, action: openInterviewStudio },
+            { label: 'Swarm Intelligence', icon: <Network size={14} />, action: openSwarm },
             { label: 'Library', icon: <FolderOpen size={14} />, action: openLibrary },
             { label: 'Settings', icon: <Settings size={14} />, action: openSettings },
-          ].map(item => (
+          ].filter(item => item.label !== 'Settings' || isPhone).map(item => (
             <button
               key={item.label}
               type="button"
+              className={item.label === 'Swarm Intelligence' && isSwarmPage() ? 'oddi-rs-nav-current' : undefined}
               onClick={item.action}
               title={item.notificationLabel || item.label}
               aria-label={item.notificationLabel || item.label}
+              aria-current={item.label === 'Swarm Intelligence' && isSwarmPage() ? 'page' : undefined}
               style={{
                 position: 'relative', width: '100%', minHeight: 32, display: 'flex', alignItems: 'center', gap: 10,
                 padding: '7px 8px', border: 0, borderRadius: 7, background: 'transparent',

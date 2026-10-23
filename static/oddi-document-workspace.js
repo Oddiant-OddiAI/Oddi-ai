@@ -121,6 +121,10 @@
         refs.saved.classList.toggle("is-error", !!isError);
     }
 
+    function savedLabel() {
+        return String(state?.savedLabel || "Saved to this chat");
+    }
+
     function toggleDownloadMenu(forceOpen) {
         if (!refs) return;
         const open = forceOpen === undefined ? refs.menu.hidden : !!forceOpen;
@@ -193,8 +197,8 @@
             }
             refs.savedHtml = refs.content.innerHTML;
             leaveEditMode();
-            setStatus("Saved to this chat.");
-            setSavedLabel("Saved to this chat");
+            setStatus(`${savedLabel()}.`);
+            setSavedLabel(savedLabel());
         } catch (error) {
             setStatus(error?.message || "Save failed. Your edits are still here; try again.", true);
             setSavedLabel("Not saved", true);
@@ -239,6 +243,7 @@
                 state.onSave = options.onSave || state.onSave;
                 state.createPdfBlob = options.createPdfBlob || state.createPdfBlob;
                 state.createDocxBlob = options.createDocxBlob || state.createDocxBlob;
+                state.savedLabel = options.savedLabel || state.savedLabel || "Saved to this chat";
                 refs.title.textContent = state.title;
                 update(options.markdown, {status: options.status || "Ready to edit or download."});
             }
@@ -260,6 +265,7 @@
             onSave: options.onSave,
             createPdfBlob: options.createPdfBlob,
             createDocxBlob: options.createDocxBlob,
+            savedLabel: options.savedLabel || "Saved to this chat",
             generating: false,
             editing: false
         };
@@ -280,7 +286,7 @@
         document.body.classList.add("oddi-document-side-panel-open");
         document.body.classList.remove("oddi-document-side-panel-expanded");
         closeDownloadMenu();
-        setSavedLabel("Saved to this chat");
+        setSavedLabel(savedLabel());
         if (typeof options.markdown === "string") {
             update(options.markdown, {status: options.status || "Ready to edit or download."});
         } else {
@@ -303,7 +309,7 @@
         if (options.status !== undefined) setStatus(options.status, !!options.error);
         setGenerating(options.generating === undefined ? state.generating : options.generating);
         refs.savedHtml = refs.content.innerHTML;
-        setSavedLabel("Saved to this chat");
+        setSavedLabel(savedLabel());
         return true;
     }
 

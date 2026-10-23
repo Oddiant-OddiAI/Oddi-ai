@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>{% if legal_page == 'privacy' %}Privacy Policy{% else %}Terms of Service{% endif %} · ODDI AI</title>
+  <link rel="stylesheet" href="/static/auth.css?v=20261022-legal-pages">
+  <style>
+    .legal-page{min-height:100vh;box-sizing:border-box;padding:32px 18px 64px;background:radial-gradient(ellipse at 18% 0%,rgba(124,58,237,.15),transparent 36%),#09090e;color:#f0eef7;font-family:Inter,system-ui,sans-serif}
+    .legal-wrap{width:min(820px,100%);margin:0 auto}.legal-top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin:0 0 36px}.legal-brand{display:flex;align-items:center;gap:10px;color:#f7f5fb;text-decoration:none}.legal-brand img{width:36px;height:36px;object-fit:contain}.legal-brand strong{font-size:14px}.legal-back{padding:9px 13px;border:1px solid #363342;border-radius:10px;color:#dedbe8;font-size:12px;text-decoration:none}.legal-back:hover{border-color:#8b5cf6;color:#fff}
+    .legal-kicker{margin:0 0 9px;color:#ad8bff;font-size:11px;font-weight:750;letter-spacing:.14em;text-transform:uppercase}.legal-wrap h1{margin:0;font-size:clamp(30px,6vw,44px);letter-spacing:-.045em}.legal-updated{margin:9px 0 28px;color:#93909f;font-size:12px}.legal-content{padding:clamp(20px,5vw,34px);border:1px solid #2c2938;border-radius:18px;background:#111018;box-shadow:0 20px 60px #0005}.legal-content section+section{margin-top:25px;padding-top:21px;border-top:1px solid #292634}.legal-content h2{margin:0 0 9px;font-size:16px}.legal-content p,.legal-content li{color:#c0bdca;font-size:13px;line-height:1.75}.legal-content p{margin:0 0 10px}.legal-content ul{margin:8px 0;padding-left:21px}.legal-note{padding:12px 14px;border:1px solid #42375a;border-radius:12px;background:#1a1624;color:#d5cbea!important}.legal-footer{margin-top:21px;color:#8d8999;font-size:11px;line-height:1.6}
+    @media(max-width:560px){.legal-page{padding:20px 13px 40px}.legal-top{margin-bottom:28px}.legal-back{padding:8px 10px}.legal-content{border-radius:14px}}
+  </style>
+</head>
+<body>
+  <main class="legal-page">
+    <article class="legal-wrap">
+      <nav class="legal-top" aria-label="Page navigation"><a class="legal-brand" href="/login"><img src="/static/logo.png" alt=""><strong>ODDI AI</strong></a><a class="legal-back" href="/signup">Back to create account</a></nav>
+      {% if legal_page == 'privacy' %}
+        <p class="legal-kicker">Personal Career AI by ODDI AI</p><h1>Privacy Policy</h1><p class="legal-updated">Updated 22 October 2026 · Version {{ version }}</p>
+        <div class="legal-content">
+          <section><h2>Information ODDI handles</h2><p>ODDI uses account details such as your name and email address to provide sign-in and account features. Depending on the features you use, ODDI also stores conversations, saved career memories, preferences, learning progress, and files you upload.</p></section>
+          <section><h2>How your content is used</h2><p>Your prompts, relevant conversation context, and files you attach may be sent to the AI provider selected for a response so it can generate that response. Google sign-in is handled by Google. When this deployment is configured for Google Drive storage or sync, account or chat data may also be stored in the connected Drive.</p><p>ODDI’s current deployment has no analytics, model-training, or crash-reporting integration configured. Those preference controls are saved, but they do not enable those services here. The request-logging preference controls ODDI application request logs where supported; hosting providers may keep separate operational logs.</p></section>
+          <section><h2>Where data is stored</h2><p>Storage depends on the active deployment. Account and conversation data may be stored in the configured database, account-scoped local files, or connected Google Drive. Browser-only chat mode stores chat history in that browser’s IndexedDB with a local-storage recovery copy. Library uploads use the deployment’s configured file storage.</p></section>
+          <section><h2>Retention and deletion</h2><p>Conversation retention can be set to 30 days, 90 days, 1 year, or Forever. Expired active and archived conversations are permanently removed by scheduled cleanup; browser-only chats are removed the next time ODDI opens in that browser. A scheduled cleanup may take up to a day on server storage. Chats you put in Bin follow the separate 7-day Bin cleanup.</p><p>This setting covers conversation history only. It does not automatically remove saved memories, account settings, or Library files. Manage those separately in ODDI.</p></section>
+          <section><h2>Your controls</h2><p>You can change privacy and retention preferences in Settings, manage saved memories, delete conversations, and remove Library files through their controls. For a privacy question, use Help &amp; Feedback inside ODDI.</p></section>
+          <p class="legal-note">This page describes the behavior of the current ODDI application. Storage providers and processing can vary with the deployment you are using.</p>
+        </div>
+      {% else %}
+        <p class="legal-kicker">Personal Career AI by ODDI AI</p><h1>Terms of Service</h1><p class="legal-updated">Updated 22 October 2026 · Version {{ version }}</p>
+        <div class="legal-content">
+          <section><h2>Using ODDI</h2><p>ODDI provides AI-assisted career planning, job-search, resume, interview-practice, and skills-learning features. You must provide accurate account details, protect your sign-in credentials, and use the service lawfully.</p></section>
+          <section><h2>Your content</h2><p>Only submit conversations, resumes, job descriptions, and other files that you are allowed to use. ODDI processes the content you provide to deliver the features you request. You remain responsible for reviewing and deciding how to use your content and ODDI’s responses.</p></section>
+          <section><h2>AI responses</h2><p>ODDI responses are generated automatically and may be incomplete, outdated, or incorrect. Review resumes, applications, interview answers, and career decisions before relying on them. ODDI does not guarantee a job, interview, or other outcome.</p></section>
+          <section><h2>Accounts and availability</h2><p>Keep your account secure and do not use ODDI to disrupt the service, access another person’s data, or submit content that you have no right to use. Features and availability may change as ODDI is maintained and improved.</p></section>
+          <section><h2>Privacy and retention</h2><p>Your use of ODDI is also covered by the <a href="/privacy">Privacy Policy</a>. You can choose how long active and archived conversations are retained in Settings. The existing Bin cleanup and separate storage for memories and Library files have their own controls.</p></section>
+          <section><h2>Questions</h2><p>For questions about these terms, use Help &amp; Feedback inside ODDI.</p></section>
+        </div>
+      {% endif %}
+      <p class="legal-footer">ODDI AI · Personal Career AI</p>
+    </article>
+  </main>
+</body>
+</html>

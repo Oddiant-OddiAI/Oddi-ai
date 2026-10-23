@@ -14,7 +14,7 @@
 
     <link
         rel="stylesheet"
-        href="/static/auth.css?v=20261021-login-feedback-v1"
+        href="/static/auth.css?v=20261022-auth-recovery-v1"
     >
 </head>
 
@@ -42,7 +42,7 @@
 
             <div>
                 <h1>ODDI-AI</h1>
-                <p>Your personal AI companion</p>
+                <p>Personal Career AI by ODDI AI</p>
             </div>
         </div>
 
@@ -51,16 +51,14 @@
         <div class="brand-hero">
 
             <h2>
-                Intelligence that
-                <span>remembers you.</span>
+                Make your next
+                <span>career move.</span>
             </h2>
 
             <p>
-                ODDI isn't just another chatbot.
-                It's a personal AI companion that grows
-                with you — learning your preferences,
-                remembering your goals, and helping you
-                think better every day.
+                ODDI is your Personal Career AI for planning a career path,
+                improving applications, preparing for interviews, and building
+                the skills that move you toward your next role.
             </p>
 
         </div>
@@ -76,11 +74,10 @@
                 </div>
 
                 <div>
-                    <strong>Persistent Memory</strong>
+                    <strong>Career Memory</strong>
 
                     <span>
-                        ODDI remembers your preferences,
-                        goals, and context.
+                        Keep your goals, strengths, and target roles in context.
                     </span>
                 </div>
 
@@ -94,11 +91,10 @@
                 </div>
 
                 <div>
-                    <strong>Intelligent Conversations</strong>
+                    <strong>Job Search Support</strong>
 
                     <span>
-                        Context-aware conversations
-                        that feel personal.
+                        Understand roles and plan focused applications.
                     </span>
                 </div>
 
@@ -112,11 +108,10 @@
                 </div>
 
                 <div>
-                    <strong>File Understanding</strong>
+                    <strong>Interview Preparation</strong>
 
                     <span>
-                        Upload documents and let ODDI
-                        analyze them.
+                        Practice role-specific questions and improve your answers.
                     </span>
                 </div>
 
@@ -303,14 +298,9 @@
                             Password
                         </label>
 
-                        <button
-                            type="button"
-                            class="forgot-password"
-                            disabled
-                            title="Password recovery will be added later"
-                        >
+                        <a href="/forgot-password" class="forgot-password">
                             Forgot password?
-                        </button>
+                        </a>
 
                     </div>
 
@@ -500,6 +490,11 @@
                 message: "Check your connection and try again. Your account details haven't been changed.",
                 tone: "error",
             },
+            password_reset: {
+                title: "Password updated",
+                message: "Your new password is ready. Sign in with it to continue.",
+                tone: "info",
+            },
         };
         const state = messages[kind] || messages.network;
         authFeedback.className = `auth-feedback is-${state.tone}`;
@@ -519,6 +514,7 @@
                     passwordInput.focus();
                 },
             });
+            addFeedbackAction("Reset password", "/forgot-password", { primary: true });
             addFeedbackAction("Continue with Google", "/auth/google", { primary: true });
         } else if (kind === "google_only") {
             addFeedbackAction("Continue with Google", "/auth/google", { primary: true });
@@ -675,8 +671,12 @@
     const query = new URLSearchParams(window.location.search);
     const emailFromQuery = query.get("email");
     const errorFromQuery = query.get("error");
+    const passwordReset = query.get("password_reset");
     if (emailFromQuery) emailInput.value = emailFromQuery;
-    if (errorFromQuery) {
+    if (passwordReset === "1") {
+        showAuthFeedback("password_reset");
+        window.history.replaceState({}, "", window.location.pathname);
+    } else if (errorFromQuery) {
         showAuthFeedback(errorFromQuery, emailInput.value.trim());
         window.history.replaceState({}, "", window.location.pathname);
     }

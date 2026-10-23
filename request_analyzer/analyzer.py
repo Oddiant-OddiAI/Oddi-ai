@@ -72,10 +72,9 @@ class RequestAnalyzer:
             )):
                 result["intent"] = "job_application"
                 result["actions"].append("apply")
-                result["requires_platform_action"] = True
-                result["required_capabilities"].append(
-                    "jobs.apply"
-                )
+                # Job-application advice and writing are model work. Do not
+                # classify mentions of applications as an ODDI-side action;
+                # ODDI does not submit applications to external job sites.
 
             if any(word in text for word in (
                 "save",

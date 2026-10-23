@@ -38,6 +38,8 @@ _FOLDER_CACHE_LOCK = threading.Lock()
 _FOLDER_CACHE = {}
 _ACCOUNT_CACHE_LOCK = threading.Lock()
 _ACCOUNT_CACHE = {}
+_PASSWORD_RESET_LOCK = threading.RLock()
+_PASSWORD_RESET_FILE = "password-reset-index.json"
 
 
 def _bounded_env_int(name, default, minimum, maximum):
@@ -912,7 +914,7 @@ def get_account_by_id(user_id):
     return deepcopy(account) if account is not None else None
 
 
-def create_account(username, email, password_hash):
+def create_account(username, email, password_hash, settings=None):
     normalized_email = str(email or "").strip().casefold()
     user_id = user_id_for_email(normalized_email)
     with _lock_for(user_id):
@@ -929,7 +931,7 @@ def create_account(username, email, password_hash):
             "password_hash": str(password_hash or ""),
             "created_at": now,
             "updated_at": now,
-            "settings": {"memory": {"enabled": True, "auto_extract": True}},
+            "settings": settings if isinstance(settings, dict) else {"memory": {"enabled": True, "auto_extract": True}},
             "settings_updated_at": now,
         }
         _write_json_file(folder_id, "account.json", account)
@@ -952,6 +954,76 @@ def list_accounts():
             account["id"] = int(account_id)
             result.append(account)
     return result
+
+
+def _password_reset_index():
+    root_id = _root_folder_id()
+    value = _read_json_file(root_id, _PASSWORD_RESET_FILE)
+    tokens = value.get("tokens") if isinstance(value, dict) else None
+    return root_id, tokens if isinstance(tokens, dict) else {}
+
+
+def _password_reset_record_email(record, now=None):
+    if not isinstance(record, dict):
+        return None
+    try:
+        expires_at = datetime.fromisoformat(str(record.get("expires_at") or "").replace("Z", "+00:00"))
+    except (TypeError, ValueError, OverflowError):
+        return None
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    if expires_at.astimezone(timezone.utc) <= current.astimezone(timezone.utc):
+        return None
+    email = str(record.get("email") or "").strip().casefold()
+    return email or None
+
+
+def store_password_reset_token(email, token_hash, expires_at):
+    normalized_email = str(email or "").strip().casefold()
+    with _PASSWORD_RESET_LOCK:
+        root_id, tokens = _password_reset_index()
+        tokens = {
+            key: value for key, value in tokens.items()
+            if _password_reset_record_email(value)
+            and str(value.get("email") or "").casefold() != normalized_email
+        }
+        tokens[str(token_hash)] = {"email": normalized_email, "expires_at": str(expires_at)}
+        _write_json_file(root_id, _PASSWORD_RESET_FILE, {"tokens": tokens})
+
+
+def get_password_reset_email(token_hash, now=None):
+    with _PASSWORD_RESET_LOCK:
+        _, tokens = _password_reset_index()
+        return _password_reset_record_email(tokens.get(str(token_hash)), now=now)
+
+
+def consume_password_reset_token(token_hash, now=None):
+    with _PASSWORD_RESET_LOCK:
+        root_id, tokens = _password_reset_index()
+        key = str(token_hash)
+        email = _password_reset_record_email(tokens.get(key), now=now)
+        if not email:
+            return None
+        tokens.pop(key, None)
+        _write_json_file(root_id, _PASSWORD_RESET_FILE, {"tokens": tokens})
+        return email
+
+
+def clear_password_reset_token(email, token_hash=None):
+    normalized_email = str(email or "").strip().casefold()
+    with _PASSWORD_RESET_LOCK:
+        root_id, tokens = _password_reset_index()
+        tokens = {
+            key: value for key, value in tokens.items()
+            if isinstance(value, dict) and not (
+                str(value.get("email") or "").casefold() == normalized_email
+                and (not token_hash or key == str(token_hash))
+            )
+        }
+        _write_json_file(root_id, _PASSWORD_RESET_FILE, {"tokens": tokens})
 
 
 def list_deleted_accounts():
@@ -1012,6 +1084,21 @@ def update_account_settings(user_id, settings):
     _write_json_file(folder_id, "account.json", account)
     _invalidate_account_cache(user_id)
     return True
+
+
+def update_account_password(email, password_hash):
+    """Replace the password hash for an existing Drive-backed account."""
+    normalized_email = str(email or "").strip().casefold()
+    account_id = user_id_for_email(normalized_email)
+    with _lock_for(account_id):
+        account = get_account_by_id(account_id)
+        if not account or str(account.get("email") or "").casefold() != normalized_email:
+            return False
+        account["password_hash"] = str(password_hash or "")
+        account["updated_at"] = _iso_timestamp()
+        _write_json_file(_account_folder(account_id, create=True), "account.json", account)
+        _invalidate_account_cache(account_id)
+        return True
 
 
 def _memory_timestamp(value):

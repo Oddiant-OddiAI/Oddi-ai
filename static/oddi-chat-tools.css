@@ -1,0 +1,428 @@
+/* Home composer tools, Library picker, and transient-chat controls. */
+#headerIncognitoBtn.incognito-toggle {
+  position: absolute !important;
+  top: 14px !important;
+  right: 110px !important;
+  z-index: 1002 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+  border: 1px solid var(--oddi-theme-line, rgba(127,127,127,.35)) !important;
+  border-radius: 50% !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface, #fff) 80%, transparent) !important;
+  color: var(--oddi-theme-muted, #6e6e6e) !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.08), inset 0 1px 0 rgba(255,255,255,.12) !important;
+  cursor: pointer !important;
+  transition: color .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease !important;
+}
+#headerIncognitoBtn.incognito-toggle:hover,
+#headerIncognitoBtn.incognito-toggle:focus-visible {
+  color: var(--oddi-theme-accent, #2673e8) !important;
+  border-color: var(--oddi-theme-accent, #2673e8) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft, rgba(38,115,232,.11)) 78%, var(--oddi-theme-surface, #fff)) !important;
+  box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft, rgba(38,115,232,.11)), 0 5px 18px rgba(0,0,0,.12) !important;
+  outline: none !important;
+}
+#headerIncognitoBtn.incognito-toggle:active { transform: scale(.94) !important; }
+#headerIncognitoBtn.incognito-toggle[aria-pressed="true"] {
+  color: var(--oddi-theme-accent-strong, var(--oddi-theme-accent, #2673e8)) !important;
+  border-color: var(--oddi-theme-accent, #2673e8) !important;
+  background: var(--oddi-theme-accent-soft, rgba(38,115,232,.11)) !important;
+  box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft, rgba(38,115,232,.11)), 0 0 22px var(--oddi-theme-glow, rgba(38,115,232,.12)) !important;
+}
+#headerIncognitoBtn svg { width: 20px; height: 20px; display: block; }
+
+#oddiComposerToolMenu {
+  position: fixed;
+  z-index: 2147483000;
+  display: none;
+  width: min(376px, calc(100vw - 24px));
+  max-height: min(490px, calc(100dvh - 120px));
+  overflow: auto;
+  box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid var(--oddi-theme-line, #d3e0f3);
+  border-radius: 17px;
+  background: color-mix(in srgb, var(--oddi-theme-surface, #fff) 96%, transparent);
+  color: var(--oddi-theme-text, #162941);
+  box-shadow: 0 24px 68px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.12);
+  backdrop-filter: blur(22px) saturate(1.24);
+  -webkit-backdrop-filter: blur(22px) saturate(1.24);
+  scrollbar-width: thin;
+}
+#oddiComposerToolMenu.open { display: block; animation: oddi-tools-in .14s ease-out both; }
+@keyframes oddi-tools-in { from { opacity: 0; transform: translateY(5px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+.oddi-tool-menu-label {
+  padding: 7px 10px 5px;
+  color: var(--oddi-theme-dim, #8294ad);
+  font: 750 9px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+.oddi-tool-menu-divider { height: 1px; margin: 6px 7px; background: var(--oddi-theme-line, #d3e0f3); opacity: .85; }
+.oddi-tool-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  min-height: 45px;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--oddi-theme-text, #162941);
+  text-align: left;
+  cursor: pointer;
+  transition: background .14s ease, color .14s ease;
+}
+.oddi-tool-item:hover, .oddi-tool-item:focus-visible { background: var(--oddi-theme-accent-soft, rgba(38,115,232,.11)); outline: none; }
+.oddi-tool-item[aria-pressed="true"] { background: color-mix(in srgb, var(--oddi-theme-accent-soft, rgba(38,115,232,.11)) 78%, var(--oddi-theme-surface, #fff)); }
+.oddi-tool-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--oddi-theme-line, #d3e0f3);
+  border-radius: 9px;
+  background: var(--oddi-theme-accent-soft, rgba(38,115,232,.11));
+  color: var(--oddi-theme-accent, #2673e8);
+}
+.oddi-tool-icon svg { width: 16px; height: 16px; }
+.oddi-tool-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+.oddi-tool-title { overflow: hidden; color: inherit; font: 680 12px/1.25 system-ui, -apple-system, "Segoe UI", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.oddi-tool-subtitle { overflow: hidden; color: var(--oddi-theme-muted, #586f8d); font: 450 10px/1.25 system-ui, -apple-system, "Segoe UI", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.oddi-tool-check { flex: 0 0 auto; color: var(--oddi-theme-accent, #2673e8); font-size: 14px; }
+
+#oddiChatLibraryPicker {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483001;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  box-sizing: border-box;
+  background: rgba(4,8,14,.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#oddiChatLibraryPicker.open { display: flex; }
+.oddi-chat-library-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(680px, calc(100vw - 28px));
+  max-height: min(720px, calc(100dvh - 32px));
+  overflow: hidden;
+  border: 1px solid var(--oddi-theme-line, #d3e0f3);
+  border-radius: 20px;
+  background: var(--oddi-theme-surface, #fbfdff);
+  color: var(--oddi-theme-text, #162941);
+  box-shadow: 0 30px 90px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.10);
+}
+.oddi-chat-library-head { display: flex; align-items: center; gap: 12px; padding: 17px 19px 13px; border-bottom: 1px solid var(--oddi-theme-line, #d3e0f3); }
+.oddi-chat-library-heading { min-width: 0; }
+.oddi-chat-library-heading h2 { margin: 0; font: 740 18px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.oddi-chat-library-heading p { margin: 4px 0 0; color: var(--oddi-theme-muted, #586f8d); font: 450 11px/1.35 system-ui, -apple-system, "Segoe UI", sans-serif; }
+.oddi-chat-library-close { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 34px; width: 34px; height: 34px; margin-left: auto; border: 1px solid var(--oddi-theme-line, #d3e0f3); border-radius: 50%; background: var(--oddi-theme-raised, #e6efff); color: var(--oddi-theme-text, #162941); font-size: 19px; cursor: pointer; }
+.oddi-chat-library-search-wrap { display: flex; align-items: center; gap: 9px; margin: 13px 16px 8px; padding: 0 11px; border: 1px solid var(--oddi-theme-line, #d3e0f3); border-radius: 12px; background: color-mix(in srgb, var(--oddi-theme-raised, #e6efff) 55%, var(--oddi-theme-surface, #fff)); color: var(--oddi-theme-muted, #586f8d); }
+.oddi-chat-library-search-wrap svg { flex: 0 0 17px; width: 17px; height: 17px; }
+#oddiChatLibrarySearch { width: 100%; height: 40px; min-width: 0; border: 0; outline: none; background: transparent; color: var(--oddi-theme-text, #162941); font: 500 13px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; }
+#oddiChatLibrarySearch::placeholder { color: var(--oddi-theme-dim, #8294ad); }
+.oddi-chat-library-count { padding: 2px 18px 8px; color: var(--oddi-theme-muted, #586f8d); font: 550 10px/1.3 system-ui, sans-serif; }
+#oddiChatLibraryRows { min-height: 130px; max-height: min(440px, 52dvh); overflow: auto; padding: 0 11px 9px; scrollbar-width: thin; }
+.oddi-chat-library-row { display: flex; align-items: center; gap: 11px; min-height: 54px; padding: 7px 9px; border-bottom: 1px solid color-mix(in srgb, var(--oddi-theme-line, #d3e0f3) 70%, transparent); border-radius: 10px; cursor: pointer; }
+.oddi-chat-library-row:hover, .oddi-chat-library-row.is-selected { background: var(--oddi-theme-accent-soft, rgba(38,115,232,.11)); }
+.oddi-chat-library-check { position: relative; flex: 0 0 19px; width: 19px; height: 19px; margin: 0; accent-color: var(--oddi-theme-accent, #2673e8); cursor: pointer; }
+.oddi-chat-library-file-icon { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 35px; width: 35px; height: 35px; border: 1px solid var(--oddi-theme-line, #d3e0f3); border-radius: 10px; background: var(--oddi-theme-raised, #e6efff); color: var(--oddi-theme-accent, #2673e8); }
+.oddi-chat-library-file-icon svg { width: 18px; height: 18px; }
+.oddi-chat-library-file-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 3px; }
+.oddi-chat-library-file-name { overflow: hidden; color: var(--oddi-theme-text, #162941); font: 650 12px/1.25 system-ui, -apple-system, "Segoe UI", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.oddi-chat-library-file-meta { overflow: hidden; color: var(--oddi-theme-muted, #586f8d); font: 450 10px/1.25 system-ui, -apple-system, "Segoe UI", sans-serif; text-overflow: ellipsis; white-space: nowrap; }
+.oddi-chat-library-empty { display: grid; min-height: 150px; place-content: center; gap: 7px; padding: 18px; color: var(--oddi-theme-muted, #586f8d); text-align: center; font: 500 12px/1.4 system-ui, sans-serif; }
+.oddi-chat-library-empty strong { color: var(--oddi-theme-text, #162941); font-size: 14px; }
+.oddi-chat-library-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--oddi-theme-line, #d3e0f3); }
+.oddi-chat-library-selection { color: var(--oddi-theme-muted, #586f8d); font: 550 11px/1.3 system-ui, sans-serif; }
+.oddi-chat-library-actions { display: flex; align-items: center; gap: 8px; }
+.oddi-chat-library-actions button { min-height: 38px; padding: 0 15px; border: 1px solid var(--oddi-theme-line, #d3e0f3); border-radius: 999px; background: transparent; color: var(--oddi-theme-text, #162941); font: 650 11px/1 system-ui, sans-serif; cursor: pointer; }
+.oddi-chat-library-actions #oddiChatLibraryAdd { border-color: var(--oddi-theme-accent, #2673e8); background: var(--oddi-theme-accent, #2673e8); color: #fff; }
+.oddi-chat-library-actions #oddiChatLibraryAdd:disabled { opacity: .42; cursor: not-allowed; }
+
+body.dark-mode #oddiChatLibraryPicker, body.oddi-system-theme.dark-mode #oddiChatLibraryPicker { background: rgba(0,0,0,.62); }
+@media (max-width:768px) and (pointer:coarse) {
+  #headerIncognitoBtn.incognito-toggle { top: 14px !important; right: 106px !important; width: 38px !important; height: 38px !important; }
+  #oddiComposerToolMenu { width: min(360px, calc(100vw - 20px)); max-height: min(430px, calc(100dvh - 104px)); }
+  #oddiChatLibraryPicker { align-items: flex-end; padding: 0; }
+  .oddi-chat-library-panel { width: 100%; max-height: min(86dvh, 760px); border-radius: 20px 20px 0 0; }
+  .oddi-chat-library-head { padding: 15px 15px 11px; }
+  #oddiChatLibraryRows { max-height: 56dvh; }
+  .oddi-chat-library-foot { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #headerIncognitoBtn.incognito-toggle, #oddiComposerToolMenu.open, .oddi-tool-item { transition: none !important; animation: none !important; }
+}
+
+/* Keep the Incognito entry on the home surface; it starts a fresh private chat. */
+.header-controls > #headerIncognitoBtn.incognito-toggle {
+  position: static !important;
+  inset: auto !important;
+  z-index: auto !important;
+  flex: 0 0 40px !important;
+  margin: 0 !important;
+}
+#headerIncognitoBtn.incognito-toggle[hidden] { display: none !important; }
+.header-controls > .header-more,
+.header-controls > .theme-toggle {
+  position: static !important;
+  inset: auto !important;
+  display: flex !important;
+  flex: 0 0 40px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  max-height: 40px !important;
+  margin: 0 !important;
+}
+.header-controls #headerMoreBtn,
+.header-controls #themeBtn {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 !important;
+  border: 1px solid var(--oddi-theme-line, rgba(127,127,127,.35)) !important;
+  border-radius: 13px !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface, #fff) 84%, transparent) !important;
+  color: var(--oddi-theme-text, #162941) !important;
+  box-shadow: 0 5px 16px rgba(0,0,0,.12), inset 0 1px 0 rgba(255,255,255,.1) !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  text-shadow: none !important;
+  filter: none !important;
+  cursor: pointer !important;
+  backdrop-filter: blur(12px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.12) !important;
+}
+.header-controls #headerMoreBtn:hover,
+.header-controls #themeBtn:hover,
+#headerIncognitoBtn.incognito-toggle:hover {
+  border-color: var(--oddi-theme-accent, #2673e8) !important;
+  background: var(--oddi-theme-accent-soft, rgba(38,115,232,.11)) !important;
+  color: var(--oddi-theme-accent-strong, var(--oddi-theme-accent, #2673e8)) !important;
+}
+.oddi-header-icon {
+  display: block !important;
+  width: 20px !important;
+  height: 20px !important;
+  flex: 0 0 20px !important;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.85;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+#headerMoreBtn .oddi-header-icon { fill: currentColor; stroke: none; width: 18px !important; height: 18px !important; }
+#headerIncognitoBtn.incognito-toggle svg { width: 22px !important; height: 22px !important; stroke-width: 1.75 !important; }
+.header-controls #headerMoreBtn:focus-visible,
+.header-controls #themeBtn:focus-visible,
+#headerIncognitoBtn.incognito-toggle:focus-visible {
+  outline: 2px solid var(--oddi-theme-accent, #2673e8) !important;
+  outline-offset: 3px !important;
+}
+
+/* Keep transient-chat status in the app header, away from the composer. */
+#oddiIncognitoHeaderNotice {
+  position: absolute !important;
+  top: 7px !important;
+  left: 50% !important;
+  z-index: 1001 !important;
+  display: grid !important;
+  justify-items: center !important;
+  gap: 3px !important;
+  width: max-content !important;
+  max-width: min(440px, calc(100% - 240px)) !important;
+  padding: 6px 13px 7px !important;
+  box-sizing: border-box !important;
+  transform: translateX(-50%) !important;
+  border: 1px solid color-mix(in srgb, #ff435b 40%, var(--oddi-theme-line, #383838)) !important;
+  border-radius: 12px !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface, #111) 90%, transparent) !important;
+  color: var(--oddi-theme-text, #f5f5f5) !important;
+  box-shadow: 0 5px 20px rgba(0,0,0,.2), 0 0 18px rgba(255,55,75,.08) !important;
+  text-align: center !important;
+  pointer-events: none !important;
+  backdrop-filter: blur(12px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(1.15) !important;
+}
+#oddiIncognitoHeaderNotice[hidden] { display: none !important; }
+.oddi-incognito-header-title {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  color: #ff5368 !important;
+  font: 800 12px/1.15 ui-monospace, SFMono-Regular, Consolas, monospace !important;
+  letter-spacing: .075em !important;
+  text-shadow: 0 0 12px rgba(255,55,75,.25) !important;
+}
+.oddi-incognito-header-title::before {
+  content: "" !important;
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #ff435b !important;
+  box-shadow: 0 0 8px rgba(255,55,75,.7) !important;
+}
+.oddi-incognito-header-status {
+  color: color-mix(in srgb, #ff6476 70%, var(--oddi-theme-text, #f5f5f5)) !important;
+  font: 750 10px/1.25 ui-sans-serif, system-ui, sans-serif !important;
+  white-space: nowrap !important;
+}
+@media (max-width: 720px) {
+  #oddiIncognitoHeaderNotice {
+    top: 4px !important;
+    left: 58px !important;
+    width: auto !important;
+    max-width: none !important;
+    right: 142px !important;
+    padding: 5px 7px !important;
+    transform: none !important;
+  }
+  .oddi-incognito-header-title { font-size: 10px !important; }
+  .oddi-incognito-header-status {
+    max-width: 100% !important;
+    font-size: 8px !important;
+    white-space: normal !important;
+  }
+}
+
+/* Render @Agent inline with the user's actual text, like a prompt mention. */
+#chatbox .user-message .oddi-user-agent-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  min-height: 20px !important;
+  margin: 0 .4em 0 0 !important;
+  padding: 2px 7px !important;
+  box-sizing: border-box !important;
+  border: 1px solid color-mix(in srgb, var(--oddi-theme-accent, #2673e8) 40%, var(--oddi-theme-line, #d3e0f3)) !important;
+  border-radius: 999px !important;
+  background: var(--oddi-theme-accent-soft, rgba(38,115,232,.11)) !important;
+  color: var(--oddi-theme-accent-strong, var(--oddi-theme-accent, #2673e8)) !important;
+  font: 700 10px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  vertical-align: .08em !important;
+  white-space: nowrap !important;
+}
+
+/* A textarea cannot color part of its value; show the selected route as a real inline token. */
+.oddi-composer-field .oddi-composer-agent-mention:not([hidden]) {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  max-width: min(42%, 172px) !important;
+  margin: 0 2px 0 0 !important;
+  padding: 0 2px !important;
+  overflow: hidden !important;
+  color: #007d98 !important;
+  font: 750 12px/1.25 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  letter-spacing: .005em !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  text-shadow: none !important;
+}
+.oddi-composer-field .oddi-composer-agent-mention[hidden] { display: none !important; }
+
+body.dark-mode .oddi-composer-field .oddi-composer-agent-mention:not([hidden]),
+body.oddi-system-theme.dark-mode .oddi-composer-field .oddi-composer-agent-mention:not([hidden]),
+html:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) .oddi-composer-field .oddi-composer-agent-mention:not([hidden]) {
+  color: #48dcff !important;
+  text-shadow: 0 0 10px rgba(72,220,255,.22) !important;
+}
+
+/* Keep the sent @Agent marker cyan too, across all three dark palettes. */
+#chatbox .user-message .oddi-user-agent-tag {
+  color: #007d98 !important;
+  border-color: rgba(0,125,152,.32) !important;
+  background: rgba(34,211,238,.10) !important;
+}
+body.dark-mode #chatbox .user-message .oddi-user-agent-tag,
+body.oddi-system-theme.dark-mode #chatbox .user-message .oddi-user-agent-tag,
+html:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #chatbox .user-message .oddi-user-agent-tag {
+  color: #48dcff !important;
+  border-color: rgba(72,220,255,.42) !important;
+  background: rgba(72,220,255,.10) !important;
+}
+
+/* The Library action needs an explicit foreground even in monochrome dark mode. */
+.oddi-chat-library-actions #oddiChatLibraryAdd:not(:disabled) {
+  border-color: var(--oddi-theme-accent, #2673e8) !important;
+  background: var(--oddi-theme-accent, #2673e8) !important;
+  color: var(--oddi-theme-bg, #fff) !important;
+  opacity: 1 !important;
+}
+.oddi-chat-library-actions #oddiChatLibraryAdd:disabled {
+  border-color: var(--oddi-theme-line, #d3e0f3) !important;
+  background: var(--oddi-theme-raised, #e6efff) !important;
+  color: var(--oddi-theme-muted, #586f8d) !important;
+  opacity: 1 !important;
+}
+#oddiComposerShell #send-btn:not(:disabled) { color: var(--oddi-theme-bg, #fff) !important; }
+
+/* Keep the agent token and editable text in one normal-width composer track. */
+#oddiComposerShell > .oddi-composer-field > .oddi-composer-input-group {
+  display: flex !important;
+  flex: 1 1 0% !important;
+  align-items: center !important;
+  gap: clamp(4px, .8vw, 8px) !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 40px !important;
+  box-sizing: border-box !important;
+}
+#oddiComposerShell.has-specialist-agent .oddi-composer-input-group > .oddi-composer-agent-mention:not([hidden]) {
+  flex: 0 1 auto !important;
+  max-width: min(62%, 172px) !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  align-self: center !important;
+}
+#oddiComposerShell.has-specialist-agent .oddi-composer-input-group > #userInput {
+  flex: 1 1 5ch !important;
+  width: auto !important;
+  min-width: 4ch !important;
+  max-width: none !important;
+  align-self: center !important;
+  color: var(--oddi-home-text-primary, var(--oddi-theme-text, #f2f4f3)) !important;
+  -webkit-text-fill-color: currentColor !important;
+  caret-color: var(--oddi-home-accent, var(--oddi-theme-accent, #48dcff)) !important;
+  opacity: 1 !important;
+}
+
+body:not(.dark-mode):not(.oddi-system-theme) #oddiComposerShell.has-specialist-agent .oddi-composer-input-group > #userInput {
+  color: var(--oddi-home-text-primary, var(--oddi-theme-text, #171d19)) !important;
+}
+body.oddi-system-theme:not(.dark-mode) #oddiComposerShell.has-specialist-agent .oddi-composer-input-group > #userInput {
+  color: var(--oddi-home-text-primary, var(--oddi-theme-text, #171d19)) !important;
+}
+
+@media (max-width: 768px) and (pointer: coarse) {
+  .header-controls > #headerIncognitoBtn.incognito-toggle { width: 40px !important; height: 40px !important; }
+}

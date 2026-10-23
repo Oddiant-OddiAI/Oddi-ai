@@ -544,6 +544,14 @@ def _create_chat_tables():
                 conn.execute("ALTER TABLE conversations ADD COLUMN archived INTEGER NOT NULL DEFAULT 0")
             if "deleted_at" not in columns:
                 conn.execute("ALTER TABLE conversations ADD COLUMN deleted_at TIMESTAMP NULL")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS password_reset_tokens (
+                email TEXT PRIMARY KEY,
+                token_hash TEXT NOT NULL,
+                expires_at TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
         if _use_postgres("chat"):
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS local_conversation_imports (
@@ -1521,9 +1529,12 @@ def update_skills_learning_session(user_id, session_id, patch):
     finally:
         conn.close()
 
-def create_user(username, email, password_hash):
+def create_user(username, email, password_hash, initial_settings=None):
+    settings = {"memory": DEFAULT_MEMORY_SETTINGS}
+    if isinstance(initial_settings, dict):
+        settings.update(initial_settings)
     if ODDI_DRIVE_CHAT_STORAGE:
-        return google_drive_storage.create_account(username, email, password_hash)
+        return google_drive_storage.create_account(username, email, password_hash, settings=settings)
     conn = get_db("chat")
     try:
         conn.execute(
@@ -1534,7 +1545,7 @@ def create_user(username, email, password_hash):
         if user:
             conn.execute(
                 "INSERT INTO user_settings(user_id, settings) VALUES (?, ?)",
-                (user["id"], json.dumps({"memory": DEFAULT_MEMORY_SETTINGS})),
+                (user["id"], json.dumps(settings, ensure_ascii=False)),
             )
         conn.commit()
     finally:
@@ -1706,6 +1717,166 @@ def save_user_settings(user_id, settings):
             logger.exception("Could not mirror laptop settings to Google Drive")
 
 
+def store_password_reset_token(email, token_hash, expires_at):
+    normalized_email = str(email or "").strip().casefold()
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return google_drive_storage.store_password_reset_token(normalized_email, token_hash, expires_at)
+    conn = get_db("chat")
+    try:
+        conn.execute(
+            "DELETE FROM password_reset_tokens WHERE expires_at <= ?",
+            (datetime.now(timezone.utc).isoformat(),),
+        )
+        conn.execute(
+            """
+            INSERT INTO password_reset_tokens(email, token_hash, expires_at, created_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(email) DO UPDATE SET
+                token_hash = excluded.token_hash,
+                expires_at = excluded.expires_at,
+                created_at = excluded.created_at
+            """,
+            (normalized_email, str(token_hash), str(expires_at), datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def get_password_reset_email(token_hash, now=None):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return google_drive_storage.get_password_reset_email(token_hash, now=now)
+    current_time = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat()
+    conn = get_db("chat")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT email FROM password_reset_tokens WHERE token_hash = ? AND expires_at > ?",
+            (str(token_hash), current_time),
+        )
+        return str(row["email"]) if row else None
+    finally:
+        conn.close()
+
+
+def consume_password_reset_token(token_hash, now=None):
+    """Atomically consume a matching, unexpired one-time reset token."""
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return google_drive_storage.consume_password_reset_token(token_hash, now=now)
+    current_time = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat()
+    conn = get_db("chat")
+    try:
+        row = _fetchone(
+            conn,
+            "SELECT email FROM password_reset_tokens WHERE token_hash = ? AND expires_at > ?",
+            (str(token_hash), current_time),
+        )
+        if not row:
+            return None
+        normalized_email = str(row["email"])
+        cursor = conn.execute(
+            "DELETE FROM password_reset_tokens WHERE email = ? AND token_hash = ? AND expires_at > ?",
+            (normalized_email, str(token_hash), current_time),
+        )
+        conn.commit()
+        return normalized_email if int(getattr(cursor, "rowcount", 0) or 0) == 1 else None
+    finally:
+        conn.close()
+
+
+def clear_password_reset_token(email, token_hash=None):
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return google_drive_storage.clear_password_reset_token(email, token_hash=token_hash)
+    conn = get_db("chat")
+    try:
+        if token_hash:
+            conn.execute(
+                "DELETE FROM password_reset_tokens WHERE email = ? AND token_hash = ?",
+                (str(email or "").strip().casefold(), str(token_hash)),
+            )
+        else:
+            conn.execute(
+                "DELETE FROM password_reset_tokens WHERE email = ?",
+                (str(email or "").strip().casefold(),),
+            )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def update_user_password(email, password_hash):
+    normalized_email = str(email or "").strip().casefold()
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return google_drive_storage.update_account_password(normalized_email, password_hash)
+
+    conn = get_db("chat")
+    try:
+        cursor = conn.execute(
+            "UPDATE users SET password_hash = ? WHERE lower(email) = lower(?)",
+            (str(password_hash), normalized_email),
+        )
+        conn.commit()
+        updated = int(getattr(cursor, "rowcount", 0) or 0) == 1
+    finally:
+        conn.close()
+
+    if updated and ODDI_CHAT_FILES_STORAGE and google_drive_storage.is_configured():
+        try:
+            user = get_user_by_email(normalized_email)
+            if user:
+                google_drive_storage.upsert_account_from_local(dict(user))
+        except Exception:
+            logger.exception("Could not mirror a password update to Google Drive")
+    return updated
+
+
+def list_account_user_ids():
+    """Enumerate accounts for scheduled per-account privacy cleanup."""
+    if ODDI_DRIVE_CHAT_STORAGE:
+        return [account["id"] for account in google_drive_storage.list_accounts() if account.get("id")]
+    conn = get_db("chat")
+    try:
+        return [row["id"] for row in _fetchall(conn, "SELECT id FROM users ORDER BY id")]
+    finally:
+        conn.close()
+
+
+def purge_expired_conversation_history(now=None, user_id=None):
+    """Hard-delete conversations older than each account's chosen retention."""
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    current = current.astimezone(timezone.utc)
+    account_ids = [user_id] if user_id is not None else list_account_user_ids()
+    removed = 0
+
+    for account_id in account_ids:
+        try:
+            privacy = get_user_settings(account_id).get("privacy", {})
+            retention = str(privacy.get("retention_days", "90")).strip().lower() if isinstance(privacy, dict) else "90"
+            if retention == "forever":
+                continue
+            if retention not in {"30", "90", "365"}:
+                retention = "90"
+            cutoff = current - timedelta(days=int(retention))
+            for conversation in get_conversation_summaries(account_id):
+                if not isinstance(conversation, dict) or conversation.get("deleted"):
+                    continue
+                raw_date = conversation.get("updated_at") or conversation.get("created_at")
+                try:
+                    stamp = raw_date if isinstance(raw_date, datetime) else datetime.fromisoformat(str(raw_date).strip().replace("Z", "+00:00"))
+                except (TypeError, ValueError, OverflowError):
+                    continue
+                if stamp.tzinfo is None:
+                    stamp = stamp.replace(tzinfo=timezone.utc)
+                if stamp.astimezone(timezone.utc) <= cutoff:
+                    if delete_conversation(conversation.get("id"), account_id):
+                        removed += 1
+        except Exception:
+            logger.exception("Could not apply conversation retention for account %s", account_id)
+    return removed
+
+
 def update_user_profile(user_id, username):
     if ODDI_DRIVE_CHAT_STORAGE:
         return google_drive_storage.update_account_profile(user_id, username)
@@ -1733,6 +1904,13 @@ def delete_user_record(user_id):
             local_user = _fetchone(conn, "SELECT id, email FROM users WHERE id = ?", (user_id,))
         finally:
             conn.close()
+
+    reset_user = local_user or get_user_by_id(user_id)
+    if reset_user and reset_user["email"]:
+        try:
+            clear_password_reset_token(reset_user["email"])
+        except Exception:
+            logger.exception("Could not clear password reset tokens for a deleted account")
 
     if ODDI_DRIVE_CHAT_STORAGE:
         google_drive_storage.delete_account(user_id)

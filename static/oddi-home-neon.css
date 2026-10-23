@@ -1,0 +1,1384 @@
+/* Neon-blue desktop home treatment from the supplied reference image. */
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer),
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) {
+  /* Override the base palette tokens on the welcome screen itself. The inline premium theme
+     rules consume these tokens with higher selector specificity than the component rules below. */
+  --oddi-theme-bg: #071321 !important;
+  --oddi-theme-surface: #0b1b2d !important;
+  --oddi-theme-raised: #142b40 !important;
+  --oddi-theme-line: #24445f !important;
+  --oddi-theme-line-strong: #0b8fc1 !important;
+  --oddi-theme-text: #eaf4ff !important;
+  --oddi-theme-muted: #a8bcd0 !important;
+  --oddi-theme-dim: #7893ad !important;
+  --oddi-theme-accent: #35d5ff !important;
+  --oddi-theme-accent-strong: #16cfff !important;
+  --oddi-theme-accent-soft: rgba(22, 207, 255, .18) !important;
+  --oddi-theme-glow: rgba(0, 153, 255, .26) !important;
+  --oddi-neon-cyan: #35d5ff;
+  --oddi-neon-cyan-bright: #16cfff;
+  --oddi-neon-glow: rgba(22, 207, 255, .18);
+  --oddi-home-bg: #071321;
+  --oddi-home-surface: #0b1b2d;
+  --oddi-home-input: #071321;
+  --oddi-home-border: #24445f;
+  --oddi-home-text: #eaf4ff;
+  --oddi-home-muted: #a8bcd0;
+  --oddi-home-tertiary: #7893ad;
+  --oddi-home-sidebar: #0a1929;
+  --oddi-home-card: #102338;
+  --oddi-home-raised: #142b40;
+}
+
+/* The premium theme's home-card rules are deliberately specific. Match their scope so these
+   reference colors win without changing the dashboard layout or the rest of the app. */
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode #chatbox:has(> #welcomeContainer) #oddiRecentSection #oddiLastMessageCard,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #chatbox:has(> #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+  border-color: var(--oddi-theme-line-strong) !important;
+  box-shadow: 0 0 0 1px rgba(0, 153, 220, .16), 0 0 13px rgba(0, 153, 255, .18), 0 8px 22px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(234, 244, 255, .06) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode #chatbox:has(> #welcomeContainer) #welcomeContainer > .oddi-home-subtitle,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #chatbox:has(> #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+  border-color: var(--oddi-theme-line-strong) !important;
+  box-shadow: inset 0 0 14px rgba(53, 213, 255, .07), 0 0 13px rgba(22, 207, 255, .16) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+  border-color: var(--oddi-theme-line-strong) !important;
+  box-shadow: 0 0 0 1px rgba(0, 153, 220, .16), 0 0 15px rgba(0, 153, 255, .2), 0 8px 18px rgba(0, 0, 0, .17), inset 0 1px 0 rgba(234, 244, 255, .06) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode #oddiComposerShell.input-area > .oddi-composer-field,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #oddiComposerShell.input-area > .oddi-composer-field {
+  border-color: var(--oddi-theme-line-strong) !important;
+  box-shadow: 0 0 18px rgba(0, 153, 255, .19), inset 0 0 15px rgba(53, 213, 255, .06) !important;
+}
+
+/* Dark home palettes share the existing layout while changing only its color finish. */
+html[data-oddi-palette="cyber-green"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"])
+body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) {
+  --oddi-neon-cyan: #10ed8d;
+  --oddi-neon-cyan-bright: #00ffa0;
+  --oddi-neon-glow: rgba(0, 238, 137, .2);
+  --oddi-home-bg: #020d08;
+  --oddi-home-surface: #07180f;
+  --oddi-home-input: #020a06;
+  --oddi-home-border: #17442d;
+  --oddi-home-text: #effff5;
+  --oddi-home-muted: #a8c8b3;
+  --oddi-home-tertiary: #759781;
+  --oddi-home-sidebar: #030f09;
+  --oddi-home-card: #0b2115;
+  --oddi-home-raised: #10281a;
+}
+
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"])
+body[data-oddi-palette="mono"]:has(#chatbox > #welcomeContainer) {
+  --oddi-theme-bg: #000 !important;
+  --oddi-theme-surface: #090909 !important;
+  --oddi-theme-raised: #171717 !important;
+  --oddi-theme-line: #303030 !important;
+  --oddi-theme-line-strong: #555 !important;
+  --oddi-theme-text: #f4f4f4 !important;
+  --oddi-theme-muted: #b8b8b8 !important;
+  --oddi-theme-dim: #808080 !important;
+  --oddi-theme-accent: #f4f4f4 !important;
+  --oddi-theme-accent-strong: #fff !important;
+  --oddi-theme-accent-soft: rgba(255, 255, 255, .08) !important;
+  --oddi-theme-glow: rgba(255, 255, 255, .07) !important;
+  --oddi-neon-cyan: #e8e8e8;
+  --oddi-neon-cyan-bright: #fff;
+  --oddi-neon-glow: rgba(255, 255, 255, .13);
+  --oddi-home-bg: #000;
+  --oddi-home-surface: #090909;
+  --oddi-home-input: #030303;
+  --oddi-home-border: #303030;
+  --oddi-home-text: #f4f4f4;
+  --oddi-home-muted: #b8b8b8;
+  --oddi-home-tertiary: #808080;
+  --oddi-home-sidebar: #050505;
+  --oddi-home-card: #101010;
+  --oddi-home-raised: #171717;
+}
+
+/* Keep the permanent navigation in the same midnight/cyan visual language. */
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root {
+  --rs-bg: var(--oddi-home-sidebar);
+  --rs-surface: var(--oddi-home-surface);
+  --rs-hover: rgba(53, 213, 255, .09);
+  --rs-active: rgba(22, 207, 255, .15);
+  --rs-border: rgba(53, 213, 255, .36);
+  --rs-text: var(--oddi-home-text);
+  --rs-muted: var(--oddi-home-muted);
+  --rs-dim: #7893ad;
+  --rs-accent: var(--oddi-neon-cyan-bright);
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-sidebar,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-sidebar {
+  border-right-color: var(--oddi-home-border) !important;
+  background:
+    radial-gradient(ellipse 90% 34% at 0 0, rgba(22, 207, 255, .045), transparent 78%),
+    linear-gradient(180deg, var(--oddi-home-sidebar) 0%, #091827 54%, var(--oddi-home-bg) 100%) !important;
+  box-shadow: 8px 0 24px rgba(0, 0, 0, .22), inset -1px 0 0 rgba(36, 68, 95, .5) !important;
+  color: var(--oddi-home-text) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-header,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-header {
+  border-bottom-color: rgba(36, 68, 95, .7) !important;
+  background: linear-gradient(180deg, rgba(20, 43, 64, .55), rgba(10, 25, 41, .2)) !important;
+  box-shadow: inset 0 -1px 0 rgba(53, 213, 255, .035) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-brand img,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-brand img {
+  filter: drop-shadow(0 0 5px rgba(53, 213, 255, .22));
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-brand span,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-brand span {
+  color: var(--oddi-home-text) !important;
+  text-shadow: 0 0 10px rgba(53, 213, 255, .08);
+  letter-spacing: -.02em;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-collapse, .oddi-rs-mobile-close),
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-collapse, .oddi-rs-mobile-close) {
+  border-color: rgba(53, 213, 255, .42) !important;
+  background: linear-gradient(145deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
+  color: var(--oddi-neon-cyan) !important;
+  box-shadow: inset 0 0 8px rgba(53, 213, 255, .045), 0 0 7px rgba(22, 207, 255, .08) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-density,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-density {
+  border-color: rgba(53, 213, 255, .38) !important;
+  background: linear-gradient(145deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
+  color: var(--oddi-neon-cyan) !important;
+  box-shadow: inset 0 0 8px rgba(53, 213, 255, .04) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-new,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-new {
+  border-color: var(--oddi-neon-cyan-bright) !important;
+  background: linear-gradient(110deg, rgba(22, 207, 255, .18), var(--oddi-home-card) 72%) !important;
+  color: var(--oddi-home-text) !important;
+  box-shadow: inset 0 0 12px rgba(22, 207, 255, .1), 0 0 8px rgba(22, 207, 255, .17), 0 0 14px rgba(22, 207, 255, .1) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search {
+  border-color: rgba(36, 68, 95, .95) !important;
+  background: var(--oddi-home-input) !important;
+  box-shadow: inset 0 0 10px rgba(53, 213, 255, .04) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search > svg,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search > svg {
+  color: var(--oddi-neon-cyan) !important;
+  filter: drop-shadow(0 0 4px rgba(53, 213, 255, .18));
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search:focus-within,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search:focus-within {
+  border-color: var(--oddi-neon-cyan-bright) !important;
+  box-shadow: 0 0 0 2px rgba(22, 207, 255, .11), 0 0 12px rgba(22, 207, 255, .15) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-chat:is(.active, .selected),
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-chat:is(.active, .selected) {
+  border-color: rgba(53, 213, 255, .68) !important;
+  background: linear-gradient(105deg, rgba(22, 207, 255, .16), rgba(20, 43, 64, .78)) !important;
+  color: var(--oddi-home-text) !important;
+  box-shadow: inset 2px 0 var(--oddi-neon-cyan-bright), inset 0 0 12px rgba(22, 207, 255, .065), 0 0 8px rgba(22, 207, 255, .15) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-label,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-label {
+  color: var(--oddi-neon-cyan) !important;
+  text-shadow: 0 0 7px rgba(53, 213, 255, .1);
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-chat.pinned > svg,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-chat.pinned > svg {
+  color: var(--oddi-neon-cyan) !important;
+  filter: drop-shadow(0 0 4px rgba(53, 213, 255, .16));
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-group > .oddi-rs-label,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-group > .oddi-rs-label {
+  border-bottom-color: rgba(36, 68, 95, .8) !important;
+  box-shadow: 0 1px 6px rgba(22, 207, 255, .05);
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-nav a, .oddi-rs-nav button, .oddi-rs-profile):hover,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-nav a, .oddi-rs-nav button, .oddi-rs-profile):hover {
+  background: rgba(53, 213, 255, .075) !important;
+  color: var(--oddi-home-text) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button) svg,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button) svg {
+  color: var(--oddi-home-muted) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button):hover svg,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button):hover svg {
+  color: var(--oddi-neon-cyan) !important;
+  filter: drop-shadow(0 0 4px rgba(53, 213, 255, .15));
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button):is(.active, .selected, [aria-current="page"]),
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button):is(.active, .selected, [aria-current="page"]) {
+  border-color: rgba(53, 213, 255, .38) !important;
+  background: rgba(22, 207, 255, .12) !important;
+  color: var(--oddi-home-text) !important;
+  box-shadow: inset 2px 0 var(--oddi-neon-cyan-bright) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-collapse, .oddi-rs-nav a, .oddi-rs-nav button):focus-visible,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-collapse, .oddi-rs-nav a, .oddi-rs-nav button):focus-visible {
+  outline-color: var(--oddi-neon-cyan) !important;
+  box-shadow: 0 0 0 2px rgba(53, 213, 255, .14), 0 0 9px rgba(22, 207, 255, .12) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-nav button):disabled,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-nav button):disabled {
+  border-color: var(--oddi-home-border) !important;
+  background: var(--oddi-home-surface) !important;
+  color: #7893ad !important;
+  box-shadow: none !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-account-footer,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-account-footer {
+  border-color: rgba(36, 68, 95, .8) !important;
+  background: linear-gradient(110deg, rgba(20, 43, 64, .7), var(--oddi-home-surface)) !important;
+  box-shadow: inset 0 0 12px rgba(53, 213, 255, .035) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile {
+  margin: 4px 8px 8px !important;
+  border-color: rgba(36, 68, 95, .85) !important;
+  border-radius: 11px !important;
+  background: linear-gradient(110deg, rgba(20, 43, 64, .72), var(--oddi-home-surface)) !important;
+  box-shadow: inset 0 0 12px rgba(53, 213, 255, .04), 0 0 8px rgba(0, 0, 0, .12) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-avatar,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-avatar {
+  border-color: rgba(53, 213, 255, .62) !important;
+  background: radial-gradient(circle at 35% 28%, var(--oddi-home-raised), var(--oddi-home-sidebar) 75%) !important;
+  color: var(--oddi-neon-cyan) !important;
+  box-shadow: 0 0 7px rgba(22, 207, 255, .13) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile strong,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile strong {
+  color: var(--oddi-home-text) !important;
+}
+
+body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile small,
+body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile small {
+  color: var(--oddi-home-muted) !important;
+}
+
+@media (min-width: 769px) {
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) .app,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) .app {
+    background: linear-gradient(145deg, var(--oddi-home-surface) 0%, var(--oddi-home-bg) 52%, var(--oddi-home-bg) 100%) !important;
+  }
+
+  html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode:has(#chatbox > #welcomeContainer) #chatbox.chatbox,
+  html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+    isolation: isolate !important;
+    position: relative !important;
+    overflow: hidden !important;
+    background:
+      radial-gradient(ellipse 84% 44% at 50% -5%, rgba(0, 115, 202, .24), transparent 77%),
+      radial-gradient(circle 120px at 0% 0%, transparent 0 76px, rgba(0, 146, 255, .19) 78px, rgba(20, 190, 255, .76) 81px, rgba(0, 145, 255, .27) 86px, transparent 92px),
+      radial-gradient(circle 160px at 0% 0%, transparent 0 116px, rgba(0, 154, 255, .22) 119px, rgba(0, 175, 255, .48) 123px, rgba(0, 138, 255, .15) 129px, transparent 136px),
+      radial-gradient(circle 250px at 0% 100%, transparent 0 160px, rgba(0, 146, 255, .19) 163px, rgba(20, 190, 255, .73) 167px, rgba(0, 145, 255, .27) 173px, transparent 180px),
+      radial-gradient(circle 310px at 0% 100%, transparent 0 215px, rgba(0, 154, 255, .22) 218px, rgba(0, 175, 255, .46) 223px, rgba(0, 138, 255, .14) 230px, transparent 237px),
+      radial-gradient(circle 165px at 100% 100%, transparent 0 98px, rgba(0, 146, 255, .19) 101px, rgba(20, 190, 255, .73) 105px, rgba(0, 145, 255, .27) 111px, transparent 118px),
+      radial-gradient(circle 220px at 100% 100%, transparent 0 145px, rgba(0, 154, 255, .22) 148px, rgba(0, 175, 255, .46) 153px, rgba(0, 138, 255, .14) 160px, transparent 167px),
+      radial-gradient(ellipse 38% 52% at 0% 0%, rgba(0, 151, 255, .18), transparent 78%),
+      radial-gradient(ellipse 38% 47% at 0% 100%, rgba(0, 153, 255, .15), transparent 80%),
+      radial-gradient(ellipse 38% 47% at 100% 100%, rgba(0, 178, 255, .18), transparent 80%),
+      linear-gradient(145deg, #082039 0%, #071827 53%, #061523 100%) !important;
+    color: var(--oddi-home-text) !important;
+  }
+
+  /* Edge lighting and a restrained dot field keep the center dark and readable. */
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::before,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::before {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    background:
+      radial-gradient(ellipse 300px 230px at 0% 0%, rgba(0, 168, 255, .17), transparent 76%),
+      radial-gradient(ellipse 310px 230px at 0% 100%, rgba(0, 160, 255, .15), transparent 78%),
+      radial-gradient(ellipse 320px 235px at 100% 100%, rgba(0, 186, 255, .17), transparent 78%) !important;
+    animation: none !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 1 !important;
+    pointer-events: none !important;
+    visibility: visible !important;
+    opacity: .66 !important;
+    background: radial-gradient(circle at 1px 1px, rgba(22, 190, 255, .9) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
+    -webkit-mask-image:
+      radial-gradient(ellipse 13% 15% at 4% 10%, #000 0 54%, transparent 100%),
+      radial-gradient(ellipse 12% 20% at 98% 21%, #000 0 54%, transparent 100%),
+      radial-gradient(ellipse 13% 25% at 5% 84%, #000 0 54%, transparent 100%) !important;
+    mask-image:
+      radial-gradient(ellipse 13% 15% at 4% 10%, #000 0 54%, transparent 100%),
+      radial-gradient(ellipse 12% 20% at 98% 21%, #000 0 54%, transparent 100%),
+      radial-gradient(ellipse 13% 25% at 5% 84%, #000 0 54%, transparent 100%) !important;
+    animation: none !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox > *:not(#oddiSparkLayer):not(#oddiLightLayer):not(#oddiPhoneDots),
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox > *:not(#oddiSparkLayer):not(#oddiLightLayer):not(#oddiPhoneDots) {
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSparkLayer,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSparkLayer {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    animation: none !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer {
+    color: var(--oddi-home-text) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) .welcome-message::before,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) .welcome-message::before {
+    color: var(--oddi-neon-cyan) !important;
+    text-shadow: 0 0 8px rgba(53, 213, 255, .14) !important;
+    letter-spacing: .2em !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > h2,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > h2 {
+    color: var(--oddi-home-text) !important;
+    font-weight: 850 !important;
+    line-height: 1.02 !important;
+    letter-spacing: -.045em !important;
+    text-shadow: 0 4px 24px rgba(0, 0, 0, .34) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name {
+    color: var(--oddi-neon-cyan-bright) !important;
+    text-shadow: 0 0 16px rgba(22, 207, 255, .18) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    width: min(590px, calc(100% - 28px)) !important;
+    min-height: 50px !important;
+    margin: 0 auto !important;
+    padding: 10px 22px 10px 51px !important;
+    border: 1px solid rgba(0, 160, 227, .86) !important;
+    border-radius: 999px !important;
+    background: linear-gradient(100deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
+    color: var(--oddi-home-muted) !important;
+    font-weight: 550 !important;
+    box-shadow: inset 0 0 14px rgba(53, 213, 255, .07), 0 0 12px rgba(22, 207, 255, .16) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before {
+    content: "\2726" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 8px !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    transform: translateY(-50%) !important;
+    border-color: rgba(53, 213, 255, .52) !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle at 35% 30%, var(--oddi-neon-cyan), #087aa0 76%) !important;
+    color: var(--oddi-home-text) !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    text-shadow: 0 0 7px rgba(53, 213, 255, .3) !important;
+    box-shadow: 0 0 6px rgba(22, 207, 255, .28), 0 0 12px rgba(22, 207, 255, .12) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 11px !important;
+    width: min(1030px, calc(100% - 64px)) !important;
+    margin: 16px auto 0 !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    min-height: 72px !important;
+    padding: 11px 52px 11px 14px !important;
+    border: 1px solid rgba(0, 166, 234, .93) !important;
+    border-radius: 17px !important;
+    background: linear-gradient(135deg, var(--oddi-home-raised), var(--oddi-home-card) 56%, var(--oddi-home-surface)) !important;
+    color: var(--oddi-home-text) !important;
+    text-align: left !important;
+    box-shadow: inset 0 1px 0 rgba(234, 244, 255, .06), 0 0 0 1px rgba(0, 166, 234, .2), 0 0 15px rgba(0, 154, 255, .2), 0 8px 20px rgba(0, 0, 0, .19) !important;
+    transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease !important;
+    isolation: isolate !important;
+    overflow: hidden !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card::before,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 0 !important;
+    display: block !important;
+    border-radius: inherit !important;
+    pointer-events: none !important;
+    background: linear-gradient(115deg, rgba(5, 102, 163, .2), rgba(20, 57, 84, .14) 34%, rgba(16, 35, 56, .04) 68%, rgba(11, 27, 45, .14)) !important;
+    opacity: .9 !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards :is(.oddi-suggestion-icon, .oddi-suggestion-copy, .oddi-interview-arrow),
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards :is(.oddi-suggestion-icon, .oddi-suggestion-copy, .oddi-interview-arrow) {
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch)::after,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch)::after {
+    content: "\2192" !important;
+    position: absolute !important;
+    top: 50% !important;
+    right: 13px !important;
+    display: grid !important;
+    place-items: center !important;
+    box-sizing: border-box !important;
+    width: 31px !important;
+    height: 31px !important;
+    transform: translateY(-50%) !important;
+    border: 1px solid rgba(22, 207, 255, .9) !important;
+    border-radius: 50% !important;
+    background: rgba(4, 35, 57, .92) !important;
+    color: var(--oddi-neon-cyan) !important;
+    font-size: 19px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    z-index: 2 !important;
+    box-shadow: inset 0 0 10px rgba(53, 213, 255, .14), 0 0 10px rgba(22, 207, 255, .3) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-icon,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    border: 1px solid rgba(22, 207, 255, .52) !important;
+    border-radius: 12px !important;
+    background: radial-gradient(circle at 35% 25%, rgba(53, 213, 255, .1), transparent 53%), linear-gradient(145deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
+    color: var(--oddi-neon-cyan) !important;
+    filter: drop-shadow(0 0 5px rgba(53, 213, 255, .15)) !important;
+    box-shadow: inset 0 0 11px rgba(53, 213, 255, .1), 0 0 9px rgba(22, 207, 255, .14) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon svg,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon svg {
+    stroke: currentColor !important;
+    stroke-width: 1.9 !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy > strong,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy > strong {
+    color: var(--oddi-home-text) !important;
+    font-weight: 750 !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy > small,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy > small {
+    color: var(--oddi-home-muted) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:is(:hover, :focus-visible),
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:is(:hover, :focus-visible) {
+    border-color: var(--oddi-neon-cyan) !important;
+    background: linear-gradient(135deg, var(--oddi-home-raised), var(--oddi-home-card)) !important;
+    box-shadow: inset 0 0 15px rgba(53, 213, 255, .085), 0 0 8px rgba(22, 207, 255, .2), 0 0 15px rgba(22, 207, 255, .1) !important;
+    transform: translateY(-2px) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:active,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:active {
+    border-color: var(--oddi-neon-cyan-bright) !important;
+    background: var(--oddi-home-raised) !important;
+    box-shadow: inset 0 0 12px rgba(22, 207, 255, .1) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:disabled,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:disabled {
+    border-color: var(--oddi-home-border) !important;
+    background: var(--oddi-home-surface) !important;
+    color: #7893ad !important;
+    box-shadow: none !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+    grid-column: 1 / -1 !important;
+    justify-self: center !important;
+    width: min(640px, 100%) !important;
+    min-height: 76px !important;
+    padding: 13px 54px 13px 24px !important;
+    border: 1px solid rgba(0, 166, 234, .93) !important;
+    background: linear-gradient(110deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
+    box-shadow: inset 0 1px 0 rgba(234, 244, 255, .06), 0 0 0 1px rgba(0, 161, 226, .16), 0 0 15px rgba(0, 153, 255, .2), 0 8px 18px rgba(0, 0, 0, .17) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
+    border: 1px solid rgba(22, 207, 255, .76) !important;
+    background: rgba(20, 43, 64, .85) !important;
+    color: var(--oddi-neon-cyan) !important;
+    box-shadow: inset 0 0 8px rgba(53, 213, 255, .07), 0 0 8px rgba(22, 207, 255, .16) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field {
+    border: 1px solid rgba(0, 166, 234, .86) !important;
+    border-radius: 999px !important;
+    background: linear-gradient(105deg, rgba(11, 27, 45, .97), rgba(7, 19, 33, .98)) !important;
+    background-color: rgba(11, 27, 45, .97) !important;
+    box-shadow: 0 0 18px rgba(0, 153, 255, .17), inset 0 0 15px rgba(53, 213, 255, .06) !important;
+    backdrop-filter: blur(16px) saturate(1.2) !important;
+    -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within {
+    border-color: var(--oddi-neon-cyan-bright) !important;
+    box-shadow: 0 0 0 1px rgba(22, 207, 255, .18), 0 0 18px rgba(22, 207, 255, .18), inset 0 0 15px rgba(53, 213, 255, .06) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell #userInput,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell #userInput {
+    color: var(--oddi-home-text) !important;
+  }
+
+  body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell #userInput::placeholder,
+  body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell #userInput::placeholder {
+    color: var(--oddi-home-muted) !important;
+    opacity: 1 !important;
+  }
+
+}
+
+@media (min-width: 769px) and (prefers-reduced-motion: reduce) {
+  body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card {
+    transition: none !important;
+  }
+}
+
+/* Cyber Green and Black & White home colors; dimensions and control shapes stay with the base UI. */
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="mono"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) {
+  --oddi-theme-bg: #000 !important;
+  --oddi-theme-surface: #090909 !important;
+  --oddi-theme-raised: #171717 !important;
+  --oddi-theme-line: #303030 !important;
+  --oddi-theme-line-strong: #707070 !important;
+  --oddi-theme-text: #f4f4f4 !important;
+  --oddi-theme-muted: #b8b8b8 !important;
+  --oddi-theme-dim: #808080 !important;
+  --oddi-theme-accent: #f4f4f4 !important;
+  --oddi-theme-accent-strong: #fff !important;
+  --oddi-theme-accent-soft: rgba(255, 255, 255, .12) !important;
+  --oddi-theme-glow: rgba(255, 255, 255, .14) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-green"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) {
+  --oddi-theme-bg: #020d08 !important;
+  --oddi-theme-surface: #07180f !important;
+  --oddi-theme-raised: #10281a !important;
+  --oddi-theme-line: #17442d !important;
+  --oddi-theme-line-strong: #078f52 !important;
+  --oddi-theme-text: #effff5 !important;
+  --oddi-theme-muted: #a8c8b3 !important;
+  --oddi-theme-dim: #759781 !important;
+  --oddi-theme-accent: #10ed8d !important;
+  --oddi-theme-accent-strong: #00ffa0 !important;
+  --oddi-theme-accent-soft: rgba(0, 255, 160, .15) !important;
+  --oddi-theme-glow: rgba(0, 238, 137, .2) !important;
+  --oddi-neon-cyan: #10ed8d !important;
+  --oddi-neon-cyan-bright: #00ffa0 !important;
+  --oddi-home-bg: #020d08 !important;
+  --oddi-home-surface: #07180f !important;
+  --oddi-home-input: #020a06 !important;
+  --oddi-home-border: #17442d !important;
+  --oddi-home-text: #effff5 !important;
+  --oddi-home-muted: #a8c8b3 !important;
+  --oddi-home-tertiary: #759781 !important;
+  --oddi-home-sidebar: #030f09 !important;
+  --oddi-home-card: #0b2115 !important;
+  --oddi-home-raised: #10281a !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) .app {
+  background:
+    radial-gradient(ellipse 42% 48% at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 5%, transparent), transparent 82%),
+    linear-gradient(145deg, var(--oddi-theme-surface), var(--oddi-theme-bg) 58%, var(--oddi-theme-bg)) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) .app > .header {
+  border-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-raised) 48%, var(--oddi-theme-surface)), var(--oddi-theme-surface)) !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--oddi-theme-accent) 8%, transparent) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+  isolation: isolate !important;
+  position: relative !important;
+  overflow: hidden !important;
+  background:
+    radial-gradient(ellipse 84% 44% at 50% -5%, color-mix(in srgb, var(--oddi-theme-accent) 17%, transparent), transparent 77%),
+    radial-gradient(circle 120px at 0% 0%, transparent 0 76px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 78px, color-mix(in srgb, var(--oddi-theme-accent-strong) 76%, transparent) 81px, color-mix(in srgb, var(--oddi-theme-accent) 32%, transparent) 86px, transparent 92px),
+    radial-gradient(circle 160px at 0% 0%, transparent 0 116px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 119px, color-mix(in srgb, var(--oddi-theme-accent-strong) 50%, transparent) 123px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 129px, transparent 136px),
+    radial-gradient(circle 250px at 0% 100%, transparent 0 160px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 163px, color-mix(in srgb, var(--oddi-theme-accent-strong) 72%, transparent) 167px, color-mix(in srgb, var(--oddi-theme-accent) 30%, transparent) 173px, transparent 180px),
+    radial-gradient(circle 310px at 0% 100%, transparent 0 215px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 218px, color-mix(in srgb, var(--oddi-theme-accent-strong) 46%, transparent) 223px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 230px, transparent 237px),
+    radial-gradient(circle 165px at 100% 100%, transparent 0 98px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 101px, color-mix(in srgb, var(--oddi-theme-accent-strong) 72%, transparent) 105px, color-mix(in srgb, var(--oddi-theme-accent) 30%, transparent) 111px, transparent 118px),
+    radial-gradient(circle 220px at 100% 100%, transparent 0 145px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 148px, color-mix(in srgb, var(--oddi-theme-accent-strong) 46%, transparent) 153px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 160px, transparent 167px),
+    radial-gradient(ellipse 38% 52% at 0% 0%, color-mix(in srgb, var(--oddi-theme-accent) 16%, transparent), transparent 78%),
+    radial-gradient(ellipse 38% 47% at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 14%, transparent), transparent 80%),
+    radial-gradient(ellipse 38% 47% at 100% 100%, color-mix(in srgb, var(--oddi-theme-accent) 16%, transparent), transparent 80%),
+    linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-bg) 94%, var(--oddi-theme-accent) 6%) 0%, color-mix(in srgb, var(--oddi-theme-bg) 96%, var(--oddi-theme-surface) 4%) 53%, var(--oddi-theme-bg) 100%) !important;
+  background-color: var(--oddi-theme-bg) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background:
+    radial-gradient(ellipse 300px 230px at 0% 0%, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), transparent 76%),
+    radial-gradient(ellipse 310px 230px at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 16%, transparent), transparent 78%),
+    radial-gradient(ellipse 320px 235px at 100% 100%, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), transparent 78%) !important;
+  animation: none !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+  opacity: .66 !important;
+  background: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--oddi-theme-accent-strong) 90%, transparent) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
+  -webkit-mask-image:
+    radial-gradient(ellipse 13% 15% at 4% 10%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 12% 20% at 98% 21%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 13% 25% at 5% 84%, #000 0 54%, transparent 100%) !important;
+  mask-image:
+    radial-gradient(ellipse 13% 15% at 4% 10%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 12% 20% at 98% 21%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 13% 25% at 5% 84%, #000 0 54%, transparent 100%) !important;
+  animation: none !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox > *:not(#oddiSparkLayer):not(#oddiLightLayer):not(#oddiPhoneDots) {
+  position: relative !important;
+  z-index: 2 !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > h2 {
+  color: var(--oddi-theme-text) !important;
+  text-shadow: 0 4px 22px rgba(0, 0, 0, .32) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name {
+  color: var(--oddi-theme-accent) !important;
+  text-shadow: 0 0 16px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(100deg, var(--oddi-theme-raised), var(--oddi-theme-surface)) !important;
+  color: var(--oddi-theme-muted) !important;
+  box-shadow: inset 0 0 12px color-mix(in srgb, var(--oddi-theme-accent) 5%, transparent), 0 0 12px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-surface) 94%, var(--oddi-theme-accent) 6%), var(--oddi-theme-surface)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--oddi-theme-text) 6%, transparent), 0 0 0 1px color-mix(in srgb, var(--oddi-theme-accent) 14%, transparent), 0 0 14px color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), 0 8px 22px rgba(0, 0, 0, .2) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:is(:hover,:focus-visible) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: linear-gradient(180deg, var(--oddi-theme-raised), var(--oddi-theme-surface)) !important;
+  box-shadow: 0 0 0 1px var(--oddi-theme-accent-soft), 0 0 16px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:active {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-raised) !important;
+  box-shadow: inset 0 0 12px var(--oddi-theme-accent-soft) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:disabled {
+  border-color: var(--oddi-theme-line) !important;
+  background: var(--oddi-theme-surface) !important;
+  color: var(--oddi-theme-dim) !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-icon,
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: inset 0 0 10px color-mix(in srgb, var(--oddi-theme-accent) 7%, transparent), 0 0 10px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy > strong {
+  color: var(--oddi-theme-text) !important;
+}
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-copy > small {
+  color: var(--oddi-theme-muted) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(100deg, var(--oddi-theme-raised), var(--oddi-theme-surface)) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(100deg, var(--oddi-theme-surface), var(--oddi-theme-bg)) !important;
+  background-color: var(--oddi-theme-surface) !important;
+  box-shadow: 0 0 18px color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), 0 8px 24px rgba(0, 0, 0, .28), inset 0 1px 0 color-mix(in srgb, var(--oddi-theme-text) 5%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within {
+  border-color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 0 1px var(--oddi-theme-accent-soft), 0 0 18px var(--oddi-theme-glow), 0 8px 24px rgba(0, 0, 0, .28) !important;
+}
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell #userInput {
+  color: var(--oddi-theme-text) !important;
+}
+html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell #userInput::placeholder {
+  color: var(--oddi-theme-muted) !important;
+  opacity: 1 !important;
+}
+
+/* Keep the desktop chat header as a transparent control layer across all
+   three dark palettes. The chat canvas and messages stay visible underneath. */
+@media (min-width: 769px) {
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox.chatbox) .app:has(> #chatbox.chatbox) > .header {
+    background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+    border: 0 !important;
+    border-bottom: 0 !important;
+    box-shadow: none !important;
+    outline: 0 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox.chatbox) .app:has(> #chatbox.chatbox) > .header::before,
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox.chatbox) .app:has(> #chatbox.chatbox) > .header::after {
+    display: none !important;
+    content: none !important;
+    background: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Match the blue reference's compact, centered home stack in Green and
+     Mono while retaining each palette's existing colors and controls. */
+  html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > h2 {
+    font-weight: 850 !important;
+    line-height: 1.02 !important;
+    letter-spacing: -.045em !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    width: min(590px, calc(100% - 28px)) !important;
+    min-height: 50px !important;
+    margin: 0 auto !important;
+    padding: 10px 22px 10px 51px !important;
+    border-radius: 999px !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before {
+    content: "\2726" !important;
+    position: absolute !important;
+    top: 50% !important;
+    left: 8px !important;
+    display: grid !important;
+    place-items: center !important;
+    width: 32px !important;
+    height: 32px !important;
+    transform: translateY(-50%) !important;
+    border: 1px solid color-mix(in srgb, var(--oddi-theme-accent) 52%, transparent) !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle at 35% 30%, var(--oddi-theme-accent), color-mix(in srgb, var(--oddi-theme-accent) 48%, var(--oddi-theme-bg)) 76%) !important;
+    color: var(--oddi-theme-bg) !important;
+    font-size: 18px !important;
+    line-height: 1 !important;
+    text-shadow: 0 0 7px var(--oddi-theme-glow) !important;
+    box-shadow: 0 0 6px var(--oddi-theme-glow), 0 0 12px color-mix(in srgb, var(--oddi-theme-glow) 70%, transparent) !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 11px !important;
+    width: min(1030px, calc(100% - 64px)) !important;
+    margin: 16px auto 0 !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+    min-height: 72px !important;
+    padding: 11px 52px 11px 14px !important;
+    border-radius: 17px !important;
+    text-align: left !important;
+    overflow: hidden !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch)::after {
+    content: "\2192" !important;
+    position: absolute !important;
+    top: 50% !important;
+    right: 13px !important;
+    display: grid !important;
+    place-items: center !important;
+    box-sizing: border-box !important;
+    width: 31px !important;
+    height: 31px !important;
+    transform: translateY(-50%) !important;
+    border: 1px solid color-mix(in srgb, var(--oddi-theme-accent) 48%, transparent) !important;
+    border-radius: 50% !important;
+    background: color-mix(in srgb, var(--oddi-theme-raised) 88%, transparent) !important;
+    color: var(--oddi-theme-accent) !important;
+    font-size: 19px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    pointer-events: none !important;
+    box-shadow: inset 0 0 9px var(--oddi-theme-accent-soft), 0 0 8px var(--oddi-theme-glow) !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+    grid-column: 1 / -1 !important;
+    justify-self: center !important;
+    width: min(640px, 100%) !important;
+    min-height: 76px !important;
+    padding: 13px 54px 13px 24px !important;
+  }
+}
+
+/* One vivid, palette-aware canvas for active conversations and the sidebar search. */
+html[data-oddi-palette="cyber-blue"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-blue"]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) {
+  --oddi-theme-bg: #071321 !important;
+  --oddi-theme-surface: #0b1b2d !important;
+  --oddi-theme-raised: #142b40 !important;
+  --oddi-theme-line: #24445f !important;
+  --oddi-theme-line-strong: #0b8fc1 !important;
+  --oddi-theme-text: #eaf4ff !important;
+  --oddi-theme-muted: #a8bcd0 !important;
+  --oddi-theme-dim: #7893ad !important;
+  --oddi-theme-accent: #35d5ff !important;
+  --oddi-theme-accent-strong: #16cfff !important;
+  --oddi-theme-accent-soft: rgba(22, 207, 255, .18) !important;
+  --oddi-theme-glow: rgba(0, 153, 255, .26) !important;
+}
+
+html[data-oddi-palette="cyber-green"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-green"]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) {
+  --oddi-theme-bg: #020d08 !important;
+  --oddi-theme-surface: #07180f !important;
+  --oddi-theme-raised: #10281a !important;
+  --oddi-theme-line: #17442d !important;
+  --oddi-theme-line-strong: #078f52 !important;
+  --oddi-theme-text: #effff5 !important;
+  --oddi-theme-muted: #a8c8b3 !important;
+  --oddi-theme-dim: #759781 !important;
+  --oddi-theme-accent: #10ed8d !important;
+  --oddi-theme-accent-strong: #00ffa0 !important;
+  --oddi-theme-accent-soft: rgba(0, 255, 160, .15) !important;
+  --oddi-theme-glow: rgba(0, 238, 137, .2) !important;
+}
+
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) {
+  --oddi-theme-bg: #000 !important;
+  --oddi-theme-surface: #090909 !important;
+  --oddi-theme-raised: #171717 !important;
+  --oddi-theme-line: #303030 !important;
+  --oddi-theme-line-strong: #707070 !important;
+  --oddi-theme-text: #f4f4f4 !important;
+  --oddi-theme-muted: #b8b8b8 !important;
+  --oddi-theme-dim: #808080 !important;
+  --oddi-theme-accent: #f4f4f4 !important;
+  --oddi-theme-accent-strong: #fff !important;
+  --oddi-theme-accent-soft: rgba(255, 255, 255, .12) !important;
+  --oddi-theme-glow: rgba(255, 255, 255, .14) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) .app {
+  background:
+    radial-gradient(ellipse 60% 68% at 0% 12%, color-mix(in srgb, var(--oddi-theme-accent) 12%, transparent), transparent 78%),
+    radial-gradient(ellipse 46% 66% at 100% 92%, color-mix(in srgb, var(--oddi-theme-accent) 11%, transparent), transparent 80%),
+    linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-bg) 94%, var(--oddi-theme-accent) 6%), var(--oddi-theme-bg) 62%) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) #chatbox.chatbox:not(:has(> #welcomeContainer)) {
+  background-color: var(--oddi-theme-bg) !important;
+  background-image:
+    radial-gradient(ellipse 84% 44% at 50% -5%, color-mix(in srgb, var(--oddi-theme-accent) 17%, transparent), transparent 77%),
+    radial-gradient(circle 120px at 0% 0%, transparent 0 76px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 78px, color-mix(in srgb, var(--oddi-theme-accent-strong) 76%, transparent) 81px, color-mix(in srgb, var(--oddi-theme-accent) 32%, transparent) 86px, transparent 92px),
+    radial-gradient(circle 160px at 0% 0%, transparent 0 116px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 119px, color-mix(in srgb, var(--oddi-theme-accent-strong) 50%, transparent) 123px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 129px, transparent 136px),
+    radial-gradient(circle 250px at 0% 100%, transparent 0 160px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 163px, color-mix(in srgb, var(--oddi-theme-accent-strong) 72%, transparent) 167px, color-mix(in srgb, var(--oddi-theme-accent) 30%, transparent) 173px, transparent 180px),
+    radial-gradient(circle 310px at 0% 100%, transparent 0 215px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 218px, color-mix(in srgb, var(--oddi-theme-accent-strong) 46%, transparent) 223px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 230px, transparent 237px),
+    radial-gradient(circle 165px at 100% 100%, transparent 0 98px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 101px, color-mix(in srgb, var(--oddi-theme-accent-strong) 72%, transparent) 105px, color-mix(in srgb, var(--oddi-theme-accent) 30%, transparent) 111px, transparent 118px),
+    radial-gradient(circle 220px at 100% 100%, transparent 0 145px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 148px, color-mix(in srgb, var(--oddi-theme-accent-strong) 46%, transparent) 153px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 160px, transparent 167px),
+    radial-gradient(ellipse 38% 52% at 0% 0%, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), transparent 78%),
+    radial-gradient(ellipse 38% 47% at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 16%, transparent), transparent 80%),
+    radial-gradient(ellipse 38% 47% at 100% 100%, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), transparent 80%),
+    linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-bg) 93%, var(--oddi-theme-accent) 7%) 0%, color-mix(in srgb, var(--oddi-theme-bg) 96%, var(--oddi-theme-surface) 4%) 53%, var(--oddi-theme-bg) 100%) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) #chatbox.chatbox:not(:has(> #welcomeContainer))::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--oddi-theme-accent-strong) 90%, transparent) 1px, transparent 1.6px) 0 0 / 12px 12px !important;
+  -webkit-clip-path: ellipse(188px 174px at 0% 0%) !important;
+  clip-path: ellipse(188px 174px at 0% 0%) !important;
+  opacity: .64 !important;
+  filter: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) #chatbox.chatbox:not(:has(> #welcomeContainer))::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background: radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--oddi-theme-accent-strong) 88%, transparent) 1px, transparent 1.6px) 0 0 / 12px 12px !important;
+  -webkit-clip-path: polygon(100% 0, 100% 100%, 83% 100%, 87% 82%, 90% 65%, 92% 35%, 88% 17%, 83% 0) !important;
+  clip-path: polygon(100% 0, 100% 100%, 83% 100%, 87% 82%, 90% 65%, 92% 35%, 88% 17%, 83% 0) !important;
+  opacity: .6 !important;
+  filter: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 56%, var(--oddi-theme-line)) !important;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--oddi-theme-surface) 88%, var(--oddi-theme-accent) 12%), var(--oddi-theme-surface)) !important;
+  color: var(--oddi-theme-muted) !important;
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--oddi-theme-accent) 7%, transparent) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search > svg {
+  color: var(--oddi-theme-accent) !important;
+  filter: drop-shadow(0 0 4px var(--oddi-theme-glow)) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search input {
+  color: var(--oddi-theme-text) !important;
+  caret-color: var(--oddi-theme-accent-strong) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search input::placeholder {
+  color: var(--oddi-theme-muted) !important;
+  opacity: .88 !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search:is(:hover,:focus-within) {
+  border-color: var(--oddi-theme-accent-strong) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search:focus-within {
+  box-shadow: 0 0 0 2px var(--oddi-theme-accent-soft), 0 0 15px var(--oddi-theme-glow), inset 0 0 12px color-mix(in srgb, var(--oddi-theme-accent) 8%, transparent) !important;
+}
+
+/* System-light Cyber Green home finish. The mono palette stays on its existing rules. */
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) {
+  --oddi-theme-bg: #f6fbf7 !important;
+  --oddi-theme-surface: #ffffff !important;
+  --oddi-theme-raised: #e8f8ed !important;
+  --oddi-theme-line: #d3eddb !important;
+  --oddi-theme-line-strong: #a9dfbb !important;
+  --oddi-theme-text: #17261d !important;
+  --oddi-theme-muted: #607367 !important;
+  --oddi-theme-dim: #85978b !important;
+  --oddi-theme-accent: #0bab50 !important;
+  --oddi-theme-accent-strong: #00bd58 !important;
+  --oddi-theme-accent-soft: rgba(0, 189, 88, .12) !important;
+  --oddi-theme-glow: rgba(26, 190, 91, .14) !important;
+  --oddi-neon-cyan: #0bab50 !important;
+  --oddi-neon-cyan-bright: #00bd58 !important;
+  --oddi-home-bg: #f6fbf7 !important;
+  --oddi-home-surface: #ffffff !important;
+  --oddi-home-input: #fbfefc !important;
+  --oddi-home-border: #d3eddb !important;
+  --oddi-home-text: #17261d !important;
+  --oddi-home-muted: #607367 !important;
+  --oddi-home-tertiary: #85978b !important;
+  --oddi-home-sidebar: #f8fcf9 !important;
+  --oddi-home-card: #ffffff !important;
+  --oddi-home-raised: #e8f8ed !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) .app {
+  background: radial-gradient(ellipse 32% 52% at 0% 52%, rgba(81, 215, 123, .12), transparent 78%), radial-gradient(ellipse 35% 50% at 100% 80%, rgba(81, 215, 123, .11), transparent 80%), linear-gradient(135deg, #f7fcf8, #f3faf5 52%, #f9fcfa) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) .app > .header {
+  border-color: rgba(211, 237, 219, .72) !important;
+  background: rgba(248, 252, 249, .82) !important;
+  box-shadow: 0 1px 0 rgba(11, 171, 80, .04) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+  position: relative !important;
+  isolation: isolate !important;
+  background-color: var(--oddi-theme-bg) !important;
+  background-image: radial-gradient(ellipse 75% 42% at 50% 0%, rgba(255,255,255,.92), transparent 76%), radial-gradient(circle 180px at 0% 0%, transparent 0 116px, rgba(78,203,119,.19) 118px 120px, transparent 122px), radial-gradient(circle 250px at 0% 0%, transparent 0 190px, rgba(78,203,119,.13) 192px 194px, transparent 196px), radial-gradient(circle 230px at 100% 100%, transparent 0 168px, rgba(78,203,119,.18) 170px 172px, transparent 174px), radial-gradient(circle 310px at 100% 100%, transparent 0 242px, rgba(78,203,119,.12) 244px 246px, transparent 248px), linear-gradient(145deg, #f8fcf9, #f3faf5 58%, #f8fcf9) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #chatbox.chatbox::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+  background: radial-gradient(ellipse 260px 190px at 0% 0%, rgba(74, 217, 123, .12), transparent 77%), radial-gradient(ellipse 270px 205px at 100% 100%, rgba(74, 217, 123, .11), transparent 78%) !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #chatbox.chatbox::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+  opacity: .72 !important;
+  background: radial-gradient(circle at 1px 1px, rgba(0, 189, 88, .62) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0) !important;
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0) !important;
+  -webkit-mask-size: 122px 122px, 132px 132px, 132px 138px, 144px 128px !important;
+  mask-size: 122px 122px, 132px 132px, 132px 138px, 144px 128px !important;
+  -webkit-mask-position: 18px 22px, right 18px top 112px, left 20px bottom 42px, right 18px bottom 58px !important;
+  mask-position: 18px 22px, right 18px top 112px, left 20px bottom 42px, right 18px bottom 58px !important;
+  -webkit-mask-repeat: no-repeat !important;
+  mask-repeat: no-repeat !important;
+  -webkit-mask-composite: source-over !important;
+  mask-composite: add !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #chatbox > *:not(#oddiSparkLayer):not(#oddiLightLayer):not(#oddiPhoneDots) {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 { color: #17261d !important; text-shadow: 0 3px 18px rgba(48, 148, 78, .1) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name { color: #00b95b !important; text-shadow: 0 0 18px rgba(0, 189, 88, .2) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle { border-color: #d3eddb !important; background: linear-gradient(100deg, #f2fbf5, #fff) !important; color: #607367 !important; box-shadow: 0 5px 18px rgba(38, 145, 72, .06), inset 0 1px 0 #fff !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before { border-color: rgba(11,171,80,.17) !important; background: radial-gradient(circle at 35% 30%, #fff, #d8f8e2 74%) !important; color: #0bab50 !important; box-shadow: 0 0 0 4px rgba(0,189,88,.055), 0 4px 12px rgba(0,130,54,.08) !important; }
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+  border-color: #d3eddb !important;
+  background: linear-gradient(145deg, #fff, #f9fdf9) !important;
+  box-shadow: 0 9px 24px rgba(27, 133, 65, .075), inset 0 1px 0 #fff !important;
+}
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:is(:hover,:focus-visible) { border-color: #8fd9a7 !important; background: linear-gradient(145deg, #fff, #f0fbf3) !important; box-shadow: 0 0 0 2px rgba(0,189,88,.08), 0 11px 26px rgba(27,133,65,.11) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-icon { background: #e4f8ea !important; color: #087c3b !important; box-shadow: 0 0 0 1px rgba(11,171,80,.06) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card::after { border-color: #bfe9cc !important; background: #ecfaf0 !important; color: #087c3b !important; box-shadow: 0 3px 10px rgba(11,171,80,.1) !important; }
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field { border-color: #c8ebd3 !important; background: rgba(255,255,255,.88) !important; box-shadow: 0 10px 26px rgba(27,133,65,.08), inset 0 1px 0 #fff !important; backdrop-filter: blur(14px) saturate(1.08) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within { border-color: #72ce90 !important; box-shadow: 0 0 0 2px rgba(0,189,88,.1), 0 12px 28px rgba(27,133,65,.1) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiComposerShell :is(#attach-btn,#dictation-btn) { border-color: #d5efdd !important; background: #eefaf1 !important; color: #087c3b !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddiComposerShell :is(#voice-btn,#send-btn):not(:disabled) { border-color: #0bab50 !important; background: linear-gradient(145deg,#14c966,#08a94d) !important; color: #fff !important; box-shadow: 0 5px 14px rgba(0,166,73,.23) !important; }
+
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-sidebar { border-right-color: #d6eadc !important; background: linear-gradient(180deg,#f9fdfa,#f4faf6) !important; box-shadow: 8px 0 22px rgba(25,114,57,.055) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search { border-color: #d5eadb !important; background: #fff !important; box-shadow: inset 0 1px 2px rgba(24,110,54,.025) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search > svg { color: #32734c !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search input::placeholder { color: #7b8f81 !important; opacity: 1 !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search:focus-within { border-color: #37b969 !important; box-shadow: 0 0 0 2px rgba(0,189,88,.1), 0 0 12px rgba(26,190,91,.1) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-nav :is(a,button):is(.active,.selected,[aria-current="page"]) { border-color: #bde8ca !important; background: #e9f8ed !important; color: #15592f !important; box-shadow: inset 2px 0 #14b85a !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-label { color: #137c3e !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-new { border-color: #a9dfbb !important; background: linear-gradient(105deg,#e9f9ee,#dff5e6) !important; color: #173b25 !important; box-shadow: 0 3px 10px rgba(27,133,65,.07) !important; }
+html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-green"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-account-footer { border-color: #d3eddb !important; background: linear-gradient(110deg,#fff,#f4fbf6) !important; }
+
+/* System-light Cyber Blue uses the same home finish as Green with blue palette colors. */
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) {
+  --oddi-theme-bg: #f4f8ff !important;
+  --oddi-theme-surface: #ffffff !important;
+  --oddi-theme-raised: #e9f2ff !important;
+  --oddi-theme-line: #d5e5f8 !important;
+  --oddi-theme-line-strong: #a8c9ee !important;
+  --oddi-theme-text: #182b42 !important;
+  --oddi-theme-muted: #586f8c !important;
+  --oddi-theme-dim: #8498b0 !important;
+  --oddi-theme-accent: #1688ed !important;
+  --oddi-theme-accent-strong: #0877e5 !important;
+  --oddi-theme-accent-soft: rgba(22, 136, 237, .12) !important;
+  --oddi-theme-glow: rgba(48, 139, 245, .15) !important;
+  --oddi-neon-cyan: #1688ed !important;
+  --oddi-neon-cyan-bright: #087ff0 !important;
+  --oddi-home-bg: #f4f8ff !important;
+  --oddi-home-surface: #ffffff !important;
+  --oddi-home-input: #fbfdff !important;
+  --oddi-home-border: #d5e5f8 !important;
+  --oddi-home-text: #182b42 !important;
+  --oddi-home-muted: #586f8c !important;
+  --oddi-home-tertiary: #8498b0 !important;
+  --oddi-home-sidebar: #f7faff !important;
+  --oddi-home-card: #ffffff !important;
+  --oddi-home-raised: #e9f2ff !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) .app {
+  background: radial-gradient(ellipse 32% 52% at 0% 52%, rgba(83, 164, 255, .13), transparent 78%), radial-gradient(ellipse 35% 50% at 100% 80%, rgba(83, 164, 255, .12), transparent 80%), linear-gradient(135deg, #f8fbff, #f1f7ff 52%, #f9fbff) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) .app > .header {
+  border-color: rgba(213, 229, 248, .76) !important;
+  background: rgba(248, 251, 255, .84) !important;
+  box-shadow: 0 1px 0 rgba(22, 136, 237, .04) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+  position: relative !important;
+  isolation: isolate !important;
+  background-color: var(--oddi-theme-bg) !important;
+  background-image: radial-gradient(ellipse 75% 42% at 50% 0%, rgba(255,255,255,.94), transparent 76%), radial-gradient(circle 180px at 0% 0%, transparent 0 116px, rgba(83,164,255,.2) 118px 120px, transparent 122px), radial-gradient(circle 250px at 0% 0%, transparent 0 190px, rgba(83,164,255,.14) 192px 194px, transparent 196px), radial-gradient(circle 230px at 100% 100%, transparent 0 168px, rgba(83,164,255,.19) 170px 172px, transparent 174px), radial-gradient(circle 310px at 100% 100%, transparent 0 242px, rgba(83,164,255,.13) 244px 246px, transparent 248px), linear-gradient(145deg, #f9fbff, #f1f7ff 58%, #f9fbff) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #chatbox.chatbox::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+  background: radial-gradient(ellipse 260px 190px at 0% 0%, rgba(77, 166, 255, .13), transparent 77%), radial-gradient(ellipse 270px 205px at 100% 100%, rgba(77, 166, 255, .12), transparent 78%) !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #chatbox.chatbox::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+  opacity: .72 !important;
+  background: radial-gradient(circle at 1px 1px, rgba(35, 132, 245, .58) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
+  -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0) !important;
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0) !important;
+  -webkit-mask-size: 122px 122px, 132px 132px, 132px 138px, 144px 128px !important;
+  mask-size: 122px 122px, 132px 132px, 132px 138px, 144px 128px !important;
+  -webkit-mask-position: 18px 22px, right 18px top 112px, left 20px bottom 42px, right 18px bottom 58px !important;
+  mask-position: 18px 22px, right 18px top 112px, left 20px bottom 42px, right 18px bottom 58px !important;
+  -webkit-mask-repeat: no-repeat !important;
+  mask-repeat: no-repeat !important;
+  -webkit-mask-composite: source-over !important;
+  mask-composite: add !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #chatbox > *:not(#oddiSparkLayer):not(#oddiLightLayer):not(#oddiPhoneDots) {
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 { color: #182b42 !important; text-shadow: 0 3px 18px rgba(67, 137, 218, .1) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name { color: #1688ed !important; text-shadow: 0 0 18px rgba(55, 148, 246, .18) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle { border-color: #d5e5f8 !important; background: linear-gradient(100deg, #f2f7ff, #fff) !important; color: #586f8c !important; box-shadow: 0 5px 18px rgba(55, 126, 205, .065), inset 0 1px 0 #fff !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before { border-color: rgba(22,136,237,.18) !important; background: radial-gradient(circle at 35% 30%, #fff, #dceeff 74%) !important; color: #1688ed !important; box-shadow: 0 0 0 4px rgba(32,130,235,.055), 0 4px 12px rgba(32,105,190,.08) !important; }
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
+  border-color: #d5e5f8 !important;
+  background: linear-gradient(145deg, #fff, #f9fbff) !important;
+  box-shadow: 0 9px 24px rgba(43, 111, 190, .075), inset 0 1px 0 #fff !important;
+}
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:is(:hover,:focus-visible) { border-color: #9ec9f7 !important; background: linear-gradient(145deg, #fff, #f1f7ff) !important; box-shadow: 0 0 0 2px rgba(32,130,235,.09), 0 11px 26px rgba(43,111,190,.11) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-icon { background: #e5f1ff !important; color: #1267bb !important; box-shadow: 0 0 0 1px rgba(22,136,237,.06) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card::after { border-color: #c6def8 !important; background: #edf5ff !important; color: #116cc5 !important; box-shadow: 0 3px 10px rgba(38,118,207,.1) !important; }
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field { border-color: #d1e3f9 !important; background: rgba(255,255,255,.9) !important; box-shadow: 0 10px 26px rgba(43,111,190,.08), inset 0 1px 0 #fff !important; backdrop-filter: blur(14px) saturate(1.08) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within { border-color: #7eb6f2 !important; box-shadow: 0 0 0 2px rgba(32,130,235,.11), 0 12px 28px rgba(43,111,190,.1) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell :is(#attach-btn,#dictation-btn) { border-color: #d8e9fa !important; background: #eff6ff !important; color: #1267bb !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell :is(#voice-btn,#send-btn):not(:disabled) { border-color: #1688ed !important; background: linear-gradient(145deg,#45a3ff,#147be8) !important; color: #fff !important; box-shadow: 0 5px 14px rgba(28,122,224,.23) !important; }
+
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-sidebar { border-right-color: #d7e5f5 !important; background: linear-gradient(180deg,#f9fbff,#f3f8ff) !important; box-shadow: 8px 0 22px rgba(46,101,161,.055) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search { border-color: #d8e7f7 !important; background: #fff !important; box-shadow: inset 0 1px 2px rgba(43,92,145,.025) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search > svg { color: #3d70a8 !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search input::placeholder { color: #8194aa !important; opacity: 1 !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search:focus-within { border-color: #4d96ec !important; box-shadow: 0 0 0 2px rgba(32,130,235,.1), 0 0 12px rgba(55,148,246,.1) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-nav :is(a,button):is(.active,.selected,[aria-current="page"]) { border-color: #c7e0fa !important; background: #eaf4ff !important; color: #174b80 !important; box-shadow: inset 2px 0 #2388ec !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-label { color: #286ba9 !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-new { border-color: #b8d7f8 !important; background: linear-gradient(105deg,#eaf4ff,#e0efff) !important; color: #193956 !important; box-shadow: 0 3px 10px rgba(43,111,190,.07) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-account-footer { border-color: #d5e5f8 !important; background: linear-gradient(110deg,#fff,#f4f8ff) !important; }
+
+/* Base dark home canvas; the palette-aware corner treatment follows below. */
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-green"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="mono"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+  background-color: var(--oddi-theme-bg) !important;
+  background-image: linear-gradient(145deg,
+    color-mix(in srgb, var(--oddi-theme-bg) 94%, var(--oddi-theme-accent) 6%) 0%,
+    color-mix(in srgb, var(--oddi-theme-bg) 97%, var(--oddi-theme-surface) 3%) 53%,
+    var(--oddi-theme-bg) 100%) !important;
+}
+
+html[data-oddi-palette]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"])
+body:is([data-oddi-palette="cyber-blue"],[data-oddi-palette="cyber-green"],[data-oddi-palette="mono"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::before {
+  display: none !important;
+  content: none !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-green"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="mono"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after {
+  background:
+    radial-gradient(ellipse 17% 26% at 98% 12%, color-mix(in srgb, var(--oddi-theme-bg) 58%, transparent), transparent 100%),
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--oddi-theme-accent-strong) 90%, transparent) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
+}
+
+/* Keep the other corner arcs and dots; leave the header-button corner clear. */
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-green"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="mono"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox {
+  background-image:
+    radial-gradient(ellipse 84% 44% at 50% -5%, color-mix(in srgb, var(--oddi-theme-accent) 17%, transparent), transparent 77%),
+    radial-gradient(circle 120px at 0% 0%, transparent 0 76px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 78px, color-mix(in srgb, var(--oddi-theme-accent-strong) 76%, transparent) 81px, color-mix(in srgb, var(--oddi-theme-accent) 32%, transparent) 86px, transparent 92px),
+    radial-gradient(circle 160px at 0% 0%, transparent 0 116px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 119px, color-mix(in srgb, var(--oddi-theme-accent-strong) 50%, transparent) 123px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 129px, transparent 136px),
+    radial-gradient(circle 250px at 0% 100%, transparent 0 160px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 163px, color-mix(in srgb, var(--oddi-theme-accent-strong) 72%, transparent) 167px, color-mix(in srgb, var(--oddi-theme-accent) 30%, transparent) 173px, transparent 180px),
+    radial-gradient(circle 310px at 0% 100%, transparent 0 215px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 218px, color-mix(in srgb, var(--oddi-theme-accent-strong) 46%, transparent) 223px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 230px, transparent 237px),
+    radial-gradient(circle 165px at 100% 100%, transparent 0 98px, color-mix(in srgb, var(--oddi-theme-accent) 28%, transparent) 101px, color-mix(in srgb, var(--oddi-theme-accent-strong) 72%, transparent) 105px, color-mix(in srgb, var(--oddi-theme-accent) 30%, transparent) 111px, transparent 118px),
+    radial-gradient(circle 220px at 100% 100%, transparent 0 145px, color-mix(in srgb, var(--oddi-theme-accent) 25%, transparent) 148px, color-mix(in srgb, var(--oddi-theme-accent-strong) 46%, transparent) 153px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 160px, transparent 167px),
+    radial-gradient(ellipse 38% 52% at 0% 0%, color-mix(in srgb, var(--oddi-theme-accent) 16%, transparent), transparent 78%),
+    radial-gradient(ellipse 38% 47% at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 14%, transparent), transparent 80%),
+    radial-gradient(ellipse 38% 47% at 100% 100%, color-mix(in srgb, var(--oddi-theme-accent) 16%, transparent), transparent 80%),
+    linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-bg) 94%, var(--oddi-theme-accent) 6%) 0%, color-mix(in srgb, var(--oddi-theme-bg) 97%, var(--oddi-theme-surface) 3%) 53%, var(--oddi-theme-bg) 100%) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-green"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="mono"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  visibility: visible !important;
+  opacity: .66 !important;
+  -webkit-mask-image:
+    radial-gradient(ellipse 13% 15% at 4% 10%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 12% 20% at 98% 21%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 13% 25% at 5% 84%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 14% 25% at 95% 86%, #000 0 58%, transparent 100%) !important;
+  mask-image:
+    radial-gradient(ellipse 13% 15% at 4% 10%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 12% 20% at 98% 21%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 13% 25% at 5% 84%, #000 0 54%, transparent 100%),
+    radial-gradient(ellipse 14% 25% at 95% 86%, #000 0 58%, transparent 100%) !important;
+}
+
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::before,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-green"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::before,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="mono"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background:
+    radial-gradient(ellipse 300px 230px at 0% 0%, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), transparent 76%),
+    radial-gradient(ellipse 310px 230px at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 16%, transparent), transparent 78%),
+    radial-gradient(ellipse 320px 235px at 100% 100%, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), transparent 78%) !important;
+  opacity: .66 !important;
+}

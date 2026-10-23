@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#07120b">
+  <title>Swarm Intelligence · ODDI AI</title>
+  <script>
+    (function(){
+      try {
+        const palette = localStorage.getItem('oddi_palette_v1');
+        document.documentElement.dataset.oddiPalette = palette === 'cyber-green' || palette === 'cyber-blue' ? palette : 'mono';
+        const theme = localStorage.getItem('oddi_theme_v1') || 'light';
+        const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.oddiAppearance = theme === 'system' ? (dark ? 'system-dark' : 'system-light') : (theme === 'dark' ? 'dark' : 'light');
+      } catch (_) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261022-permanent-sidebar-v1">
+  <link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261022-permanent-sidebar-v1">
+  <link rel="stylesheet" href="/static/oddi-swarm-intelligence.css?v=swarm-seven-agent-ring-v1-20261023">
+  <link rel="stylesheet" href="/static/oddi-swarm-intelligence-workspace.css?v=swarm-chat-rich-thread-v1-20261023">
+  <link rel="stylesheet" href="/static/oddi-document-workspace.css?v=swarm-writing-editor-20261022">
+  <script src="/static/oddi-theme-palette.js?v=20261020-palette-v1" defer></script>
+</head>
+<body class="oddi-swarm-body" data-logged-in="true" data-username="{{ swarm_username }}" data-user-id="{{ swarm_user_id }}" data-email="{{ swarm_email }}" data-browser-local-chats="{{ 'true' if swarm_browser_local_chats else 'false' }}" data-page-mode="{{ swarm_page_mode or 'home' }}" data-agent-id="{{ swarm_agent_id or '' }}">
+  <div id="oddi-react-sidebar-root"></div>
+
+  <main id="swarmApp" class="swarm-shell" aria-label="ODDI Swarm Intelligence">
+    <header class="swarm-header">
+      <div class="swarm-brand-block">
+        <div class="swarm-brand-kicker"><span class="swarm-live-dot"></span> ODDI <span class="swarm-kicker-divider">/</span> MULTI-AGENT WORKSPACE</div>
+        <h1>SWARM <span>INTELLIGENCE</span></h1>
+        <p>7 specialist agents <i aria-hidden="true">·</i> one unified intelligence</p>
+      </div>
+      <div class="swarm-header-note">
+        <span class="swarm-header-pulse" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 13h4l3-8 4 14 3-8h4"/></svg></span>
+        <span><strong>One task. The right experts.</strong><small>ODDI coordinates the work and brings it together.</small></span>
+        <span class="swarm-note-arrow" aria-hidden="true">›</span>
+      </div>
+    </header>
+
+    <div class="swarm-dashboard-grid">
+      <section class="swarm-main-panel" aria-label="Agent network and run output">
+        <div id="swarmNetworkView" class="swarm-network-view">
+          <div class="swarm-section-heading">
+            <span><i class="swarm-live-dot"></i> SPECIALIST NETWORK</span>
+            <span class="swarm-selection-cap"><span class="swarm-route-spark">✳</span> SELECT UP TO 3</span>
+          </div>
+
+          <div class="swarm-network-stage" id="swarmNetworkStage">
+            <svg class="swarm-connections" viewBox="0 0 1000 620" preserveAspectRatio="none" aria-hidden="true">
+              <defs><filter id="swarmLineGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+              <g class="swarm-wires" filter="url(#swarmLineGlow)">
+                <path d="M500 292 C500 224 500 150 500 76"/><path d="M580 282 C625 242 648 215 660 190"/><path d="M595 310 C650 326 698 348 730 366"/>
+                <path d="M580 338 C598 404 586 470 535 520"/><path d="M420 338 C402 404 414 470 465 520"/>
+                <path d="M405 310 C350 326 302 348 270 366"/><path d="M420 282 C375 242 352 215 340 190"/>
+              </g>
+              <g class="swarm-wire-nodes"><circle cx="500" cy="76" r="4"/><circle cx="340" cy="190" r="4"/><circle cx="660" cy="190" r="4"/><circle cx="270" cy="366" r="4"/><circle cx="730" cy="366" r="4"/><circle cx="465" cy="520" r="4"/><circle cx="535" cy="520" r="4"/></g>
+            </svg>
+
+            <button class="swarm-agent agent-search" type="button" data-agent="search" aria-pressed="false">
+              <span class="swarm-agent-icon"><svg viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.4"/><path d="m16 16 4.5 4.5M8 10.8h5.5M10.8 8v5.5"/></svg></span>
+              <span class="swarm-agent-copy"><small>01</small><strong>Search Agent</strong><span>Live web results, source links<br>and search snippets</span></span><b class="swarm-agent-arrow">›</b>
+            </button>
+            <button class="swarm-agent agent-research" type="button" data-agent="research" aria-pressed="false">
+              <span class="swarm-agent-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v6h5M9 13h7M9 17h5"/><circle cx="17.5" cy="17.5" r="3"/><path d="m19.7 19.7 2 2"/></svg></span>
+              <span class="swarm-agent-copy"><small>02</small><strong>Research Agent</strong><span>Deep research, analysis<br>and detailed reports</span></span><b class="swarm-agent-arrow">›</b>
+            </button>
+            <button class="swarm-agent agent-decision" type="button" data-agent="decision" aria-pressed="false">
+              <span class="swarm-agent-icon"><svg viewBox="0 0 24 24"><path d="M12 3v17M5 7h14M7 7l-4 7h8L7 7Zm10 0-4 7h8l-4-7ZM8 21h8"/></svg></span>
+              <span class="swarm-agent-copy"><small>03</small><strong>Decision Agent</strong><span>Learn your conditions first<br>then recommend a choice</span></span><b class="swarm-agent-arrow">›</b>
+            </button>
+            <button class="swarm-agent agent-writing" type="button" data-agent="writing" aria-pressed="false">
+              <span class="swarm-agent-icon"><svg viewBox="0 0 24 24"><path d="m4 16.8-.9 4 4-.9L20 7a2.7 2.7 0 0 0-3.8-3.8L4 16.8Z"/><path d="m14.7 4.7 4.6 4.6M4 21h16"/></svg></span>
+              <span class="swarm-agent-copy"><small>04</small><strong>Writing Agent</strong><span>Draft, rewrite, proofread<br>and export your content</span></span><b class="swarm-agent-arrow">›</b>
+            </button>
+<button class="swarm-agent agent-coding" type="button" data-agent="coding" aria-pressed="false">
+              <span class="swarm-agent-icon"><svg viewBox="0 0 24 24"><path d="m8 5-7 7 7 7M16 5l7 7-7 7M14 3l-4 18"/></svg></span>
+              <span class="swarm-agent-copy"><small>05</small><strong>Coding Agent</strong><span>Complete code, debugging<br>and refactoring</span></span><b class="swarm-agent-arrow">›</b>
+            </button>
+            <button class="swarm-agent agent-data" type="button" data-agent="data" aria-pressed="false">
+              <span class="swarm-agent-icon"><svg viewBox="0 0 24 24"><path d="M4 20V11h4v9M10 20V4h4v16M16 20v-7h4v7"/><path d="M2 20h20"/></svg></span>
+              <span class="swarm-agent-copy"><small>06</small><strong>Data Analyst</strong><span>Answer questions with<br>real calculations</span></span><b class="swarm-agent-arrow">›</b>
+            </button>
+            <button class="swarm-agent agent-document" type="button" data-agent="document" aria-pressed="false">
+              <span class="swarm-agent-icon"><svg viewBox="0 0 24 24"><path d="M6 3h8l5 5v13H6z"/><path d="M14 3v6h5M9 13h7M9 17h7"/></svg></span>
+              <span class="swarm-agent-copy"><small>07</small><strong>Document Search Agent</strong><span>Search multiple uploads<br>Library fallback if needed</span></span><b class="swarm-agent-arrow">›</b>
+            </button>
+            <div class="swarm-core" aria-label="ODDI central intelligence">
+              <span class="swarm-core-ring ring-one"></span><span class="swarm-core-ring ring-two"></span><span class="swarm-core-ring ring-three"></span>
+              <div class="swarm-core-orb"><span class="swarm-core-spark">✳</span><strong>ODDI</strong><b>CENTRAL<br>INTELLIGENCE</b><small>Plan · Coordinate · Execute · Integrate</small></div>
+            </div>
+
+            <div id="swarmProgress" class="swarm-progress" hidden aria-live="polite">
+              <span class="swarm-progress-spinner"></span><strong>ODDI is coordinating your Swarm</strong><small id="swarmProgressLabel">Choosing specialist agents…</small>
+            </div>
+          </div>
+        </div>
+
+        <section id="swarmResultView" class="swarm-result-view" hidden aria-live="polite">
+          <div class="swarm-result-topline"><div><span class="swarm-result-eyebrow"><i class="swarm-live-dot"></i> SWARM RUN COMPLETE</span><h2 id="swarmResultTitle">Your task</h2></div><button id="swarmResultClose" class="swarm-result-close" type="button" aria-label="Back to agent network">×</button></div>
+          <div class="swarm-result-summary"><span class="swarm-result-oddi">ODDI <small>CENTRAL INTELLIGENCE</small></span><div id="swarmFinalAnswer" class="swarm-final-answer"></div></div>
+          <div class="swarm-agent-reports"><div class="swarm-report-tabs" id="swarmReportTabs" role="tablist" aria-label="Specialist reports"></div><div id="swarmReportContent" class="swarm-report-content" role="tabpanel"></div></div>
+        </section>
+      </section>
+
+      <aside class="swarm-side-panel" aria-label="Swarm run history and templates">
+        <section class="swarm-side-card swarm-recent-card">
+          <div class="swarm-side-card-header"><span>RECENT SWARM RUNS</span><button id="swarmViewAll" type="button">View all <b aria-hidden="true">→</b></button></div>
+          <div id="swarmRecentRuns" class="swarm-recent-runs" aria-live="polite"><div class="swarm-empty-runs"><span class="swarm-empty-orbit">✳</span><strong>Your runs will show here</strong><small>Give the Swarm a task to get started.</small></div></div>
+        </section>
+
+        <section class="swarm-side-card swarm-template-card">
+          <div class="swarm-side-card-header"><span>QUICK TEMPLATES</span><span class="swarm-side-caption">Choose a starting point</span></div>
+          <div class="swarm-templates">
+            <button class="swarm-template" type="button" data-template="research"><span class="swarm-template-icon template-research">⌕</span><span><strong>Research &amp; Report</strong><small>Search → Research → Writing</small></span></button>
+            <button class="swarm-template" type="button" data-template="software"><span class="swarm-template-icon template-code">&lt;/&gt;</span><span><strong>Build a Software Project</strong><small>Coding → Complete code</small></span></button>
+            <button class="swarm-template" type="button" data-template="data"><span class="swarm-template-icon template-data">▥</span><span><strong>Data Analysis Report</strong><small>Data Analyst / Calculations / Writing</small></span></button>
+            <button class="swarm-template" type="button" data-template="custom"><span class="swarm-template-icon template-custom">✣</span><span><strong>Custom Swarm Task</strong><small>Describe your own complex task</small></span></button>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section id="swarmAgentSelection" class="swarm-agent-selection" aria-label="Select Swarm specialists">
+      <div class="swarm-selection-copy">
+        <div><strong>Select your agents</strong><small>Choose up to three specialists from the network above.</small></div>
+        <span id="swarmSelectionCount" class="swarm-selection-count" aria-live="polite">0 / 3 selected</span>
+      </div>
+      <div id="swarmSelectedAgents" class="swarm-selected-agents" aria-label="Selected specialists">
+        <span class="swarm-selection-empty">No agents selected yet</span>
+      </div>
+      <div class="swarm-selection-footer">
+        <span class="swarm-selection-hint">Click up to 3 specialist cards, then Start chatting. In the chat, type your task and press Send message.</span>
+        <button id="swarmStartChat" class="swarm-start-chat" type="button" disabled>Start chatting <span aria-hidden="true">→</span></button>
+      </div>
+      <div class="swarm-prompt-chips" aria-label="Suggested Swarm tasks">
+        <button type="button" data-prompt="Research a topic and create a well-sourced report">Research a topic and create a report</button>
+        <button type="button" data-prompt="Plan and build a small web application, including complete code and run instructions">Build a web application with code</button>
+        <button type="button" data-prompt="Analyze my dataset, explain the key findings, and recommend useful calculations">Analyze a dataset</button>
+        <button type="button" data-prompt="Compare these options, explain the trade-offs, and give me a clear recommendation">Compare options and give recommendations</button>
+      </div>
+    </section>
+
+    <section id="swarmComposerArea" class="swarm-composer-area" aria-label="Describe a task for the selected Swarm specialists" hidden>
+      <p id="swarmComposerHint" class="swarm-composer-hint" hidden></p>
+      <form id="swarmForm" class="swarm-composer">
+        <span class="swarm-composer-spark" aria-hidden="true">✦</span>
+        <textarea id="swarmTask" name="task" rows="1" maxlength="6000" placeholder="Tell your selected specialists what you need…" aria-label="Describe what you need from your selected specialists"></textarea>
+        <input id="swarmFiles" type="file" multiple hidden>
+        <div class="swarm-composer-actions">
+          <button id="swarmAttach" class="swarm-composer-action" type="button" title="Attach files" aria-label="Attach files"><svg viewBox="0 0 24 24"><path d="m20.4 11.6-8.9 8.9a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.8 3.8 0 0 1 5.4 5.4l-9.2 9.2a2.1 2.1 0 0 1-3-3l8.7-8.7"/></svg></button>
+          <button id="swarmWebToggle" class="swarm-composer-action" type="button" title="Include the Search Agent" aria-label="Include the Search Agent" aria-pressed="false"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></button>
+          <button id="swarmOptions" class="swarm-composer-action" type="button" title="Agent routing options" aria-label="Agent routing options"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="8" cy="6" r="2"/><circle cx="15" cy="12" r="2"/><circle cx="10" cy="18" r="2"/></svg></button>
+          <button id="swarmSend" class="swarm-send" type="submit" aria-label="Send message" title="Send message"><svg viewBox="0 0 24 24"><path d="m5 12 14-7-4 14-3-6-7-1Z"/><path d="m12 13 7-8"/></svg><span>Send message</span></button>
+        </div>
+      </form>
+      <div id="swarmAttachmentList" class="swarm-attachments" hidden></div>
+      <div id="swarmToast" class="swarm-toast" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js" defer></script>
+  <script src="/static/oddi-document-workspace.js?v=swarm-writing-editor-20261022" defer></script>
+  <script type="module" src="/static/oddi-sidebar/oddi-sidebar.js?v=20261022-swarm-sidebar-v1"></script>
+   <script src="/static/oddi-swarm-intelligence.js?v=swarm-chat-rich-markdown-v1-20261023" defer></script>
+</body>
+</html>

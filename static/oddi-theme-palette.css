@@ -77,18 +77,18 @@ html[data-oddi-palette="cyber-green"] {
 }
 html[data-oddi-palette="cyber-green"][data-oddi-appearance="dark"] {
   color-scheme: dark;
-  --oddi-theme-bg: #07120b;
-  --oddi-theme-surface: #0e1d14;
-  --oddi-theme-raised: #17291e;
-  --oddi-theme-line: #263d2d;
-  --oddi-theme-line-strong: #3d5e46;
-  --oddi-theme-text: #edf6ef;
-  --oddi-theme-muted: #a1b4a5;
-  --oddi-theme-dim: #738879;
-  --oddi-theme-accent: #59d997;
-  --oddi-theme-accent-strong: #35b979;
-  --oddi-theme-accent-soft: rgba(70,198,128,.15);
-  --oddi-theme-glow: rgba(58,184,116,.13);
+  --oddi-theme-bg: #020d08;
+  --oddi-theme-surface: #07180f;
+  --oddi-theme-raised: #10281a;
+  --oddi-theme-line: #17442d;
+  --oddi-theme-line-strong: #26734a;
+  --oddi-theme-text: #effff5;
+  --oddi-theme-muted: #a8c8b3;
+  --oddi-theme-dim: #759781;
+  --oddi-theme-accent: #10ed8d;
+  --oddi-theme-accent-strong: #00c875;
+  --oddi-theme-accent-soft: rgba(16,237,141,.15);
+  --oddi-theme-glow: rgba(0,220,124,.18);
 }
 html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] {
   --oddi-theme-bg: #e6efe8;
@@ -325,6 +325,16 @@ body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-pinned-count { backgro
 body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-chat.selected { border-color: var(--oddi-theme-accent) !important; box-shadow: inset 2px 0 var(--oddi-theme-accent) !important; }
 body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-select-check { border-color: var(--oddi-theme-accent) !important; background: var(--oddi-theme-accent) !important; color: var(--oddi-theme-bg) !important; }
 body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-avatar { border: 1px solid var(--oddi-theme-line-strong) !important; background: var(--oddi-theme-raised) !important; color: var(--oddi-theme-accent) !important; }
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav button.oddi-rs-nav-current {
+  border: 1px solid var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: inset 2px 0 var(--oddi-theme-accent), 0 0 18px var(--oddi-theme-glow) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav button.oddi-rs-nav-current svg {
+  color: var(--oddi-theme-accent) !important;
+  filter: drop-shadow(0 0 5px var(--oddi-theme-glow));
+}
 body[data-oddi-palette] .oddi-rs-account-menu {
   --rs-border: var(--oddi-theme-line);
   --rs-hover: var(--oddi-theme-raised);
@@ -334,6 +344,158 @@ body[data-oddi-palette] .oddi-rs-account-menu {
   color: var(--oddi-theme-text) !important;
 }
 body[data-oddi-palette] .oddi-rs-account-divider { background: var(--oddi-theme-line) !important; }
+
+/* Permanent sidebar: give the app's everyday navigation the same neon circuit finish as Swarm. */
+body[data-oddi-palette] #oddi-react-sidebar-root {
+  --rs-bg: color-mix(in srgb, var(--oddi-theme-bg) 80%, var(--oddi-theme-surface) 20%);
+  --rs-surface: color-mix(in srgb, var(--oddi-theme-surface) 84%, var(--oddi-theme-bg) 16%);
+  --rs-hover: color-mix(in srgb, var(--oddi-theme-raised) 80%, var(--oddi-theme-accent-soft) 20%);
+  --rs-active: color-mix(in srgb, var(--oddi-theme-surface) 62%, var(--oddi-theme-accent-soft) 38%);
+  --rs-border: color-mix(in srgb, var(--oddi-theme-line) 72%, var(--oddi-theme-accent) 28%);
+  --rs-text: var(--oddi-theme-text);
+  --rs-muted: var(--oddi-theme-muted);
+  --rs-dim: var(--oddi-theme-dim);
+  --rs-accent: var(--oddi-theme-accent);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-react-sidebar-root,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-react-sidebar-root {
+  --rs-bg: color-mix(in srgb, var(--oddi-theme-bg) 92%, #000 8%);
+  --rs-surface: color-mix(in srgb, var(--oddi-theme-surface) 76%, var(--oddi-theme-bg) 24%);
+  --rs-hover: color-mix(in srgb, var(--oddi-theme-accent) 11%, var(--rs-surface));
+  --rs-active: color-mix(in srgb, var(--oddi-theme-accent) 17%, var(--rs-surface));
+  --rs-border: color-mix(in srgb, var(--oddi-theme-line) 62%, var(--oddi-theme-accent) 38%);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-sidebar {
+  border-right: 1px solid color-mix(in srgb, var(--oddi-theme-line) 62%, var(--oddi-theme-accent) 38%) !important;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--oddi-theme-accent) 12%, transparent) .75px, transparent 1.2px) 0 0 / 27px 27px,
+    linear-gradient(180deg, color-mix(in srgb, var(--rs-bg) 94%, var(--oddi-theme-accent) 6%), var(--rs-bg)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 12px 0 34px rgba(0,0,0,.22), inset -1px 0 0 color-mix(in srgb, var(--oddi-theme-accent) 10%, transparent) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-header {
+  border-bottom: 1px solid color-mix(in srgb, var(--oddi-theme-line) 60%, var(--oddi-theme-accent) 40%) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--rs-bg) 92%, var(--oddi-theme-accent) 8%), transparent) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-brand img {
+  filter: drop-shadow(0 0 7px var(--oddi-theme-glow));
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-collapse,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-mobile-close {
+  border: 1px solid var(--oddi-theme-line) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 72%, transparent) !important;
+  color: var(--oddi-theme-accent) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-collapse:hover,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-mobile-close:hover {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  box-shadow: 0 0 14px var(--oddi-theme-glow);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-new {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 68%, var(--oddi-theme-accent) 32%) !important;
+  background: linear-gradient(110deg, color-mix(in srgb, var(--rs-surface) 88%, var(--oddi-theme-accent-soft) 12%), var(--rs-surface)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 0 0 18px color-mix(in srgb, var(--oddi-theme-glow) 72%, transparent), 0 5px 16px rgba(0,0,0,.10);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-new svg,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search > svg,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-label > svg {
+  color: var(--oddi-theme-accent) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-new:hover {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  box-shadow: 0 0 18px var(--oddi-theme-glow);
+  transform: translateY(-1px);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search {
+  border-color: color-mix(in srgb, var(--oddi-theme-line) 68%, var(--oddi-theme-accent) 32%) !important;
+  background: color-mix(in srgb, var(--rs-surface) 88%, transparent) !important;
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--oddi-theme-glow) 54%, transparent);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-search:focus-within {
+  border-color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 0 2px var(--oddi-theme-accent-soft), 0 0 15px var(--oddi-theme-glow) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-label {
+  color: var(--oddi-theme-dim) !important;
+  letter-spacing: .17em !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-chat {
+  border-color: transparent !important;
+  transition: color .16s ease, border-color .16s ease, background .16s ease, box-shadow .16s ease !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-chat:hover,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-chat:focus-within {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 48%, var(--oddi-theme-line)) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 64%, var(--rs-surface)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 2px 0 color-mix(in srgb, var(--oddi-theme-accent) 65%, transparent), 0 0 12px color-mix(in srgb, var(--oddi-theme-glow) 62%, transparent) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-chat.active,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-chat.selected {
+  border-color: var(--oddi-theme-accent) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 82%, var(--rs-surface)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 2px 0 var(--oddi-theme-accent), 0 0 16px var(--oddi-theme-glow) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav {
+  border-top-color: color-mix(in srgb, var(--oddi-theme-line) 62%, var(--oddi-theme-accent) 38%) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav a,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav button {
+  border: 1px solid transparent !important;
+  color: var(--oddi-theme-muted) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav a:hover,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav button:hover {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 44%, var(--oddi-theme-line)) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 76%, var(--rs-surface)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 0 13px var(--oddi-theme-glow);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav button.oddi-rs-nav-current {
+  position: relative;
+  border-color: var(--oddi-theme-accent) !important;
+  background: linear-gradient(100deg, var(--oddi-theme-accent-soft), color-mix(in srgb, var(--oddi-theme-accent-soft) 48%, var(--rs-surface))) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: inset 2px 0 var(--oddi-theme-accent), 0 0 18px var(--oddi-theme-glow), inset 0 0 16px color-mix(in srgb, var(--oddi-theme-glow) 68%, transparent) !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-nav button.oddi-rs-nav-current svg {
+  color: var(--oddi-theme-accent) !important;
+  filter: drop-shadow(0 0 5px var(--oddi-theme-glow));
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-profile {
+  border-top: 1px solid color-mix(in srgb, var(--oddi-theme-line) 62%, var(--oddi-theme-accent) 38%) !important;
+  background: transparent !important;
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-sidebar:not(.collapsed) .oddi-rs-profile {
+  min-height: 54px !important;
+  margin: 7px 8px 8px;
+  padding: 6px 8px !important;
+  border: 1px solid var(--oddi-theme-line) !important;
+  border-radius: 11px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--rs-surface) 84%, var(--oddi-theme-accent-soft) 16%), var(--rs-surface)) !important;
+  box-shadow: inset 0 0 16px color-mix(in srgb, var(--oddi-theme-glow) 62%, transparent);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-avatar {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 72%, var(--oddi-theme-line)) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 12px var(--oddi-theme-glow);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-rail > button {
+  border-color: var(--oddi-theme-line) !important;
+  background: var(--rs-bg) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 14px var(--oddi-theme-glow);
+}
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-rail > button:hover,
+body[data-oddi-palette] #oddi-react-sidebar-root .oddi-rs-rail > button.is-active {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+}
 
 /* Settings, profile, and reusable dialogs inherit the selected surfaces. */
 body[data-oddi-palette] #settingsModal {
@@ -381,9 +543,9 @@ body[data-oddi-palette] #oddiProfileModal .oddi-chart-bar-track { background: va
 body[data-oddi-palette] #oddiProfileModal .oddi-chart-grid { background: var(--oddi-theme-line) !important; box-shadow: 0 -48px 0 var(--oddi-theme-line), 0 -96px 0 var(--oddi-theme-line), 0 -144px 0 var(--oddi-theme-line) !important; }
 body[data-oddi-palette] #oddiProfileModal .oddi-working-tabs button:not([aria-selected="true"]) { color: var(--oddi-theme-muted) !important; }
 
-/* Shared workspaces use a separate app shell, so give it the same palette tokens. */
+/* Shared workspaces use the same palette surfaces as the main app. */
 body[data-oddi-palette] #oddi-shared-root { background: var(--oddi-theme-bg) !important; color: var(--oddi-theme-text) !important; }
-body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-top,.oddi-sw-list,.oddi-sw-chat,.oddi-sw-chat-header,.oddi-sw-empty,.oddi-sw-workspace-card,.oddi-sw-invite-card,.oddi-sw-message-menu,.oddi-sw-reaction-picker,.oddi-sw-message-tools-button,.oddi-sw-reaction-chip) {
+body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-top,.oddi-sw-list,.oddi-sw-chat,.oddi-sw-chat-header,.oddi-sw-workspace-card,.oddi-sw-invite-card,.oddi-sw-message-menu,.oddi-sw-reaction-picker,.oddi-sw-message-tools-button,.oddi-sw-reaction-chip) {
   border-color: var(--oddi-theme-line) !important;
   background: var(--oddi-theme-surface) !important;
   color: var(--oddi-theme-text) !important;
@@ -482,20 +644,39 @@ html[data-oddi-palette] .skills-app .room-overall-meter i { background: var(--od
 
 html[data-oddi-palette] .studio-shell :is(h1,h2,h3,h4,p,span,strong,small,button,li,a,label,code) { color: var(--oddi-theme-text) !important; }
 html[data-oddi-palette] .studio-shell :is(.studio-hero-kicker,.status-dot,.studio-brand-mark,.studio-brand-eyebrow,.practice-session-count,.progress-track,.question-number,.sample-answer-title,.answer-sheet-label,.session-save-state,.answer-all-button-icon) { color: var(--oddi-theme-accent) !important; }
-html[data-oddi-palette] .studio-shell :is(.studio-panel,.practice-sessions,.questions-panel,.answer-sheet,.feedback-panel,.submit-dock,.practice-session-list,.feedback-followups,.answer-sheet-content,.profession-form,.practice-session-open,.answer-all-toggle,.answer-all-questions-button,.feedback-action-button,.choice-option,.written-answer,.profession-field-wrap input,.profession-field-wrap textarea,.question-count-pill,.studio-status) {
+html[data-oddi-palette] .studio-shell :is(.studio-panel,.practice-sessions,.questions-panel,.answer-sheet,.feedback-panel,.submit-dock,.practice-session-list,.feedback-followups,.answer-sheet-content,.practice-session-open,.answer-all-toggle,.answer-all-questions-button,.feedback-action-button,.choice-option,.written-answer,.profession-field-wrap input,.profession-field-wrap textarea,.question-count-pill,.studio-status) {
   border-color: var(--oddi-theme-line) !important;
   background: var(--oddi-theme-surface) !important;
   color: var(--oddi-theme-text) !important;
 }
-html[data-oddi-palette] .studio-shell :is(.studio-panel,.practice-sessions,.question-card,.answer-sheet,.answer-sheet-item,.feedback-panel,.submit-dock,.feedback-followups,.sample-answer) { background: var(--oddi-theme-surface) !important; }
-html[data-oddi-palette] .studio-shell { background: radial-gradient(ellipse at 78% -12%, var(--oddi-theme-glow), transparent 34rem), var(--oddi-theme-bg) !important; color: var(--oddi-theme-text) !important; }
-html[data-oddi-palette] .studio-shell::before { opacity: .06; background-image: linear-gradient(var(--oddi-theme-glow) 1px, transparent 1px), linear-gradient(90deg, var(--oddi-theme-glow) 1px, transparent 1px) !important; }
-html[data-oddi-palette] .studio-shell .studio-topbar { background: var(--oddi-theme-surface) !important; border-color: var(--oddi-theme-line) !important; }
+html[data-oddi-palette] .studio-shell :is(.practice-sessions,.question-card,.answer-sheet,.answer-sheet-item,.feedback-panel,.submit-dock,.feedback-followups,.sample-answer) { background: var(--oddi-theme-surface) !important; }
+html[data-oddi-palette] .studio-shell { background: radial-gradient(ellipse at 4% 4%, var(--oddi-theme-accent-soft), transparent 33rem), radial-gradient(ellipse at 98% 88%, var(--oddi-theme-accent-soft), transparent 38rem), var(--oddi-theme-bg) !important; color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] .studio-shell::before { opacity: .08; background-image: linear-gradient(var(--oddi-theme-glow) 1px, transparent 1px), linear-gradient(90deg, var(--oddi-theme-glow) 1px, transparent 1px) !important; }
+html[data-oddi-palette] .studio-shell .studio-topbar { background: color-mix(in srgb, var(--oddi-theme-bg) 84%, transparent) !important; border-color: var(--oddi-theme-line) !important; box-shadow: 0 8px 28px color-mix(in srgb, var(--oddi-theme-glow) 65%, transparent) !important; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+html[data-oddi-palette] .studio-shell .studio-panel { border-color: color-mix(in srgb, var(--oddi-theme-accent) 42%, var(--oddi-theme-line-strong)) !important; background: linear-gradient(145deg, var(--oddi-theme-raised), var(--oddi-theme-surface) 70%) !important; box-shadow: 0 26px 76px rgba(0,0,0,.3), inset 0 1px rgba(255,255,255,.07), 0 0 34px var(--oddi-theme-accent-soft) !important; }
 html[data-oddi-palette] .studio-shell :is(.practice-session-card,.question-card,.sample-answer,.answer-sheet-item,.answer-followups,.choice-option,.written-answer,.profession-field-wrap input,.profession-field-wrap textarea) { border-color: var(--oddi-theme-line) !important; background: var(--oddi-theme-surface) !important; color: var(--oddi-theme-text) !important; }
 html[data-oddi-palette] .studio-shell :is(.profession-field-wrap input,.profession-field-wrap textarea,.written-answer)::placeholder { color: var(--oddi-theme-muted) !important; }
 html[data-oddi-palette] .studio-shell :is(.studio-secondary-button,.feedback-action-button:hover,.practice-session-open:hover,.answer-all-toggle[aria-pressed="true"],.choice-option:has(input:checked)) { background: var(--oddi-theme-raised) !important; }
-html[data-oddi-palette] .studio-shell :is(.studio-primary-button,.answer-all-questions-button,.studio-status.is-success) { border-color: var(--oddi-theme-accent) !important; background: var(--oddi-theme-accent) !important; color: var(--oddi-theme-bg) !important; }
-html[data-oddi-palette] .studio-shell .progress-track > span { background: var(--oddi-theme-accent) !important; box-shadow: none !important; }
+html[data-oddi-palette] .studio-shell :is(.studio-primary-button,.answer-all-questions-button,.studio-status.is-success) { border-color: var(--oddi-theme-accent) !important; background: linear-gradient(105deg, var(--oddi-theme-accent), var(--oddi-theme-accent-strong)) !important; color: var(--oddi-theme-bg) !important; box-shadow: 0 8px 24px var(--oddi-theme-glow), inset 0 1px rgba(255,255,255,.18) !important; }
+html[data-oddi-palette] .studio-shell .progress-track { background: var(--oddi-theme-raised) !important; }
+html[data-oddi-palette] .studio-shell .progress-track > span { background: linear-gradient(90deg, var(--oddi-theme-accent-strong), var(--oddi-theme-accent)) !important; box-shadow: 0 0 12px var(--oddi-theme-glow) !important; }
+html[data-oddi-palette] .studio-shell :is(.studio-lede,.field-help,.studio-benefits,.practice-sessions-heading p,.questions-intro p,.answer-voice-status,.feedback-heading p,.feedback-copy,.answer-sheet-heading p,.answer-sheet-response,.submit-dock-copy span) { color: var(--oddi-theme-muted) !important; }
+html[data-oddi-palette] .studio-shell :is(.studio-brand-mark,.studio-hero-kicker,.status-dot,.studio-brand-eyebrow,.practice-session-count,.question-number,.sample-answer-title,.answer-sheet-label,.session-save-state,.answer-all-button-icon,.studio-benefits i,.field-enter-hint) { color: var(--oddi-theme-accent) !important; }
+html[data-oddi-palette] .studio-shell .studio-brand-mark { border-color: var(--oddi-theme-line-strong) !important; background: var(--oddi-theme-accent-soft) !important; box-shadow: 0 0 22px var(--oddi-theme-glow) !important; }
+html[data-oddi-palette] .studio-shell .status-dot { background: var(--oddi-theme-accent) !important; box-shadow: 0 0 14px var(--oddi-theme-glow) !important; }
+html[data-oddi-palette] .studio-shell .setup-panel h1 span,
+html[data-oddi-palette] .studio-shell .clarification-panel h1 span,
+html[data-oddi-palette] .studio-shell .questions-intro h1 span { background: linear-gradient(100deg, var(--oddi-theme-accent), var(--oddi-theme-accent-strong), var(--oddi-theme-accent)) !important; background-clip: text !important; -webkit-background-clip: text !important; color: var(--oddi-theme-accent) !important; -webkit-text-fill-color: transparent !important; }
+html[data-oddi-palette] .studio-shell .profession-form { border: 0 !important; background: transparent !important; }
+html[data-oddi-palette] .studio-shell .profession-field-wrap input { background: color-mix(in srgb, var(--oddi-theme-bg) 78%, var(--oddi-theme-surface)) !important; }
+html[data-oddi-palette] .studio-shell .profession-field-wrap input:focus,
+html[data-oddi-palette] .studio-shell :is(.profession-field-wrap textarea,.written-answer):focus { border-color: var(--oddi-theme-accent) !important; box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft), 0 0 22px var(--oddi-theme-glow) !important; outline: none !important; }
+html[data-oddi-palette] .studio-shell .field-enter-hint { border-color: var(--oddi-theme-line) !important; background: var(--oddi-theme-accent-soft) !important; }
+html[data-oddi-palette] .studio-shell .studio-benefits { border-color: var(--oddi-theme-line) !important; }
+html[data-oddi-palette] .studio-shell :is(.studio-back-home,.studio-secondary-button) { border-color: var(--oddi-theme-line-strong) !important; background: var(--oddi-theme-accent-soft) !important; color: var(--oddi-theme-accent) !important; }
+html[data-oddi-palette] .studio-shell :is(input,textarea,select) { accent-color: var(--oddi-theme-accent) !important; }
+html[data-oddi-palette] .studio-shell :is(button,a,input,textarea):focus-visible { outline-color: var(--oddi-theme-accent) !important; }
+html[data-oddi-palette] .studio-shell :is(.studio-primary-button,.answer-all-questions-button):disabled { border-color: var(--oddi-theme-line) !important; background: var(--oddi-theme-raised) !important; color: var(--oddi-theme-muted) !important; box-shadow: none !important; }
 
 body[data-oddi-palette] #oddiProfileModal .oddi-profile-avatar { border-color: var(--oddi-theme-line-strong) !important; background: var(--oddi-theme-accent-soft) !important; color: var(--oddi-theme-accent) !important; }
 body[data-oddi-palette] #oddiProfileModal .oddi-profile-stat small,
@@ -739,6 +920,185 @@ html[data-oddi-palette] body[data-oddi-palette] #oddiSourcesModal .oddi-sources-
   }
 }
 
+/* Projects screen: use the active palette while keeping the existing workspace layout. */
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open #oddiWorkspaceOverlay { background: var(--oddi-theme-bg) !important; color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open #oddiWorkspaceDialog,
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open #oddiWorkspaceContent { background: var(--oddi-theme-bg) !important; color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open #oddiWorkspaceDialog .oddi-workspace-head { border-color: var(--oddi-theme-line) !important; background: var(--oddi-theme-surface) !important; color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open .oddi-workspace-sync { border-color: var(--oddi-theme-line) !important; color: var(--oddi-theme-muted) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open .oddi-projects-page { background: radial-gradient(ellipse at 5% 0%, var(--oddi-theme-accent-soft), transparent 34rem), radial-gradient(ellipse at 96% 100%, var(--oddi-theme-accent-soft), transparent 32rem), var(--oddi-theme-bg) !important; color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-projects-intro h3,.oddi-project-detail-head h3,.oddi-project-section-head h4,.oddi-project-card-copy strong,.oddi-project-chat-copy strong) { color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-eyebrow,.oddi-project-empty-icon,.oddi-project-card-icon,.oddi-project-type) { color: var(--oddi-theme-accent) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-projects-intro p,.oddi-project-detail-head p,.oddi-project-section-head p,.oddi-project-card-copy small,.oddi-project-chat-copy small,.oddi-project-empty p) { color: var(--oddi-theme-muted) !important; opacity: 1 !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-create-form input,.oddi-project-create-form select) { border-color: var(--oddi-theme-line-strong) !important; background: var(--oddi-theme-surface) !important; color: var(--oddi-theme-text) !important; color-scheme: inherit; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-create-form input,.oddi-project-create-form select)::placeholder { color: var(--oddi-theme-muted) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-create-form input,.oddi-project-create-form select):focus { border-color: var(--oddi-theme-accent) !important; box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft), 0 0 20px var(--oddi-theme-glow) !important; outline: none !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-card,.oddi-project-chats) { border-color: var(--oddi-theme-line) !important; background: var(--oddi-theme-surface) !important; color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open .oddi-project-empty { border-color: var(--oddi-theme-line-strong) !important; background: color-mix(in srgb, var(--oddi-theme-surface) 84%, transparent) !important; color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open .oddi-project-card-icon { border: 1px solid var(--oddi-theme-line-strong) !important; border-radius: 13px; background: var(--oddi-theme-accent-soft) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open .oddi-project-type { background: var(--oddi-theme-accent-soft) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-detail-head,.oddi-project-chat-row) { border-color: var(--oddi-theme-line) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open .oddi-project-primary { border-color: var(--oddi-theme-accent) !important; background: linear-gradient(105deg, var(--oddi-theme-accent), var(--oddi-theme-accent-strong)) !important; color: var(--oddi-theme-bg) !important; box-shadow: 0 8px 22px var(--oddi-theme-glow), inset 0 1px rgba(255,255,255,.16) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open .oddi-project-primary > * { color: var(--oddi-theme-bg) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-back,.oddi-project-secondary,.oddi-project-chat-actions button) { border-color: var(--oddi-theme-line-strong) !important; background: var(--oddi-theme-raised) !important; color: var(--oddi-theme-text) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-back,.oddi-project-secondary,.oddi-project-card,.oddi-project-chat-actions button):is(:hover,:focus-visible),
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open .oddi-project-chat-row:is(:hover,:focus-within) { border-color: var(--oddi-theme-accent) !important; background-color: var(--oddi-theme-accent-soft) !important; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-back,.oddi-project-secondary,.oddi-project-card,.oddi-project-primary,.oddi-project-delete,.oddi-project-chat-actions button):focus-visible { outline: 2px solid var(--oddi-theme-accent) !important; outline-offset: 2px; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-primary,.oddi-project-chat-actions button):disabled { border-color: var(--oddi-theme-line) !important; background: var(--oddi-theme-raised) !important; color: var(--oddi-theme-muted) !important; box-shadow: none !important; cursor: not-allowed; opacity: .6; }
+html[data-oddi-palette] body[data-oddi-palette].oddi-project-workspace-open :is(.oddi-project-delete,.oddi-project-chat-delete) { border-color: color-mix(in srgb, #c53d4a 42%, var(--oddi-theme-line)) !important; color: #e9828a !important; }
+
+/* Skills Studio: dark cyber palettes share the same edge-lit, glass surface treatment. */
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app {
+  background:
+    radial-gradient(ellipse at 20.5% 8%, color-mix(in srgb, var(--oddi-theme-accent) 13%, transparent), transparent 34rem),
+    radial-gradient(ellipse at 100% 88%, color-mix(in srgb, var(--oddi-theme-accent) 10%, transparent), transparent 32rem),
+    var(--oddi-theme-bg) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app::before,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app::before {
+  opacity: .28 !important;
+  background-image: radial-gradient(circle, var(--oddi-theme-accent) 1px, transparent 1.2px) !important;
+  background-size: 18px 18px !important;
+  mask-image: radial-gradient(ellipse at center, transparent 34%, #000 80%) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app::after,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 20.5% 0%, transparent 224px, color-mix(in srgb, var(--oddi-theme-accent) 24%, transparent) 225px 226px, transparent 228px),
+    radial-gradient(circle at 20.5% 0%, transparent 260px, color-mix(in srgb, var(--oddi-theme-accent) 10%, transparent) 261px 262px, transparent 264px),
+    radial-gradient(circle at 20.5% 100%, transparent 178px, color-mix(in srgb, var(--oddi-theme-accent) 19%, transparent) 179px 180px, transparent 182px),
+    radial-gradient(circle at 20.5% 100%, transparent 218px, color-mix(in srgb, var(--oddi-theme-accent) 9%, transparent) 219px 220px, transparent 222px),
+    radial-gradient(circle at 100% 100%, transparent 225px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 226px 227px, transparent 229px);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-topbar,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-topbar {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-surface) 92%, transparent), color-mix(in srgb, var(--oddi-theme-bg) 94%, transparent)) !important;
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 62%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-library,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-library {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-surface) 92%, transparent), var(--oddi-theme-bg)) !important;
+  border-right-color: color-mix(in srgb, var(--oddi-theme-line-strong) 72%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-workspace,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-workspace,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-dashboard,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-dashboard {
+  background: transparent !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .skill-session-card,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .skill-session-card {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 45%, var(--oddi-theme-line-strong)) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oddi-theme-accent-soft) 27%, var(--oddi-theme-surface)), var(--oddi-theme-surface) 76%) !important;
+  box-shadow: inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 4%, transparent), 0 0 12px color-mix(in srgb, var(--oddi-theme-glow) 55%, transparent), 0 7px 20px rgba(0,0,0,.12) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .skill-session-card:is(:hover,:focus-visible,.is-active),
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .skill-session-card:is(:hover,:focus-visible,.is-active) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oddi-theme-accent) 19%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-accent-soft) 38%, var(--oddi-theme-raised))) !important;
+  box-shadow: 0 0 0 1px var(--oddi-theme-accent-soft), 0 0 22px var(--oddi-theme-glow), inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 7%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .skills-library-intro,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .skills-library-intro,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .skills-library-footer,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .skills-library-footer,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .dashboard-copy p,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .dashboard-copy p,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .skill-session-copy small,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .skill-session-copy small,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .wheel-caption,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .wheel-caption,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .wheel-caption i,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .wheel-caption i,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .dashboard-bottomline,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .dashboard-bottomline {
+  color: var(--oddi-theme-muted) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .dashboard-copy h2 span,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .dashboard-copy h2 span {
+  color: transparent !important;
+  background: linear-gradient(100deg, color-mix(in srgb, var(--oddi-theme-accent) 76%, var(--oddi-theme-text)), var(--oddi-theme-accent) 65%, color-mix(in srgb, var(--oddi-theme-accent) 72%, white)) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .dashboard-bottomline,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .dashboard-bottomline {
+  border: 1px solid var(--oddi-theme-line) !important;
+  border-radius: 999px;
+  background: linear-gradient(105deg, color-mix(in srgb, var(--oddi-theme-accent-soft) 24%, var(--oddi-theme-surface)), var(--oddi-theme-surface)) !important;
+  box-shadow: inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 5%, transparent), 0 8px 22px rgba(0,0,0,.12);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .skill-session-symbol,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .skill-session-symbol,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .dashboard-stat-mark,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .dashboard-stat-mark {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: radial-gradient(circle at 32% 26%, color-mix(in srgb, var(--oddi-theme-accent) 24%, var(--oddi-theme-surface)), var(--oddi-theme-accent-soft)) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: inset 0 0 14px var(--oddi-theme-accent-soft), 0 0 13px color-mix(in srgb, var(--oddi-theme-glow) 58%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .phase-wheel-button .phase-segment-path,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .phase-wheel-button .phase-segment-path {
+  fill: color-mix(in srgb, var(--oddi-theme-raised) 76%, var(--oddi-theme-accent) 9%) !important;
+  stroke: color-mix(in srgb, var(--oddi-theme-line-strong) 88%, var(--oddi-theme-accent)) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .wheel-core,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .wheel-core {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 82%, var(--oddi-theme-text)) !important;
+  background: radial-gradient(circle at 50% 28%, color-mix(in srgb, var(--oddi-theme-accent-soft) 82%, var(--oddi-theme-raised)), var(--oddi-theme-surface) 70%) !important;
+  box-shadow: 0 0 0 5px var(--oddi-theme-accent-soft), 0 0 30px var(--oddi-theme-glow), inset 0 0 24px var(--oddi-theme-accent-soft) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .wheel-trace,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .wheel-trace,
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .skills-wheel-orbit,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .skills-wheel-orbit {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 72%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .wheel-ambient,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .wheel-ambient {
+  background: radial-gradient(circle, color-mix(in srgb, var(--oddi-theme-glow) 82%, transparent), transparent 72%) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app .skill-setup-card,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app .skill-setup-card {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-accent-soft) 25%, var(--oddi-theme-surface)), var(--oddi-theme-surface) 62%, var(--oddi-theme-bg)) !important;
+  box-shadow: 0 24px 80px rgba(0,0,0,.48), 0 0 38px var(--oddi-theme-glow), inset 0 1px color-mix(in srgb, var(--oddi-theme-text) 7%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app :is(input,textarea,select),
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app :is(input,textarea,select) {
+  border-color: var(--oddi-theme-line) !important;
+  background-color: color-mix(in srgb, var(--oddi-theme-raised) 75%, var(--oddi-theme-bg)) !important;
+  color: var(--oddi-theme-text) !important;
+  accent-color: var(--oddi-theme-accent);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app :is(input,textarea,select):focus,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app :is(input,textarea,select):focus {
+  border-color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft) !important;
+  outline: 0 !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-new-button > *,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-new-button > *,
+html[data-oddi-palette][data-oddi-appearance="dark"] .start-path-button > *,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .start-path-button > * {
+  color: var(--oddi-theme-bg) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] .skills-app :is(button,[role="button"]):disabled,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] .skills-app :is(button,[role="button"]):disabled {
+  border-color: var(--oddi-theme-line) !important;
+  background: var(--oddi-theme-raised) !important;
+  color: var(--oddi-theme-muted) !important;
+  box-shadow: none !important;
+  opacity: .58;
+}
+
 html[data-oddi-palette] body[data-oddi-palette] #oddiLibraryModal .oddi-library-head {
   border-color: var(--oddi-theme-line) !important;
   background: color-mix(in srgb, var(--oddi-theme-surface) 92%, transparent) !important;
@@ -871,6 +1231,140 @@ html[data-oddi-palette] body[data-oddi-palette] #oddi-shared-root .oddi-sw-progr
 html[data-oddi-palette] body[data-oddi-palette] #oddi-shared-root .oddi-sw-progress-track span,
 html[data-oddi-palette] body[data-oddi-palette] #oddi-shared-root .oddi-sw-task-check input:checked + .oddi-sw-task-checkmark { background: var(--oddi-theme-accent) !important; }
 html[data-oddi-palette] body[data-oddi-palette] #oddi-shared-root .oddi-sw-task-checkmark { border-color: var(--oddi-theme-line-strong) !important; }
+
+/* Shared workspace landing, navigation, and interactive states. */
+body[data-oddi-palette] #oddi-shared-root .oddi-sw-empty {
+  border: 1px solid var(--oddi-theme-line) !important;
+  border-radius: 18px;
+  background: var(--oddi-theme-surface) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 12px 34px var(--oddi-theme-glow);
+}
+body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-empty p,.oddi-sw-invite-copy,.oddi-sw-empty-inline,.oddi-sw-project-copy small,.oddi-sw-project-plan-link small) {
+  color: var(--oddi-theme-muted) !important;
+}
+body[data-oddi-palette] #oddi-shared-root .oddi-sw-section-label { color: var(--oddi-theme-accent) !important; }
+body[data-oddi-palette] #oddi-shared-root .oddi-sw-back-home svg { stroke: var(--oddi-theme-accent) !important; }
+body[data-oddi-palette] #oddi-shared-root .oddi-sw-primary {
+  border-color: var(--oddi-theme-accent) !important;
+  background: linear-gradient(135deg, var(--oddi-theme-accent), var(--oddi-theme-accent-strong)) !important;
+  color: var(--oddi-theme-bg) !important;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--oddi-theme-glow) 76%, transparent);
+}
+body[data-oddi-palette] #oddi-shared-root .oddi-sw-primary:is(:hover,:focus-visible) {
+  border-color: var(--oddi-theme-accent-strong) !important;
+  filter: brightness(1.08);
+  box-shadow: 0 0 0 3px var(--oddi-theme-accent-soft), 0 0 20px var(--oddi-theme-glow) !important;
+}
+body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-secondary,.oddi-sw-top .oddi-sw-back-home) {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: var(--oddi-theme-raised) !important;
+  color: var(--oddi-theme-text) !important;
+}
+body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-primary,.oddi-sw-secondary,.oddi-sw-danger,.oddi-sw-top button,.oddi-sw-icon-btn,.oddi-sw-project-card,.oddi-sw-project-plan-link):focus-visible {
+  outline: 2px solid var(--oddi-theme-accent) !important;
+  outline-offset: 2px;
+}
+body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-primary,.oddi-sw-secondary,.oddi-sw-danger):disabled {
+  cursor: not-allowed !important;
+  filter: grayscale(.28) !important;
+  opacity: .55 !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-project-card,.oddi-sw-project-plan-link):is(:hover,:focus-visible,.active),
+body[data-oddi-palette] #oddi-shared-root .oddi-sw-project-tree.is-expanded > .oddi-sw-project-card {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+/* Add restrained edge lighting and dotted detail only to the dark palettes. */
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-shell,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-shell {
+  position: relative;
+  isolation: isolate;
+  background: var(--oddi-theme-bg);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-shell::before,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-shell::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 520px 250px at 66% -12%, var(--oddi-theme-glow), transparent 76%),
+    radial-gradient(ellipse 300px 250px at 36% 84%, color-mix(in srgb, var(--oddi-theme-accent) 10%, transparent), transparent 76%),
+    radial-gradient(ellipse 340px 290px at 102% 86%, color-mix(in srgb, var(--oddi-theme-accent) 9%, transparent), transparent 77%),
+    radial-gradient(ellipse 270px 190px at 38% -12%, transparent 68%, color-mix(in srgb, var(--oddi-theme-accent) 42%, transparent) 68.5%, transparent 69.3%),
+    radial-gradient(ellipse 330px 260px at 102% 94%, transparent 72%, color-mix(in srgb, var(--oddi-theme-accent) 31%, transparent) 72.5%, transparent 73.2%);
+  opacity: .68;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-shell::after,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-shell::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, color-mix(in srgb, var(--oddi-theme-accent) 54%, transparent) .85px, transparent 1.1px);
+  background-size: 11px 11px;
+  mask-image: radial-gradient(ellipse 150px 108px at 92% 20%, #000 10%, transparent 100%);
+  opacity: .48;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-top,.oddi-sw-body),
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-top,.oddi-sw-body) {
+  position: relative;
+  z-index: 1;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-top,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-top {
+  border-bottom-color: color-mix(in srgb, var(--oddi-theme-line-strong) 70%, var(--oddi-theme-accent) 30%) !important;
+  background:
+    radial-gradient(ellipse 340px 110px at 68% 0%, color-mix(in srgb, var(--oddi-theme-accent) 10%, transparent), transparent 82%),
+    color-mix(in srgb, var(--oddi-theme-surface) 74%, transparent) !important;
+  backdrop-filter: blur(16px) saturate(1.12);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-list,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-list {
+  border-right-color: color-mix(in srgb, var(--oddi-theme-line-strong) 72%, var(--oddi-theme-accent) 28%) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 91%, transparent) !important;
+  backdrop-filter: blur(14px) saturate(1.08);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-empty,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-empty {
+  border-color: color-mix(in srgb, var(--oddi-theme-line-strong) 68%, var(--oddi-theme-accent) 32%) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 90%, transparent) !important;
+  box-shadow: 0 12px 34px rgba(0,0,0,.17), 0 0 26px color-mix(in srgb, var(--oddi-theme-glow) 55%, transparent), inset 0 1px rgba(255,255,255,.035) !important;
+  backdrop-filter: blur(18px) saturate(1.1);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-empty-icon,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-empty-icon {
+  border-color: color-mix(in srgb, var(--oddi-theme-accent) 58%, var(--oddi-theme-line)) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 86%, var(--oddi-theme-surface)) !important;
+  box-shadow: 0 0 22px color-mix(in srgb, var(--oddi-theme-glow) 82%, transparent), inset 0 0 14px color-mix(in srgb, var(--oddi-theme-glow) 48%, transparent);
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-workspace-card,.oddi-sw-invite-card),
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-workspace-card,.oddi-sw-invite-card) {
+  border-color: color-mix(in srgb, var(--oddi-theme-line) 78%, var(--oddi-theme-accent) 22%) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 92%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-workspace-card,.oddi-sw-invite-card,.oddi-sw-project-card,.oddi-sw-project-plan-link):is(:hover,:focus-visible,.active),
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root :is(.oddi-sw-workspace-card,.oddi-sw-invite-card,.oddi-sw-project-card,.oddi-sw-project-plan-link):is(:hover,:focus-visible,.active) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 84%, var(--oddi-theme-surface)) !important;
+  box-shadow: 0 0 16px color-mix(in srgb, var(--oddi-theme-glow) 70%, transparent) !important;
+}
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-chat,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-chat,
+html[data-oddi-palette][data-oddi-appearance="dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-project-view,
+html[data-oddi-palette][data-oddi-appearance="system-dark"] body[data-oddi-palette] #oddi-shared-root .oddi-sw-project-view {
+  background:
+    radial-gradient(ellipse 68% 45% at 4% 92%, color-mix(in srgb, var(--oddi-theme-glow) 54%, transparent), transparent 82%),
+    radial-gradient(ellipse 64% 50% at 98% 32%, color-mix(in srgb, var(--oddi-theme-glow) 60%, transparent), transparent 84%),
+    var(--oddi-theme-bg) !important;
+}
 
 /* Remove the last hard-coded green hover states in the studios. */
 html[data-oddi-palette] body[data-oddi-palette] .skills-app :is(.skills-back-home,.phase-panel-close,.setup-close,.skill-session-card,.room-phase-step):is(:hover,:focus-visible) {

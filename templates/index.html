@@ -2882,7 +2882,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261020-site-palette-1">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261022-permanent-sidebar-v1">
     <link rel="stylesheet" href="/static/oddi-profile.css?v=20261020-profile-inline-v3">
     <link rel="stylesheet" href="/static/oddi-help-feedback.css?v=20261019-3">
     <link rel="stylesheet" href="/static/oddi-shared-workspaces.css?v=20261022-hide-home-actions-v1">
@@ -4699,7 +4699,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
         <div class="welcome-message" id="welcomeContainer">
             <h2>
                 {% if logged_in %}
-                    <span class="welcome-line welcome-desktop-greeting">Ready to level up, {{ username }}?<span class="welcome-emoji" aria-hidden="true"> 🚀</span></span>
+                    <span class="welcome-line welcome-desktop-greeting">Ready to level up,<br><span class="welcome-name">{{ username }}</span>?<span class="welcome-emoji" aria-hidden="true"> 🚀</span></span>
                 {% else %}
                     <span class="welcome-line welcome-desktop-greeting">What would you like to</span>
                     <span class="welcome-line welcome-desktop-greeting">work on today?</span>
@@ -4713,7 +4713,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
             <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? Give me a clear explanation of an idea or subject."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5c3.1-.9 5.8-.4 8 1.2v13c-2.2-1.6-4.9-2.1-8-1.2z"/><path d="M20 5.5c-3.1-.9-5.8-.4-8 1.2v13c2.2-1.6 4.9-2.1 8-1.2z"/></svg></span><span class="oddi-suggestion-copy"><strong>Understand a topic</strong><small>Get a clear explanation of an idea or subject</small></span></button>
             <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="Help me draft, refine, or polish something I am writing."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Draft or refine writing</strong><small>Create, refine, or polish your writing</small></span></button>
             <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me turn a goal into a clear project plan with actionable steps."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><small>Turn a goal into clear, actionable steps</small></span></button>
-            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="Help me set today's priorities and focus on the most important work."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Set today's priorities</strong><small>Focus on the most important work</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="Help me plan for tomorrow and capture the next steps."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan for tomorrow</strong><small>Capture the next steps</small></span></button>
             <a href="/interview-studio" class="oddi-suggestion-card oddi-interview-launch" aria-label="Open Interview Studio"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></span><span class="oddi-suggestion-copy"><strong>Interview Studio</strong><small><span class="interview-desktop-copy">Practice any profession with role-specific questions and ODDI feedback</span><span class="interview-phone-copy">Practice any profession with role-specific questions</span></small></span><span class="oddi-interview-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span></a>
         </div>
         <section id="oddiRecentSection" class="oddi-recent-work" aria-label="Recent work" hidden>
@@ -5344,7 +5344,7 @@ body.dark-mode #oddiAccuracyNote,body.oddi-system-theme.dark-mode #oddiAccuracyN
             <label class="oddi-pref-row"><span><strong>Request logging</strong><small>Store request logs for debugging and performance analysis</small></span><input type="checkbox" data-privacy-pref="request_logging" aria-label="Request logging"></label>
             <label class="oddi-pref-row"><span><strong>Crash reporting</strong><small>Automatically send error reports to help fix bugs</small></span><input type="checkbox" data-privacy-pref="crash_reporting" aria-label="Crash reporting"></label>
           </div>
-          <div class="oddi-pref-card oddi-pref-block"><label for="oddiRetention"><strong>Conversation Data Retention</strong><small>How long ODDI keeps your conversation history</small></label><select id="oddiRetention"><option value="30">30 days</option><option value="90">90 days (recommended)</option><option value="365">1 year</option><option value="forever">Forever</option></select><small class="oddi-pref-note">Retention preference is saved; conversation expiry is not automated yet.</small></div>
+          <div class="oddi-pref-card oddi-pref-block"><label for="oddiRetention"><strong>Conversation Data Retention</strong><small>How long ODDI keeps your active and archived conversations</small></label><select id="oddiRetention"><option value="30">30 days</option><option value="90">90 days (recommended)</option><option value="365">1 year</option><option value="forever">Forever</option></select><small class="oddi-pref-note">Expired chats are deleted automatically. Browser-only chats are cleaned on your next visit. Bin items keep the separate 7-day rule; memories and Library files are managed separately.</small></div>
           <div class="oddi-pref-card oddi-pref-block"><strong>Export Your Data</strong><small>Download an archive of your conversations, memories, settings, and file records in JSON format.</small><button id="oddiExportData" type="button" class="oddi-pref-action">Request data export</button></div>
           <button id="oddiSavePrivacy" class="oddi-pref-primary" type="button">Save Privacy Settings</button>
           <small class="oddi-pref-note">This deployment has no analytics, model-training, or crash-reporting integration configured. Those consent choices are saved but cannot enable data sharing yet.</small>
@@ -8362,6 +8362,7 @@ async function queueConversationMutation(conversationId, operation) {
 // (message append, title edits, autosync and recovery). Serialize every cloud
 // mutation per ID so message appends cannot race a revision-checked full save.
 async function saveConversation(conversation) {
+    if (conversation?.__oddiIncognito) return false;
     if (!conversation?.id) return false;
     const localId = String(conversation.id);
     if (isLoggedIn && localId.startsWith("local-")) {
@@ -8373,6 +8374,7 @@ async function saveConversation(conversation) {
 }
 
 async function appendConversationMessage(conversation, message) {
+    if (conversation?.__oddiIncognito) return true;
     if (!conversation?.id || !message) return false;
     normalizeConversationObject(conversation);
     if (isLoggedIn && String(conversation.id).startsWith("local-")) {
@@ -12025,7 +12027,7 @@ async function editUserMessage(button) {
     };
 
     cancel?.addEventListener("click", () => {
-        textEl.textContent = originalText;
+        textEl.innerHTML = renderUserMessageWithSpecialist(originalText, result.message.specialist_agent);
         result.message.text = originalText;
         finishEditor();
     });
@@ -12062,7 +12064,7 @@ async function editUserMessage(button) {
             .reverse();
 
         result.message.text = nextText;
-        textEl.textContent = nextText;
+        textEl.innerHTML = renderUserMessageWithSpecialist(nextText, result.message.specialist_agent);
 
         const updateOk = await updateConversationMessageRemote(
             conversation,
@@ -12072,7 +12074,7 @@ async function editUserMessage(button) {
 
         if (!updateOk) {
             result.message.text = originalText;
-            textEl.textContent = originalText;
+            textEl.innerHTML = renderUserMessageWithSpecialist(originalText, result.message.specialist_agent);
             finishEditor();
             alert("Could not edit the message. Please try again.");
             return;
@@ -12111,7 +12113,8 @@ async function editUserMessage(button) {
         await sendMessage(null, false, {
             skipUserMessage: true,
             editedMessage: true,
-            messageOverride: nextText
+            messageOverride: nextText,
+            specialistAgentOverride: result.message.specialist_agent || ""
         });
     });
 
@@ -12600,6 +12603,26 @@ function oddiLibraryMessageAsksInventory(message) {
     return mentionsLibrary && asksForInventory;
 }
 
+function oddiLibraryMessageRequestsContentSearch(message, history) {
+    const current = String(message || "").toLowerCase();
+    const recent = (Array.isArray(history) ? history.slice(-8) : [])
+        .map(item => String(item?.text || "").toLowerCase());
+    const mentionsLibrary = /\blibrary\b|\bmy\s+(?:uploaded\s+)?(?:files|documents|uploads)\b/.test(current);
+    const contentAction = /\b(check|read|open|search|find|scan|review|compare|analy[sz]e|summari[sz]e|extract|inspect|look\s+through|go\s+through)\b/.test(current);
+    const contentTarget = /\b(company|companies|employer|employers|contents?|details?|skills?|experience|education|job|jobs|application|applications|summary|information)\b/.test(current);
+    const allFiles = /\b(?:all|every|each|entire|whole)\b.{0,60}\b(?:library\s+)?(?:files?|documents?|uploads?)\b|\blibrary\s+(?:files?|documents?|uploads?)\b.{0,40}\b(?:all|every|each)\b/.test(current);
+    const asksInventoryOnly = /\b(how many|count|list|show|which|available)\b/.test(current) && !contentAction && !contentTarget;
+    const previousContentRequest = recent.some(text =>
+        /\blibrary\b/.test(text) && /\b(check|read|open|search|find|scan|review|compare|analy[sz]e|summari[sz]e|extract|inspect|company|companies|employer|names?)\b/.test(text)
+    );
+
+    if (asksInventoryOnly) return false;
+    return (
+        (mentionsLibrary && (contentAction || (allFiles && contentTarget))) ||
+        (allFiles && previousContentRequest)
+    );
+}
+
 function oddiLibraryInventoryInstruction(files) {
     if (!Array.isArray(files)) {
         return "\n\n[ODDI LIBRARY INVENTORY UNAVAILABLE]\nThe Library file list could not be verified. Tell the user that the Library could not be checked right now; do not claim it is empty. Ask them to retry in a moment.";
@@ -12837,6 +12860,13 @@ async function oddiPrepareLibraryRecall(
             instruction: "",
             sources: []
         };
+    }
+
+    // Broad Library-content requests are retrieved by the authenticated
+    // server, which can search every stored file. Do not turn them into a
+    // filename-only inventory or attach just one guessed file here.
+    if (oddiLibraryMessageRequestsContentSearch(message, history)) {
+        return {file: null, upload: null, instruction: "", sources: []};
     }
 
     if (oddiLibraryMessageAsksInventory(message)) {
@@ -13103,6 +13133,38 @@ function getChatFailureMessage(error) {
     return "ODDI-AI could not complete this reply. Please retry.";
 }
 
+const ODDI_SPECIALIST_AGENT_NAMES = Object.freeze({
+    research: "Research Agent",
+    search: "Search Agent",
+    coding: "Coding Agent",
+    document_search: "Document Search Agent"
+});
+
+function renderSpecialistAgentTag(agentId) {
+    const name = ODDI_SPECIALIST_AGENT_NAMES[String(agentId || "").trim().toLowerCase()];
+    return name ? `<span class="oddi-user-agent-tag">@${name}</span>` : "";
+}
+
+function renderUserMessageWithSpecialist(text, agentId) {
+    const normalizedAgentId = String(agentId || "").trim().toLowerCase();
+    const agentName = ODDI_SPECIALIST_AGENT_NAMES[normalizedAgentId];
+    const tag = renderSpecialistAgentTag(normalizedAgentId);
+    let messageText = String(text ?? "");
+    if (agentName) {
+        const prefix = `@${agentName}`;
+        if (messageText.slice(0, prefix.length).toLowerCase() === prefix.toLowerCase()) {
+            const remainder = messageText.slice(prefix.length);
+            if (!remainder || /^\s/.test(remainder)) messageText = remainder.replace(/^\s+/, "");
+        }
+    }
+    const renderedText = renderUserMessageHtml(messageText);
+    if (!tag) return renderedText;
+    if (renderedText.startsWith("<p>")) {
+        return renderedText.replace(/^<p>/, `<p>${tag}&nbsp;`);
+    }
+    return `${tag}&nbsp;${renderedText}`;
+}
+
 async function sendMessage(
     displayMessage = null,
     voiceReply = false,
@@ -13121,6 +13183,12 @@ async function sendMessage(
     window.__oddiFreshChatLockUntil = 0;
 
     const skipUserMessage = !!options.skipUserMessage;
+    const specialistAgentOverride = options.specialistAgentOverride;
+    const selectedSpecialistAgent = String(
+        specialistAgentOverride !== undefined
+            ? specialistAgentOverride
+            : (window.__oddiSelectedSpecialistAgent || "")
+    ).trim();
 
     const rawMessage =
         options.messageOverride !== undefined
@@ -13183,7 +13251,7 @@ async function sendMessage(
         }
     }
 
-    if (isLoggedIn && Array.isArray(selectedFiles) && selectedFiles.length) {
+    if (!window.__oddiIncognitoMode && isLoggedIn && Array.isArray(selectedFiles) && selectedFiles.length) {
         try {
             const libraryResponse = await fetch("/api/files", {
                 credentials: "same-origin",
@@ -13216,7 +13284,19 @@ async function sendMessage(
 
         const conversationTitle = buildConversationTitle(userDisplayMessage);
 
-        if (isLoggedIn) {
+        if (window.__oddiIncognitoMode) {
+
+            conversations.push({
+                id: null,
+                title: "Incognito chat",
+                messages: [],
+                revision: 0,
+                __oddiIncognito: true
+            });
+            currentConversation = conversations.length - 1;
+            window.__oddiActiveConversationId = null;
+
+        } else if (isLoggedIn) {
 
             const serverConversation =
                 await createServerConversation(
@@ -13308,6 +13388,7 @@ async function sendMessage(
     }
 
     const targetConversation = conversations[currentConversation];
+    const isIncognitoConversation = !!targetConversation?.__oddiIncognito;
     const targetConversationId = targetConversation?.id ?? null;
     persistLastOpenConversation(targetConversation);
     const assistantMessageId = makeMessageId();
@@ -13322,6 +13403,9 @@ async function sendMessage(
     if (!skipUserMessage) window.__oddiClearDraft?.();
     selectedFiles = [];
     fileInput.value = "";
+    if (!skipUserMessage && selectedSpecialistAgent) {
+        window.dispatchEvent(new CustomEvent("oddi:agent-consumed", { detail: { id: selectedSpecialistAgent } }));
+    }
     const composerShell = document.getElementById("oddiComposerShell");
     composerShell?.classList.remove("has-attachments", "has-message-overflow");
     window.dispatchEvent(new Event("oddi:attachments-cleared"));
@@ -13353,6 +13437,10 @@ async function sendMessage(
 
         if (outgoingFiles.length) {
             for (const file of outgoingFiles) {
+                if (isIncognitoConversation) {
+                    fileHTML += buildFileHTML(file.name);
+                    continue;
+                }
                 try {
                     const fileId = await storeOddiFile(file);
                     fileRefs.push({ id: fileId, name: file.name, type: file.type || "" });
@@ -13372,7 +13460,7 @@ async function sendMessage(
                 ${fileHTML ? `<div class="user-attachments">${fileHTML}</div>` : ""}
 
                 <div class="user-bubble-main">
-                    <div class="user-text">${renderUserMessageHtml(userDisplayMessage)}</div>
+                    <div class="user-text">${renderUserMessageWithSpecialist(userDisplayMessage, selectedSpecialistAgent)}</div>
                 </div>
 
                 <div class="user-actions-row">
@@ -13421,6 +13509,7 @@ async function sendMessage(
                 outgoingFiles.map(
                     file => file.name
                 ),
+            specialist_agent: selectedSpecialistAgent,
             fileRefs,
             pinned: false
         };
@@ -13430,7 +13519,9 @@ async function sendMessage(
 
         touchConversation(targetConversation);
 
-        if (targetConversation.__newConversationSave) {
+        if (isIncognitoConversation) {
+            // Keep this conversation only in the current page's memory.
+        } else if (targetConversation.__newConversationSave) {
             // New conversations use the same full-conversation persistence
             // path as the established conversation saver, without delaying AI.
             void saveConversation(targetConversation).catch(error => console.warn("Could not save the outgoing message locally yet:", error));
@@ -13450,7 +13541,7 @@ async function sendMessage(
 
         // Handle explicit "remember ..." requests immediately. The server
         // separately checks normal chat for durable memories after replying.
-        if (!browserLocalChatStorage) {
+        if (!browserLocalChatStorage && !isIncognitoConversation) {
             void saveExplicitMemoryFromUserMessage(message).catch(error => console.warn("Could not save the explicit memory request:", error));
         }
     } else {
@@ -13572,10 +13663,12 @@ async function sendMessage(
 
     const responseStyle = String(window.__oddiResponseStyle || "").trim();
     if (responseStyle) formData.append("response_style", responseStyle);
+    if (selectedSpecialistAgent) formData.append("specialist_agent", selectedSpecialistAgent);
+    formData.append("incognito", isIncognitoConversation ? "true" : "false");
 
     const memorySettings = window.__oddiMemorySettings || {};
-    formData.append("memory_enabled", browserLocalChatStorage || memorySettings.enabled === false ? "false" : "true");
-    formData.append("memory_auto_extract", browserLocalChatStorage || memorySettings.auto_extract === false ? "false" : "true");
+    formData.append("memory_enabled", isIncognitoConversation || browserLocalChatStorage || memorySettings.enabled === false ? "false" : "true");
+    formData.append("memory_auto_extract", isIncognitoConversation || browserLocalChatStorage || memorySettings.auto_extract === false ? "false" : "true");
 
     formData.append(
         "history",
@@ -13689,6 +13782,7 @@ async function sendMessage(
             latency_ms: Number(response.headers.get("X-Oddi-Latency-Ms") || 0),
             token_estimate: Number(response.headers.get("X-Oddi-Token-Estimate") || Math.ceil(reply.length / 4)),
             provider: response.headers.get("X-Oddi-Provider") || "auto",
+            specialist_agent: selectedSpecialistAgent,
             conversation_persisted: response.headers.get("X-Oddi-Conversation-Persisted") === "1",
             conversation_revision: Number(response.headers.get("X-Oddi-Conversation-Revision") || 0)
         };
@@ -14842,6 +14936,8 @@ async function checkpointAssistantResponse(conversation, userMessage, assistantM
     const titleChanged = updateConversationTitleFromReply(conversation, userMessage, documentMetadata);
     touchConversation(conversation);
 
+    if (conversation.__oddiIncognito) return false;
+
     const conversationId = conversation.id === null || conversation.id === undefined
         ? ""
         : String(conversation.id);
@@ -15927,15 +16023,16 @@ function closeSidebarForModal() {
 }
 
 function renderHistory() {
-    window.oddiConversations = conversations;
+    const visibleConversations = conversations.filter(conversation => !conversation?.__oddiIncognito);
+    window.oddiConversations = visibleConversations;
     const currentId = currentConversation !== null && conversations[currentConversation] ? conversations[currentConversation].id : null;
     const pinnedIds = getPinnedChatIds();
     const query = chatSearchQuery.trim().toLowerCase();
     /* Archived conversations never appear in the normal sidebar. */
 
     const sidebarConversations = typeof window.__oddiIsProjectConversation === "function"
-        ? conversations.filter(conversation => !window.__oddiIsProjectConversation(conversation.id))
-        : conversations;
+        ? visibleConversations.filter(conversation => !window.__oddiIsProjectConversation(conversation.id))
+        : visibleConversations;
     const orderedConversations = [...sidebarConversations].sort((a, b) => {
         const ap = pinnedIds.includes(getConversationKey(a)) ? 1 : 0;
         const bp = pinnedIds.includes(getConversationKey(b)) ? 1 : 0;
@@ -16221,7 +16318,7 @@ async function openConversation(index) {
                         ${fileHTML ? `<div class="user-attachments">${fileHTML}</div>` : ""}
 
                         <div class="user-bubble-main">
-                            <div class="user-text">${renderUserMessageHtml(msg.text)}</div>
+                            <div class="user-text">${renderUserMessageWithSpecialist(msg.text, msg.specialist_agent)}</div>
                         </div>
 
                         <div class="user-actions-row">
@@ -24042,7 +24139,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261021-chat-actions-menu-v1"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261022-hide-sidebar-settings-v1"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -31460,8 +31557,10 @@ html[data-oddi-font-size="small"] .user-message,html[data-oddi-font-size="small"
   function updateAvatar(data){const img=$('#oddiProfileAvatar'),initial=$('#oddiAvatarInitial');if(!img||!initial)return;if(data){img.src=data;img.hidden=false;initial.hidden=true}else{img.removeAttribute('src');img.hidden=true;initial.hidden=false}}
   function syncAppLock(){const toggle=$('#toggleAppLockOptBtn'),proxy=$('#oddiAccountLockProxy');if(toggle&&proxy){proxy.checked=toggle.getAttribute('aria-pressed')==='true';proxy.disabled=false}}
   function fill(){document.querySelectorAll('[data-privacy-pref]').forEach(el=>el.checked=!!state.privacy[el.dataset.privacyPref]);$('#oddiRetention').value=String(state.privacy.retention_days||'90');document.querySelectorAll('[data-chat-pref]').forEach(el=>el.checked=state.chat_preferences[el.dataset.chatPref]!==false);const range=$('#oddiContextWindow');range.value=String(state.chat_preferences.context_window||20);$('#oddiContextValue').value=`${range.value} msgs`;$('#oddiContextValue').textContent=`${range.value} msgs`;$('#oddiProfileName').value=identity?.name||'';$('#oddiProfileEmail').value=identity?.email||'';$('#oddiProfileBio').value=state.profile.bio||'';updateAvatar(state.profile.avatar||'');const name=identity?.name||'';$('#oddiAvatarInitial').textContent=name.trim().charAt(0).toUpperCase()||'?';$('#oddiMemoryEnabled').checked=state.memory.enabled!==false;$('#oddiMemoryAutoExtract').checked=state.memory.auto_extract!==false;window.__oddiMemorySettings=state.memory;window.__oddiSetMemoryEnabled?.(state.memory.enabled);syncAppLock();}
+  async function applyBrowserConversationRetention(value){if(String(value)==='forever')return;const days=['30','90','365'].includes(String(value))?Number(value):90;const cutoff=Date.now()-days*86400000;const browserOnly=document.body?.dataset?.browserLocalChats==='true';const chats=browserOnly?await getOddiBrowserChats():[];const copies=typeof getOddiLocalChatBackups==='function'?getOddiLocalChatBackups():[];const all=new Map();[...chats,...copies].forEach(chat=>{if(chat?.id!==undefined&&chat?.id!==null)all.set(String(chat.id),chat)});let removed=0;for(const chat of all.values()){if(chat.deleted)continue;const activity=typeof getConversationDate==='function'?getConversationDate(chat):Date.parse(chat.updated_at||chat.created_at||'');if(!Number.isFinite(activity)||activity<=0||activity>cutoff)continue;if(browserOnly)await deleteOddiBrowserChat(chat.id);if(typeof removeAllOddiConversationBackups==='function')removeAllOddiConversationBackups(chat.id);try{const key=typeof getConversationActivityKey==='function'?getConversationActivityKey(chat):'';if(key)localStorage.removeItem(key)}catch(_){}removed++;}if(removed)window.dispatchEvent(new CustomEvent('oddi:conversations-changed'));}
   async function boot(){
     try{const auth=await getJSON('/api/auth/me');identity=auth.user||null;const data=await getJSON('/api/settings');state={...defaults,...(data.settings||{})};state.privacy={...defaults.privacy,...state.privacy};state.chat_preferences={...defaults.chat_preferences,...state.chat_preferences};state.profile={...defaults.profile,...state.profile};state.memory={...defaults.memory,...state.memory};if(!data.settings?.memory){state.memory.enabled=localStorage.getItem('oddi_memory_enabled')!=='false';state.memory.auto_extract=state.memory.enabled;}}catch(_){identity=null;try{const saved=JSON.parse(localStorage.getItem('oddi_settings_fallback')||'{}');state={...defaults,...saved};state.privacy={...defaults.privacy,...state.privacy};state.chat_preferences={...defaults.chat_preferences,...state.chat_preferences};state.profile={...defaults.profile,...state.profile};state.memory={...defaults.memory,...state.memory};if(!saved.memory){state.memory.enabled=localStorage.getItem('oddi_memory_enabled')!=='false';state.memory.auto_extract=state.memory.enabled;}}catch(__){}}
+    try{await applyBrowserConversationRetention(state.privacy.retention_days)}catch(error){console.warn('Could not apply browser chat retention:',error)}
     window.__oddiChatPreferences=state.chat_preferences;fill();
     // Reuse the existing local PIN controller and its actual toggle, PIN form, and lock overlay.
     const lockCard=$('#accountSettingsModal .app-lock-settings-card');if(lockCard&&$('#oddiAppLockMount')&&!$('#oddiAppLockMount').contains(lockCard))$('#oddiAppLockMount').append(lockCard);
@@ -31470,7 +31569,7 @@ html[data-oddi-font-size="small"] .user-message,html[data-oddi-font-size="small"
   }
   document.addEventListener('DOMContentLoaded',boot,{once:true});
   $('#oddiContextWindow')?.addEventListener('input',e=>{const out=$('#oddiContextValue');out.value=`${e.target.value} msgs`;out.textContent=`${e.target.value} msgs`;});
-  $('#oddiSavePrivacy')?.addEventListener('click',async()=>{try{document.querySelectorAll('[data-privacy-pref]').forEach(el=>state.privacy[el.dataset.privacyPref]=el.checked);state.privacy.retention_days=$('#oddiRetention').value;await saveState();try{localStorage.setItem('oddi_settings_fallback',JSON.stringify(state))}catch(_){}show('Privacy preferences saved. Analytics, training and crash reporting remain inactive until those services are configured.');}catch(e){show(e.message,true)}});
+  $('#oddiSavePrivacy')?.addEventListener('click',async()=>{try{document.querySelectorAll('[data-privacy-pref]').forEach(el=>state.privacy[el.dataset.privacyPref]=el.checked);state.privacy.retention_days=$('#oddiRetention').value;await saveState();try{localStorage.setItem('oddi_settings_fallback',JSON.stringify(state))}catch(_){}await applyBrowserConversationRetention(state.privacy.retention_days);show('Privacy preferences saved. Expired chats will be removed automatically; browser-only chats are cleaned on your next visit.');}catch(e){show(e.message,true)}});
   $('#oddiSaveChatPrefs')?.addEventListener('click',async()=>{try{document.querySelectorAll('[data-chat-pref]').forEach(el=>state.chat_preferences[el.dataset.chatPref]=el.checked);state.chat_preferences.context_window=Number($('#oddiContextWindow').value);await saveState();try{localStorage.setItem('oddi_settings_fallback',JSON.stringify(state))}catch(_){}show('Chat preferences saved');}catch(e){show(e.message,true)}});
   $('#oddiSaveProfile')?.addEventListener('click',async()=>{const status=$('#oddiProfileStatus');try{if(!identity)throw new Error('Sign in to edit your account profile.');const r=await fetch('/api/account/profile',{method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:$('#oddiProfileName').value,bio:$('#oddiProfileBio').value,avatar:state.profile.avatar||''})});const data=await r.json();if(!r.ok)throw new Error(data.error||'Profile could not be saved');identity=data.user;state.profile=data.profile||state.profile;status.className='is-success';status.textContent='Profile saved';$('#oddiProfileName').value=identity.name;const name=identity.name||'';$('#oddiAvatarInitial').textContent=name.trim().charAt(0).toUpperCase()||'?';show('Profile saved.');}catch(e){status.className='is-error';status.textContent=e.message;show(e.message,true)}});
   const choose=()=>$('#oddiAvatarFile')?.click();$('#oddiChooseAvatar')?.addEventListener('click',choose);$('#oddiAvatarButton')?.addEventListener('click',choose);
@@ -37056,7 +37155,7 @@ body[data-theme="dark"] #chatbox.chatbox > .user-message > .user-bubble-main {
 }
 </style>
 <link rel="stylesheet" href="/static/oddi-document-workspace.css?v=docked-writing-editor-20261019">
-<script src="/static/oddi-document-workspace.js?v=docked-writing-editor-20261019"></script>
+<script src="/static/oddi-document-workspace.js?v=swarm-writing-editor-20261022"></script>
 <link rel="stylesheet" href="/static/oddi-mobile-experience.css">
 <script src="/static/oddi-mobile-experience.js"></script>
 <style id="oddi-generation-composer-normal-size-v1">
@@ -40908,7 +41007,7 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
 }
 </style>
 
-<link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261021-cyber-blue-premium-v14">
+<link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261022-project-and-interview-palettes-v1">
 <script src="/static/oddi-theme-palette.js?v=20261020-palette-v1" defer></script>
 <script src="/static/oddi-account-profile.js?v=20261020-profile-modal-2" defer></script>
 
@@ -41749,6 +41848,140 @@ html[data-oddi-palette="cyber-green"][data-oddi-appearance] body[data-oddi-palet
     font-size: 16px !important;
     line-height: 1.58 !important;
   }
+}
+
+/* Palette-matched edge lighting for dark conversation canvases. */
+html[data-oddi-palette="cyber-green"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-green"] #chatbox.chatbox:not(:has(> #welcomeContainer)),
+html[data-oddi-palette="cyber-blue"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-blue"] #chatbox.chatbox:not(:has(> #welcomeContainer)),
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) {
+  background-color: var(--oddi-theme-bg) !important;
+  background-image:
+    radial-gradient(ellipse 58% 70% at 0% 10%, color-mix(in srgb, var(--oddi-theme-accent) 8%, transparent), transparent 74%),
+    radial-gradient(ellipse 44% 64% at 100% 94%, color-mix(in srgb, var(--oddi-theme-accent) 7%, transparent), transparent 76%),
+    radial-gradient(circle at 0% 0%, transparent 0 150px, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent) 151px 152px, transparent 154px),
+    radial-gradient(circle at 100% 100%, transparent 0 198px, color-mix(in srgb, var(--oddi-theme-accent) 15%, transparent) 199px 200px, transparent 202px),
+    linear-gradient(148deg, color-mix(in srgb, var(--oddi-theme-bg) 97%, var(--oddi-theme-accent) 3%), var(--oddi-theme-bg)) !important;
+}
+
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) {
+  --oddi-theme-glow: rgba(255,255,255,.14) !important;
+  background-image:
+    radial-gradient(ellipse 58% 70% at 0% 10%, rgba(255,255,255,.12), transparent 74%),
+    radial-gradient(ellipse 44% 64% at 100% 94%, rgba(255,255,255,.10), transparent 76%),
+    radial-gradient(circle at 0% 0%, transparent 0 150px, rgba(255,255,255,.30) 151px 152px, transparent 154px),
+    radial-gradient(circle at 100% 100%, transparent 0 198px, rgba(255,255,255,.25) 199px 200px, transparent 202px),
+    linear-gradient(148deg, #080808, #000) !important;
+}
+
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #oddiComposerShell :is(.attach-btn,.dictation-btn,.voice-btn,#attach-btn,#dictation-btn,#voice-btn) {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: var(--oddi-theme-raised) !important;
+  color: var(--oddi-theme-text) !important;
+}
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #oddiComposerShell :is(#voice-btn,#send-btn,.send-btn):not(:disabled) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent) !important;
+  color: var(--oddi-theme-bg) !important;
+  box-shadow: 0 4px 14px var(--oddi-theme-glow) !important;
+}
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #oddiComposerShell :is(.attach-btn,.dictation-btn,.voice-btn,#attach-btn,#dictation-btn,#voice-btn,#send-btn,.send-btn):is(:hover,:focus-visible) {
+  border-color: var(--oddi-theme-accent-strong) !important;
+  box-shadow: 0 0 0 2px var(--oddi-theme-accent-soft), 0 4px 14px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer))::before {
+  background: radial-gradient(circle, rgba(255,255,255,.5) 1px, transparent 1.5px) 0 0 / 13px 13px !important;
+  opacity: .42 !important;
+}
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer))::after {
+  background: radial-gradient(circle, rgba(255,255,255,.48) 1px, transparent 1.5px) 0 0 / 13px 13px !important;
+  opacity: .34 !important;
+}
+
+html[data-oddi-palette="cyber-green"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-green"] #chatbox.chatbox:not(:has(> #welcomeContainer))::after,
+html[data-oddi-palette="cyber-blue"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-blue"] #chatbox.chatbox:not(:has(> #welcomeContainer))::after,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer))::after {
+  -webkit-clip-path: none !important;
+  clip-path: none !important;
+  -webkit-mask-image:
+    radial-gradient(ellipse 13% 20% at 98% 21%, #000 0 58%, transparent 100%),
+    radial-gradient(ellipse 15% 25% at 95% 86%, #000 0 60%, transparent 100%) !important;
+  mask-image:
+    radial-gradient(ellipse 13% 20% at 98% 21%, #000 0 58%, transparent 100%),
+    radial-gradient(ellipse 15% 25% at 95% 86%, #000 0 60%, transparent 100%) !important;
+  opacity: .56 !important;
+}
+
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message::before,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message::after,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .bot-header,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .ai-content,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message .bot-actions {
+  background: transparent !important;
+  background-image: none !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  color: var(--oddi-theme-text) !important;
+}
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message::before,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer)) > .bot-message::after {
+  display: none !important;
+  content: none !important;
+}
+
+html[data-oddi-palette="cyber-green"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-green"] #chatbox.chatbox:not(:has(> #welcomeContainer))::before,
+html[data-oddi-palette="cyber-blue"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-blue"] #chatbox.chatbox:not(:has(> #welcomeContainer))::before,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer))::before {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background: radial-gradient(circle, color-mix(in srgb, var(--oddi-theme-accent) 38%, transparent) 1px, transparent 1.5px) 0 0 / 13px 13px !important;
+  clip-path: ellipse(180px 170px at 0% 0%) !important;
+  opacity: .32 !important;
+  filter: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+html[data-oddi-palette="cyber-green"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-green"] #chatbox.chatbox:not(:has(> #welcomeContainer))::after,
+html[data-oddi-palette="cyber-blue"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-blue"] #chatbox.chatbox:not(:has(> #welcomeContainer))::after,
+html[data-oddi-palette="mono"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="mono"] #chatbox.chatbox:not(:has(> #welcomeContainer))::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 0 !important;
+  pointer-events: none !important;
+  background: radial-gradient(circle, color-mix(in srgb, var(--oddi-theme-accent) 38%, transparent) 1px, transparent 1.5px) 0 0 / 13px 13px !important;
+  clip-path: polygon(100% 0, 100% 100%, 84% 100%, 88% 82%, 91% 66%, 92% 34%, 88% 18%, 84% 0) !important;
+  opacity: .25 !important;
+  filter: none !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+html[data-oddi-palette] body[data-oddi-palette] :is(#oddiChatLatestButton,#oddiInChatFindButton) {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 88%, transparent) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 4px 16px var(--oddi-theme-glow) !important;
+}
+html[data-oddi-palette] body[data-oddi-palette] :is(#oddiChatLatestButton,#oddiInChatFindButton):is(:hover,:focus-visible) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-accent) !important;
+  box-shadow: 0 0 0 2px var(--oddi-theme-accent-soft), 0 6px 18px var(--oddi-theme-glow) !important;
+}
+html[data-oddi-palette] body[data-oddi-palette] :is(#oddiChatLatestButton,#oddiInChatFindButton):disabled {
+  opacity: .5 !important;
+  box-shadow: none !important;
+}
+html[data-oddi-palette] body[data-oddi-palette] #oddiAccuracyNote {
+  color: var(--oddi-theme-dim) !important;
 }
 </style>
 <style id="oddi-cyber-blue-premium-v1">
@@ -42892,5 +43125,24 @@ html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-pag
   else init();
 })();
 </script>
+<script id="oddi-sidebar-return-action-v1">
+(function(){
+  const key = "oddi_sidebar_return_action_v1";
+  window.addEventListener("load", function(){
+    let action = "";
+    try { action = sessionStorage.getItem(key) || ""; sessionStorage.removeItem(key); } catch (_) {}
+    if (!action) return;
+    window.setTimeout(function(){
+      if (action === "library") window.dispatchEvent(new CustomEvent("oddi:open-library"));
+      else if (action === "shared") window.dispatchEvent(new CustomEvent("oddi:shared-workspaces-open"));
+      else if (action === "settings") window.__oddiOpenSettings?.("appearance");
+      else if (action === "profile") document.dispatchEvent(new CustomEvent("oddi:profile-open"));
+    }, 180);
+  }, { once: true });
+})();
+</script>
+<link rel="stylesheet" href="/static/oddi-home-neon.css?v=20261024-top-right-clear-bottom-right-dots-v21">
+<link rel="stylesheet" href="/static/oddi-chat-tools.css?v=20261024-agent-typing-inline-group-v10">
+<script src="/static/oddi-chat-tools.js?v=20261024-agent-typing-inline-group-v9"></script>
 </body>
 </html>
