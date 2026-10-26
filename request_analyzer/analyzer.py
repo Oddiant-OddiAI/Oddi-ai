@@ -148,7 +148,10 @@ class RequestAnalyzer:
             "applied",
         )):
 
-            result["domain"] = "applications"
+            # Keep job-related requests classified as job flows even when
+            # the message mentions tracking applications.
+            if result["domain"] == "general":
+                result["domain"] = "applications"
 
             if any(word in text for word in (
                 "track",

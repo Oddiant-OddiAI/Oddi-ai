@@ -16,6 +16,7 @@ import time
 import uuid
 from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from urllib.parse import quote, urlsplit
 
 from fastapi.encoders import jsonable_encoder
@@ -85,6 +86,7 @@ from app.database import (
     delete_user_record,
     get_user_settings,
     get_user_by_id,
+    list_account_user_ids,
     save_user_settings,
     store_password_reset_token,
     get_password_reset_email,
@@ -421,6 +423,9 @@ app.include_router(shared_workspaces_router)
 _SUMMARY_BACKFILL_LOCK = threading.Lock()
 _SUMMARY_BACKFILL_USERS = set()
 _WORKSPACE_MUTATION_LOCK = threading.RLock()
+_USER_SETTINGS_CACHE_LOCK = threading.RLock()
+_USER_SETTINGS_CACHE = {}
+_USER_SETTINGS_CACHE_TTL_SECONDS = 30
 _LAPTOP_DRIVE_SYNC_STATE_LOCK = threading.RLock()
 app.state.laptop_drive_sync = {
     "state": "idle",
@@ -433,6 +438,22 @@ app.state.laptop_drive_sync = {
 
 def _drive_sync_timestamp():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _cache_user_settings(user_id, settings):
+    with _USER_SETTINGS_CACHE_LOCK:
+        _USER_SETTINGS_CACHE[str(user_id)] = (time.monotonic(), copy.deepcopy(settings or {}))
+
+
+def _cached_user_settings(user_id):
+    key = str(user_id)
+    with _USER_SETTINGS_CACHE_LOCK:
+        cached = _USER_SETTINGS_CACHE.get(key)
+        if cached and time.monotonic() - cached[0] < _USER_SETTINGS_CACHE_TTL_SECONDS:
+            return copy.deepcopy(cached[1])
+    settings = get_user_settings(user_id)
+    _cache_user_settings(user_id, settings)
+    return settings
 
 
 def _run_laptop_drive_sync():
@@ -638,6 +659,9 @@ async def start_bin_retention_cleanup():
     if ODDI_RENDER_LAPTOP_REDIRECT:
         return
 
+    if not ODDI_BROWSER_LOCAL_CHATS:
+        app.state.scheduled_tasks_task = asyncio.create_task(_scheduled_task_worker())
+
     async def cleanup_expired_bin_chats():
         # Do not compete with the first account/history requests when Render
         # starts. Drive-backed cleanup is user-scoped when the Bin is opened;
@@ -739,7 +763,7 @@ async def start_bin_retention_cleanup():
 
 @app.on_event("shutdown")
 async def stop_bin_retention_cleanup():
-    for task_name in ("bin_retention_task", "conversation_retention_task", "drive_sync_task", "memory_extraction_task", "shared_workspace_task"):
+    for task_name in ("bin_retention_task", "conversation_retention_task", "drive_sync_task", "memory_extraction_task", "shared_workspace_task", "scheduled_tasks_task"):
         task = getattr(app.state, task_name, None)
         if task:
             task.cancel()
@@ -2837,6 +2861,16 @@ async def api_update_settings(request: Request):
             set_memory_user_disabled(user_id, True)
         if not requested_memory["enabled"] or not requested_memory["auto_extract"]:
             set_memory_user_opt_out(user_id, True)
+    personalization_update = incoming.get("personalization")
+    if isinstance(personalization_update, dict):
+        instruction_value = personalization_update.get("instructions")
+        if instruction_value is not None and not isinstance(instruction_value, str):
+            return JSONResponse({"error": "Personal Instructions must be text."}, status_code=400)
+        if isinstance(instruction_value, str) and len(instruction_value) > 3000:
+            return JSONResponse({"error": "Personal Instructions must be 3,000 characters or fewer."}, status_code=400)
+        enabled_value = personalization_update.get("enabled")
+        if enabled_value is not None and not isinstance(enabled_value, bool):
+            return JSONResponse({"error": "Personal Instructions enabled must be true or false."}, status_code=400)
 
     def update_settings():
         # Turning extraction off waits for any already-running provider request,
@@ -2852,7 +2886,7 @@ async def api_update_settings(request: Request):
                 # Only settings used by the UI are accepted. Never store arbitrary payloads.
                 if isinstance(current.get("chat_preferences"), dict):
                     current["chat_preferences"].pop("default_provider", None)
-                allowed = {"privacy", "chat_preferences", "profile", "memory"}
+                allowed = {"privacy", "chat_preferences", "profile", "memory", "personalization"}
                 for key in allowed:
                     value = incoming.get(key)
                     if isinstance(value, dict):
@@ -2868,6 +2902,13 @@ async def api_update_settings(request: Request):
                             value = {name: item for name, item in value.items() if name != "default_provider"}
                         elif key == "memory":
                             value = normalize_memory_settings(value)
+                        elif key == "personalization":
+                            existing = current.get("personalization") if isinstance(current.get("personalization"), dict) else {}
+                            if isinstance(value.get("instructions"), str):
+                                existing["instructions"] = value["instructions"].strip()[:3000]
+                            if isinstance(value.get("enabled"), bool):
+                                existing["enabled"] = value["enabled"]
+                            value = {"instructions": str(existing.get("instructions") or "")[:3000], "enabled": existing.get("enabled", True) is not False}
                         current[key] = value
                 save_user_settings(user_id, current)
                 if requested_memory:
@@ -2881,12 +2922,433 @@ async def api_update_settings(request: Request):
                 return current
 
     current = await run_in_threadpool(update_settings)
+    _cache_user_settings(user_id, current)
     if isinstance(privacy_update, dict) and "retention_days" in privacy_update:
         try:
             await run_in_threadpool(purge_expired_conversation_history, user_id=user_id)
         except Exception:
             logger.exception("Could not immediately apply the saved conversation retention preference")
     return JSONResponse({"success": True, "settings": current})
+
+
+_SCHEDULED_TASK_LIMIT = 25
+_SCHEDULED_TASK_PROMPT_LIMIT = 3000
+_SCHEDULED_TASK_TITLE_LIMIT = 80
+
+
+def _schedule_parse_datetime(value):
+    try:
+        parsed = datetime.fromisoformat(str(value or "").strip().replace("Z", "+00:00"))
+    except (TypeError, ValueError):
+        raise ValueError("Choose a valid date and time.")
+    if parsed.tzinfo is None:
+        raise ValueError("The scheduled date and time must include a timezone.")
+    return parsed.astimezone(timezone.utc)
+
+
+def _schedule_utc_iso(value):
+    return value.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _schedule_local_occurrence(day, clock, zone):
+    """Resolve a local wall-clock time, moving forward across DST gaps."""
+    candidate = datetime.combine(day, clock).replace(tzinfo=zone)
+    for _ in range(181):
+        local_roundtrip = candidate.astimezone(timezone.utc).astimezone(zone)
+        if local_roundtrip.replace(tzinfo=None) == candidate.replace(tzinfo=None):
+            return candidate.astimezone(timezone.utc)
+        candidate += timedelta(minutes=1)
+    raise ValueError("That local time could not be resolved in this timezone.")
+
+
+def _schedule_next_occurrence(recurrence, timezone_name, time_value, weekday=None, now=None):
+    try:
+        zone = ZoneInfo(str(timezone_name or "UTC").strip())
+    except (ZoneInfoNotFoundError, ValueError, TypeError):
+        raise ValueError("Choose a valid timezone.")
+    try:
+        clock = datetime.strptime(str(time_value or "").strip(), "%H:%M").time()
+    except (TypeError, ValueError):
+        raise ValueError("Choose a valid time.")
+    local_now = (now or datetime.now(timezone.utc)).astimezone(zone)
+    day = local_now.date()
+    if recurrence == "weekly":
+        try:
+            wanted_weekday = int(weekday)
+        except (TypeError, ValueError):
+            raise ValueError("Choose a weekday for a weekly task.")
+        if wanted_weekday < 0 or wanted_weekday > 6:
+            raise ValueError("Choose a valid weekday.")
+        day += timedelta(days=(wanted_weekday - day.weekday()) % 7)
+    candidate = _schedule_local_occurrence(day, clock, zone)
+    if candidate <= (now or datetime.now(timezone.utc)):
+        day += timedelta(days=7 if recurrence == "weekly" else 1)
+        candidate = _schedule_local_occurrence(day, clock, zone)
+    return candidate
+
+
+def _scheduled_tasks_read(user_id):
+    with _WORKSPACE_MUTATION_LOCK:
+        settings = get_user_settings(user_id)
+        tasks = settings.get("scheduled_tasks") if isinstance(settings, dict) else []
+        return [dict(task) for task in tasks if isinstance(task, dict)] if isinstance(tasks, list) else []
+
+
+def _scheduled_tasks_mutate(user_id, mutation):
+    with _WORKSPACE_MUTATION_LOCK:
+        settings = get_user_settings(user_id)
+        settings = settings if isinstance(settings, dict) else {}
+        tasks = settings.get("scheduled_tasks")
+        tasks = [dict(task) for task in tasks if isinstance(task, dict)] if isinstance(tasks, list) else []
+        result, changed = mutation(tasks)
+        if changed:
+            settings["scheduled_tasks"] = tasks
+            save_user_settings(user_id, settings)
+            _cache_user_settings(user_id, settings)
+        return result
+
+
+def _scheduled_tasks_require_persistent_account(request):
+    return (
+        ODDI_RENDER_LAPTOP_REDIRECT
+        or ODDI_BROWSER_LOCAL_CHATS
+        or is_temporary_browser_account(request)
+    )
+
+
+def _scheduled_task_create(user_id, payload):
+    title = str(payload.get("title") or "").strip()[:_SCHEDULED_TASK_TITLE_LIMIT]
+    prompt = str(payload.get("prompt") or "").strip()[:_SCHEDULED_TASK_PROMPT_LIMIT]
+    if not title:
+        raise ValueError("Give this scheduled task a name.")
+    if not prompt:
+        raise ValueError("Write what ODDI should do when the task runs.")
+    recurrence = str(payload.get("recurrence") or "once").strip().casefold()
+    if recurrence not in {"once", "daily", "weekly"}:
+        raise ValueError("Choose once, daily, or weekly.")
+    timezone_name = str(payload.get("timezone") or "UTC").strip()[:80]
+    try:
+        ZoneInfo(timezone_name)
+    except (ZoneInfoNotFoundError, ValueError, TypeError):
+        raise ValueError("Choose a valid timezone.")
+    now = datetime.now(timezone.utc)
+    if recurrence == "once":
+        next_run = _schedule_parse_datetime(payload.get("run_at"))
+        if next_run <= now + timedelta(seconds=10):
+            raise ValueError("Choose a future time at least 10 seconds from now.")
+        time_value = next_run.astimezone(ZoneInfo(timezone_name)).strftime("%H:%M")
+        weekday = None
+    else:
+        time_value = str(payload.get("time_of_day") or "").strip()
+        weekday = None
+        if recurrence == "weekly":
+            try:
+                weekday = int(payload.get("weekday"))
+            except (TypeError, ValueError):
+                raise ValueError("Choose a weekday for a weekly task.")
+        next_run = _schedule_next_occurrence(recurrence, timezone_name, time_value, weekday, now)
+    task = {
+        "id": uuid.uuid4().hex,
+        "title": title,
+        "prompt": prompt,
+        "recurrence": recurrence,
+        "timezone": timezone_name,
+        "time_of_day": time_value,
+        "weekday": weekday,
+        "next_run_at": _schedule_utc_iso(next_run),
+        "enabled": True,
+        "is_running": False,
+        "last_status": "",
+        "last_error": "",
+        "last_run_at": "",
+        "last_result_conversation_id": None,
+        "created_at": _schedule_utc_iso(now),
+    }
+
+    def mutation(tasks):
+        if len(tasks) >= _SCHEDULED_TASK_LIMIT:
+            raise ValueError(f"You can keep up to {_SCHEDULED_TASK_LIMIT} scheduled tasks.")
+        tasks.insert(0, task)
+        return task, True
+
+    return _scheduled_tasks_mutate(user_id, mutation)
+
+
+def _scheduled_task_update(user_id, task_id, payload):
+    enabled = payload.get("enabled")
+    if not isinstance(enabled, bool):
+        raise ValueError("Choose whether to pause or resume this task.")
+
+    def mutation(tasks):
+        task = next((item for item in tasks if str(item.get("id")) == str(task_id)), None)
+        if not task:
+            return None, False
+        if task.get("is_running") and enabled:
+            raise ValueError("This task is already running. Resume it after the current run finishes.")
+        if enabled and task.get("recurrence") == "once" and task.get("last_status") == "completed":
+            raise ValueError("This one-time task has already completed. Create a new schedule to run it again.")
+        task["enabled"] = enabled
+        return task, True
+
+    return _scheduled_tasks_mutate(user_id, mutation)
+
+
+def _scheduled_task_delete(user_id, task_id):
+    def mutation(tasks):
+        index = next((i for i, item in enumerate(tasks) if str(item.get("id")) == str(task_id)), -1)
+        if index < 0:
+            return False, False
+        if tasks[index].get("is_running"):
+            raise ValueError("This task is running now. Try deleting it after the run finishes.")
+        tasks.pop(index)
+        return True, True
+
+    return bool(_scheduled_tasks_mutate(user_id, mutation))
+
+
+def _claim_due_scheduled_tasks():
+    now = datetime.now(timezone.utc)
+    claimed = []
+    for user_id in list_account_user_ids():
+        user_claims = []
+        try:
+            with _WORKSPACE_MUTATION_LOCK:
+                settings = get_user_settings(user_id)
+                settings = settings if isinstance(settings, dict) else {}
+                tasks = settings.get("scheduled_tasks")
+                tasks = [dict(task) for task in tasks if isinstance(task, dict)] if isinstance(tasks, list) else []
+                changed = False
+                for task in tasks:
+                    if task.get("is_running"):
+                        try:
+                            started = _schedule_parse_datetime(task.get("last_started_at"))
+                        except ValueError:
+                            started = now - timedelta(hours=1)
+                        if started <= now - timedelta(minutes=30):
+                            task["is_running"] = False
+                            task["last_status"] = "interrupted"
+                            task["last_error"] = "ODDI restarted before this run finished. The next scheduled run is still queued."
+                            changed = True
+                    if not task.get("enabled") or task.get("is_running"):
+                        continue
+                    try:
+                        next_run = _schedule_parse_datetime(task.get("next_run_at"))
+                    except ValueError:
+                        continue
+                    if next_run > now:
+                        continue
+                    task["is_running"] = True
+                    task["last_status"] = "running"
+                    task["last_started_at"] = _schedule_utc_iso(now)
+                    task["last_error"] = ""
+                    task["scheduled_for"] = _schedule_utc_iso(next_run)
+                    if task.get("recurrence") == "once":
+                        task["enabled"] = False
+                    else:
+                        task["next_run_at"] = _schedule_utc_iso(_schedule_next_occurrence(
+                            str(task.get("recurrence")),
+                            str(task.get("timezone") or "UTC"),
+                            str(task.get("time_of_day") or ""),
+                            task.get("weekday"),
+                            now,
+                        ))
+                    user_claims.append({"user_id": user_id, **task})
+                    changed = True
+                if changed:
+                    settings["scheduled_tasks"] = tasks
+                    save_user_settings(user_id, settings)
+                    _cache_user_settings(user_id, settings)
+                    claimed.extend(user_claims)
+        except Exception:
+            logger.exception("Could not inspect scheduled tasks for user %s", user_id)
+    return claimed
+
+
+def _finish_scheduled_task(user_id, task_id, status, conversation_id=None, error=""):
+    finished_at = _schedule_utc_iso(datetime.now(timezone.utc))
+
+    def mutation(tasks):
+        task = next((item for item in tasks if str(item.get("id")) == str(task_id)), None)
+        if not task:
+            return False, False
+        task["is_running"] = False
+        task["last_status"] = status
+        task["last_run_at"] = finished_at
+        task["last_error"] = str(error or "")[:300]
+        if conversation_id is not None:
+            task["last_result_conversation_id"] = conversation_id
+        return True, True
+
+    _scheduled_tasks_mutate(user_id, mutation)
+
+
+async def _execute_scheduled_task(job):
+    user_id = job.get("user_id")
+    task_id = str(job.get("id") or "")
+    conversation_id = None
+    conversation_saved = False
+    try:
+        user = await run_in_threadpool(get_user_by_id, user_id)
+        if not user:
+            raise RuntimeError("ODDI could not find the task owner account.")
+        # SQLite returns sqlite3.Row objects, which support indexing but not .get().
+        user = dict(user)
+        settings = await run_in_threadpool(get_user_settings, user_id)
+        personalization = settings.get("personalization") if isinstance(settings, dict) else {}
+        personal_instructions = ""
+        if isinstance(personalization, dict) and personalization.get("enabled") is not False:
+            personal_instructions = str(personalization.get("instructions") or "").strip()[:3000]
+        memory = normalize_memory_settings(settings.get("memory") if isinstance(settings, dict) else {})
+        identity = create_identity(user_id=str(user_id), email=str(user.get("email") or ""))
+        reply = await run_in_threadpool(
+            process_message,
+            str(job.get("prompt") or ""),
+            [],
+            [],
+            user_id=user_id,
+            identity=identity,
+            long_term_memory_enabled=memory["enabled"],
+            personal_instructions=personal_instructions,
+        )
+        answer = str(reply or "").strip()
+        if not answer or answer == str(PROVIDER_UNAVAILABLE_RESPONSE).strip():
+            raise RuntimeError("No AI provider completed this scheduled run.")
+        completed_at = _schedule_utc_iso(datetime.now(timezone.utc))
+        title = f"Scheduled · {str(job.get('title') or 'ODDI task')[:80]} · {datetime.now(timezone.utc).astimezone(ZoneInfo(str(job.get('timezone') or 'UTC'))).strftime('%Y-%m-%d %H:%M')}"
+        conversation_id = await run_in_threadpool(create_conversation, user_id, title)
+        messages = [
+            {
+                "id": str(uuid.uuid4()),
+                "role": "user",
+                "text": str(job.get("prompt") or ""),
+                "created_at": completed_at,
+                "scheduled_task_id": task_id,
+            },
+            {
+                "id": str(uuid.uuid4()),
+                "role": "assistant",
+                "text": answer,
+                "sources": list(getattr(reply, "sources", []) or []),
+                "pinned": False,
+                "feedback": None,
+                "background_completion": True,
+                "completed_at": completed_at,
+                "scheduled_task_id": task_id,
+                "response_meta": {"provider": "Auto routing", "source": "Scheduled task"},
+            },
+        ]
+        saved = await run_in_threadpool(
+            update_conversation,
+            conversation_id,
+            user_id,
+            title,
+            messages,
+            expected_revision=0,
+        )
+        if not saved.get("ok"):
+            raise RuntimeError("ODDI could not save the scheduled result chat.")
+        conversation_saved = True
+        await run_in_threadpool(_finish_scheduled_task, user_id, task_id, "completed", conversation_id, "")
+        logger.info("Scheduled task completed user=%s task=%s conversation=%s", user_id, task_id, conversation_id)
+    except Exception:
+        logger.exception("Scheduled task failed user=%s task=%s", user_id, task_id)
+        if conversation_id is not None and not conversation_saved:
+            try:
+                await run_in_threadpool(delete_conversation, conversation_id, user_id)
+            except Exception:
+                logger.exception("Could not clean up incomplete scheduled result chat=%s", conversation_id)
+        try:
+            await run_in_threadpool(
+                _finish_scheduled_task,
+                user_id,
+                task_id,
+                "failed",
+                conversation_id,
+                "ODDI could not complete this run. Check provider availability and the task prompt.",
+            )
+        except Exception:
+            logger.exception("Could not save scheduled task failure state user=%s task=%s", user_id, task_id)
+
+
+async def _scheduled_task_worker():
+    await asyncio.sleep(20)
+    active_runs = set()
+    semaphore = asyncio.Semaphore(2)
+
+    async def execute_with_limit(job):
+        async with semaphore:
+            await _execute_scheduled_task(job)
+
+    while True:
+        try:
+            due = await run_in_threadpool(_claim_due_scheduled_tasks)
+            for job in due:
+                active = asyncio.create_task(execute_with_limit(job))
+                active_runs.add(active)
+                active.add_done_callback(active_runs.discard)
+        except asyncio.CancelledError:
+            for active in list(active_runs):
+                active.cancel()
+            if active_runs:
+                await asyncio.gather(*active_runs, return_exceptions=True)
+            raise
+        except Exception:
+            logger.exception("Scheduled task worker could not scan tasks; it will retry")
+        await asyncio.sleep(30)
+
+
+@app.get("/api/scheduled-tasks", name="api_get_scheduled_tasks")
+async def api_get_scheduled_tasks(request: Request):
+    if _scheduled_tasks_require_persistent_account(request):
+        return JSONResponse({"error": "Scheduled Tasks require a regular account with persistent ODDI storage."}, status_code=409)
+    user_id = await require_user_id_async(request)
+    tasks = await run_in_threadpool(_scheduled_tasks_read, user_id)
+    return JSONResponse({"tasks": tasks})
+
+
+@app.post("/api/scheduled-tasks", name="api_create_scheduled_task")
+async def api_create_scheduled_task(request: Request):
+    if _scheduled_tasks_require_persistent_account(request):
+        return JSONResponse({"error": "Scheduled Tasks require a regular account with persistent ODDI storage."}, status_code=409)
+    user_id = await require_user_id_async(request)
+    payload = await safe_json(request)
+    try:
+        task = await run_in_threadpool(_scheduled_task_create, user_id, payload if isinstance(payload, dict) else {})
+    except ValueError as error:
+        return JSONResponse({"error": str(error)}, status_code=400)
+    except Exception:
+        logger.exception("Could not create scheduled task for user %s", user_id)
+        return JSONResponse({"error": "The scheduled task could not be saved."}, status_code=500)
+    return JSONResponse({"success": True, "task": task}, status_code=201)
+
+
+@app.patch("/api/scheduled-tasks/{task_id}", name="api_update_scheduled_task")
+async def api_update_scheduled_task(request: Request, task_id: str):
+    if _scheduled_tasks_require_persistent_account(request):
+        return JSONResponse({"error": "Scheduled Tasks require a regular account with persistent ODDI storage."}, status_code=409)
+    user_id = await require_user_id_async(request)
+    payload = await safe_json(request)
+    try:
+        task = await run_in_threadpool(_scheduled_task_update, user_id, task_id, payload if isinstance(payload, dict) else {})
+    except ValueError as error:
+        return JSONResponse({"error": str(error)}, status_code=400)
+    if not task:
+        return JSONResponse({"error": "Scheduled task not found."}, status_code=404)
+    return JSONResponse({"success": True, "task": task})
+
+
+@app.delete("/api/scheduled-tasks/{task_id}", name="api_delete_scheduled_task")
+async def api_delete_scheduled_task(request: Request, task_id: str):
+    if _scheduled_tasks_require_persistent_account(request):
+        return JSONResponse({"error": "Scheduled Tasks require a regular account with persistent ODDI storage."}, status_code=409)
+    user_id = await require_user_id_async(request)
+    try:
+        deleted = await run_in_threadpool(_scheduled_task_delete, user_id, task_id)
+    except ValueError as error:
+        return JSONResponse({"error": str(error)}, status_code=409)
+    if not deleted:
+        return JSONResponse({"error": "Scheduled task not found."}, status_code=404)
+    return JSONResponse({"success": True})
 
 
 def _workspace_operation_result(user_id, operation):
@@ -3304,6 +3766,81 @@ def api_get_conversation(request: Request, conversation_id: int):
         return JSONResponse({"error": "Conversation not found."}, status_code=404)
 
     return JSONResponse(content=jsonable_encoder(conversation))
+
+
+@app.post("/api/conversations/{conversation_id}/branch", name="api_branch_conversation")
+async def api_branch_conversation(request: Request, conversation_id: int):
+    user_id = await require_user_id_async(request)
+    payload = await safe_json(request)
+    message_id = str(payload.get("message_id") or "").strip() if isinstance(payload, dict) else ""
+    mode = str(payload.get("mode") or "message").strip().lower() if isinstance(payload, dict) else "message"
+    if not message_id or len(message_id) > 128:
+        return JSONResponse({"error": "Choose a message to branch from."}, status_code=400)
+    if mode not in {"full", "message"}:
+        return JSONResponse({"error": "Choose either the full chat or this message."}, status_code=400)
+    source = await run_in_threadpool(get_conversation, conversation_id, user_id)
+    if not source or source.get("deleted"):
+        return JSONResponse({"error": "Conversation not found."}, status_code=404)
+    messages = source.get("messages") if isinstance(source.get("messages"), list) else []
+    branch_index = next(
+        (index for index, item in enumerate(messages)
+         if isinstance(item, dict) and str(item.get("id") or "") == message_id),
+        -1,
+    )
+    if branch_index < 0:
+        return JSONResponse({"error": "That message is no longer in this conversation."}, status_code=404)
+    if str(messages[branch_index].get("role") or "") != "assistant":
+        return JSONResponse({"error": "Choose an ODDI response to branch from."}, status_code=400)
+
+    source_title = str(source.get("title") or "Conversation").strip()[:450] or "Conversation"
+    title = f"Branch · {source_title}"[:500]
+    branch_messages = []
+    messages_to_copy = messages if mode == "full" else [messages[branch_index]]
+    for message in messages_to_copy:
+        if not isinstance(message, dict) or message.get("role") not in {"user", "assistant"}:
+            continue
+        copied = copy.deepcopy(message)
+        copied["id"] = str(uuid.uuid4())
+        branch_messages.append(copied)
+    if not branch_messages:
+        return JSONResponse({"error": "There are no messages available to branch."}, status_code=400)
+    branch_messages[-1]["branch_origin"] = {
+        "mode": mode,
+        "source_conversation_id": str(conversation_id),
+        "source_title": source_title[:500],
+        "source_message_id": message_id,
+        "inherited_message_count": len(branch_messages),
+    }
+    try:
+        branch_id = await run_in_threadpool(create_conversation, user_id, title)
+        saved = await run_in_threadpool(
+            update_conversation,
+            branch_id,
+            user_id,
+            title,
+            branch_messages,
+            expected_revision=0,
+        )
+        if not saved.get("ok") or not saved.get("conversation"):
+            raise RuntimeError("The new branch conversation could not be saved.")
+    except Exception:
+        logger.exception("Could not branch conversation=%s user=%s", conversation_id, user_id)
+        if "branch_id" in locals():
+            try:
+                await run_in_threadpool(delete_conversation, branch_id, user_id)
+            except Exception:
+                logger.exception("Could not clean up incomplete branch conversation=%s", branch_id)
+        return JSONResponse({"error": "ODDI could not create this branch. Please try again."}, status_code=500)
+    return JSONResponse(content=jsonable_encoder({
+        "success": True,
+        "conversation": saved["conversation"],
+        "branched_from": {
+            "conversation_id": conversation_id,
+            "conversation_title": source_title,
+            "message_id": message_id,
+            "mode": mode,
+        },
+    }), status_code=201)
 
 
 @app.put("/api/conversations/{conversation_id}", name="api_update_conversation")
@@ -4990,6 +5527,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
     message = str(message)
     response_style = str(form.get("response_style") or "").strip().casefold()
     incognito_mode = str(form.get("incognito") or "").strip().casefold() in {"1", "true", "yes", "on"}
+    personalization_disabled = incognito_mode or ODDI_BROWSER_LOCAL_CHATS or is_temporary_browser_account(request)
     specialist_agent = str(form.get("specialist_agent") or "").strip().casefold()
     if specialist_agent not in {"research", "search", "coding", "document_search"}:
         specialist_agent = ""
@@ -5070,6 +5608,78 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
 
     # Chat is private. Authenticate before storing uploaded files.
     user_id = await require_user_id_async(request)
+
+    # Persist the current user turn before generation can persist its reply.
+    # The browser also writes this message for recovery; the shared message ID
+    # makes that write an idempotent no-op if it arrives after this one.
+    raw_user_message_record = form.get("user_message_record")
+    if conversation_id is not None and raw_user_message_record:
+        try:
+            candidate = json.loads(str(raw_user_message_record))
+        except (json.JSONDecodeError, TypeError, ValueError):
+            candidate = None
+        if isinstance(candidate, dict) and candidate.get("role") == "user":
+            message_id = str(candidate.get("id") or "").strip()
+            if message_id and len(message_id) <= 128:
+                user_message_record = {
+                    "id": message_id,
+                    "role": "user",
+                    "text": str(candidate.get("text") or memory_message),
+                    "files": [str(name)[:255] for name in candidate.get("files", [])[:30]]
+                    if isinstance(candidate.get("files"), list) else [],
+                    "fileRefs": [
+                        {
+                            "id": str(file_ref.get("id") or "")[:128],
+                            "name": str(file_ref.get("name") or "")[:255],
+                            "type": str(file_ref.get("type") or "")[:128],
+                        }
+                        for file_ref in candidate.get("fileRefs", [])[:30]
+                        if isinstance(file_ref, dict) and file_ref.get("id")
+                    ] if isinstance(candidate.get("fileRefs"), list) else [],
+                    "specialist_agent": str(candidate.get("specialist_agent") or "")[:64],
+                    "pinned": False,
+                }
+                try:
+                    saved_user_conversation = await run_in_threadpool(
+                        append_conversation_message,
+                        conversation_id,
+                        user_id,
+                        user_message_record,
+                    )
+                    saved_user_ids = {
+                        str(item.get("id") or "")
+                        for item in (saved_user_conversation or {}).get("messages", [])
+                        if isinstance(item, dict)
+                    }
+                    if message_id not in saved_user_ids:
+                        # A revision conflict can return the latest snapshot
+                        # without applying this append; retry once from it.
+                        saved_user_conversation = await run_in_threadpool(
+                            append_conversation_message,
+                            conversation_id,
+                            user_id,
+                            user_message_record,
+                        )
+                        saved_user_ids = {
+                            str(item.get("id") or "")
+                            for item in (saved_user_conversation or {}).get("messages", [])
+                            if isinstance(item, dict)
+                        }
+                    if message_id not in saved_user_ids:
+                        logger.warning(
+                            "User chat message could not be confirmed before generation request_id=%s conversation=%s user=%s",
+                            chat_request_id,
+                            conversation_id,
+                            user_id,
+                        )
+                except Exception:
+                    logger.exception(
+                        "User chat message persistence failed before generation request_id=%s conversation=%s user=%s",
+                        chat_request_id,
+                        conversation_id,
+                        user_id,
+                    )
+
     external_document_context = ""
     external_document_sources = []
     search_library_for_turn = (
@@ -5132,6 +5742,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             logger.warning("Could not verify cited Library files for user %s: %s", user_id, type(source_lookup_error).__name__)
     fast_reply = fast_response(memory_message) if not engine_files and not specialist_agent and not search_library_for_turn else None
     settings_loaded = fast_reply is None
+    settings_fetched = False
     user_settings = {}
     if settings_loaded:
         try:
@@ -5139,10 +5750,31 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
             # accounts. A failed lookup fails closed for memory while chat itself
             # remains available.
             user_settings = await run_in_threadpool(get_user_settings, user_id)
+            settings_fetched = True
         except Exception as error:
             logger.warning("User settings lookup failed; memory is disabled for this turn (%s).", type(error).__name__)
             user_settings = {}
             settings_loaded = False
+    elif not personalization_disabled:
+        try:
+            # Use the short account-settings cache on canned-answer candidates.
+            # This lets saved response preferences disable canned replies without
+            # adding a Drive/database read to every routine fast response.
+            user_settings = await run_in_threadpool(_cached_user_settings, user_id)
+            settings_fetched = True
+        except Exception as error:
+            logger.warning("Personalization lookup failed; fast response remains available (%s).", type(error).__name__)
+            user_settings = {}
+    if settings_fetched and not personalization_disabled:
+        _cache_user_settings(user_id, user_settings)
+    personalization = user_settings.get("personalization") if isinstance(user_settings, dict) else {}
+    personal_instructions = ""
+    if not personalization_disabled and isinstance(personalization, dict) and personalization.get("enabled") is not False:
+        personal_instructions = str(personalization.get("instructions") or "").strip()[:3000]
+    if personal_instructions and fast_reply is not None:
+        # A canned answer cannot honor account-wide response preferences.
+        fast_reply = None
+        settings_loaded = settings_fetched
     server_memory = normalize_memory_settings(user_settings.get("memory"))
     memory_enabled = (
         settings_loaded
@@ -5378,6 +6010,7 @@ async def chat(request: Request, background_tasks: BackgroundTasks):
                 identity=identity,
                 long_term_memory_enabled=memory_enabled,
                 specialist_agent=specialist_agent,
+                personal_instructions=personal_instructions,
                 external_document_context=external_document_context,
                 external_document_sources=external_document_sources,
             )

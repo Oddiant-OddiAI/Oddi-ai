@@ -1607,3 +1607,31 @@ body.oddi-system-theme.dark-mode .oddi-rs-menu.oddi-rs-menu-portal {
   background: transparent !important;
   transform: none !important;
 }
+
+/* Keep profile hover feedback from drawing a second card inside the sidebar. */
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-profile:is(:hover, :focus-within) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-profile-main:is(:hover, :active, :focus, :focus-visible) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  outline-offset: 0 !important;
+  transform: none !important;
+}
+
+/* Keep keyboard focus feedback within the existing rounded controls. */
+#oddi-react-sidebar-root .oddi-rs-search input:focus,
+#oddi-react-sidebar-root .oddi-rs-search input:focus-visible,
+#oddi-react-sidebar-root .oddi-rs-profile-main:focus,
+#oddi-react-sidebar-root .oddi-rs-profile-main:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+}
+#oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-profile-main:focus-visible .oddi-rs-avatar {
+  box-shadow: 0 0 0 2px var(--rs-border) !important;
+}

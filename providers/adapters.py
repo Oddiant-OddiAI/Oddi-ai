@@ -659,15 +659,19 @@ def execute_route(
             continue
 
         try:
-            response = call_provider(
-                provider=provider,
-                prompt=prompt,
-                model=model,
-                capacity_id=capacity_id,
-                api_key_number=api_key_number,
-                images=images,
-                audios=audios,
-            )
+            call_kwargs = {
+                "provider": provider,
+                "prompt": prompt,
+                "model": model,
+                "capacity_id": capacity_id,
+                "api_key_number": api_key_number,
+            }
+            if images is not None:
+                call_kwargs["images"] = images
+            if audios is not None:
+                call_kwargs["audios"] = audios
+
+            response = call_provider(**call_kwargs)
 
             if not response or not str(response).strip():
                 raise ProviderAdapterError(f"{provider} returned empty content.")

@@ -14,8 +14,10 @@ from app.swarm import (
     run_task,
     validate_agent_ids,
     _central_synthesis,
+    _research_candidates,
     _research_focus_query,
     _research_handler,
+    _search_handler,
 )
 
 
@@ -164,6 +166,95 @@ def test_research_query_focus_keeps_topic_and_named_entities_without_report_inst
     )
 
     assert _research_focus_query(task) == "flying cars today? Tesla Roadster"
+
+
+def test_search_agent_uses_clean_task_and_a_fresh_news_window(monkeypatch):
+    calls = []
+
+    def search(query, **kwargs):
+        calls.append((query, kwargs))
+        return [{
+            "title": f"Recent report about {query}",
+            "snippet": "A current dated source.",
+            "url": f"https://example.com/{len(calls)}",
+            "published_at": "Sat, 24 Oct 2026 09:00:00 GMT",
+            "search_provider": "Google News",
+        }]
+
+    monkeypatch.setattr("app.swarm.search_news_sources", search)
+    result = _search_handler({"task": "Summarize all news of Uttar Pradesh, Noida"})
+
+    assert [query for query, _ in calls] == ["Uttar Pradesh, Noida"]
+    assert all(kwargs["fresh"] is True for _, kwargs in calls)
+    assert all(kwargs["news_window_days"] == 7 for _, kwargs in calls)
+    assert result.status == "completed"
+    assert result.data["news_window_days"] == 7
+    assert "past 7 days" in result.output
+
+
+def test_research_agent_uses_fresh_news_scopes_and_page_evidence(monkeypatch):
+    source = {
+        "type": "web",
+        "title": "Noida local report",
+        "snippet": "A current dated source.",
+        "url": "https://example.com/noida-report",
+        "published_at": "Sat, 24 Oct 2026 09:00:00 GMT",
+        "search_provider": "Google News",
+    }
+    observed = {}
+
+    monkeypatch.setattr("app.swarm._plan_research_queries", lambda ctx: pytest.fail("news queries should stay focused and deterministic"))
+
+    def search(query, **kwargs):
+        observed["query"] = query
+        observed["search_kwargs"] = kwargs
+        return [dict(source)]
+
+    def fetch(sources):
+        return ([{**source, "retrieval_status": "page_text", "page_text": "Verified local article text."}], 1)
+
+    def provider(ctx, instructions, **kwargs):
+        observed["instructions"] = instructions
+        observed["web_context"] = kwargs.get("web_context")
+        return AgentResult(status="completed", output="A grounded news summary.")
+
+    monkeypatch.setattr("app.swarm.search_news_sources", search)
+    monkeypatch.setattr("app.swarm._fetch_research_candidates", fetch)
+    monkeypatch.setattr("app.swarm._run_provider_agent", provider)
+    result = _research_handler({
+        "task": "Summarize all news of Uttar Pradesh, Noida",
+        "files": [],
+        "user_id": "test-user",
+        "agent": AGENT_REGISTRY["research"],
+        "identity": None,
+        "memory_enabled": False,
+        "web_search": False,
+        "upstream": [],
+    })
+
+    assert observed["query"] == "Uttar Pradesh, Noida"
+    assert observed["search_kwargs"]["fresh"] is True
+    assert observed["search_kwargs"]["news_window_days"] == 7
+    assert "Verified local article text." in observed["web_context"]
+    assert result.data["pages_read"] == 1
+    assert result.sources[0]["url"] == source["url"]
+
+
+def test_research_agent_uses_fresh_search_for_non_news_tasks(monkeypatch):
+    observed = {}
+    monkeypatch.setattr("app.swarm._plan_research_queries", lambda ctx: [])
+
+    def search(query, **kwargs):
+        observed.update(query=query, kwargs=kwargs)
+        return [{"title": "NASA Artemis overview", "snippet": "Mission details.", "url": "https://example.com/artemis"}]
+
+    monkeypatch.setattr("app.swarm.search_research_sources", search)
+    sources, queries = _research_candidates({"task": "Research the NASA Artemis program"}, [], use_web=True)
+
+    assert observed["kwargs"]["fresh"] is True
+    assert "NASA Artemis" in observed["query"]
+    assert sources[0]["url"] == "https://example.com/artemis"
+    assert queries
 
 
 def test_executor_appends_source_links_when_synthesis_omits_them(monkeypatch):

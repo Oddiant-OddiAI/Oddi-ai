@@ -25,3 +25,4 @@ google-auth-httplib2>=0.2,<1
 mistralai
 Werkzeug
 gunicorn
+tzdata

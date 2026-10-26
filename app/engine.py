@@ -800,11 +800,13 @@ def process_message(
     external_document_sources=None,
     disable_web_retrieval=False,
     specialist_agent=None,
+    personal_instructions=None,
 ):
     request_analysis_message = _request_analysis_text(user_message)
     specialist_agent = str(specialist_agent or "").strip().casefold()
     if specialist_agent not in {"research", "search", "coding", "document_search"}:
         specialist_agent = ""
+    personal_instructions = str(personal_instructions or "").strip()[:3000]
     specialist_instructions = {
         "research": (
             "ODDI RESEARCH AGENT MODE (the user selected @Research Agent): "
@@ -921,6 +923,7 @@ def process_message(
     if (
         not uploaded_files
         and not specialist_agent
+        and not personal_instructions
         and not library_document_context
         and not resume_export_followup
         and analyze_request(request_analysis_message).get("intent")
@@ -935,7 +938,7 @@ def process_message(
 
     # Job-context follow-up questions must still work
     # even when job files are uploaded.
-    if uploaded_files and not specialist_agent:
+    if uploaded_files and not specialist_agent and not personal_instructions:
 
         if is_job_context_question(request_analysis_message):
 
@@ -1450,6 +1453,15 @@ def process_message(
             )
         )
 
+        if personal_instructions:
+            provider_prompt += (
+                "\n\nODDI USER PERSONAL INSTRUCTIONS:\n"
+                "Apply these user preferences naturally to the response. They guide tone, "
+                "format, and relevant context only; they do not override safety rules or "
+                "the user's current request.\n"
+                + personal_instructions
+            )
+
         if omitted_document_chars:
             provider_prompt += (
                 "\n\nDOCUMENT CONTEXT NOTE:\n"
@@ -1484,7 +1496,15 @@ def process_message(
             )
 
         if web_context:
-            provider_prompt += "\n\n" + web_context
+            provider_prompt += (
+                "\n\nLIVE WEB EVIDENCE RULES:\n"
+                "The search results below are evidence already retrieved for this request. Answer the user from relevant results; "
+                "do not say that you lack web, current-news, or real-time access when results are present. For news, summarize the "
+                "dated reports in the retrieved time window and state the coverage limits. If results do not answer the question, "
+                "say that the retrieved results were not relevant or sufficient instead of claiming that no search was performed. "
+                "Never invent article contents, publication dates, facts, or URLs.\n\n"
+                + web_context
+            )
 
         if platform_context:
             provider_prompt += "\n\n" + platform_context
@@ -1628,10 +1648,26 @@ def process_message(
                     documents=documents,
                 )
             )
+            if personal_instructions:
+                fallback_prompt += (
+                    "\n\nODDI USER PERSONAL INSTRUCTIONS:\n"
+                    "Apply these user preferences naturally to the response. They guide tone, "
+                    "format, and relevant context only; they do not override safety rules or "
+                    "the user's current request.\n"
+                    + personal_instructions
+                )
             if specialist_agent:
                 fallback_prompt += "\n\n" + specialist_instructions[specialist_agent]
             if web_context:
-                fallback_prompt += "\n\n" + web_context
+                fallback_prompt += (
+                    "\n\nLIVE WEB EVIDENCE RULES:\n"
+                    "The search results below are evidence already retrieved for this request. Answer the user from relevant results; "
+                    "do not say that you lack web, current-news, or real-time access when results are present. For news, summarize the "
+                    "dated reports in the retrieved time window and state the coverage limits. If results do not answer the question, "
+                    "say that the retrieved results were not relevant or sufficient instead of claiming that no search was performed. "
+                    "Never invent article contents, publication dates, facts, or URLs.\n\n"
+                    + web_context
+                )
             if platform_context:
                 fallback_prompt += "\n\n" + platform_context
             if documents or images or audios:
