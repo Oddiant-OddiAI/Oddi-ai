@@ -3,14 +3,30 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#06100b">
+  <meta name="theme-color" content="#0c0712">
   <title>Skills Studio · ODDI AI</title>
+  <script>
+    (function(){
+      try {
+        const palette = localStorage.getItem('oddi_palette_v1');
+        document.documentElement.dataset.oddiPalette = palette === 'cyber-blue' ? palette : 'mono';
+        const theme = localStorage.getItem('oddi_theme_v1') || 'light';
+        const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.dataset.oddiAppearance = theme === 'system' ? (dark ? 'system-dark' : 'system-light') : (theme === 'dark' ? 'dark' : 'light');
+      } catch (_) {}
+    })();
+  </script>
   <link rel="stylesheet" href="{{ url_for('static', path='oddi-skills-studio.css') }}?v=20261021-room-chat-workspace-v4">
-  <link rel="stylesheet" href="{{ url_for('static', path='oddi-theme-palette.css') }}?v=20261022-skills-studio-palettes-v1">
+  <link rel="stylesheet" href="{{ url_for('static', path='oddi-theme-palette.css') }}?v=20261106-purple-cyan-gold-themes-v1">
   <link rel="stylesheet" href="{{ url_for('static', path='oddi-skills-chat-premium.css') }}?v=20261021-skills-chat-premium-v1">
-  <script src="{{ url_for('static', path='oddi-theme-palette.js') }}?v=20261020-palette-v1" defer></script>
+  <link rel="stylesheet" href="{{ url_for('static', path='oddi-theme-violet-finish.css') }}?v=20261105-violet-theme-finish-v4">
+  <script src="{{ url_for('static', path='oddi-theme-palette.js') }}?v=20261108-purple-blue-gold-coming-soon-v1" defer></script>
 </head>
 <body>
+  <script>
+    document.body.dataset.oddiPalette = document.documentElement.dataset.oddiPalette || 'mono';
+    document.body.dataset.oddiAppearance = document.documentElement.dataset.oddiAppearance || 'light';
+  </script>
   <div class="skills-app" data-user-key="{{ skills_user_key }}" data-browser-local-chats="{{ 'true' if skills_browser_local_chats else 'false' }}">
     <header class="skills-topbar">
       <div class="skills-topbar-left">

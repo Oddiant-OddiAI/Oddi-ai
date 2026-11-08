@@ -132,9 +132,9 @@ body.dark-mode .oddi-rs-account-menu {
   border-radius: 50%;
   color: #fff;
 }
-.oddi-rs-palette-swatch[data-palette="mono"] span { background: linear-gradient(135deg, #050505 0 50%, #f5f5f5 50% 100%); border-color: #8a8a8a; color: #fff; }
-.oddi-rs-palette-swatch[data-palette="cyber-green"] span { background: linear-gradient(135deg, #062013, #28dc82); }
-.oddi-rs-palette-swatch[data-palette="cyber-blue"] span { background: linear-gradient(135deg, #061b2b, #35c9ff); }
+.oddi-rs-palette-swatch[data-palette="mono"] span { background: linear-gradient(135deg, #160b23 0%, #8d35cb 48%, #e0a3ff 100%); border-color: #bc77e8; color: #fff; }
+.oddi-rs-palette-swatch[data-palette="cyber-blue"] span { background: linear-gradient(135deg, #03171a 0%, #007c83 48%, #00f0ed 100%); border-color: #11d9d6; color: #fff; }
+.oddi-rs-palette-swatch[data-palette="cyber-gold"] span { background: linear-gradient(135deg, #281700 0%, #c18100 48%, #ffe27a 100%); border-color: #f0bd22; color: #fff; }
 
 /* The legacy page hamburger is a separate control from the React sidebar.
    The React rail owns the mobile opener; desktop keeps its existing sidebar. */
@@ -841,6 +841,19 @@ body.oddi-system-theme .oddi-rs-sidebar.collapsed .oddi-rs-new { background: var
   scrollbar-width: none;
 }
 .oddi-rs-sidebar.collapsed .oddi-rs-history::-webkit-scrollbar { display: none; }
+/* Browser zoom can switch the desktop sidebar to its 58px icon rail without
+   setting .collapsed. Keep that rail's history scrollable, but scrollbar-free. */
+@media (pointer: fine) and (max-width: 1100px) {
+  .oddi-rs-sidebar:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-history {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  .oddi-rs-sidebar:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-history::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+  }
+}
 .oddi-rs-sidebar.collapsed .oddi-rs-mini-chat {
   width: 38px;
   min-width: 38px;

@@ -26,9 +26,13 @@
   if (!composerInputGroup) {
     composerInputGroup = document.createElement("div");
     composerInputGroup.className = "oddi-composer-input-group";
-    composerField.insertBefore(composerInputGroup, agentMention);
-    composerInputGroup.append(agentMention, textarea);
+    const insertionAnchor = agentMention?.parentElement === composerField
+      ? agentMention
+      : (textarea.parentElement === composerField ? textarea : null);
+    composerField.insertBefore(composerInputGroup, insertionAnchor);
   }
+  if (agentMention && agentMention.parentElement !== composerInputGroup) composerInputGroup.appendChild(agentMention);
+  if (textarea.parentElement !== composerInputGroup) composerInputGroup.appendChild(textarea);
 
   const AGENTS = [
     { id: "research", name: "Research Agent", detail: "Thorough research with cited sources", icon: "<path d=\"M10 3H3v18h18V11\"/><path d=\"M14 3h7v7\"/><path d=\"m21 3-11 11\"/><path d=\"M7 7h3M7 11h2M7 15h5\"/>" },
@@ -74,17 +78,20 @@
   }
   window.addEventListener("oddi:theme-changed", syncThemeControlIcon);
 
-  const incognitoButton = document.createElement("button");
-  incognitoButton.id = "headerIncognitoBtn";
-  incognitoButton.className = "incognito-toggle";
-  incognitoButton.type = "button";
-  incognitoButton.setAttribute("aria-pressed", "false");
-  incognitoButton.setAttribute("aria-label", "Start an Incognito chat");
-  incognitoButton.title = "Incognito chat · not saved to ODDI history or memory";
-  const incognitoIcon = icon("<path d=\"M5.1 9.4 6.4 4.8a1.8 1.8 0 0 1 1.8-1.3h7.6a1.8 1.8 0 0 1 1.8 1.3l1.3 4.6H5.1Z\"/><path d=\"M3 9.8c2.1 1.1 5.1 1.7 9 1.7s6.9-.6 9-1.7\"/><path d=\"M4.3 13h6.2l-.4 3a2.8 2.8 0 0 1-5.5 0l-.3-3Zm9.2 0h6.2l-.4 3a2.8 2.8 0 0 1-5.5 0l-.3-3Z\"/><path d=\"M10.6 13.7c.8-.8 2-.8 2.8 0\"/>");
-  incognitoButton.innerHTML = incognitoIcon;
-  if (moreButton) headerControls.insertBefore(incognitoButton, moreButton);
-  else headerControls.appendChild(incognitoButton);
+  let incognitoButton = document.getElementById("headerIncognitoBtn");
+  if (!incognitoButton) {
+    incognitoButton = document.createElement("button");
+    incognitoButton.id = "headerIncognitoBtn";
+    incognitoButton.className = "incognito-toggle";
+    incognitoButton.type = "button";
+    incognitoButton.setAttribute("aria-pressed", "false");
+    incognitoButton.setAttribute("aria-label", "Start an Incognito chat");
+    incognitoButton.title = "Incognito chat · not saved to ODDI history or memory";
+    const incognitoIcon = icon("<path d=\"M5.1 9.4 6.4 4.8a1.8 1.8 0 0 1 1.8-1.3h7.6a1.8 1.8 0 0 1 1.8 1.3l1.3 4.6H5.1Z\"/><path d=\"M3 9.8c2.1 1.1 5.1 1.7 9 1.7s6.9-.6 9-1.7\"/><path d=\"M4.3 13h6.2l-.4 3a2.8 2.8 0 0 1-5.5 0l-.3-3Zm9.2 0h6.2l-.4 3a2.8 2.8 0 0 1-5.5 0l-.3-3Z\"/><path d=\"M10.6 13.7c.8-.8 2-.8 2.8 0\"/>");
+    incognitoButton.innerHTML = incognitoIcon;
+    if (moreButton?.parentElement === headerControls) headerControls.insertBefore(incognitoButton, moreButton);
+    else headerControls.appendChild(incognitoButton);
+  }
 
   const incognitoHeaderNotice = document.createElement("div");
   incognitoHeaderNotice.id = "oddiIncognitoHeaderNotice";

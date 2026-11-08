@@ -1,0 +1,1156 @@
+/* Home cards, quick actions, and composer only. The page background and
+   sidebar intentionally keep their existing styles. */
+
+@media (min-width: 901px) {
+  html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer,
+  html body.oddi-fullscreen-home #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: min(1475px, 100%) !important;
+    max-width: 1475px !important;
+    min-height: calc(100vh - clamp(40px, 5.2vh, 48px) - clamp(52px, 8vh, 66px)) !important;
+    min-height: calc(100dvh - clamp(40px, 5.2vh, 48px) - clamp(52px, 8vh, 66px)) !important;
+  }
+
+  html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer > .oddi-home-composer-slot,
+  html body.oddi-fullscreen-home #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer > .oddi-home-composer-slot {
+    flex: 0 0 auto !important;
+    margin-top: auto !important;
+  }
+
+  html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer > #oddiSuggestionCards,
+  html body.oddi-fullscreen-home #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer > #oddiSuggestionCards {
+    flex: 0 0 auto !important;
+  }
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer {
+  box-sizing: border-box !important;
+  width: min(1475px, 100%) !important;
+  max-width: 1475px !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(8px, .84vw, 16px) !important;
+  width: min(1110px, 77.35%) !important;
+  max-width: 1110px !important;
+  margin: clamp(32px, 2.73vw, 52px) auto clamp(16px, 1.26vw, 24px) !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 4 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(6px, .47vw, 9px) !important;
+  box-sizing: border-box !important;
+  height: clamp(30px, 2.41vw, 46px) !important;
+  min-height: clamp(30px, 2.41vw, 46px) !important;
+  padding: 0 clamp(14px, 1.15vw, 22px) !important;
+  border: 1px solid rgba(139, 92, 176, .30) !important;
+  border-radius: 999px !important;
+  background: rgba(13, 8, 24, .52) !important;
+  color: #f7f2ff !important;
+  font: 550 clamp(10px, .74vw, 14px)/1 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  white-space: nowrap !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .035) !important;
+  cursor: pointer !important;
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action svg {
+  display: block !important;
+  flex: 0 0 auto !important;
+  width: clamp(12px, .84vw, 16px) !important;
+  height: clamp(12px, .84vw, 16px) !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.9 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action:is(:hover, :focus-visible, .is-selected) {
+  border-color: rgba(179, 105, 255, .78) !important;
+  background: rgba(97, 42, 143, .27) !important;
+  color: #fff !important;
+  box-shadow: 0 0 14px rgba(147, 51, 234, .18), inset 0 1px 0 rgba(255, 255, 255, .07) !important;
+  transform: translateY(-1px) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) .oddi-home-composer-slot {
+  box-sizing: border-box !important;
+  display: flex !important;
+  justify-content: center !important;
+  width: min(1170px, 81.55%) !important;
+  max-width: 1170px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  position: relative !important;
+  z-index: 4 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  translate: none !important;
+  box-sizing: border-box !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode > .oddi-composer-field {
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: space-between !important;
+  gap: clamp(6px, .63vw, 12px) !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: clamp(96px, 7.87vw, 150px) !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: clamp(10px, .84vw, 16px) clamp(12px, .95vw, 18px) !important;
+  border: 1px solid rgba(162, 57, 255, .92) !important;
+  border-radius: clamp(13px, .95vw, 18px) !important;
+  background: linear-gradient(108deg, rgba(48, 19, 77, .98), rgba(28, 14, 43, .98)) !important;
+  overflow: visible !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 1px rgba(151, 40, 241, .22), 0 0 20px rgba(139, 39, 223, .27), 0 10px 30px rgba(0, 0, 0, .32) !important;
+  backdrop-filter: blur(18px) !important;
+  -webkit-backdrop-filter: blur(18px) !important;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode > .oddi-composer-field:focus-within {
+  border-color: rgba(203, 128, 255, .98) !important;
+  box-shadow: 0 0 0 1px rgba(185, 86, 255, .45), 0 0 26px rgba(147, 51, 234, .38), 0 10px 30px rgba(0, 0, 0, .35) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-top-row {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  gap: clamp(9px, .84vw, 16px) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-sparkle-badge {
+  display: grid !important;
+  flex: 0 0 auto !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  width: clamp(32px, 2.62vw, 50px) !important;
+  height: clamp(32px, 2.62vw, 50px) !important;
+  min-width: clamp(32px, 2.62vw, 50px) !important;
+  border: 1px solid rgba(179, 77, 255, .36) !important;
+  border-radius: clamp(10px, .84vw, 16px) !important;
+  background: linear-gradient(145deg, rgba(145, 34, 207, .82), rgba(81, 18, 133, .92)) !important;
+  color: #f4d8ff !important;
+  box-shadow: 0 0 18px rgba(166, 47, 255, .33), inset 0 1px 0 rgba(255, 255, 255, .11) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-sparkle-badge svg {
+  display: block !important;
+  width: clamp(16px, 1.26vw, 24px) !important;
+  height: clamp(16px, 1.26vw, 24px) !important;
+  fill: currentColor !important;
+  color: currentColor !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-input-group {
+  display: flex !important;
+  flex: 1 1 auto !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #userInput {
+  box-sizing: border-box !important;
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: clamp(28px, 2.1vw, 40px) !important;
+  height: clamp(28px, 2.1vw, 40px) !important;
+  max-height: 80px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  outline: 0 !important;
+  resize: none !important;
+  background: transparent !important;
+  color: #fff !important;
+  font: 400 clamp(14px, .95vw, 18px)/1.4 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  box-shadow: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #userInput::placeholder {
+  color: rgba(226, 216, 237, .78) !important;
+  opacity: 1 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-bottom-bar {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 0 auto !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: clamp(32px, 2.1vw, 40px) !important;
+  position: relative !important;
+  z-index: 2 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-left-tools {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 1 auto !important;
+  align-items: center !important;
+  gap: clamp(12px, 1.05vw, 20px) !important;
+  min-width: 0 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-chip-btn {
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(6px, .42vw, 8px) !important;
+  box-sizing: border-box !important;
+  height: clamp(32px, 2.1vw, 40px) !important;
+  min-height: clamp(32px, 2.1vw, 40px) !important;
+  padding: 0 2px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: #f6f1fc !important;
+  font: 500 clamp(11px, .74vw, 14px)/1 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  box-shadow: none !important;
+  cursor: pointer !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-chip-btn svg {
+  display: block !important;
+  flex: 0 0 auto !important;
+  width: clamp(14px, .95vw, 18px) !important;
+  height: clamp(14px, .95vw, 18px) !important;
+  color: #f3eaff !important;
+  stroke: currentColor !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-chip-btn:is(:hover, :focus-visible) {
+  border: 0 !important;
+  background: transparent !important;
+  color: #d9b2ff !important;
+  box-shadow: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-right-tools {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: clamp(8px, .68vw, 13px) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #dictation-btn,
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .action-button-slot > #send-btn {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: clamp(38px, 3.05vw, 58px) !important;
+  height: clamp(38px, 3.05vw, 58px) !important;
+  min-width: clamp(38px, 3.05vw, 58px) !important;
+  min-height: clamp(38px, 3.05vw, 58px) !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  color: #fff !important;
+  cursor: pointer !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #dictation-btn {
+  border: 1px solid rgba(180, 125, 226, .12) !important;
+  background: rgba(113, 71, 150, .18) !important;
+  box-shadow: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #dictation-btn svg {
+  width: clamp(17px, 1.16vw, 22px) !important;
+  height: clamp(17px, 1.16vw, 22px) !important;
+  color: #fff !important;
+  stroke: currentColor !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .action-button-slot {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: clamp(38px, 3.05vw, 58px) !important;
+  height: clamp(38px, 3.05vw, 58px) !important;
+  min-width: clamp(38px, 3.05vw, 58px) !important;
+  min-height: clamp(38px, 3.05vw, 58px) !important;
+  margin: 0 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #send-btn {
+  border: 1px solid rgba(211, 126, 255, .52) !important;
+  background: radial-gradient(circle at 35% 28%, #d143ff 0%, #a51df2 48%, #7c14d7 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 17px rgba(164, 42, 255, .60), inset 0 1px 0 rgba(255, 255, 255, .22) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #send-btn:is(:hover, :focus-visible) {
+  border-color: rgba(227, 169, 255, .9) !important;
+  box-shadow: 0 0 24px rgba(173, 62, 255, .78), inset 0 1px 0 rgba(255, 255, 255, .27) !important;
+  transform: scale(1.04) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #send-btn::before,
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #send-btn::after {
+  display: none !important;
+  content: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #send-btn svg {
+  display: block !important;
+  width: clamp(18px, 1.37vw, 26px) !important;
+  height: clamp(18px, 1.37vw, 26px) !important;
+  fill: none !important;
+  color: #fff !important;
+  stroke: currentColor !important;
+}
+
+html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) #oddiSuggestionCards,
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: clamp(10px, .95vw, 18px) !important;
+  width: 100% !important;
+  max-width: 1435px !important;
+  margin: clamp(16px, 1.47vw, 28px) auto 0 !important;
+  padding: 0 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card] {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: clamp(88px, 7.24vw, 138px) !important;
+  min-height: clamp(88px, 7.24vw, 138px) !important;
+  max-height: clamp(88px, 7.24vw, 138px) !important;
+  margin: 0 !important;
+  padding: clamp(10px, .9vw, 17px) clamp(40px, 3.15vw, 60px) clamp(10px, .9vw, 17px) clamp(12px, .95vw, 18px) !important;
+  border: 1px solid !important;
+  border-radius: clamp(13px, .95vw, 18px) !important;
+  color: #fbf9ff !important;
+  text-align: left !important;
+  white-space: normal !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .075), 0 0 0 1px rgba(255, 255, 255, .025), 0 9px 23px rgba(0, 0, 0, .22) !important;
+  backdrop-filter: blur(9px) !important;
+  -webkit-backdrop-filter: blur(9px) !important;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, filter .18s ease !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="topic"] {
+  border-color: #9826ef !important;
+  background: linear-gradient(128deg, rgba(52, 19, 78, .98), rgba(22, 13, 36, .98)) !important;
+  box-shadow: inset 0 1px 0 rgba(250, 233, 255, .075), 0 0 0 1px rgba(151, 47, 238, .18), 0 0 19px rgba(137, 38, 232, .25), 0 9px 23px rgba(0, 0, 0, .22) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="project"] {
+  border-color: #d8159b !important;
+  background: linear-gradient(128deg, rgba(62, 11, 49, .98), rgba(24, 10, 28, .98)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 230, 249, .065), 0 0 0 1px rgba(215, 21, 155, .17), 0 0 19px rgba(217, 0, 151, .23), 0 9px 23px rgba(0, 0, 0, .22) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="writing"] {
+  border-color: #7762ed !important;
+  background: linear-gradient(128deg, rgba(37, 31, 76, .98), rgba(20, 15, 38, .98)) !important;
+  box-shadow: inset 0 1px 0 rgba(239, 233, 255, .07), 0 0 0 1px rgba(119, 98, 237, .18), 0 0 19px rgba(116, 88, 248, .24), 0 9px 23px rgba(0, 0, 0, .22) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="tomorrow"] {
+  border-color: #f07416 !important;
+  background: linear-gradient(128deg, rgba(64, 27, 12, .98), rgba(28, 13, 8, .98)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 238, 224, .075), 0 0 0 1px rgba(240, 116, 22, .17), 0 0 19px rgba(241, 92, 13, .24), 0 9px 23px rgba(0, 0, 0, .22) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card]:is(:hover, :focus-visible) {
+  transform: translateY(-2px) !important;
+  filter: brightness(1.08) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card] > .oddi-suggestion-icon {
+  position: relative !important;
+  z-index: 1 !important;
+  display: grid !important;
+  flex: 0 0 auto !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  width: clamp(38px, 2.93vw, 56px) !important;
+  min-width: clamp(38px, 2.93vw, 56px) !important;
+  height: clamp(38px, 2.93vw, 56px) !important;
+  margin: 0 !important;
+  border: 1px solid rgba(255, 255, 255, .16) !important;
+  border-radius: clamp(11px, .8vw, 15px) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 5px 12px rgba(0, 0, 0, .17) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="topic"] > .oddi-suggestion-icon {
+  background: linear-gradient(145deg, #a12bff, #6415be) !important;
+}
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="project"] > .oddi-suggestion-icon {
+  background: linear-gradient(145deg, #dc159c, #8d0d67) !important;
+}
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="writing"] > .oddi-suggestion-icon {
+  background: linear-gradient(145deg, #7965ed, #4e3ca7) !important;
+}
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="tomorrow"] > .oddi-suggestion-icon {
+  background: linear-gradient(145deg, #e76218, #a83812) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card] > .oddi-suggestion-icon svg {
+  display: block !important;
+  width: clamp(23px, 1.58vw, 30px) !important;
+  height: clamp(23px, 1.58vw, 30px) !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card] > .oddi-suggestion-copy {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: min(16px, .84vw) 0 0 !important;
+  text-align: left !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card] > .oddi-suggestion-copy > strong {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  color: #fff !important;
+  font: 700 clamp(11px, .9vw, 17px)/1.2 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  letter-spacing: -.015em !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card] > .oddi-suggestion-copy > small {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  color: rgba(231, 224, 239, .84) !important;
+  font: 400 clamp(10px, .79vw, 15px)/1.48 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card]::before {
+  content: "✦" !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  left: clamp(14px, 1.15vw, 22px) !important;
+  bottom: clamp(11px, .94vw, 18px) !important;
+  display: block !important;
+  color: currentColor !important;
+  font: 700 clamp(11px, .73vw, 14px)/1 system-ui, sans-serif !important;
+  opacity: .86 !important;
+  pointer-events: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card]::after {
+  content: "→" !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  right: clamp(11px, .95vw, 18px) !important;
+  bottom: clamp(11px, .95vw, 18px) !important;
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  width: clamp(30px, 2.2vw, 42px) !important;
+  height: clamp(30px, 2.2vw, 42px) !important;
+  border: 1px solid rgba(200, 144, 255, .36) !important;
+  border-radius: 50% !important;
+  background: rgba(120, 66, 177, .13) !important;
+  color: #fbf6ff !important;
+  font: 500 clamp(18px, 1.1vw, 21px)/1 system-ui, sans-serif !important;
+  pointer-events: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="project"]::before,
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="project"]::after { color: #fa31bd !important; }
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="writing"]::before,
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="writing"]::after { color: #ab94ff !important; }
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="tomorrow"]::before,
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card="tomorrow"]::after {
+  color: #ff812d !important;
+  border-color: rgba(255, 125, 43, .42) !important;
+  background: rgba(132, 57, 19, .18) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
+  display: none !important;
+}
+
+@media (max-width: 1080px) {
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex-wrap: wrap !important;
+    row-gap: 8px !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) .oddi-home-composer-slot {
+    width: 81.55% !important;
+  }
+
+}
+
+@media (max-width: 900px) {
+  html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) #oddiSuggestionCards,
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 560px) {
+  html body:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions {
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    padding-inline: 2px !important;
+  }
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions::-webkit-scrollbar { display: none !important; }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) .oddi-home-composer-slot {
+    width: 100% !important;
+  }
+
+  html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) #oddiSuggestionCards,
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards {
+    grid-template-columns: 1fr !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card[data-home-card] {
+    height: auto !important;
+    min-height: 104px !important;
+    max-height: none !important;
+  }
+}
+
+html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) #oddiRecentSection,
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiRecentSection {
+  display: none !important;
+}
+
+/* Match the reference composer fill and keep its purple send action visible. */
+html body:has(#chatbox > #welcomeContainer) #oddiComposerShell .oddi-composer-field,
+html body:has(#chatbox > #welcomeContainer) #oddiComposerShell .oddi-composer-field:focus-within {
+  background: linear-gradient(108deg, rgba(37, 18, 58, .99) 0%, rgba(29, 17, 46, .99) 52%, rgba(22, 14, 36, .99) 100%) !important;
+  border-color: rgba(154, 39, 255, .94) !important;
+  box-shadow: 0 0 0 1px rgba(151, 40, 241, .24), 0 0 20px rgba(139, 39, 223, .24), 0 10px 30px rgba(0, 0, 0, .32) !important;
+}
+
+html body:has(#chatbox > #welcomeContainer) #oddiComposerShell #send-btn,
+html body:has(#chatbox > #welcomeContainer) #oddiComposerShell .action-button-slot > #send-btn {
+  box-sizing: border-box !important;
+  display: grid !important;
+  place-items: center !important;
+  position: relative !important;
+  z-index: 2 !important;
+  width: clamp(38px, 3.05vw, 58px) !important;
+  min-width: clamp(38px, 3.05vw, 58px) !important;
+  height: clamp(38px, 3.05vw, 58px) !important;
+  min-height: clamp(38px, 3.05vw, 58px) !important;
+  padding: 0 !important;
+  border: 1px solid rgba(211, 126, 255, .62) !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 28%, #d143ff 0%, #a51df2 48%, #7c14d7 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 18px rgba(164, 42, 255, .62), inset 0 1px 0 rgba(255, 255, 255, .22) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+html body:has(#chatbox > #welcomeContainer) #oddiComposerShell #send-btn::before,
+html body:has(#chatbox > #welcomeContainer) #oddiComposerShell #send-btn::after {
+  display: none !important;
+  content: none !important;
+}
+
+html body:has(#chatbox > #welcomeContainer) #oddiComposerShell #send-btn svg {
+  display: block !important;
+  position: relative !important;
+  z-index: 1 !important;
+  width: clamp(18px, 1.37vw, 26px) !important;
+  height: clamp(18px, 1.37vw, 26px) !important;
+  fill: none !important;
+  stroke: #fff !important;
+  color: #fff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* The live home composer can be portaled without its home-mode class. */
+html body:has(#welcomeContainer) #oddiComposerShell .oddi-composer-field,
+html body:has(#welcomeContainer) #oddiComposerShell .oddi-composer-field:focus-within {
+  background: linear-gradient(108deg, #25123a 0%, #1d112e 52%, #160e24 100%) !important;
+  border-color: #9628f1 !important;
+  box-shadow: 0 0 0 1px rgba(151, 40, 241, .24), 0 0 20px rgba(139, 39, 223, .24), 0 10px 30px rgba(0, 0, 0, .32) !important;
+}
+
+html body:has(#welcomeContainer) #oddiComposerShell .action-button-slot > #voice-btn {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+html body:has(#welcomeContainer) #oddiComposerShell .action-button-slot > #send-btn {
+  display: grid !important;
+  visibility: visible !important;
+  background: radial-gradient(circle at 35% 28%, #d143ff 0%, #a51df2 48%, #7c14d7 100%) !important;
+}
+
+/* Fresh, visual-only home cards matching the four-card reference row. */
+html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid,
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: clamp(10px, .95vw, 18px) !important;
+  width: 100% !important;
+  max-width: 1435px !important;
+  margin: clamp(16px, 1.47vw, 28px) auto 0 !important;
+  padding: 0 !important;
+  flex: 0 0 auto !important;
+  grid-auto-flow: column !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-interview-launch {
+  display: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card {
+  --oddi-card-accent: #bb78ff;
+  --oddi-card-edge: rgba(171, 94, 255, .82);
+  --oddi-card-fill: linear-gradient(128deg, rgba(52, 19, 78, .98), rgba(22, 13, 36, .98));
+  --oddi-card-icon: linear-gradient(145deg, #a12bff, #6415be);
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: clamp(8px, .65vw, 12px) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: clamp(76px, 6.2vw, 112px) !important;
+  min-height: clamp(76px, 6.2vw, 112px) !important;
+  max-height: clamp(76px, 6.2vw, 112px) !important;
+  margin: 0 !important;
+  padding: 10px clamp(34px, 2.45vw, 44px) 10px clamp(10px, .78vw, 14px) !important;
+  border: 1px solid var(--oddi-card-edge) !important;
+  border-radius: clamp(13px, .95vw, 18px) !important;
+  background: var(--oddi-card-fill) !important;
+  color: #fbf9ff !important;
+  text-align: left !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.075), 0 0 0 1px rgba(255,255,255,.025), 0 0 19px color-mix(in srgb, var(--oddi-card-accent) 26%, transparent), 0 9px 23px rgba(0,0,0,.22) !important;
+  backdrop-filter: blur(9px) !important;
+  -webkit-backdrop-filter: blur(9px) !important;
+  cursor: default !important;
+  grid-column: auto / span 1 !important;
+  grid-row: 1 !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card[data-home-card="topic"] {
+  --oddi-card-accent: #ad52ff;
+  --oddi-card-edge: #9826ef;
+  --oddi-card-icon: linear-gradient(145deg, #a12bff, #6415be);
+  --oddi-card-fill: linear-gradient(128deg, rgba(52, 19, 78, .98), rgba(22, 13, 36, .98));
+}
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card[data-home-card="project"] {
+  --oddi-card-accent: #f92bb5;
+  --oddi-card-edge: #d8159b;
+  --oddi-card-icon: linear-gradient(145deg, #dc159c, #8d0d67);
+  --oddi-card-fill: linear-gradient(128deg, rgba(62, 11, 49, .98), rgba(24, 10, 28, .98));
+}
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card[data-home-card="writing"] {
+  --oddi-card-accent: #ab94ff;
+  --oddi-card-edge: #7762ed;
+  --oddi-card-icon: linear-gradient(145deg, #7965ed, #4e3ca7);
+  --oddi-card-fill: linear-gradient(128deg, rgba(37, 31, 76, .98), rgba(20, 15, 38, .98));
+}
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card[data-home-card="tomorrow"] {
+  --oddi-card-accent: #ff812d;
+  --oddi-card-edge: #f07416;
+  --oddi-card-icon: linear-gradient(145deg, #e76218, #a83812);
+  --oddi-card-fill: linear-gradient(128deg, rgba(64, 27, 12, .98), rgba(28, 13, 8, .98));
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-icon {
+  position: relative !important;
+  z-index: 1 !important;
+  display: grid !important;
+  flex: 0 0 auto !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  width: clamp(32px, 2.35vw, 44px) !important;
+  min-width: clamp(32px, 2.35vw, 44px) !important;
+  height: clamp(32px, 2.35vw, 44px) !important;
+  border: 1px solid rgba(255,255,255,.16) !important;
+  border-radius: clamp(11px, .8vw, 15px) !important;
+  background: var(--oddi-card-icon) !important;
+  color: #fff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 5px 12px rgba(0,0,0,.17) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-icon svg {
+  display: block !important;
+  width: clamp(20px, 1.3vw, 25px) !important;
+  height: clamp(20px, 1.3vw, 25px) !important;
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 1.8 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-copy {
+  position: relative !important;
+  z-index: 1 !important;
+  display: flex !important;
+  flex: 1 1 auto !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 3px !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-copy > strong {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  color: #fff !important;
+  font: 700 clamp(10px, .78vw, 14px)/1.2 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+  letter-spacing: -.015em !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-copy > small {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 !important;
+  color: rgba(231,224,239,.84) !important;
+  font: 400 clamp(9px, .68vw, 12px)/1.35 system-ui, -apple-system, "Segoe UI", sans-serif !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card::before {
+  content: "✦" !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  left: clamp(14px, 1.15vw, 22px) !important;
+  bottom: clamp(11px, .94vw, 18px) !important;
+  color: var(--oddi-card-accent) !important;
+  font: 700 clamp(11px, .73vw, 14px)/1 system-ui, sans-serif !important;
+  opacity: .9 !important;
+  pointer-events: none !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card::after {
+  content: "→" !important;
+  position: absolute !important;
+  z-index: 1 !important;
+  right: clamp(11px, .95vw, 18px) !important;
+  bottom: clamp(11px, .95vw, 18px) !important;
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  width: clamp(30px, 2.2vw, 42px) !important;
+  height: clamp(30px, 2.2vw, 42px) !important;
+  border: 1px solid color-mix(in srgb, var(--oddi-card-accent) 42%, transparent) !important;
+  border-radius: 50% !important;
+  background: color-mix(in srgb, var(--oddi-card-accent) 13%, transparent) !important;
+  color: #fbf6ff !important;
+  font: 500 clamp(18px, 1.1vw, 21px)/1 system-ui, sans-serif !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 900px) and (min-width: 561px) {
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 560px) and (min-width: 401px) {
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 6px !important;
+  }
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card {
+    height: 76px !important;
+    min-height: 76px !important;
+    max-height: 76px !important;
+    gap: 5px !important;
+    padding: 7px 24px 7px 6px !important;
+  }
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-icon {
+    width: 24px !important;
+    min-width: 24px !important;
+    height: 24px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-auto-flow: column !important;
+    gap: 4px !important;
+  }
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card {
+    height: 72px !important;
+    min-height: 72px !important;
+    max-height: 72px !important;
+    gap: 4px !important;
+    padding: 5px 19px 5px 4px !important;
+  }
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-icon {
+    width: 20px !important;
+    min-width: 20px !important;
+    height: 20px !important;
+  }
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-copy > strong {
+    font-size: 8px !important;
+  }
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-copy > small {
+    font-size: 7px !important;
+  }
+}
+
+/* Anchor the complete home action stack as one compact group near the bottom. */
+@media (min-width: 901px) {
+  html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer,
+  html body.oddi-fullscreen-home #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer {
+    min-height: calc(100vh - 30px) !important;
+    min-height: calc(100dvh - 30px) !important;
+    row-gap: 0 !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > #oddiHomeQuickActions {
+    margin: auto auto 0 !important;
+  }
+
+  html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer > .oddi-home-composer-slot,
+  html body.oddi-fullscreen-home #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer > .oddi-home-composer-slot {
+    flex: 0 0 auto !important;
+    margin: 23px auto 0 !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode > .oddi-composer-field {
+    height: 150px !important;
+    min-height: 150px !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > #oddiSuggestionCards {
+    margin: -20px auto 0 !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card {
+    height: clamp(118px, 16.7vh, 138px) !important;
+    min-height: clamp(118px, 16.7vh, 138px) !important;
+    max-height: clamp(118px, 16.7vh, 138px) !important;
+  }
+}
+
+/* Homepage background only: replace the old ring/dot artwork with the supplied
+   diffuse purple spread. The page content and sidebar keep their own styling. */
+html[data-oddi-appearance="dark"] body:has(#chatbox.chatbox > #welcomeContainer) #chatbox.chatbox,
+html[data-oddi-appearance="system-dark"] body:has(#chatbox.chatbox > #welcomeContainer) #chatbox.chatbox {
+  background-color: #0a0614 !important;
+  background-image:
+    radial-gradient(ellipse 55% 80% at 50% 0%,
+      #4d1a9c 0%,
+      #421783 18%,
+      #2f135b 36%,
+      #1b0c2e 72%,
+      rgba(19, 7, 27, 0) 100%),
+    linear-gradient(180deg, #13071b 0%, #12071a 30%, #100519 66%, #0a0614 100%) !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
+}
+
+html body #chatbox.chatbox:has(> #welcomeContainer):has(#oddiComposerShell):has(#oddiSuggestionCards)::before,
+html body #chatbox.chatbox:has(> #welcomeContainer):has(#oddiComposerShell):has(#oddiSuggestionCards)::after,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #chatbox.chatbox:has(#oddiComposerShell):has(#oddiSuggestionCards)::before,
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #chatbox.chatbox:has(#oddiComposerShell):has(#oddiSuggestionCards)::after {
+  content: none !important;
+  display: none !important;
+  animation: none !important;
+}
+
+/* Match the supplied hero header while leaving the quick actions and composer below it intact. */
+@media (min-width: 769px) {
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer.welcome-message {
+    padding: clamp(120px, 8vw, 152px) 20px 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer.welcome-message::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-hero-orb {
+    position: relative !important;
+    isolation: isolate !important;
+    flex: 0 0 clamp(60px, 4.1vw, 78px) !important;
+    width: clamp(60px, 4.1vw, 78px) !important;
+    height: clamp(60px, 4.1vw, 78px) !important;
+    margin: 0 auto clamp(12px, 1.05vw, 20px) !important;
+    transform: translateY(43px) !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(224, 185, 255, .72) !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle at 35% 22%, #ffffff 0%, #f0d7ff 3%, #b65cff 10%, #8529f7 23%, #5d12c9 46%, #330777 72%, #17042e 100%) !important;
+    box-shadow: 0 0 10px 3px rgba(215, 154, 255, .52), 0 0 36px 11px rgba(121, 35, 230, .48), inset 0 2px 5px rgba(255, 255, 255, .78), inset 0 -11px 17px rgba(12, 1, 35, .7) !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-hero-orb::before {
+    content: "" !important;
+    position: absolute !important;
+    top: 7% !important;
+    left: 13% !important;
+    width: 66% !important;
+    height: 34% !important;
+    border-radius: 50% !important;
+    background: radial-gradient(ellipse at 42% 38%, rgba(255,255,255,.97), rgba(242,213,255,.8) 24%, rgba(190,113,255,.2) 68%, transparent 100%) !important;
+    filter: blur(2px) !important;
+    transform: rotate(-28deg) !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > h2.oddi-home-hero-title {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    width: 100% !important;
+    max-width: 760px !important;
+    margin: 0 auto 0 !important;
+    padding: 0 !important;
+    transform: translateY(36px) !important;
+    font-size: clamp(34px, 2.35vw, 45px) !important;
+    font-weight: 800 !important;
+    line-height: 1.05 !important;
+    letter-spacing: -.035em !important;
+    text-align: center !important;
+    color: #f8f3ff !important;
+    text-shadow: none !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > h2.oddi-home-hero-title > .welcome-line {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > h2.oddi-home-hero-title > .welcome-phone-greeting {
+    display: none !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > h2.oddi-home-hero-title > .oddi-home-greeting {
+    margin-bottom: 2px !important;
+    font-size: clamp(20px, 1.45vw, 28px) !important;
+    font-weight: 400 !important;
+    line-height: 1.18 !important;
+    letter-spacing: -.015em !important;
+    color: #eee3fa !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer .oddi-home-name-line .welcome-name {
+    display: inline-block !important;
+    background: linear-gradient(100deg, #f8f4ff 0%, #e3c4ff 57%, #a938ff 100%) !important;
+    background-clip: text !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    color: transparent !important;
+    font-weight: 800 !important;
+    text-shadow: none !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > p.oddi-home-subtitle {
+    width: auto !important;
+    max-width: 100% !important;
+    margin: clamp(10px, .85vw, 16px) auto 0 !important;
+    padding: 0 !important;
+    transform: translateY(15px) !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    color: #e4d8ef !important;
+    font-size: clamp(13px, .95vw, 18px) !important;
+    font-weight: 400 !important;
+    line-height: 1.45 !important;
+    text-align: center !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > p.oddi-home-subtitle::before,
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > p.oddi-home-subtitle::after {
+    display: none !important;
+    content: none !important;
+  }
+}
+
+/* Home reference finish: responsive spacing, a deeper purple falloff, and glass highlights. */
+@media (min-width: 901px) {
+  html body:not(.oddi-fullscreen-home) #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer > .oddi-home-composer-slot,
+  html body.oddi-fullscreen-home #chatbox.chatbox:has(> #welcomeContainer) > #welcomeContainer > .oddi-home-composer-slot {
+    margin: 19px auto 0 !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode > .oddi-composer-field {
+    height: clamp(106px, 18.2vh, 150px) !important;
+    min-height: clamp(106px, 18.2vh, 150px) !important;
+    max-height: clamp(106px, 18.2vh, 150px) !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > #oddiSuggestionCards {
+    margin: -25px auto 0 !important;
+  }
+
+  html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card {
+    height: clamp(96px, 16.7vh, 138px) !important;
+    min-height: clamp(96px, 16.7vh, 138px) !important;
+    max-height: clamp(96px, 16.7vh, 138px) !important;
+  }
+}
+
+html body #chatbox.chatbox:has(> #welcomeContainer),
+html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #chatbox.chatbox {
+  background-color: #07040d !important;
+  background-image:
+    radial-gradient(ellipse 72% 68% at 52% 0%, #391265 0%, #301053 22%, #200d37 48%, #12091c 76%, rgba(7,4,13,0) 100%),
+    linear-gradient(180deg, #13081e 0%, #0c0713 55%, #07040d 100%) !important;
+  background-position: center top !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
+}
+
+@media (min-width: 769px) {
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-hero-orb {
+    transform: translateY(clamp(55px, 6.7vh, 64px)) !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-hero-orb::after {
+    content: "" !important;
+    position: absolute !important;
+    z-index: 1 !important;
+    inset: 1px !important;
+    border-radius: inherit !important;
+    background: radial-gradient(ellipse 27% 13% at 37% 13%, rgba(255,255,255,.98), rgba(255,255,255,.5) 38%, transparent 100%), linear-gradient(132deg, transparent 32%, rgba(255,255,255,.16) 45%, transparent 59%) !important;
+    mix-blend-mode: screen !important;
+    pointer-events: none !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > h2.oddi-home-hero-title {
+    transform: translateY(clamp(54px, 6.55vh, 66px)) !important;
+  }
+
+  html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > p.oddi-home-subtitle {
+    transform: translateY(clamp(43px, 5.2vh, 54px)) !important;
+  }
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action {
+  background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.015) 55%), rgba(13,8,24,.52) !important;
+  border-color: rgba(187,139,224,.35) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset 0 -1px 0 rgba(0,0,0,.25), 0 5px 14px rgba(0,0,0,.18) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode > .oddi-composer-field {
+  border-color: rgba(172,70,255,.95) !important;
+  box-shadow: 0 0 0 1px rgba(151,40,241,.24), inset 0 1px 0 rgba(255,255,255,.18), inset 0 -18px 34px rgba(8,2,20,.2), 0 0 24px rgba(139,39,223,.3), 0 12px 32px rgba(0,0,0,.34) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card {
+  background-image: linear-gradient(145deg, rgba(255,255,255,.14) 0%, rgba(255,255,255,.045) 12%, transparent 39%), var(--oddi-card-fill) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2), inset 0 -14px 24px rgba(5,2,12,.16), 0 0 0 1px rgba(255,255,255,.04), 0 0 20px color-mix(in srgb, var(--oddi-card-accent) 28%, transparent), 0 10px 24px rgba(0,0,0,.25) !important;
+}
+
+html body:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card > .oddi-reference-card-icon {
+  background-image: linear-gradient(150deg, rgba(255,255,255,.3), rgba(255,255,255,.045) 48%, transparent 70%), var(--oddi-card-icon) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.32), inset 0 -7px 12px rgba(8,1,20,.18), 0 5px 13px rgba(0,0,0,.2) !important;
+}

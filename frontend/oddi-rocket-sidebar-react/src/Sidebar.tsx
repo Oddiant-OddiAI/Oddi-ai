@@ -207,10 +207,11 @@ export default function Sidebar() {
   const [open, setOpen] = useState(() => typeof window === 'undefined' || !window.matchMedia('(max-width: 768px)').matches);
   const [collapsed, setCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const responsiveDefault = typeof window === 'undefined' ? 330 : Math.max(200, Math.min(330, Math.round(window.innerWidth * 0.173)));
     try {
-      const saved = Number(localStorage.getItem('oddi_sidebar_width_v1'));
-      return Number.isFinite(saved) && saved >= 190 ? Math.max(190, Math.min(360, saved)) : 208;
-    } catch { return 208; }
+      const saved = Number(localStorage.getItem('oddi_sidebar_width_v3'));
+      return Number.isFinite(saved) && saved >= 200 ? Math.max(200, Math.min(360, saved)) : responsiveDefault;
+    } catch { return responsiveDefault; }
   });
   const sidebarResizeRef = useRef<{ pointerId: number; startX: number; startWidth: number; currentWidth: number } | null>(null);
   const [compactList, setCompactList] = useState(() => {
@@ -243,14 +244,14 @@ export default function Sidebar() {
     } catch {}
     return document.body.classList.contains('dark-mode') ? 'dark' : 'light';
   });
-  const [palette, setPalette] = useState<'mono' | 'cyber-green' | 'cyber-blue'>(() => {
+  const [palette, setPalette] = useState<'mono' | 'cyber-blue'>(() => {
     try {
       const saved = localStorage.getItem('oddi_palette_v1');
-      if (saved === 'cyber-green' || saved === 'cyber-blue') return saved;
+      if (saved === 'cyber-blue') return saved;
     } catch {}
     return 'mono';
   });
-  const [isDarkAppearance, setIsDarkAppearance] = useState(() => document.body.classList.contains('dark-mode'));
+  const [, setIsDarkAppearance] = useState(() => document.body.classList.contains('dark-mode'));
   const loggedIn = document.body.dataset.loggedIn === 'true';
   const accountId = document.body.dataset.userId?.trim() || '';
   const username = document.body.dataset.username?.trim() || '';
@@ -309,7 +310,7 @@ export default function Sidebar() {
     const syncPalette = () => {
       let saved: string | null = null;
       try { saved = localStorage.getItem('oddi_palette_v1'); } catch {}
-      const next = saved === 'cyber-green' || saved === 'cyber-blue' ? saved : 'mono';
+      const next = saved === 'cyber-blue' ? saved : 'mono';
       setPalette(next);
     };
     window.addEventListener('oddi:palette-changed', syncPalette);
@@ -704,11 +705,12 @@ export default function Sidebar() {
 
   async function load() {
     try {
-      const r = await fetch('/api/conversations', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' });
+      // This list only needs chat metadata. Fetching /api/conversations here
+      // downloads every full transcript and can stall the sidebar on large chats.
+      const r = await fetch('/api/conversations/index', { credentials: 'same-origin', headers: { Accept: 'application/json' }, cache: 'no-store' });
       if (!r.ok) return;
       const data = await r.json();
       const list = Array.isArray(data) ? data : (Array.isArray(data?.conversations) ? data.conversations : []);
-      await Promise.resolve(WIN().__oddiWorkspaceReady).catch(() => undefined);
       const normalizedList = list.map(normalizeConversation).filter(c => !isProjectConversation(c) && !isSkillsStudioConversation(c));
       setItems(normalizedList);
       const preferredId = getLastOpenConversationId();
@@ -735,9 +737,10 @@ export default function Sidebar() {
         else if (preferred) setActive(preferred.id);
         else if (normalizedList[0]) setActive(current => current ?? normalizedList[0].id);
       };
-      const workspaceReady = WIN().__oddiWorkspaceReady;
-      if (workspaceReady) void Promise.resolve(workspaceReady).then(apply).catch(() => apply());
-      else apply();
+      // Sidebar chat history is independent of workspace cards. Render it as
+      // soon as conversation metadata is ready instead of waiting for workspace
+      // initialization or its network calls.
+      apply();
     };
     const onLoaded = (event: Event) => syncFromLegacy(event);
     window.addEventListener('oddi:conversations-loaded', onLoaded);
@@ -772,7 +775,17 @@ export default function Sidebar() {
     return items
       .filter(c => !isEnabledFlag(c.archived) && !isEnabledFlag(c.deleted) && isEnabledFlag(c.pinned) && (!q || (c.title || '').toLowerCase().includes(q)))
       .filter(hasConversationMessages)
-      .sort((a,b) => new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime());
+      .sort((a,b) => {
+        const priority = (chat: Conversation) => {
+          const title = (chat.title || '').trim().toLocaleLowerCase();
+          if (title === 'stop') return 0;
+          if (title === 'introduction') return 1;
+          if (title.startsWith('general chat')) return 2;
+          return 3;
+        };
+        const byReferenceOrder = priority(a) - priority(b);
+        return byReferenceOrder || new Date(b.updated_at || b.created_at || 0).getTime() - new Date(a.updated_at || a.created_at || 0).getTime();
+      });
   }, [items, query]);
 
   const latestItems = visible.slice(0, 5);
@@ -1199,7 +1212,14 @@ export default function Sidebar() {
     window.location.assign('/?openProfile=1');
   }
 
-  function choosePalette(next: 'mono' | 'cyber-green' | 'cyber-blue') {
+  function choosePalette(next: 'mono' | 'cyber-blue' | 'cyber-gold') {
+    if (next === 'cyber-gold') {
+      const message = 'Gold theme is coming soon.';
+      if (WIN().showOddiToast) WIN().showOddiToast(message);
+      else if (WIN().__oddiShowToast) WIN().__oddiShowToast(message);
+      else window.alert(message);
+      return;
+    }
     setPalette(next);
     try { localStorage.setItem('oddi_palette_v1', next); } catch {}
     document.documentElement.dataset.oddiPalette = next;
@@ -1240,14 +1260,14 @@ export default function Sidebar() {
   }, []);
 
   function clampSidebarWidth(value: number) {
-    return Math.max(190, Math.min(360, Math.round(value)));
+    return Math.max(200, Math.min(360, Math.round(value)));
   }
 
   function resizeSidebarTo(value: number) {
     const next = clampSidebarWidth(value);
     setSidebarWidth(next);
     document.body.style.setProperty('--oddi-sidebar-width', `${next}px`);
-    try { localStorage.setItem('oddi_sidebar_width_v1', String(next)); } catch {}
+    try { localStorage.setItem('oddi_sidebar_width_v3', String(next)); } catch {}
   }
 
   function beginSidebarResize(event: ReactPointerEvent<HTMLDivElement>) {
@@ -1361,16 +1381,7 @@ export default function Sidebar() {
     >
       <header className="oddi-rs-header">
         <button className="oddi-rs-brand" onClick={() => isSwarmPage() ? returnFromSwarm() : collapsed && setCollapsed(false)} aria-label="ODDI AI">
-          <img
-            src={isDarkAppearance ? '/static/symbol-dark.png' : '/static/symbol.png'}
-            alt="ODDI"
-            style={{
-              background: isDarkAppearance ? '#fff' : 'transparent',
-              borderRadius: 5,
-              padding: isDarkAppearance ? 2 : 0,
-              display: 'block',
-            }}
-          />
+          <span className="oddi-rs-logo-mark" aria-hidden="true">D</span>
           {!collapsed && <span>ODDI AI</span>}
         </button>
         {!collapsed && <button
@@ -1412,6 +1423,7 @@ export default function Sidebar() {
         {!collapsed && <div className="oddi-rs-search">
           <Search size={13} />
           <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search conversations..." aria-label="Search conversations" />
+          {!query && <kbd className="oddi-rs-search-shortcut">Ctrl K</kbd>}
           {query && <button className="oddi-rs-search-clear" onClick={() => setQuery('')} aria-label="Clear search">×</button>}
         </div>}
 
@@ -1436,18 +1448,7 @@ export default function Sidebar() {
                   <div className="oddi-rs-label"><Pin size={11} /> <span>Pinned</span><span className="oddi-rs-pinned-count" title={`${pinnedItems.length} pinned; limit ${MAX_PINNED_CHATS}`}>{pinnedItems.length}/{MAX_PINNED_CHATS}</span></div>
                   {renderChatBucket(pinnedItems, 'pinned', true)}
                 </section>}
-                {visible.length > 0 && <section className="oddi-rs-group" aria-label="Recent chats">
-                  <div className="oddi-rs-label">Recent</div>
-                  {latestItems.map(chat => renderChatRow(chat))}
-                </section>}
-                {olderGroups.map(group => <section key={`recent-date:${group.label}`} className="oddi-rs-group" aria-label={`${group.label} chats`}>
-                  <div className="oddi-rs-label">{group.label}</div>
-                  {renderChatBucket(group.items, `recent:${group.label}`)}
-                </section>)}
-              </>
-          }
-        </div>
-
+                <div className="oddi-rs-section-heading">Features</div>
         <nav
           className="oddi-rs-nav"
           aria-label="Sidebar utilities"
@@ -1494,6 +1495,19 @@ export default function Sidebar() {
             </button>
           ))}
         </nav>
+                {visible.length > 0 && <section className="oddi-rs-group" aria-label="Recent chats">
+                  <div className="oddi-rs-label">Recent</div>
+                  {latestItems.map(chat => renderChatRow(chat))}
+                </section>}
+                {olderGroups.map(group => <section key={`recent-date:${group.label}`} className="oddi-rs-group" aria-label={`${group.label} chats`}>
+                  <div className="oddi-rs-label">{group.label}</div>
+                  {renderChatBucket(group.items, `recent:${group.label}`)}
+                </section>)}
+              </>
+          }
+        </div>
+
+
 
         {!collapsed && installReady && <button className="oddi-rs-install" onClick={installOddi}><Download size={13} />Install ODDI AI</button>}
       </main>
@@ -1536,14 +1550,14 @@ export default function Sidebar() {
         </button>
         <div className="oddi-rs-account-divider" />
         <div className="oddi-rs-palette-picker" role="group" aria-label="Website color theme">
-          <button type="button" className="oddi-rs-palette-swatch" data-palette="mono" aria-label="Black & White" aria-pressed={palette === 'mono'} title="Black & White" onClick={() => choosePalette('mono')}>
+          <button type="button" className="oddi-rs-palette-swatch" data-palette="mono" aria-label="Purple" aria-pressed={palette === 'mono'} title="Purple" onClick={() => choosePalette('mono')}>
             <span>{palette === 'mono' ? <Check size={13} /> : null}</span>
           </button>
-          <button type="button" className="oddi-rs-palette-swatch" data-palette="cyber-green" aria-label="Cyber Green" aria-pressed={palette === 'cyber-green'} title="Cyber Green" onClick={() => choosePalette('cyber-green')}>
-            <span>{palette === 'cyber-green' ? <Check size={13} /> : null}</span>
-          </button>
-          <button type="button" className="oddi-rs-palette-swatch" data-palette="cyber-blue" aria-label="Cyber Blue" aria-pressed={palette === 'cyber-blue'} title="Cyber Blue" onClick={() => choosePalette('cyber-blue')}>
+          <button type="button" className="oddi-rs-palette-swatch" data-palette="cyber-blue" aria-label="Cyan" aria-pressed={palette === 'cyber-blue'} title="Cyan" onClick={() => choosePalette('cyber-blue')}>
             <span>{palette === 'cyber-blue' ? <Check size={13} /> : null}</span>
+          </button>
+          <button type="button" className="oddi-rs-palette-swatch" data-palette="cyber-gold" aria-label="Gold, coming soon" aria-pressed={false} title="Gold — Coming soon" onClick={() => choosePalette('cyber-gold')}>
+            <span />
           </button>
         </div>
         <button type="button" role="menuitem" onClick={() => chooseAccountAction('theme')}>

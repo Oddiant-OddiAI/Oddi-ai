@@ -6,7 +6,7 @@
   --swarm-card-strong: color-mix(in srgb, var(--oddi-theme-raised) 88%, transparent);
 }
 html[data-oddi-palette="cyber-green"] { --swarm-cyan: #20edc1; }
-html[data-oddi-palette="cyber-blue"] { --swarm-cyan: #45d9ff; }
+html[data-oddi-palette="cyber-blue"] { --swarm-cyan: #00e5e8; }
 html[data-oddi-palette="mono"] { --swarm-cyan: var(--oddi-theme-accent); }
 
 body.oddi-swarm-body {

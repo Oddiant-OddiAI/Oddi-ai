@@ -1,0 +1,1081 @@
+/* Gold palette finish for the shared home and conversation shell.
+   Layout and component behavior remain owned by the existing app styles. */
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"] {
+  --oddi-gold-bright: #ffd12f;
+  --oddi-gold-deep: #b77900;
+  --oddi-gold-glint: #fff0a8;
+  --oddi-gold-outline: rgba(238, 180, 0, .52);
+  --oddi-gold-shadow: rgba(232, 157, 0, .25);
+  background: var(--oddi-theme-bg) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-gold"],
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-gold"] {
+  --oddi-gold-bright: #ffd11f;
+  --oddi-gold-deep: #9c6400;
+  --oddi-gold-glint: #fff3b3;
+  --oddi-gold-outline: rgba(235, 176, 0, .43);
+  --oddi-gold-shadow: rgba(255, 166, 0, .23);
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance="light"] body[data-oddi-palette="cyber-gold"],
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-gold"] {
+  --oddi-gold-bright: #aa7100;
+  --oddi-gold-deep: #8b5a00;
+  --oddi-gold-glint: #fff4cb;
+  --oddi-gold-outline: rgba(176, 119, 0, .36);
+  --oddi-gold-shadow: rgba(181, 125, 0, .15);
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) .app {
+  background: transparent !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) .app > .header,
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #sidebar.sidebar,
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar,
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-account-footer {
+  border-color: var(--oddi-theme-line) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 92%, var(--oddi-theme-accent) 8%) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root {
+  --rs-bg: color-mix(in srgb, var(--oddi-theme-bg) 84%, var(--oddi-theme-surface) 16%) !important;
+  --rs-surface: var(--oddi-theme-surface) !important;
+  --rs-hover: color-mix(in srgb, var(--oddi-theme-accent) 10%, var(--oddi-theme-surface)) !important;
+  --rs-active: color-mix(in srgb, var(--oddi-theme-accent) 17%, var(--oddi-theme-surface)) !important;
+  --rs-border: var(--oddi-theme-line) !important;
+  --rs-text: var(--oddi-theme-text) !important;
+  --rs-muted: var(--oddi-theme-muted) !important;
+  --rs-dim: var(--oddi-theme-dim) !important;
+  --rs-accent: var(--oddi-theme-accent) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar {
+  border-right-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(180deg, var(--rs-bg), color-mix(in srgb, var(--rs-bg) 86%, var(--oddi-theme-accent) 14%) 58%, var(--oddi-theme-bg)) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-search, .oddi-rs-chat, .oddi-rs-profile, .oddi-rs-nav a, .oddi-rs-nav button, .oddi-rs-rail > button) {
+  border-color: color-mix(in srgb, var(--oddi-theme-line) 78%, var(--oddi-theme-accent) 22%);
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-search, .oddi-rs-chat, .oddi-rs-profile, .oddi-rs-nav a, .oddi-rs-nav button, .oddi-rs-rail > button):is(:hover,:focus-visible,.active,.selected,.oddi-rs-nav-current,[aria-current="page"]) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 0 14px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-label > svg, .oddi-rs-nav svg, .oddi-rs-search > svg, .oddi-rs-avatar, .oddi-rs-logo-mark) {
+  color: var(--oddi-theme-accent) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #chatbox.chatbox {
+  background-color: var(--oddi-theme-bg) !important;
+  background-image:
+    radial-gradient(ellipse 47% 45% at 50% -4%, color-mix(in srgb, var(--oddi-theme-accent) 21%, transparent), transparent 80%),
+    radial-gradient(ellipse 34% 34% at 50% 0%, color-mix(in srgb, var(--oddi-gold-bright) 13%, transparent), transparent 82%),
+    linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-bg) 83%, #4a3100 17%) 0%, var(--oddi-theme-bg) 54%, color-mix(in srgb, var(--oddi-theme-bg) 88%, #2f2100 12%) 100%) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer {
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > :is(h2, .oddi-home-hero-title) {
+  color: var(--oddi-theme-text) !important;
+  text-shadow: 0 2px 22px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer .welcome-name {
+  color: var(--oddi-gold-bright) !important;
+  text-shadow: 0 0 18px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
+  border-color: var(--oddi-theme-line) !important;
+  background: linear-gradient(100deg, var(--oddi-theme-raised), var(--oddi-theme-surface)) !important;
+  color: var(--oddi-theme-muted) !important;
+  box-shadow: inset 0 0 14px color-mix(in srgb, var(--oddi-theme-glow) 42%, transparent), 0 0 16px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: radial-gradient(circle at 34% 24%, #fff8d4, var(--oddi-gold-bright) 43%, var(--oddi-gold-deep) 100%) !important;
+  color: #fff9e8 !important;
+  box-shadow: 0 0 13px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-hero-orb {
+  border: 1px solid rgba(255, 229, 139, .84) !important;
+  background: radial-gradient(circle at 33% 21%, #fffdf0 0%, #fff3a1 5%, #ffdc36 13%, #ffc000 27%, #d78a00 49%, #805000 74%, #291900 100%) !important;
+  box-shadow:
+    0 0 10px 3px rgba(255, 224, 105, .58),
+    0 0 34px 12px rgba(255, 187, 0, .47),
+    0 0 68px 25px rgba(210, 133, 0, .22),
+    inset 0 2px 5px rgba(255, 255, 255, .82),
+    inset 0 -11px 17px rgba(38, 22, 0, .66) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-hero-orb::before {
+  background: radial-gradient(ellipse at 42% 38%, rgba(255,255,255,.98), rgba(255,249,211,.86) 23%, rgba(255,206,38,.32) 68%, transparent 100%) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action {
+  border-color: var(--oddi-gold-outline) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-surface) 76%, var(--oddi-theme-accent) 24%), color-mix(in srgb, var(--oddi-theme-bg) 90%, var(--oddi-theme-accent) 10%)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 4px 14px rgba(0,0,0,.14) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action :is(span,svg) {
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action:is(:hover,:focus-visible,.is-selected) {
+  border-color: var(--oddi-theme-accent) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-accent) 26%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-accent) 12%, var(--oddi-theme-bg))) !important;
+  box-shadow: 0 0 16px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.1) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell .oddi-composer-field {
+  border: 1px solid var(--oddi-gold-outline) !important;
+  background: linear-gradient(118deg, color-mix(in srgb, var(--oddi-theme-surface) 90%, var(--oddi-theme-accent) 10%), color-mix(in srgb, var(--oddi-theme-bg) 93%, var(--oddi-theme-accent) 7%)) !important;
+  background-color: var(--oddi-theme-surface) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--oddi-theme-accent-soft) 62%, transparent), 0 0 22px var(--oddi-theme-glow), 0 10px 28px rgba(0,0,0,.19), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter: blur(18px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.12) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell .oddi-composer-field:focus-within {
+  border-color: var(--oddi-theme-accent-strong) !important;
+  box-shadow: 0 0 0 2px var(--oddi-theme-accent-soft), 0 0 27px var(--oddi-theme-glow), 0 10px 28px rgba(0,0,0,.2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell :is(#userInput,#userInput::placeholder) {
+  color: var(--oddi-theme-text) !important;
+  caret-color: var(--oddi-theme-accent-strong) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell :is(.oddi-composer-sparkle-badge,.oddi-composer-chip-btn,#attach-btn,#dictation-btn) {
+  border-color: var(--oddi-gold-outline) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell .oddi-composer-sparkle-badge {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-accent) 32%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-accent) 42%, var(--oddi-theme-bg))) !important;
+  color: var(--oddi-gold-glint) !important;
+  box-shadow: 0 0 17px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.16) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell :is(#attach-btn,#dictation-btn,.oddi-composer-chip-btn) {
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 70%, transparent) !important;
+  color: var(--oddi-theme-accent) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell :is(#dictation-btn,#voice-btn) {
+  border-color: var(--oddi-gold-outline) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 80%, var(--oddi-theme-surface)) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell #send-btn {
+  border: 1px solid color-mix(in srgb, var(--oddi-gold-glint) 66%, var(--oddi-theme-accent)) !important;
+  background: radial-gradient(circle at 34% 22%, #fff6c7 0%, var(--oddi-gold-bright) 29%, #e4a000 73%, var(--oddi-gold-deep) 100%) !important;
+  color: #362300 !important;
+  box-shadow: 0 0 16px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.65) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddiComposerShell #send-btn svg {
+  color: #362300 !important;
+  stroke: #362300 !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > :is(.oddi-reference-card,.oddi-suggestion-card),
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards.oddi-reference-card-grid > .oddi-reference-card {
+  --oddi-card-accent: var(--oddi-theme-accent) !important;
+  --oddi-card-edge: var(--oddi-gold-outline) !important;
+  --oddi-card-icon: linear-gradient(145deg, #ffe986, #d38b00 62%, #704400) !important;
+  --oddi-card-fill: linear-gradient(128deg, color-mix(in srgb, var(--oddi-theme-surface) 72%, var(--oddi-theme-accent) 28%), color-mix(in srgb, var(--oddi-theme-bg) 87%, var(--oddi-theme-accent) 13%)) !important;
+  border-color: var(--oddi-card-edge) !important;
+  background: var(--oddi-card-fill) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 0 1px rgba(255,255,255,.025), 0 0 18px var(--oddi-theme-glow), 0 9px 22px rgba(0,0,0,.2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > :is(.oddi-reference-card,.oddi-suggestion-card) :is(.oddi-reference-card-icon,.oddi-suggestion-icon,.action-icon) {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: var(--oddi-card-icon) !important;
+  color: #fff8df !important;
+  box-shadow: 0 0 16px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.32) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > :is(.oddi-reference-card,.oddi-suggestion-card) :is(.oddi-reference-card-copy,.oddi-suggestion-copy,.action-copy) :is(strong,small,p) {
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > :is(.oddi-reference-card,.oddi-suggestion-card) :is(.oddi-reference-card-arrow,.oddi-suggestion-arrow,.action-arrow) {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 85%, transparent) !important;
+  color: var(--oddi-gold-bright) !important;
+  box-shadow: 0 0 12px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiSuggestionCards > :is(.oddi-reference-card,.oddi-suggestion-card):is(:hover,:focus-visible) {
+  border-color: var(--oddi-theme-accent-strong) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.13), 0 0 23px var(--oddi-theme-glow), 0 10px 23px rgba(0,0,0,.22) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox {
+  background-color: var(--oddi-theme-bg) !important;
+  background-image:
+    radial-gradient(ellipse 60% 42% at 50% -2%, color-mix(in srgb, var(--oddi-theme-accent) 14%, transparent), transparent 80%),
+    linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-bg) 91%, var(--oddi-theme-accent) 9%), var(--oddi-theme-bg) 58%, color-mix(in srgb, var(--oddi-theme-bg) 95%, var(--oddi-theme-accent) 5%)) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .user-message > .user-bubble-main {
+  border-color: var(--oddi-gold-outline) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oddi-theme-accent) 28%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-accent) 14%, var(--oddi-theme-bg))) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 5px 20px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .bot-message[data-message-index]:not(.document-output-message) > .ai-content {
+  border: 1px solid var(--oddi-gold-outline) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oddi-theme-surface) 75%, var(--oddi-theme-accent) 25%), color-mix(in srgb, var(--oddi-theme-bg) 91%, var(--oddi-theme-accent) 9%)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.075), 0 8px 24px rgba(0,0,0,.17), 0 0 18px color-mix(in srgb, var(--oddi-theme-glow) 72%, transparent) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .bot-message .oddi-avatar-mark {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: radial-gradient(circle at 32% 24%, #fff7ca, #f0b600 48%, #744600 100%) !important;
+  color: #3b2700 !important;
+  box-shadow: 0 0 14px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .bot-message .message-sound-btn,
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .bot-message .bot-actions .message-action-btn {
+  border-color: var(--oddi-theme-line) !important;
+  background: var(--oddi-theme-accent-soft) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .bot-message .bot-actions .message-action-btn:is(:hover,:focus-visible),
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .bot-message .message-sound-btn:is(:hover,.speaking) {
+  border-color: var(--oddi-theme-accent-strong) !important;
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 80%, var(--oddi-theme-surface)) !important;
+  color: var(--oddi-theme-accent) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) :is(#oddiInChatFindButton,#oddiChatLatestButton,#themeBtn,.header-more-btn) {
+  border-color: var(--oddi-theme-line) !important;
+  background: color-mix(in srgb, var(--oddi-theme-surface) 85%, transparent) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 0 14px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) :is(#oddiInChatFindButton,#oddiChatLatestButton,#themeBtn,.header-more-btn):is(:hover,:focus-visible) {
+  border-color: var(--oddi-theme-accent) !important;
+  color: var(--oddi-theme-accent) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) * {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Final Gold pass: beat the high-specificity purple reference theme rules on
+   both the home view and conversation view. Keep sizing and layout untouched. */
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #chatbox.chatbox {
+  background-color: var(--oddi-theme-bg) !important;
+  background-image:
+    radial-gradient(ellipse 54% 60% at 50% 0%, color-mix(in srgb, var(--oddi-theme-accent) 34%, transparent), transparent 78%),
+    radial-gradient(ellipse 72% 74% at 50% 0%, color-mix(in srgb, var(--oddi-theme-accent-strong) 16%, transparent), transparent 86%),
+    linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-bg) 80%, #654500 20%) 0%, var(--oddi-theme-bg) 58%, color-mix(in srgb, var(--oddi-theme-bg) 94%, #4b3300 6%) 100%) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-hero-orb {
+  border-color: color-mix(in srgb, var(--oddi-gold-glint) 82%, var(--oddi-theme-accent)) !important;
+  background: radial-gradient(circle at 34% 19%, #fffdf0 0%, #fff0a0 7%, #ffd42e 18%, #f0a900 39%, #a86b00 67%, #392300 100%) !important;
+  box-shadow: 0 0 13px 4px color-mix(in srgb, var(--oddi-gold-bright) 62%, transparent),
+    0 0 42px 16px color-mix(in srgb, var(--oddi-theme-accent) 46%, transparent),
+    0 0 82px 30px color-mix(in srgb, var(--oddi-theme-accent-strong) 28%, transparent),
+    inset 0 2px 6px rgba(255,255,255,.88), inset 0 -12px 18px rgba(46,29,0,.68) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-hero-orb::before {
+  background: radial-gradient(ellipse at 42% 34%, rgba(255,255,255,.98), rgba(255,248,204,.82) 24%, color-mix(in srgb, var(--oddi-gold-bright) 42%, transparent) 66%, transparent 100%) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #welcomeContainer .welcome-name {
+  color: var(--oddi-gold-bright) !important;
+  background: linear-gradient(90deg, #fff7d2 0%, var(--oddi-gold-bright) 58%, #e49a00 100%) !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  text-shadow: 0 0 18px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action {
+  border-color: var(--oddi-gold-outline) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-surface) 84%, var(--oddi-theme-accent) 16%), color-mix(in srgb, var(--oddi-theme-bg) 91%, var(--oddi-theme-accent) 9%)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 4px 14px rgba(0,0,0,.16) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action :is(span, svg) {
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiHomeQuickActions .oddi-home-quick-action:is(:hover,:focus-visible,.is-selected) {
+  border-color: var(--oddi-theme-accent-strong) !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-accent) 24%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-accent) 10%, var(--oddi-theme-bg))) !important;
+  box-shadow: 0 0 16px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode > .oddi-composer-field {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(118deg, color-mix(in srgb, var(--oddi-theme-surface) 91%, var(--oddi-theme-accent) 9%), color-mix(in srgb, var(--oddi-theme-bg) 88%, var(--oddi-theme-accent) 12%)) !important;
+  background-color: var(--oddi-theme-surface) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--oddi-theme-accent-soft) 72%, transparent), 0 0 25px var(--oddi-theme-glow), 0 12px 30px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.1) !important;
+  backdrop-filter: blur(18px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.12) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode > .oddi-composer-field:focus-within {
+  border-color: var(--oddi-theme-accent-strong) !important;
+  background: linear-gradient(118deg, color-mix(in srgb, var(--oddi-theme-surface) 91%, var(--oddi-theme-accent) 9%), color-mix(in srgb, var(--oddi-theme-bg) 88%, var(--oddi-theme-accent) 12%)) !important;
+  box-shadow: 0 0 0 2px var(--oddi-theme-accent-soft), 0 0 28px var(--oddi-theme-glow), 0 12px 30px rgba(0,0,0,.2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode :is(.oddi-composer-sparkle-badge,.oddi-composer-chip-btn,#attach-btn,#dictation-btn,#voice-btn) {
+  border-color: var(--oddi-theme-line) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode .oddi-composer-sparkle-badge {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-accent) 36%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-accent) 42%, var(--oddi-theme-bg))) !important;
+  color: var(--oddi-gold-glint) !important;
+  box-shadow: 0 0 16px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode :is(#attach-btn,#dictation-btn,#voice-btn,.oddi-composer-chip-btn) {
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 72%, transparent) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #send-btn {
+  border: 1px solid color-mix(in srgb, var(--oddi-gold-glint) 66%, var(--oddi-theme-accent)) !important;
+  background: radial-gradient(circle at 34% 22%, #fff8d5 0%, var(--oddi-gold-bright) 32%, #df9700 76%, var(--oddi-gold-deep) 100%) !important;
+  color: #352300 !important;
+  box-shadow: 0 0 16px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.68) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) #oddiComposerShell.oddi-home-composer-mode #send-btn svg {
+  color: #352300 !important;
+  stroke: #352300 !important;
+}
+
+/* Conversation colors use the same Gold palette while preserving the message
+   geometry and composer placement established by the chat reference sheet. */
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox {
+  background-color: var(--oddi-theme-bg) !important;
+  background-image:
+    radial-gradient(ellipse 62% 44% at 50% -2%, color-mix(in srgb, var(--oddi-theme-accent) 26%, transparent), transparent 82%),
+    radial-gradient(ellipse 42% 35% at 52% 0%, color-mix(in srgb, var(--oddi-gold-bright) 14%, transparent), transparent 86%),
+    linear-gradient(180deg, color-mix(in srgb, var(--oddi-theme-bg) 83%, #5c3d00 17%) 0%, var(--oddi-theme-bg) 58%, color-mix(in srgb, var(--oddi-theme-bg) 95%, #4d3300 5%) 100%) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .user-message > .user-bubble-main {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oddi-theme-accent) 25%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-accent) 11%, var(--oddi-theme-bg))) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 5px 22px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .bot-message[data-message-index]:not(.document-output-message) > .ai-content {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--oddi-theme-surface) 82%, var(--oddi-theme-accent) 18%), color-mix(in srgb, var(--oddi-theme-bg) 88%, var(--oddi-theme-accent) 12%)) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 8px 24px rgba(0,0,0,.18), 0 0 18px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #chatbox.chatbox > .bot-message .oddi-avatar-mark {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: radial-gradient(circle at 32% 24%, #fff7ce, var(--oddi-gold-bright) 48%, #754900 100%) !important;
+  color: #382400 !important;
+  box-shadow: 0 0 14px var(--oddi-theme-glow) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-field {
+  border-color: var(--oddi-theme-line-strong) !important;
+  background: linear-gradient(118deg, color-mix(in srgb, var(--oddi-theme-surface) 90%, var(--oddi-theme-accent) 10%), color-mix(in srgb, var(--oddi-theme-bg) 89%, var(--oddi-theme-accent) 11%)) !important;
+  background-color: var(--oddi-theme-surface) !important;
+  color: var(--oddi-theme-text) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--oddi-theme-accent-soft) 74%, transparent), 0 0 24px var(--oddi-theme-glow), 0 10px 28px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.1) !important;
+  backdrop-filter: blur(18px) saturate(1.12) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.12) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-field:focus-within {
+  border-color: var(--oddi-theme-accent-strong) !important;
+  box-shadow: 0 0 0 2px var(--oddi-theme-accent-soft), 0 0 28px var(--oddi-theme-glow), 0 10px 28px rgba(0,0,0,.2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell :is(.oddi-composer-sparkle-badge,.oddi-composer-chip-btn,#attach-btn,#dictation-btn,#voice-btn) {
+  border-color: var(--oddi-theme-line) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-sparkle-badge {
+  background: linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-accent) 36%, var(--oddi-theme-surface)), color-mix(in srgb, var(--oddi-theme-accent) 42%, var(--oddi-theme-bg))) !important;
+  color: var(--oddi-gold-glint) !important;
+  box-shadow: 0 0 16px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell :is(#attach-btn,#dictation-btn,#voice-btn,.oddi-composer-chip-btn) {
+  background: color-mix(in srgb, var(--oddi-theme-accent-soft) 72%, transparent) !important;
+  color: var(--oddi-theme-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell #send-btn {
+  border: 1px solid color-mix(in srgb, var(--oddi-gold-glint) 66%, var(--oddi-theme-accent)) !important;
+  background: radial-gradient(circle at 34% 22%, #fff8d5 0%, var(--oddi-gold-bright) 32%, #df9700 76%, var(--oddi-gold-deep) 100%) !important;
+  color: #352300 !important;
+  box-shadow: 0 0 16px var(--oddi-theme-glow), inset 0 1px 0 rgba(255,255,255,.68) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell #send-btn svg {
+  color: #352300 !important;
+  stroke: #352300 !important;
+}
+
+/* Gold palette finish for the shared sidebar and the two upper utility
+   controls. Keep the sidebar's charcoal base while replacing violet accents. */
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root {
+  --rs-bg: #0d0b06 !important;
+  --rs-surface: #171307 !important;
+  --rs-hover: #241d08 !important;
+  --rs-active: #302408 !important;
+  --rs-border: rgba(238, 180, 0, .25) !important;
+  --rs-text: #f7f1dc !important;
+  --rs-muted: #c1b78f !important;
+  --rs-dim: #91845a !important;
+  --rs-accent: var(--oddi-gold-bright) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root#oddi-react-sidebar-root .oddi-rs-sidebar {
+  border-right-color: var(--oddi-gold-outline) !important;
+  background: linear-gradient(180deg, #100d06 0%, #0c0a06 62%, #090805 100%) !important;
+  color: #f7f1dc !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-header, .oddi-rs-main, .oddi-rs-history, .oddi-rs-group, .oddi-rs-pinned-group, .oddi-rs-footer) {
+  background-color: transparent !important;
+  color: var(--rs-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root#oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-search, .oddi-rs-chat, .oddi-rs-profile, .oddi-rs-home, .oddi-rs-rail > button, .oddi-rs-nav button, .oddi-rs-theme, .oddi-rs-install) {
+  border-color: rgba(238, 180, 0, .28) !important;
+  color: var(--rs-text) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root#oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-rail > button, .oddi-rs-home) {
+  background: linear-gradient(145deg, rgba(255, 204, 28, .21), rgba(137, 87, 0, .19)) !important;
+  border-color: var(--oddi-gold-outline) !important;
+  color: var(--oddi-gold-bright) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 12px rgba(225, 157, 0, .12) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search {
+  background: rgba(255, 196, 0, .055) !important;
+  border-color: rgba(238, 180, 0, .23) !important;
+  color: var(--oddi-gold-bright) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat:is(:hover,.selected,.active,[aria-current="page"],.oddi-rs-nav-current),
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-nav button, .oddi-rs-theme, .oddi-rs-install, .oddi-rs-rail > button):is(:hover,:focus-visible,.active,.selected,[aria-current="page"]) {
+  background: linear-gradient(110deg, rgba(255, 205, 31, .16), rgba(169, 111, 0, .11)) !important;
+  border-color: var(--oddi-gold-outline) !important;
+  color: #ffe28a !important;
+  box-shadow: 0 0 13px rgba(230, 161, 0, .14) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-label > svg, .oddi-rs-nav svg, .oddi-rs-search > svg, .oddi-rs-new svg, .oddi-rs-chat svg, .oddi-rs-rail svg) {
+  color: var(--oddi-gold-bright) !important;
+  stroke: currentColor !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-profile, .oddi-rs-profile-main) {
+  background: #100d07 !important;
+  border-color: rgba(238, 180, 0, .24) !important;
+  color: #f7f1dc !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-avatar {
+  border-color: var(--oddi-gold-outline) !important;
+  background: radial-gradient(circle at 32% 22%, #fff4bf 0%, #ffc400 42%, #815000 100%) !important;
+  color: #382400 !important;
+  box-shadow: 0 0 13px rgba(255, 190, 0, .26) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-brand img {
+  filter: hue-rotate(137deg) saturate(1.22) brightness(1.06) drop-shadow(0 0 5px rgba(255, 198, 18, .3)) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) .app > .header .header-controls :is(#headerMoreBtn, #themeBtn),
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) :is(#oddiInChatFindButton, #oddiChatLatestButton) {
+  border-color: rgba(238, 180, 0, .52) !important;
+  background: linear-gradient(145deg, rgba(255, 204, 28, .17), rgba(39, 27, 4, .78)) !important;
+  color: #ffe28a !important;
+  box-shadow: 0 0 15px rgba(236, 164, 0, .2), inset 0 1px 0 rgba(255,255,255,.1) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) .app > .header .header-controls :is(#headerMoreBtn, #themeBtn):is(:hover,:focus-visible),
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"][data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) :is(#oddiInChatFindButton, #oddiChatLatestButton):is(:hover,:focus-visible) {
+  border-color: var(--oddi-gold-bright) !important;
+  background: linear-gradient(145deg, rgba(255, 215, 74, .28), rgba(128, 82, 0, .28)) !important;
+  color: #fff1bd !important;
+  box-shadow: 0 0 18px rgba(255, 190, 0, .3) !important;
+}
+
+/* Match the Gold reference sidebar: quiet rows, warm logo/avatar, and two
+   consistently outlined header controls. These selectors include the actual
+   React markup (the logo is a span and the avatar carries inline defaults). */
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-logo-mark {
+  border: 1px solid rgba(255, 222, 97, .7) !important;
+  background: linear-gradient(145deg, #ffe36d 0%, #e5aa06 58%, #9c6600 100%) !important;
+  color: #281a00 !important;
+  box-shadow: 0 0 10px rgba(255, 192, 0, .26), inset 0 1px 0 rgba(255,255,255,.46) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-avatar {
+  border: 1px solid rgba(255, 216, 72, .68) !important;
+  background: radial-gradient(circle at 32% 24%, #fff0a0 0%, #efb900 47%, #8c5600 100%) !important;
+  color: #2b1c00 !important;
+  box-shadow: 0 0 12px rgba(255, 190, 0, .24) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat:not(.selected):not(.active):not(.oddi-rs-nav-current):not([aria-current="page"]),
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-nav button:not(.selected):not(.active):not([aria-current="page"]) {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #e4dece !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat:is(.selected,.active,.oddi-rs-nav-current,[aria-current="page"]),
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat:is(:hover,:focus-visible) {
+  border-color: rgba(231, 171, 0, .72) !important;
+  background: linear-gradient(100deg, rgba(221, 158, 0, .18), rgba(105, 69, 0, .09)) !important;
+  color: #fff1bd !important;
+  box-shadow: inset 2px 0 rgba(255, 202, 31, .82), 0 0 10px rgba(205, 145, 0, .1) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-label > svg, .oddi-rs-nav svg, .oddi-rs-search > svg, .oddi-rs-chat svg) {
+  color: #d8d1bf !important;
+  stroke: currentColor !important;
+  filter: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-new {
+  border-color: rgba(224, 167, 0, .78) !important;
+  background: linear-gradient(100deg, rgba(199, 139, 0, .18), rgba(74, 48, 0, .17)) !important;
+  color: #ffd529 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 10px rgba(222, 156, 0, .1) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-new svg {
+  color: #ffd529 !important;
+  stroke: currentColor !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search {
+  border-color: rgba(208, 199, 173, .18) !important;
+  background: #100e0a !important;
+  color: #d8d1bf !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-profile {
+  border-color: rgba(205, 155, 22, .24) !important;
+  background: #0d0b08 !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) .app :is(.header-controls > .header-more, .header-controls > .theme-toggle) {
+  border: 1px solid rgba(220, 164, 0, .7) !important;
+  border-radius: 50% !important;
+  background: rgba(20, 16, 7, .9) !important;
+  color: #ffe17a !important;
+  box-shadow: 0 0 12px rgba(219, 157, 0, .17), inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) :is(#headerMoreBtn, #themeBtn) {
+  border: 1px solid rgba(220, 164, 0, .78) !important;
+  border-radius: 50% !important;
+  background: rgba(20, 16, 7, .94) !important;
+  color: #ffe17a !important;
+  box-shadow: 0 0 12px rgba(219, 157, 0, .18), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  text-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance]
+body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) :is(#headerMoreBtn, #themeBtn):is(:hover,:focus-visible) {
+  border-color: #ffd529 !important;
+  background: rgba(112, 76, 0, .42) !important;
+  color: #fff1bd !important;
+  box-shadow: 0 0 16px rgba(255, 191, 0, .3) !important;
+}
+
+/* Final reference match for the Gold sidebar and shared header controls. */
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar {
+  background: #090805 !important;
+  color: #eee9dc !important;
+  border-right-color: rgba(209, 158, 0, .22) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-header, .oddi-rs-main, .oddi-rs-history, .oddi-rs-footer) {
+  background: transparent !important;
+  color: #eee9dc !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-logo-mark {
+  border: 1px solid rgba(255, 218, 75, .8) !important;
+  background: linear-gradient(145deg, #ffe574 0%, #eab400 62%, #9b6500 100%) !important;
+  color: #251900 !important;
+  box-shadow: 0 0 9px rgba(255, 190, 0, .22), inset 0 1px 0 rgba(255,255,255,.46) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-new {
+  border: 1px solid rgba(211, 157, 0, .72) !important;
+  background: linear-gradient(105deg, rgba(117, 83, 0, .38), rgba(37, 29, 7, .58)) !important;
+  color: #f4c91e !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 0 8px rgba(192, 137, 0, .08) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search {
+  border: 1px solid rgba(195, 183, 145, .17) !important;
+  background: #100e0a !important;
+  color: #d7d1c2 !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-chat, .oddi-rs-nav button, .oddi-rs-mini-chat) {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #e4dfd2 !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat:is(.active, .selected, :hover, :focus-visible),
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-nav button:is(.active, .selected, [aria-current="page"], :hover, :focus-visible),
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-mini-chat:is(.active, :hover, :focus-visible) {
+  border-color: rgba(223, 168, 0, .76) !important;
+  background: linear-gradient(100deg, rgba(154, 108, 0, .22), rgba(57, 43, 7, .18)) !important;
+  color: #fff0b3 !important;
+  box-shadow: inset 2px 0 rgba(255, 203, 25, .76), 0 0 9px rgba(193, 140, 0, .1) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-label, .oddi-rs-section-heading, .oddi-rs-title-glass) {
+  color: #aaa391 !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root :is(.oddi-rs-label > svg, .oddi-rs-nav svg, .oddi-rs-search > svg, .oddi-rs-chat > svg, .oddi-rs-mini-chat svg) {
+  color: #d5cfbf !important;
+  stroke: currentColor !important;
+  filter: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-avatar {
+  border: 1px solid rgba(238, 186, 13, .58) !important;
+  background: radial-gradient(circle at 32% 24%, #fff0a0 0%, #eab500 49%, #805300 100%) !important;
+  color: #241800 !important;
+  box-shadow: 0 0 10px rgba(255, 190, 0, .18) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-profile {
+  border-color: rgba(190, 145, 20, .24) !important;
+  background: #0d0b08 !important;
+  box-shadow: 0 4px 14px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) :is(#headerMoreBtn, #themeBtn) {
+  border: 1px solid rgba(221, 165, 0, .78) !important;
+  border-radius: 50% !important;
+  background: #100d07 !important;
+  color: #f3ca35 !important;
+  box-shadow: 0 0 11px rgba(202, 145, 0, .16), inset 0 1px 0 rgba(255,255,255,.07) !important;
+  text-shadow: 0 0 7px rgba(250, 197, 36, .32) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) :is(#headerMoreBtn, #themeBtn):is(:hover, :focus-visible) {
+  border-color: #ffda42 !important;
+  background: #292008 !important;
+  color: #fff0b0 !important;
+  box-shadow: 0 0 15px rgba(231, 166, 0, .28) !important;
+}
+
+/* The home header's theme toggle has its own wrapper ring. Match that ring to
+   the Gold More button as well as the inner control. */
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) .header-controls > .theme-toggle {
+  border: 1px solid rgba(220, 164, 0, .7) !important;
+  border-radius: 50% !important;
+  background: rgba(20, 16, 7, .9) !important;
+  color: #ffe17a !important;
+  box-shadow: 0 0 12px rgba(219, 157, 0, .17), inset 0 1px 0 rgba(255,255,255,.07) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) .header-controls > .theme-toggle > #themeBtn {
+  border: 1px solid rgba(220, 164, 0, .78) !important;
+  border-radius: 50% !important;
+  background: rgba(20, 16, 7, .94) !important;
+  color: #ffe17a !important;
+  box-shadow: 0 0 12px rgba(219, 157, 0, .18), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  text-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) .header-controls > .theme-toggle:is(:hover, :focus-within),
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox > #welcomeContainer) .header-controls > .theme-toggle > #themeBtn:is(:hover, :focus-visible) {
+  border-color: #ffd529 !important;
+  background: rgba(112, 76, 0, .42) !important;
+  color: #fff1bd !important;
+  box-shadow: 0 0 16px rgba(255, 191, 0, .3) !important;
+}
+
+/* Keep composer tool buttons clear, and resolve the inline send-button colors
+   through Gold theme variables so the arrow is Gold instead of violet. */
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"] #oddiComposerShell :is(.oddi-composer-chip-btn, #attach-btn) {
+  border-color: transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"] #oddiComposerShell :is(.oddi-composer-chip-btn, #attach-btn):is(:hover, :active) {
+  border-color: transparent !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: #ffe17a !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"] #oddiComposerShell :is(#dictation-btn, #voice-btn) {
+  border-color: rgba(220, 164, 0, .72) !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  color: #ffe17a !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"] #oddiComposerShell #send-btn:not(.stop-active) {
+  --oddi-send-button-border: rgba(255, 225, 122, .92) !important;
+  --oddi-send-button-background: radial-gradient(circle at 34% 22%, #fff8d5 0%, #ffd12f 32%, #df9700 76%, #9c6400 100%) !important;
+  --oddi-send-button-color: #352300 !important;
+  --oddi-send-button-shadow: 0 0 16px rgba(235, 176, 0, .48), inset 0 1px 0 rgba(255,255,255,.68) !important;
+}
+
+/* Keep the Gold sidebar header and account footer in the Gold palette too. */
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-header {
+  border-bottom-color: rgba(224, 169, 0, .58) !important;
+  background: linear-gradient(180deg, rgba(48, 36, 6, .42), rgba(15, 12, 6, .12)) !important;
+  box-shadow: inset 0 -1px 0 rgba(255, 203, 35, .08) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-header :is(.oddi-rs-density, .oddi-rs-collapse, .oddi-rs-mobile-close) {
+  border: 1px solid rgba(218, 164, 0, .46) !important;
+  background: linear-gradient(145deg, rgba(255, 204, 28, .1), rgba(49, 36, 6, .48)) !important;
+  color: #f6d65e !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-header :is(.oddi-rs-density, .oddi-rs-collapse, .oddi-rs-mobile-close):is(:hover, :focus-visible, .is-active) {
+  border-color: #ffd12f !important;
+  background: linear-gradient(145deg, rgba(255, 215, 74, .24), rgba(128, 82, 0, .28)) !important;
+  color: #fff1bd !important;
+  box-shadow: 0 0 12px rgba(255, 190, 0, .2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-profile {
+  border-top-color: rgba(224, 169, 0, .62) !important;
+  border-right-color: rgba(195, 143, 0, .56) !important;
+  border-bottom-color: rgba(195, 143, 0, .56) !important;
+  border-left-color: rgba(195, 143, 0, .56) !important;
+  background: linear-gradient(135deg, rgba(75, 54, 7, .42), rgba(18, 14, 6, .96) 68%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 226, 123, .1), 0 4px 14px rgba(0, 0, 0, .32) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-profile .oddi-rs-avatar {
+  border: 1px solid rgba(255, 220, 92, .78) !important;
+  background: radial-gradient(circle at 32% 22%, #fff6c9 0%, #ffd12f 43%, #d58c00 76%, #805000 100%) !important;
+  color: #352300 !important;
+  box-shadow: 0 0 12px rgba(255, 190, 0, .28), inset 0 1px 0 rgba(255, 255, 255, .48) !important;
+}
+
+/* Chat view finish: keep the shared sidebar and composer in Gold after the
+   legacy chat styles and inline composer defaults have been applied. */
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root {
+  --rs-bg: #0c0a06 !important;
+  --rs-surface: #151106 !important;
+  --rs-hover: rgba(255, 198, 0, .09) !important;
+  --rs-active: rgba(221, 161, 0, .16) !important;
+  --rs-border: rgba(218, 163, 0, .3) !important;
+  --rs-text: #f8f2df !important;
+  --rs-muted: #c2b88f !important;
+  --rs-dim: #91845d !important;
+  --rs-accent: #ffd12f !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root .oddi-rs-sidebar {
+  border-right: 1px solid rgba(209, 158, 0, .3) !important;
+  background: linear-gradient(180deg, #100d06 0%, #0c0a06 62%, #090805 100%) !important;
+  color: #f8f2df !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root .oddi-rs-header {
+  border-bottom: 1px solid rgba(218, 163, 0, .34) !important;
+  background: linear-gradient(180deg, rgba(63, 46, 8, .42), rgba(17, 13, 6, .22)) !important;
+  box-shadow: inset 0 -1px 0 rgba(255, 207, 48, .06) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root :is(.oddi-rs-header button, .oddi-rs-density, .oddi-rs-collapse, .oddi-rs-mobile-close) {
+  border-color: rgba(218, 164, 0, .42) !important;
+  background-color: rgba(28, 22, 8, .72) !important;
+  color: #f4d660 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root .oddi-rs-logo-mark {
+  border: 1px solid rgba(255, 224, 99, .84) !important;
+  background: linear-gradient(145deg, #fff09c 0%, #eab400 58%, #986300 100%) !important;
+  color: #281b00 !important;
+  box-shadow: 0 0 10px rgba(255, 190, 0, .22), inset 0 1px 0 rgba(255,255,255,.52) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root .oddi-rs-new {
+  border: 1px solid rgba(219, 164, 0, .72) !important;
+  background: linear-gradient(105deg, rgba(130, 91, 0, .42), rgba(42, 31, 7, .55)) !important;
+  color: #ffdc38 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 0 10px rgba(191, 133, 0, .1) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root .oddi-rs-search {
+  border: 1px solid rgba(219, 205, 164, .2) !important;
+  background: #100e09 !important;
+  color: #ded5bd !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root :is(.oddi-rs-chat, .oddi-rs-nav a, .oddi-rs-nav button, .oddi-rs-mini-chat, .oddi-rs-home, .oddi-rs-rail > button) {
+  border-color: transparent !important;
+  background: transparent !important;
+  color: #e8e0ca !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root :is(.oddi-rs-chat:is(.active,.selected,[aria-current="page"]), .oddi-rs-nav :is(a,button):is(.active,.selected,.oddi-rs-nav-current,[aria-current="page"])) {
+  border-color: rgba(225, 170, 0, .78) !important;
+  background: linear-gradient(100deg, rgba(160, 113, 0, .26), rgba(66, 49, 8, .22)) !important;
+  color: #fff0b1 !important;
+  box-shadow: inset 2px 0 rgba(255, 205, 35, .86), 0 0 10px rgba(193, 140, 0, .12) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root :is(.oddi-rs-chat:hover, .oddi-rs-nav :is(a,button):hover, .oddi-rs-mini-chat:hover, .oddi-rs-home:hover, .oddi-rs-rail > button:hover, .oddi-rs-profile:hover) {
+  border-color: rgba(225, 170, 0, .5) !important;
+  background: rgba(197, 143, 0, .12) !important;
+  color: #fff0b1 !important;
+  box-shadow: 0 0 10px rgba(193, 140, 0, .1) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root :is(.oddi-rs-label, .oddi-rs-section-heading, .oddi-rs-profile-main, .oddi-rs-profile-copy, .oddi-rs-title-glass) {
+  color: #d8ceb0 !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root :is(.oddi-rs-label svg, .oddi-rs-nav svg, .oddi-rs-search svg, .oddi-rs-chat svg, .oddi-rs-mini-chat svg) {
+  color: #dfbd4c !important;
+  stroke: currentColor !important;
+  filter: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root .oddi-rs-profile {
+  border: 1px solid rgba(204, 151, 0, .42) !important;
+  background: linear-gradient(135deg, rgba(70, 51, 8, .4), rgba(15, 12, 6, .96) 72%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 226, 123, .08), 0 4px 14px rgba(0,0,0,.3) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddi-react-sidebar-root :is(.oddi-rs-avatar, .oddi-rs-profile .oddi-rs-avatar) {
+  border: 1px solid rgba(255, 220, 92, .82) !important;
+  background: radial-gradient(circle at 32% 22%, #fff6c9 0%, #ffd12f 43%, #d58c00 76%, #805000 100%) !important;
+  color: #352300 !important;
+  box-shadow: 0 0 12px rgba(255, 190, 0, .28), inset 0 1px 0 rgba(255,255,255,.48) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-field {
+  border: 1px solid rgba(231, 174, 0, .64) !important;
+  background: linear-gradient(118deg, rgba(40, 31, 9, .94), rgba(25, 19, 7, .97)) !important;
+  background-color: #191306 !important;
+  color: #fff7e0 !important;
+  box-shadow: 0 0 0 1px rgba(255, 196, 0, .08), 0 0 23px rgba(255, 174, 0, .13), 0 10px 28px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.08) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-field:focus-within {
+  border-color: #ffdb45 !important;
+  box-shadow: 0 0 0 2px rgba(255, 196, 0, .14), 0 0 28px rgba(255, 174, 0, .19), 0 10px 28px rgba(0,0,0,.2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell :is(#userInput, #userInput::placeholder) {
+  color: #f6edce !important;
+  caret-color: #ffda3a !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-sparkle-badge {
+  border-color: rgba(255, 213, 47, .52) !important;
+  background: linear-gradient(145deg, #795900, #3c2a00) !important;
+  color: #fff3b2 !important;
+  box-shadow: 0 0 15px rgba(255, 174, 0, .16), inset 0 1px 0 rgba(255,255,255,.15) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell :is(.oddi-composer-chip-btn, #attach-btn) {
+  border: 0 !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: #f1df9c !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell :is(.oddi-composer-chip-btn, #attach-btn):is(:hover,:focus-visible,:active) {
+  background: rgba(255, 196, 0, .1) !important;
+  color: #fff1b2 !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell :is(#dictation-btn, #voice-btn) {
+  border-color: rgba(220, 164, 0, .48) !important;
+  background: rgba(255, 196, 0, .08) !important;
+  color: #ffe27a !important;
+  box-shadow: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell #send-btn {
+  --oddi-send-button-border: rgba(255, 225, 122, .94) !important;
+  --oddi-send-button-background: radial-gradient(circle at 34% 22%, #fff8d5 0%, #ffd12f 32%, #df9700 76%, #9c6400 100%) !important;
+  --oddi-send-button-color: #352300 !important;
+  --oddi-send-button-shadow: 0 0 16px rgba(235, 176, 0, .48), inset 0 1px 0 rgba(255,255,255,.68) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell #send-btn.stop-active {
+  --oddi-send-button-border: rgba(255, 225, 122, .94) !important;
+  --oddi-send-button-background: radial-gradient(circle at 34% 22%, #fff8d5 0%, #ffd12f 32%, #df9700 76%, #9c6400 100%) !important;
+  --oddi-send-button-color: #352300 !important;
+  --oddi-send-button-shadow: 0 0 16px rgba(235, 176, 0, .48), inset 0 1px 0 rgba(255,255,255,.68) !important;
+}
+
+/* The message composer exposes separate dictation and voice controls; paint
+   both with the same Gold edge so no inherited violet button remains. */
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-field :is(#dictation-btn, #voice-btn) {
+  border: 1px solid rgba(255, 205, 35, .74) !important;
+  background: rgba(100, 72, 0, .22) !important;
+  background-color: rgba(100, 72, 0, .22) !important;
+  background-image: none !important;
+  color: #ffe17a !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 9px rgba(224, 165, 0, .12) !important;
+  filter: none !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-field :is(#dictation-btn, #voice-btn):is(:hover, :focus-visible, .is-active) {
+  border-color: #ffd12f !important;
+  background: rgba(164, 117, 0, .28) !important;
+  background-color: rgba(164, 117, 0, .28) !important;
+  color: #fff2b8 !important;
+  box-shadow: 0 0 12px rgba(255, 190, 0, .2) !important;
+}
+
+html[data-oddi-palette="cyber-gold"] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-field :is(#dictation-btn, #voice-btn) svg {
+  color: inherit !important;
+  stroke: currentColor !important;
+  fill: none !important;
+  filter: none !important;
+}
+
+/* The chat-reference stylesheet targets the dictation control through its
+   right-tools container with higher specificity; mirror that path here so the
+   Gold palette wins consistently in chat view. */
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-bottom-bar .oddi-composer-right-tools > #dictation-btn {
+  border: 1px solid rgba(255, 205, 35, .74) !important;
+  background: rgba(100, 72, 0, .22) !important;
+  background-color: rgba(100, 72, 0, .22) !important;
+  background-image: none !important;
+  color: #ffe17a !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 0 9px rgba(224, 165, 0, .12) !important;
+}
+
+html[data-oddi-palette="cyber-gold"][data-oddi-appearance] body[data-oddi-palette="cyber-gold"]:has(#chatbox.chatbox):not(:has(#chatbox > #welcomeContainer)) #oddiComposerShell .oddi-composer-bottom-bar .oddi-composer-right-tools > #dictation-btn:is(:hover, :focus-visible, .is-active) {
+  border-color: #ffd12f !important;
+  background: rgba(164, 117, 0, .28) !important;
+  background-color: rgba(164, 117, 0, .28) !important;
+  color: #fff2b8 !important;
+  box-shadow: 0 0 12px rgba(255, 190, 0, .2) !important;
+}

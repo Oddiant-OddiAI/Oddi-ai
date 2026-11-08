@@ -31,8 +31,13 @@ def _default_root():
 ROOT = _default_root()
 _LOCKS_GUARD = threading.Lock()
 _ACCOUNT_LOCKS = {}
+_SUMMARY_WARMING_LOCK = threading.Lock()
+_SUMMARY_WARMING_ACCOUNTS = set()
 _ACCOUNT_ID_RE = re.compile(r"^[1-9][0-9]*$")
 _CHAT_ID_RE = re.compile(r"^[1-9][0-9]*$")
+_SUMMARY_CACHE_VERSION = 2
+_SUMMARY_BACKFILL_MAX_CHAT_BYTES = 16 * 1024 * 1024
+_PAGED_HISTORY_MIN_CHAT_BYTES = 32 * 1024 * 1024
 
 
 def _account_key(user_id):
@@ -67,6 +72,10 @@ def _account_dir(account_id):
 
 def _conversation_path(account_id, conversation_id):
     return _account_dir(account_id) / f"{_chat_key(conversation_id)}.json"
+
+
+def _summary_cache_path(account_id, conversation_id):
+    return _account_dir(account_id) / f".summary-{_chat_key(conversation_id)}.json"
 
 
 def _state_path(account_id):
@@ -231,7 +240,9 @@ def _read_conversation_locked(account_id, conversation_id):
 
 def _write_conversation_locked(account_id, conversation):
     normalized = _normalize_conversation(conversation, account_id, conversation.get("id"))
-    _atomic_write(_conversation_path(account_id, normalized["id"]), normalized)
+    path = _conversation_path(account_id, normalized["id"])
+    _atomic_write(path, normalized)
+    _write_summary_cache_locked(account_id, normalized, path.stat())
     state = _read_state(account_id)
     state["next_id"] = max(state["next_id"], int(normalized["id"]) + 1)
     pending = set(state["pending_chats"])
@@ -254,6 +265,358 @@ def _all_conversations_locked(account_id):
         if conversation:
             result.append(conversation)
     return result
+
+
+def _summary_from_conversation(conversation, size_bytes):
+    messages = conversation.get("messages") if isinstance(conversation.get("messages"), list) else []
+    preview = ""
+    for message in reversed(messages):
+        if not isinstance(message, dict):
+            continue
+        message_text = " ".join(str(message.get("text") or message.get("content") or "").split())
+        if message_text:
+            preview = message_text[:118]
+            break
+    return {
+        key: conversation.get(key)
+        for key in (
+            "id", "user_id", "title", "created_at", "updated_at", "revision",
+            "pinned", "archived", "deleted", "deleted_at",
+        )
+    } | {
+        "message_count": len(messages),
+        "preview": preview,
+        "size_bytes": max(0, int(size_bytes or 0)),
+        "__summary_only": True,
+        "__paged_history": int(size_bytes or 0) >= _PAGED_HISTORY_MIN_CHAT_BYTES,
+    }
+
+
+def _write_summary_cache_locked(account_id, conversation, file_stat):
+    summary = _summary_from_conversation(conversation, file_stat.st_size)
+    _atomic_write(
+        _summary_cache_path(account_id, conversation["id"]),
+        {
+            "version": _SUMMARY_CACHE_VERSION,
+            "mtime_ns": file_stat.st_mtime_ns,
+            "file_size": file_stat.st_size,
+            "summary": summary,
+        },
+    )
+
+
+def _read_summary_cache(account_id, conversation_id, file_stat):
+    try:
+        with open(_summary_cache_path(account_id, conversation_id), "r", encoding="utf-8") as handle:
+            cache = json.load(handle)
+        if (
+            isinstance(cache, dict)
+            and cache.get("version") == _SUMMARY_CACHE_VERSION
+            and int(cache.get("mtime_ns", -1)) == file_stat.st_mtime_ns
+            and int(cache.get("file_size", -1)) == file_stat.st_size
+            and isinstance(cache.get("summary"), dict)
+        ):
+            return cache["summary"]
+    except (OSError, TypeError, ValueError, json.JSONDecodeError):
+        pass
+    return None
+
+
+def _json_field(fragment, key):
+    pattern = re.compile(
+        rf'"{re.escape(key)}"\s*:\s*("(?:\\.|[^"\\])*"|true|false|null|-?\d+)',
+        re.IGNORECASE,
+    )
+    matches = list(pattern.finditer(fragment))
+    if not matches:
+        return None
+    try:
+        return json.loads(matches[-1].group(1))
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return None
+
+
+def _quick_summary_from_file(account_id, path, file_stat):
+    """Read only the JSON edges so very large histories do not block the sidebar."""
+    edge_bytes = 24 * 1024
+    with open(path, "rb") as handle:
+        head = handle.read(edge_bytes).decode("utf-8", errors="ignore")
+        if file_stat.st_size > edge_bytes:
+            handle.seek(max(0, file_stat.st_size - edge_bytes))
+            tail = handle.read(edge_bytes).decode("utf-8", errors="ignore")
+        else:
+            tail = head
+
+    chat_id = int(path.stem)
+    title = _json_field(head, "title")
+    created_at = _json_field(head, "created_at") or _json_field(tail, "created_at")
+    updated_at = _json_field(tail, "updated_at") or _json_field(head, "updated_at")
+    if not created_at or not updated_at:
+        modified_at = datetime.fromtimestamp(file_stat.st_mtime, timezone.utc).isoformat(timespec="milliseconds")
+        created_at = created_at or modified_at
+        updated_at = updated_at or modified_at
+
+    messages_match = re.search(r'"messages"\s*:\s*\[', head)
+    message_count = 0
+    if messages_match:
+        first_message = head[messages_match.end():].lstrip()
+        message_count = 0 if first_message.startswith("]") else 1
+    elif file_stat.st_size > 128:
+        message_count = 1
+
+    try:
+        revision = max(0, int(_json_field(tail, "revision") or 0))
+    except (TypeError, ValueError, OverflowError):
+        revision = 0
+    return {
+        "id": chat_id,
+        "user_id": int(account_id),
+        "title": str(title or f"Chat {chat_id}").strip() or f"Chat {chat_id}",
+        "created_at": created_at,
+        "updated_at": updated_at,
+        "revision": revision,
+        "pinned": bool(_json_field(tail, "pinned")),
+        "archived": bool(_json_field(tail, "archived")),
+        "deleted": bool(_json_field(tail, "deleted")),
+        "deleted_at": _json_field(tail, "deleted_at"),
+        "message_count": message_count,
+        "preview": "",
+        "size_bytes": file_stat.st_size,
+        "__summary_only": True,
+        "__summary_missing": file_stat.st_size <= _SUMMARY_BACKFILL_MAX_CHAT_BYTES,
+        "__paged_history": file_stat.st_size >= _PAGED_HISTORY_MIN_CHAT_BYTES,
+    }
+
+
+def get_conversation_summaries_for_user(user_id):
+    """Return cached or lightweight chat metadata without parsing full histories."""
+    account_id = _account_key(user_id)
+    summaries = []
+    with _lock_for(account_id):
+        for path in _account_dir(account_id).glob("*.json"):
+            if not _CHAT_ID_RE.fullmatch(path.stem):
+                continue
+            try:
+                file_stat = path.stat()
+                summary = _read_summary_cache(account_id, path.stem, file_stat)
+                if summary is None:
+                    summary = _quick_summary_from_file(account_id, path, file_stat)
+                if not summary.get("deleted"):
+                    summaries.append(summary)
+            except (OSError, TypeError, ValueError):
+                logger.exception("Could not summarize local chat for account %s", account_id)
+    summaries.sort(key=lambda item: str(item.get("updated_at") or item.get("created_at") or ""), reverse=True)
+    return summaries
+
+
+def warm_conversation_summaries(user_id):
+    """Cache exact summaries for ordinary-sized local chats after the response."""
+    account_id = _account_key(user_id)
+    with _SUMMARY_WARMING_LOCK:
+        if account_id in _SUMMARY_WARMING_ACCOUNTS:
+            return 0
+        _SUMMARY_WARMING_ACCOUNTS.add(account_id)
+    warmed = 0
+    try:
+        for path in _account_dir(account_id).glob("*.json"):
+            if not _CHAT_ID_RE.fullmatch(path.stem):
+                continue
+            try:
+                with _lock_for(account_id):
+                    file_stat = path.stat()
+                    if file_stat.st_size > _SUMMARY_BACKFILL_MAX_CHAT_BYTES:
+                        continue
+                    if _read_summary_cache(account_id, path.stem, file_stat):
+                        continue
+                    conversation = _read_conversation_locked(account_id, path.stem)
+                    if not conversation:
+                        continue
+                    updated_stat = path.stat()
+                    if (updated_stat.st_mtime_ns, updated_stat.st_size) != (file_stat.st_mtime_ns, file_stat.st_size):
+                        continue
+                    _write_summary_cache_locked(account_id, conversation, updated_stat)
+                    warmed += 1
+            except (OSError, TypeError, ValueError, json.JSONDecodeError):
+                logger.exception("Could not warm local chat summary for account %s conversation %s", account_id, path.stem)
+    finally:
+        with _SUMMARY_WARMING_LOCK:
+            _SUMMARY_WARMING_ACCOUNTS.discard(account_id)
+    return warmed
+
+
+def _find_message_array_bounds(handle, file_stat):
+    head_size = min(file_stat.st_size, 128 * 1024)
+    handle.seek(0)
+    head = handle.read(head_size)
+    array_match = re.search(rb'"messages"\s*:\s*\[', head)
+    if not array_match:
+        raise ValueError("The conversation message list could not be located.")
+    array_start = array_match.end() - 1
+
+    tail_size = min(file_stat.st_size, 128 * 1024)
+    handle.seek(max(0, file_stat.st_size - tail_size))
+    tail = handle.read(tail_size)
+    created_at = tail.rfind(b'"created_at"')
+    if created_at < 0:
+        raise ValueError("The conversation end marker could not be located.")
+    delimiter = created_at - 1
+    while delimiter >= 0 and tail[delimiter] in b" \t\r\n":
+        delimiter -= 1
+    if delimiter < 0 or tail[delimiter] != ord(","):
+        raise ValueError("The conversation end marker is invalid.")
+    array_close = delimiter - 1
+    while array_close >= 0 and tail[array_close] in b" \t\r\n":
+        array_close -= 1
+    if array_close < 0 or tail[array_close] != ord("]"):
+        raise ValueError("The conversation message-list end marker is invalid.")
+    array_close += max(0, file_stat.st_size - tail_size)
+    return array_start, array_close
+
+
+def _previous_json_object(data, end_index):
+    index = end_index
+    while index >= 0 and data[index] in b" \t\r\n,":
+        index -= 1
+    if index < 0 or data[index] != ord("}"):
+        return None
+
+    object_end = index + 1
+    depth = 0
+    in_string = False
+    while index >= 0:
+        char = data[index]
+        if in_string:
+            if char == ord('"'):
+                slash_count = 0
+                slash_index = index - 1
+                while slash_index >= 0 and data[slash_index] == ord("\\"):
+                    slash_count += 1
+                    slash_index -= 1
+                if slash_count % 2 == 0:
+                    in_string = False
+        elif char == ord('"'):
+            in_string = True
+        elif char == ord("}"):
+            depth += 1
+        elif char == ord("{"):
+            depth -= 1
+            if depth == 0:
+                return index, object_end
+        index -= 1
+    return None
+
+
+def get_conversation_message_window(conversation_id, user_id, limit=60, before=None):
+    """Read a bounded page from a large local history without decoding the full file."""
+    account_id = _account_key(user_id)
+    chat_id = _chat_key(conversation_id)
+    try:
+        limit = max(1, min(100, int(limit or 60)))
+    except (TypeError, ValueError, OverflowError):
+        limit = 60
+
+    path = _conversation_path(account_id, chat_id)
+    with _lock_for(account_id):
+        try:
+            file_stat = path.stat()
+        except FileNotFoundError:
+            return None
+        if file_stat.st_size < _PAGED_HISTORY_MIN_CHAT_BYTES:
+            return None
+
+        with open(path, "rb") as handle:
+            array_start, array_close = _find_message_array_bounds(handle, file_stat)
+            cursor_offset = None
+            if before:
+                try:
+                    cursor_parts = str(before).split(":")
+                    if len(cursor_parts) == 2:
+                        previous_array_start, offset_text = map(int, cursor_parts)
+                    elif len(cursor_parts) == 3:
+                        # Accept cursors minted by the previous implementation
+                        # during a rolling page reload. New cursors also carry
+                        # the message-array start so metadata edits can be rebased.
+                        _, _, offset_text = cursor_parts
+                        previous_array_start = array_start
+                        offset_text = int(offset_text)
+                    else:
+                        raise ValueError("The conversation history cursor is invalid.")
+                    cursor_offset = int(offset_text) + (array_start - previous_array_start)
+                    if cursor_offset <= array_start + 1 or cursor_offset > array_close:
+                        raise ValueError("This conversation changed while its older messages were loading. Reopen it to refresh.")
+                except (TypeError, ValueError, OverflowError) as error:
+                    raise ValueError(str(error) or "The conversation history cursor is invalid.") from error
+
+                # A page cursor points to the start of the oldest message just
+                # returned. Appended messages and metadata updates are safe, but
+                # verify the rebased position still lands on an array boundary.
+                prefix_start = max(array_start + 1, cursor_offset - 128)
+                handle.seek(prefix_start)
+                boundary_prefix = handle.read(cursor_offset - prefix_start)
+                if not boundary_prefix.rstrip(b" \t\r\n").endswith(b","):
+                    raise ValueError("This conversation changed while its older messages were loading. Reopen it to refresh.")
+
+            end_offset = array_close if cursor_offset is None else cursor_offset
+            window_size = min(max(256 * 1024, limit * 16 * 1024), 8 * 1024 * 1024)
+            selected = []
+            oldest_offset = end_offset
+            while True:
+                start_offset = max(array_start + 1, end_offset - window_size)
+                handle.seek(start_offset)
+                data = handle.read(end_offset - start_offset)
+                index = len(data) - 1
+                selected.clear()
+                oldest_offset = end_offset
+                needs_more_bytes = False
+                while len(selected) < limit:
+                    span = _previous_json_object(data, index)
+                    if span is None:
+                        needs_more_bytes = start_offset > array_start + 1
+                        break
+                    message_start, message_end = span
+                    try:
+                        message = json.loads(data[message_start:message_end].decode("utf-8"))
+                    except (UnicodeDecodeError, json.JSONDecodeError):
+                        needs_more_bytes = start_offset > array_start + 1
+                        break
+                    if isinstance(message, dict):
+                        if not message.get("id"):
+                            message["id"] = f"legacy-{chat_id}-offset-{start_offset + message_start}"
+                        selected.append(message)
+                        oldest_offset = start_offset + message_start
+                    index = message_start - 1
+                    if index < 0 and start_offset > array_start + 1:
+                        needs_more_bytes = True
+                        break
+
+                if len(selected) >= limit or not needs_more_bytes:
+                    break
+                if window_size >= file_stat.st_size:
+                    break
+                window_size = min(file_stat.st_size, window_size * 2)
+
+        summary = _read_summary_cache(account_id, chat_id, file_stat)
+        if summary is None:
+            summary = _quick_summary_from_file(account_id, path, file_stat)
+        selected.reverse()
+        has_more = bool(selected) and oldest_offset > array_start + 1
+        next_cursor = (
+            f"{array_start}:{oldest_offset}"
+            if has_more else None
+        )
+        return {
+            key: summary.get(key)
+            for key in (
+                "id", "user_id", "title", "created_at", "updated_at", "revision",
+                "pinned", "archived", "deleted", "deleted_at", "size_bytes",
+            )
+        } | {
+            "messages": selected,
+            "__partial_history": True,
+            "history_has_more": has_more,
+            "history_cursor": next_cursor,
+            "history_page_size": len(selected),
+        }
 
 
 def _allocate_id_locked(account_id, state=None):
