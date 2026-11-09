@@ -46,7 +46,6 @@ from authlib.integrations.base_client import OAuthError
 from authlib.integrations.starlette_client import OAuth
 
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import local_chat_files
 from app.database import (
     ODDI_LOCAL_ONLY_STORAGE,
     ODDI_BROWSER_LOCAL_CHATS,
@@ -3619,10 +3618,6 @@ def api_get_conversation_index(request: Request, background_tasks: BackgroundTas
     """Load the chat sidebar without downloading every chat's full history."""
     user_id = require_user_id(request)
     summaries = get_conversation_summaries(user_id)
-    if ODDI_CHAT_FILES_STORAGE and any(item.get("__summary_missing") for item in summaries):
-        # Local chat files can be very large. Build exact sidebar metadata after
-        # sending the lightweight head/tail summaries to the browser.
-        background_tasks.add_task(local_chat_files.warm_conversation_summaries, user_id)
     needs_backfill = ODDI_DRIVE_CHAT_STORAGE and any(item.get("__summary_missing") for item in summaries)
     schedule_backfill = False
     if needs_backfill:
@@ -3771,53 +3766,6 @@ def api_get_conversation(request: Request, conversation_id: int):
         return JSONResponse({"error": "Conversation not found."}, status_code=404)
 
     return JSONResponse(content=jsonable_encoder(conversation))
-
-
-@app.get("/api/conversations/{conversation_id}/messages/window", name="api_get_conversation_message_window")
-def api_get_conversation_message_window(
-    request: Request,
-    conversation_id: int,
-    limit: int = 60,
-    before: str | None = None,
-):
-    """Load a page of a very large transcript without downloading its full history."""
-    user_id = require_user_id(request)
-    try:
-        if ODDI_CHAT_FILES_STORAGE:
-            page = local_chat_files.get_conversation_message_window(
-                conversation_id, user_id, limit=limit, before=before
-            )
-        else:
-            conversation = get_conversation(conversation_id, user_id)
-            if not conversation or conversation.get("deleted"):
-                page = None
-            else:
-                bounded_limit = max(1, min(100, int(limit or 60)))
-                end = len(conversation.get("messages") or [])
-                if before is not None:
-                    end = max(0, min(end, int(before)))
-                start = max(0, end - bounded_limit)
-                page_messages = []
-                for message_index, message in enumerate((conversation.get("messages") or [])[start:end], start=start):
-                    if isinstance(message, dict) and not message.get("id"):
-                        message = {**message, "id": f"legacy-{conversation_id}-{message_index}"}
-                    page_messages.append(message)
-                page = {
-                    **{key: value for key, value in conversation.items() if key != "messages"},
-                    "messages": page_messages,
-                    "__partial_history": True,
-                    "history_has_more": start > 0,
-                    "history_cursor": str(start) if start > 0 else None,
-                    "history_page_size": end - start,
-                }
-    except ValueError as error:
-        return JSONResponse({"error": str(error)}, status_code=409)
-
-    if not page:
-        return JSONResponse({"error": "Conversation not found."}, status_code=404)
-    if page.get("deleted"):
-        return JSONResponse({"error": "Conversation not found."}, status_code=404)
-    return JSONResponse(content=jsonable_encoder(page))
 
 
 @app.post("/api/conversations/{conversation_id}/branch", name="api_branch_conversation")
@@ -3970,17 +3918,7 @@ async def api_append_conversation_message(request: Request, conversation_id: int
     if not conversation:
         return JSONResponse({"error": "Conversation not found."}, status_code=404)
 
-    response_conversation = conversation
-    if ODDI_CHAT_FILES_STORAGE and len(conversation.get("messages") or []) > 100_000:
-        response_conversation = {
-            key: conversation.get(key)
-            for key in (
-                "id", "user_id", "title", "created_at", "updated_at", "revision",
-                "pinned", "archived", "deleted", "deleted_at",
-            )
-        }
-
-    return JSONResponse(content=jsonable_encoder({"success": True, "conversation": response_conversation}))
+    return JSONResponse(content=jsonable_encoder({"success": True, "conversation": conversation}))
 
 
 @app.put("/api/conversations/{conversation_id}/messages/{message_id}", name="api_update_conversation_message")

@@ -121,131 +121,69 @@ html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-dark"] {
 }
 
 html[data-oddi-palette="cyber-blue"] {
-  --oddi-theme-bg: #f1fbfb;
-  --oddi-theme-surface: #fcffff;
-  --oddi-theme-raised: #e4f4f4;
-  --oddi-theme-line: #cce5e5;
-  --oddi-theme-line-strong: #a8d7d8;
-  --oddi-theme-text: #163438;
-  --oddi-theme-muted: #547275;
-  --oddi-theme-dim: #7b9295;
-  --oddi-theme-accent: #008d91;
-  --oddi-theme-accent-strong: #006d71;
-  --oddi-theme-accent-soft: rgba(0,141,145,.11);
-  --oddi-theme-glow: rgba(0,167,171,.12);
+  --oddi-theme-bg: #f1f6ff;
+  --oddi-theme-surface: #fbfdff;
+  --oddi-theme-raised: #e6efff;
+  --oddi-theme-line: #d3e0f3;
+  --oddi-theme-line-strong: #abc3e6;
+  --oddi-theme-text: #162941;
+  --oddi-theme-muted: #586f8d;
+  --oddi-theme-dim: #8294ad;
+  --oddi-theme-accent: #2673e8;
+  --oddi-theme-accent-strong: #1658c4;
+  --oddi-theme-accent-soft: rgba(38,115,232,.11);
+  --oddi-theme-glow: rgba(38,115,232,.12);
 }
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] {
   color-scheme: dark;
-  --oddi-theme-bg: #031214;
-  --oddi-theme-surface: #071d1f;
-  --oddi-theme-raised: #0d292c;
-  --oddi-theme-line: #174346;
-  --oddi-theme-line-strong: #168f93;
-  --oddi-theme-text: #e7feff;
-  --oddi-theme-muted: #a0ced0;
-  --oddi-theme-dim: #6fa0a3;
-  --oddi-theme-accent: #00e5e8;
-  --oddi-theme-accent-strong: #00bdc2;
-  --oddi-theme-accent-soft: rgba(0,229,232,.16);
-  --oddi-theme-glow: rgba(0,220,224,.22);
+  --oddi-theme-bg: #07111f;
+  --oddi-theme-surface: #0d1b2d;
+  --oddi-theme-raised: #142842;
+  --oddi-theme-line: #223b57;
+  --oddi-theme-line-strong: #365a7e;
+  --oddi-theme-text: #ecf5ff;
+  --oddi-theme-muted: #a6bad0;
+  --oddi-theme-dim: #7893ad;
+  --oddi-theme-accent: #60d7ff;
+  --oddi-theme-accent-strong: #3a9cf5;
+  --oddi-theme-accent-soft: rgba(67,181,255,.16);
+  --oddi-theme-glow: rgba(49,164,255,.19);
 }
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] {
-  --oddi-theme-bg: #e9f5f5;
-  --oddi-theme-surface: #f8ffff;
-  --oddi-theme-raised: #e2f0f0;
-  --oddi-theme-line: #c6dddd;
-  --oddi-theme-line-strong: #9fcaca;
-  --oddi-theme-text: #1c3437;
-  --oddi-theme-muted: #597174;
-  --oddi-theme-dim: #809394;
-  --oddi-theme-accent: #087e83;
-  --oddi-theme-accent-strong: #06676b;
-  --oddi-theme-accent-soft: rgba(8,126,131,.12);
-  --oddi-theme-glow: rgba(8,126,131,.11);
+  --oddi-theme-bg: #e7eef8;
+  --oddi-theme-surface: #f6f9ff;
+  --oddi-theme-raised: #e6eef9;
+  --oddi-theme-line: #ccd9e9;
+  --oddi-theme-line-strong: #a9bfd6;
+  --oddi-theme-text: #1e3042;
+  --oddi-theme-muted: #5d7384;
+  --oddi-theme-dim: #8296a2;
+  --oddi-theme-accent: #2c72ce;
+  --oddi-theme-accent-strong: #1856a6;
+  --oddi-theme-accent-soft: rgba(44,114,206,.11);
+  --oddi-theme-glow: rgba(44,114,206,.11);
 }
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] {
   color-scheme: dark;
-  --oddi-theme-bg: #061719;
-  --oddi-theme-surface: #102427;
-  --oddi-theme-raised: #193235;
-  --oddi-theme-line: #2a4a4d;
-  --oddi-theme-line-strong: #4a8588;
-  --oddi-theme-text: #effcfc;
-  --oddi-theme-muted: #adcbcc;
-  --oddi-theme-dim: #819c9d;
-  --oddi-theme-accent: #57e2e4;
-  --oddi-theme-accent-strong: #2cc4c7;
-  --oddi-theme-accent-soft: rgba(71,207,210,.16);
-  --oddi-theme-glow: rgba(47,193,197,.18);
-}
-
-html[data-oddi-palette="cyber-gold"] {
-  --oddi-theme-bg: #faf6e9;
-  --oddi-theme-surface: #fffdf7;
-  --oddi-theme-raised: #f3ecd8;
-  --oddi-theme-line: #ead9a8;
-  --oddi-theme-line-strong: #d6b64b;
-  --oddi-theme-text: #2b2516;
-  --oddi-theme-muted: #6d6248;
-  --oddi-theme-dim: #968867;
-  --oddi-theme-accent: #b98000;
-  --oddi-theme-accent-strong: #8f5f00;
-  --oddi-theme-accent-soft: rgba(185,128,0,.12);
-  --oddi-theme-glow: rgba(218,164,24,.14);
-}
-html[data-oddi-palette="cyber-gold"][data-oddi-appearance="dark"] {
-  color-scheme: dark;
-  --oddi-theme-bg: #090804;
-  --oddi-theme-surface: #121006;
-  --oddi-theme-raised: #211a08;
-  --oddi-theme-line: rgba(231,174,0,.34);
-  --oddi-theme-line-strong: #efb900;
-  --oddi-theme-text: #fff8e5;
-  --oddi-theme-muted: #d0c094;
-  --oddi-theme-dim: #98834d;
-  --oddi-theme-accent: #ffc400;
-  --oddi-theme-accent-strong: #ffda4c;
-  --oddi-theme-accent-soft: rgba(255,196,0,.16);
-  --oddi-theme-glow: rgba(255,174,0,.22);
-}
-html[data-oddi-palette="cyber-gold"][data-oddi-appearance="system-light"] {
-  --oddi-theme-bg: #f4efdf;
-  --oddi-theme-surface: #fffdf6;
-  --oddi-theme-raised: #eee5ce;
-  --oddi-theme-line: #decf9f;
-  --oddi-theme-line-strong: #c5a73b;
-  --oddi-theme-text: #302a1b;
-  --oddi-theme-muted: #72684f;
-  --oddi-theme-dim: #95886b;
-  --oddi-theme-accent: #a87400;
-  --oddi-theme-accent-strong: #805900;
-  --oddi-theme-accent-soft: rgba(168,116,0,.13);
-  --oddi-theme-glow: rgba(205,151,0,.14);
-}
-html[data-oddi-palette="cyber-gold"][data-oddi-appearance="system-dark"] {
-  color-scheme: dark;
-  --oddi-theme-bg: #171309;
-  --oddi-theme-surface: #211b0d;
-  --oddi-theme-raised: #302610;
-  --oddi-theme-line: rgba(216,169,34,.34);
-  --oddi-theme-line-strong: #d9a91d;
-  --oddi-theme-text: #fff8e9;
-  --oddi-theme-muted: #c9bc96;
-  --oddi-theme-dim: #998957;
-  --oddi-theme-accent: #f2c23b;
-  --oddi-theme-accent-strong: #ffdc63;
-  --oddi-theme-accent-soft: rgba(242,194,59,.16);
-  --oddi-theme-glow: rgba(224,169,31,.18);
+  --oddi-theme-bg: #0b1726;
+  --oddi-theme-surface: #132338;
+  --oddi-theme-raised: #1b3048;
+  --oddi-theme-line: #2a445e;
+  --oddi-theme-line-strong: #3e607a;
+  --oddi-theme-text: #eff7ff;
+  --oddi-theme-muted: #acc0d0;
+  --oddi-theme-dim: #8199ad;
+  --oddi-theme-accent: #6fe0ff;
+  --oddi-theme-accent-strong: #47b5f5;
+  --oddi-theme-accent-soft: rgba(78,190,255,.16);
+  --oddi-theme-glow: rgba(61,174,255,.18);
 }
 
 html[data-oddi-palette="cyber-green"] .oddi-rs-palette-swatch[data-palette="cyber-green"] span {
   background: linear-gradient(135deg, var(--oddi-theme-bg), var(--oddi-theme-accent));
 }
 html[data-oddi-palette="cyber-blue"] .oddi-rs-palette-swatch[data-palette="cyber-blue"] span {
-  background: linear-gradient(135deg, #03171a, #007c83 48%, #00f0ed);
-}
-html[data-oddi-palette="cyber-gold"] .oddi-rs-palette-swatch[data-palette="cyber-gold"] span {
-  background: linear-gradient(135deg, #281700, #c18100 48%, #ffe27a);
+  background: linear-gradient(135deg, var(--oddi-theme-bg), var(--oddi-theme-accent));
 }
 
 html {

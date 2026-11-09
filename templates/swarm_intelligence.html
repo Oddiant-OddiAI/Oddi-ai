@@ -3,32 +3,27 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0c0712">
+  <meta name="theme-color" content="#07120b">
   <title>Swarm Intelligence · ODDI AI</title>
   <script>
     (function(){
       try {
         const palette = localStorage.getItem('oddi_palette_v1');
-        document.documentElement.dataset.oddiPalette = palette === 'cyber-blue' ? palette : 'mono';
+        document.documentElement.dataset.oddiPalette = palette === 'cyber-green' || palette === 'cyber-blue' ? palette : 'mono';
         const theme = localStorage.getItem('oddi_theme_v1') || 'light';
         const dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
         document.documentElement.dataset.oddiAppearance = theme === 'system' ? (dark ? 'system-dark' : 'system-light') : (theme === 'dark' ? 'dark' : 'light');
       } catch (_) {}
     })();
   </script>
-  <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261108-purple-blue-gold-coming-soon-v1">
-  <link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261106-purple-cyan-gold-themes-v1">
+  <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261022-permanent-sidebar-v1">
+  <link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261022-permanent-sidebar-v1">
   <link rel="stylesheet" href="/static/oddi-swarm-intelligence.css?v=swarm-seven-agent-ring-v1-20261023">
   <link rel="stylesheet" href="/static/oddi-swarm-intelligence-workspace.css?v=swarm-chat-rich-thread-v1-20261023">
   <link rel="stylesheet" href="/static/oddi-document-workspace.css?v=swarm-writing-editor-20261022">
-  <link rel="stylesheet" href="/static/oddi-theme-violet-finish.css?v=20261105-violet-theme-finish-v4">
-  <script src="/static/oddi-theme-palette.js?v=20261108-purple-blue-gold-coming-soon-v1" defer></script>
+  <script src="/static/oddi-theme-palette.js?v=20261020-palette-v1" defer></script>
 </head>
 <body class="oddi-swarm-body" data-logged-in="true" data-username="{{ swarm_username }}" data-user-id="{{ swarm_user_id }}" data-email="{{ swarm_email }}" data-browser-local-chats="{{ 'true' if swarm_browser_local_chats else 'false' }}" data-page-mode="{{ swarm_page_mode or 'home' }}" data-agent-id="{{ swarm_agent_id or '' }}">
-  <script>
-    document.body.dataset.oddiPalette = document.documentElement.dataset.oddiPalette || 'mono';
-    document.body.dataset.oddiAppearance = document.documentElement.dataset.oddiAppearance || 'light';
-  </script>
   <div id="oddi-react-sidebar-root"></div>
 
   <main id="swarmApp" class="swarm-shell" aria-label="ODDI Swarm Intelligence">
@@ -170,7 +165,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/html-docx-js@0.3.1/dist/html-docx.js" defer></script>
   <script src="/static/oddi-document-workspace.js?v=swarm-writing-editor-20261022" defer></script>
-  <script type="module" src="/static/oddi-sidebar/oddi-sidebar.js?v=20261108-purple-blue-gold-coming-soon-v1"></script>
+  <script type="module" src="/static/oddi-sidebar/oddi-sidebar.js?v=20261022-swarm-sidebar-v1"></script>
    <script src="/static/oddi-swarm-intelligence.js?v=swarm-chat-rich-markdown-v1-20261023" defer></script>
 </body>
 </html>

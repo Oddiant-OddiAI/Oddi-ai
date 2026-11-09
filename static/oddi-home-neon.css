@@ -1,33 +1,33 @@
-/* Cyan desktop home treatment from the supplied reference image. */
+/* Neon-blue desktop home treatment from the supplied reference image. */
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer),
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) {
   /* Override the base palette tokens on the welcome screen itself. The inline premium theme
      rules consume these tokens with higher selector specificity than the component rules below. */
-  --oddi-theme-bg: #071f21 !important;
-  --oddi-theme-surface: #0b2b2d !important;
-  --oddi-theme-raised: #143d40 !important;
-  --oddi-theme-line: #245b5f !important;
-  --oddi-theme-line-strong: #0bb5c1 !important;
-  --oddi-theme-text: #eafeff !important;
-  --oddi-theme-muted: #a8cdd0 !important;
-  --oddi-theme-dim: #78a9ad !important;
-  --oddi-theme-accent: #35f2ff !important;
-  --oddi-theme-accent-strong: #16efff !important;
-  --oddi-theme-accent-soft: rgba(22, 239, 255, .18) !important;
-  --oddi-theme-glow: rgba(0, 238, 255, .26) !important;
-  --oddi-neon-cyan: #35f2ff;
-  --oddi-neon-cyan-bright: #16efff;
-  --oddi-neon-glow: rgba(22, 239, 255, .18);
-  --oddi-home-bg: #071f21;
-  --oddi-home-surface: #0b2b2d;
-  --oddi-home-input: #071f21;
-  --oddi-home-border: #245b5f;
-  --oddi-home-text: #eafeff;
-  --oddi-home-muted: #a8cdd0;
-  --oddi-home-tertiary: #78a9ad;
-  --oddi-home-sidebar: #0a2729;
-  --oddi-home-card: #103538;
-  --oddi-home-raised: #143d40;
+  --oddi-theme-bg: #071321 !important;
+  --oddi-theme-surface: #0b1b2d !important;
+  --oddi-theme-raised: #142b40 !important;
+  --oddi-theme-line: #24445f !important;
+  --oddi-theme-line-strong: #0b8fc1 !important;
+  --oddi-theme-text: #eaf4ff !important;
+  --oddi-theme-muted: #a8bcd0 !important;
+  --oddi-theme-dim: #7893ad !important;
+  --oddi-theme-accent: #35d5ff !important;
+  --oddi-theme-accent-strong: #16cfff !important;
+  --oddi-theme-accent-soft: rgba(22, 207, 255, .18) !important;
+  --oddi-theme-glow: rgba(0, 153, 255, .26) !important;
+  --oddi-neon-cyan: #35d5ff;
+  --oddi-neon-cyan-bright: #16cfff;
+  --oddi-neon-glow: rgba(22, 207, 255, .18);
+  --oddi-home-bg: #071321;
+  --oddi-home-surface: #0b1b2d;
+  --oddi-home-input: #071321;
+  --oddi-home-border: #24445f;
+  --oddi-home-text: #eaf4ff;
+  --oddi-home-muted: #a8bcd0;
+  --oddi-home-tertiary: #7893ad;
+  --oddi-home-sidebar: #0a1929;
+  --oddi-home-card: #102338;
+  --oddi-home-raised: #142b40;
 }
 
 /* The premium theme's home-card rules are deliberately specific. Match their scope so these
@@ -37,25 +37,25 @@ html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #chatbox:has(> #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
   border-color: var(--oddi-theme-line-strong) !important;
-  box-shadow: 0 0 0 1px rgba(0, 205, 220, .16), 0 0 13px rgba(0, 238, 255, .18), 0 8px 22px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(234, 254, 255, .06) !important;
+  box-shadow: 0 0 0 1px rgba(0, 153, 220, .16), 0 0 13px rgba(0, 153, 255, .18), 0 8px 22px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(234, 244, 255, .06) !important;
 }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode #chatbox:has(> #welcomeContainer) #welcomeContainer > .oddi-home-subtitle,
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #chatbox:has(> #welcomeContainer) #welcomeContainer > .oddi-home-subtitle {
   border-color: var(--oddi-theme-line-strong) !important;
-  box-shadow: inset 0 0 14px rgba(53, 242, 255, .07), 0 0 13px rgba(22, 239, 255, .16) !important;
+  box-shadow: inset 0 0 14px rgba(53, 213, 255, .07), 0 0 13px rgba(22, 207, 255, .16) !important;
 }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch,
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #chatbox:has(> #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch {
   border-color: var(--oddi-theme-line-strong) !important;
-  box-shadow: 0 0 0 1px rgba(0, 205, 220, .16), 0 0 15px rgba(0, 238, 255, .2), 0 8px 18px rgba(0, 0, 0, .17), inset 0 1px 0 rgba(234, 254, 255, .06) !important;
+  box-shadow: 0 0 0 1px rgba(0, 153, 220, .16), 0 0 15px rgba(0, 153, 255, .2), 0 8px 18px rgba(0, 0, 0, .17), inset 0 1px 0 rgba(234, 244, 255, .06) !important;
 }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="dark"] body[data-oddi-palette="cyber-blue"].dark-mode #oddiComposerShell.input-area > .oddi-composer-field,
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[data-oddi-palette="cyber-blue"].oddi-system-theme.dark-mode #oddiComposerShell.input-area > .oddi-composer-field {
   border-color: var(--oddi-theme-line-strong) !important;
-  box-shadow: 0 0 18px rgba(0, 238, 255, .19), inset 0 0 15px rgba(53, 242, 255, .06) !important;
+  box-shadow: 0 0 18px rgba(0, 153, 255, .19), inset 0 0 15px rgba(53, 213, 255, .06) !important;
 }
 
 /* Dark home palettes share the existing layout while changing only its color finish. */
@@ -110,12 +110,12 @@ body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"]
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root {
   --rs-bg: var(--oddi-home-sidebar);
   --rs-surface: var(--oddi-home-surface);
-  --rs-hover: rgba(53, 242, 255, .09);
-  --rs-active: rgba(22, 239, 255, .15);
-  --rs-border: rgba(53, 242, 255, .36);
+  --rs-hover: rgba(53, 213, 255, .09);
+  --rs-active: rgba(22, 207, 255, .15);
+  --rs-border: rgba(53, 213, 255, .36);
   --rs-text: var(--oddi-home-text);
   --rs-muted: var(--oddi-home-muted);
-  --rs-dim: #78a9ad;
+  --rs-dim: #7893ad;
   --rs-accent: var(--oddi-neon-cyan-bright);
 }
 
@@ -123,103 +123,103 @@ body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"]
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-sidebar {
   border-right-color: var(--oddi-home-border) !important;
   background:
-    radial-gradient(ellipse 90% 34% at 0 0, rgba(22, 239, 255, .045), transparent 78%),
-    linear-gradient(180deg, var(--oddi-home-sidebar) 0%, #092527 54%, var(--oddi-home-bg) 100%) !important;
-  box-shadow: 8px 0 24px rgba(0, 0, 0, .22), inset -1px 0 0 rgba(36, 91, 95, .5) !important;
+    radial-gradient(ellipse 90% 34% at 0 0, rgba(22, 207, 255, .045), transparent 78%),
+    linear-gradient(180deg, var(--oddi-home-sidebar) 0%, #091827 54%, var(--oddi-home-bg) 100%) !important;
+  box-shadow: 8px 0 24px rgba(0, 0, 0, .22), inset -1px 0 0 rgba(36, 68, 95, .5) !important;
   color: var(--oddi-home-text) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-header,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-header {
-  border-bottom-color: rgba(36, 91, 95, .7) !important;
-  background: linear-gradient(180deg, rgba(20, 61, 64, .55), rgba(10, 39, 41, .2)) !important;
-  box-shadow: inset 0 -1px 0 rgba(53, 242, 255, .035) !important;
+  border-bottom-color: rgba(36, 68, 95, .7) !important;
+  background: linear-gradient(180deg, rgba(20, 43, 64, .55), rgba(10, 25, 41, .2)) !important;
+  box-shadow: inset 0 -1px 0 rgba(53, 213, 255, .035) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-brand img,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-brand img {
-  filter: drop-shadow(0 0 5px rgba(53, 242, 255, .22));
+  filter: drop-shadow(0 0 5px rgba(53, 213, 255, .22));
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-brand span,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-brand span {
   color: var(--oddi-home-text) !important;
-  text-shadow: 0 0 10px rgba(53, 242, 255, .08);
+  text-shadow: 0 0 10px rgba(53, 213, 255, .08);
   letter-spacing: -.02em;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-collapse, .oddi-rs-mobile-close),
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-collapse, .oddi-rs-mobile-close) {
-  border-color: rgba(53, 242, 255, .42) !important;
+  border-color: rgba(53, 213, 255, .42) !important;
   background: linear-gradient(145deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
   color: var(--oddi-neon-cyan) !important;
-  box-shadow: inset 0 0 8px rgba(53, 242, 255, .045), 0 0 7px rgba(22, 239, 255, .08) !important;
+  box-shadow: inset 0 0 8px rgba(53, 213, 255, .045), 0 0 7px rgba(22, 207, 255, .08) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-density,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-density {
-  border-color: rgba(53, 242, 255, .38) !important;
+  border-color: rgba(53, 213, 255, .38) !important;
   background: linear-gradient(145deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
   color: var(--oddi-neon-cyan) !important;
-  box-shadow: inset 0 0 8px rgba(53, 242, 255, .04) !important;
+  box-shadow: inset 0 0 8px rgba(53, 213, 255, .04) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-new,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-new {
   border-color: var(--oddi-neon-cyan-bright) !important;
-  background: linear-gradient(110deg, rgba(22, 239, 255, .18), var(--oddi-home-card) 72%) !important;
+  background: linear-gradient(110deg, rgba(22, 207, 255, .18), var(--oddi-home-card) 72%) !important;
   color: var(--oddi-home-text) !important;
-  box-shadow: inset 0 0 12px rgba(22, 239, 255, .1), 0 0 8px rgba(22, 239, 255, .17), 0 0 14px rgba(22, 239, 255, .1) !important;
+  box-shadow: inset 0 0 12px rgba(22, 207, 255, .1), 0 0 8px rgba(22, 207, 255, .17), 0 0 14px rgba(22, 207, 255, .1) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search {
-  border-color: rgba(36, 91, 95, .95) !important;
+  border-color: rgba(36, 68, 95, .95) !important;
   background: var(--oddi-home-input) !important;
-  box-shadow: inset 0 0 10px rgba(53, 242, 255, .04) !important;
+  box-shadow: inset 0 0 10px rgba(53, 213, 255, .04) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search > svg,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search > svg {
   color: var(--oddi-neon-cyan) !important;
-  filter: drop-shadow(0 0 4px rgba(53, 242, 255, .18));
+  filter: drop-shadow(0 0 4px rgba(53, 213, 255, .18));
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search:focus-within,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-search:focus-within {
   border-color: var(--oddi-neon-cyan-bright) !important;
-  box-shadow: 0 0 0 2px rgba(22, 239, 255, .11), 0 0 12px rgba(22, 239, 255, .15) !important;
+  box-shadow: 0 0 0 2px rgba(22, 207, 255, .11), 0 0 12px rgba(22, 207, 255, .15) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-chat:is(.active, .selected),
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-chat:is(.active, .selected) {
-  border-color: rgba(53, 242, 255, .68) !important;
-  background: linear-gradient(105deg, rgba(22, 239, 255, .16), rgba(20, 61, 64, .78)) !important;
+  border-color: rgba(53, 213, 255, .68) !important;
+  background: linear-gradient(105deg, rgba(22, 207, 255, .16), rgba(20, 43, 64, .78)) !important;
   color: var(--oddi-home-text) !important;
-  box-shadow: inset 2px 0 var(--oddi-neon-cyan-bright), inset 0 0 12px rgba(22, 239, 255, .065), 0 0 8px rgba(22, 239, 255, .15) !important;
+  box-shadow: inset 2px 0 var(--oddi-neon-cyan-bright), inset 0 0 12px rgba(22, 207, 255, .065), 0 0 8px rgba(22, 207, 255, .15) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-label,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-label {
   color: var(--oddi-neon-cyan) !important;
-  text-shadow: 0 0 7px rgba(53, 242, 255, .1);
+  text-shadow: 0 0 7px rgba(53, 213, 255, .1);
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-chat.pinned > svg,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-chat.pinned > svg {
   color: var(--oddi-neon-cyan) !important;
-  filter: drop-shadow(0 0 4px rgba(53, 242, 255, .16));
+  filter: drop-shadow(0 0 4px rgba(53, 213, 255, .16));
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-group > .oddi-rs-label,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-group > .oddi-rs-label {
-  border-bottom-color: rgba(36, 91, 95, .8) !important;
-  box-shadow: 0 1px 6px rgba(22, 239, 255, .05);
+  border-bottom-color: rgba(36, 68, 95, .8) !important;
+  box-shadow: 0 1px 6px rgba(22, 207, 255, .05);
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-nav a, .oddi-rs-nav button, .oddi-rs-profile):hover,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-nav a, .oddi-rs-nav button, .oddi-rs-profile):hover {
-  background: rgba(53, 242, 255, .075) !important;
+  background: rgba(53, 213, 255, .075) !important;
   color: var(--oddi-home-text) !important;
 }
 
@@ -231,13 +231,13 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button):hover svg,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button):hover svg {
   color: var(--oddi-neon-cyan) !important;
-  filter: drop-shadow(0 0 4px rgba(53, 242, 255, .15));
+  filter: drop-shadow(0 0 4px rgba(53, 213, 255, .15));
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button):is(.active, .selected, [aria-current="page"]),
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-nav :is(a, button):is(.active, .selected, [aria-current="page"]) {
-  border-color: rgba(53, 242, 255, .38) !important;
-  background: rgba(22, 239, 255, .12) !important;
+  border-color: rgba(53, 213, 255, .38) !important;
+  background: rgba(22, 207, 255, .12) !important;
   color: var(--oddi-home-text) !important;
   box-shadow: inset 2px 0 var(--oddi-neon-cyan-bright) !important;
 }
@@ -245,39 +245,39 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-collapse, .oddi-rs-nav a, .oddi-rs-nav button):focus-visible,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-collapse, .oddi-rs-nav a, .oddi-rs-nav button):focus-visible {
   outline-color: var(--oddi-neon-cyan) !important;
-  box-shadow: 0 0 0 2px rgba(53, 242, 255, .14), 0 0 9px rgba(22, 239, 255, .12) !important;
+  box-shadow: 0 0 0 2px rgba(53, 213, 255, .14), 0 0 9px rgba(22, 207, 255, .12) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-nav button):disabled,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root :is(.oddi-rs-new, .oddi-rs-nav button):disabled {
   border-color: var(--oddi-home-border) !important;
   background: var(--oddi-home-surface) !important;
-  color: #78a9ad !important;
+  color: #7893ad !important;
   box-shadow: none !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-account-footer,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-account-footer {
-  border-color: rgba(36, 91, 95, .8) !important;
-  background: linear-gradient(110deg, rgba(20, 61, 64, .7), var(--oddi-home-surface)) !important;
-  box-shadow: inset 0 0 12px rgba(53, 242, 255, .035) !important;
+  border-color: rgba(36, 68, 95, .8) !important;
+  background: linear-gradient(110deg, rgba(20, 43, 64, .7), var(--oddi-home-surface)) !important;
+  box-shadow: inset 0 0 12px rgba(53, 213, 255, .035) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile {
   margin: 4px 8px 8px !important;
-  border-color: rgba(36, 91, 95, .85) !important;
+  border-color: rgba(36, 68, 95, .85) !important;
   border-radius: 11px !important;
-  background: linear-gradient(110deg, rgba(20, 61, 64, .72), var(--oddi-home-surface)) !important;
-  box-shadow: inset 0 0 12px rgba(53, 242, 255, .04), 0 0 8px rgba(0, 0, 0, .12) !important;
+  background: linear-gradient(110deg, rgba(20, 43, 64, .72), var(--oddi-home-surface)) !important;
+  box-shadow: inset 0 0 12px rgba(53, 213, 255, .04), 0 0 8px rgba(0, 0, 0, .12) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-avatar,
 body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-avatar {
-  border-color: rgba(53, 242, 255, .62) !important;
+  border-color: rgba(53, 213, 255, .62) !important;
   background: radial-gradient(circle at 35% 28%, var(--oddi-home-raised), var(--oddi-home-sidebar) 75%) !important;
   color: var(--oddi-neon-cyan) !important;
-  box-shadow: 0 0 7px rgba(22, 239, 255, .13) !important;
+  box-shadow: 0 0 7px rgba(22, 207, 255, .13) !important;
 }
 
 body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) #oddi-react-sidebar-root .oddi-rs-profile strong,
@@ -302,17 +302,17 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     position: relative !important;
     overflow: hidden !important;
     background:
-      radial-gradient(ellipse 84% 44% at 50% -5%, rgba(0, 189, 202, .24), transparent 77%),
-      radial-gradient(circle 120px at 0% 0%, transparent 0 76px, rgba(0, 238, 255, .19) 78px, rgba(20, 239, 255, .76) 81px, rgba(0, 238, 255, .27) 86px, transparent 92px),
-      radial-gradient(circle 160px at 0% 0%, transparent 0 116px, rgba(0, 238, 255, .22) 119px, rgba(0, 238, 255, .48) 123px, rgba(0, 238, 255, .15) 129px, transparent 136px),
-      radial-gradient(circle 250px at 0% 100%, transparent 0 160px, rgba(0, 238, 255, .19) 163px, rgba(20, 239, 255, .73) 167px, rgba(0, 238, 255, .27) 173px, transparent 180px),
-      radial-gradient(circle 310px at 0% 100%, transparent 0 215px, rgba(0, 238, 255, .22) 218px, rgba(0, 238, 255, .46) 223px, rgba(0, 238, 255, .14) 230px, transparent 237px),
-      radial-gradient(circle 165px at 100% 100%, transparent 0 98px, rgba(0, 238, 255, .19) 101px, rgba(20, 239, 255, .73) 105px, rgba(0, 238, 255, .27) 111px, transparent 118px),
-      radial-gradient(circle 220px at 100% 100%, transparent 0 145px, rgba(0, 238, 255, .22) 148px, rgba(0, 238, 255, .46) 153px, rgba(0, 238, 255, .14) 160px, transparent 167px),
-      radial-gradient(ellipse 38% 52% at 0% 0%, rgba(0, 238, 255, .18), transparent 78%),
-      radial-gradient(ellipse 38% 47% at 0% 100%, rgba(0, 238, 255, .15), transparent 80%),
-      radial-gradient(ellipse 38% 47% at 100% 100%, rgba(0, 238, 255, .18), transparent 80%),
-      linear-gradient(145deg, #083639 0%, #072527 53%, #062123 100%) !important;
+      radial-gradient(ellipse 84% 44% at 50% -5%, rgba(0, 115, 202, .24), transparent 77%),
+      radial-gradient(circle 120px at 0% 0%, transparent 0 76px, rgba(0, 146, 255, .19) 78px, rgba(20, 190, 255, .76) 81px, rgba(0, 145, 255, .27) 86px, transparent 92px),
+      radial-gradient(circle 160px at 0% 0%, transparent 0 116px, rgba(0, 154, 255, .22) 119px, rgba(0, 175, 255, .48) 123px, rgba(0, 138, 255, .15) 129px, transparent 136px),
+      radial-gradient(circle 250px at 0% 100%, transparent 0 160px, rgba(0, 146, 255, .19) 163px, rgba(20, 190, 255, .73) 167px, rgba(0, 145, 255, .27) 173px, transparent 180px),
+      radial-gradient(circle 310px at 0% 100%, transparent 0 215px, rgba(0, 154, 255, .22) 218px, rgba(0, 175, 255, .46) 223px, rgba(0, 138, 255, .14) 230px, transparent 237px),
+      radial-gradient(circle 165px at 100% 100%, transparent 0 98px, rgba(0, 146, 255, .19) 101px, rgba(20, 190, 255, .73) 105px, rgba(0, 145, 255, .27) 111px, transparent 118px),
+      radial-gradient(circle 220px at 100% 100%, transparent 0 145px, rgba(0, 154, 255, .22) 148px, rgba(0, 175, 255, .46) 153px, rgba(0, 138, 255, .14) 160px, transparent 167px),
+      radial-gradient(ellipse 38% 52% at 0% 0%, rgba(0, 151, 255, .18), transparent 78%),
+      radial-gradient(ellipse 38% 47% at 0% 100%, rgba(0, 153, 255, .15), transparent 80%),
+      radial-gradient(ellipse 38% 47% at 100% 100%, rgba(0, 178, 255, .18), transparent 80%),
+      linear-gradient(145deg, #082039 0%, #071827 53%, #061523 100%) !important;
     color: var(--oddi-home-text) !important;
   }
 
@@ -328,9 +328,9 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     visibility: visible !important;
     opacity: 1 !important;
     background:
-      radial-gradient(ellipse 300px 230px at 0% 0%, rgba(0, 238, 255, .17), transparent 76%),
-      radial-gradient(ellipse 310px 230px at 0% 100%, rgba(0, 238, 255, .15), transparent 78%),
-      radial-gradient(ellipse 320px 235px at 100% 100%, rgba(0, 238, 255, .17), transparent 78%) !important;
+      radial-gradient(ellipse 300px 230px at 0% 0%, rgba(0, 168, 255, .17), transparent 76%),
+      radial-gradient(ellipse 310px 230px at 0% 100%, rgba(0, 160, 255, .15), transparent 78%),
+      radial-gradient(ellipse 320px 235px at 100% 100%, rgba(0, 186, 255, .17), transparent 78%) !important;
     animation: none !important;
   }
 
@@ -344,7 +344,7 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     pointer-events: none !important;
     visibility: visible !important;
     opacity: .66 !important;
-    background: radial-gradient(circle at 1px 1px, rgba(22, 239, 255, .9) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
+    background: radial-gradient(circle at 1px 1px, rgba(22, 190, 255, .9) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
     -webkit-mask-image:
       radial-gradient(ellipse 13% 15% at 4% 10%, #000 0 54%, transparent 100%),
       radial-gradient(ellipse 12% 20% at 98% 21%, #000 0 54%, transparent 100%),
@@ -378,7 +378,7 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) .welcome-message::before,
   body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) .welcome-message::before {
     color: var(--oddi-neon-cyan) !important;
-    text-shadow: 0 0 8px rgba(53, 242, 255, .14) !important;
+    text-shadow: 0 0 8px rgba(53, 213, 255, .14) !important;
     letter-spacing: .2em !important;
   }
 
@@ -394,7 +394,7 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name,
   body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name {
     color: var(--oddi-neon-cyan-bright) !important;
-    text-shadow: 0 0 16px rgba(22, 239, 255, .18) !important;
+    text-shadow: 0 0 16px rgba(22, 207, 255, .18) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle,
@@ -408,12 +408,12 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     min-height: 50px !important;
     margin: 0 auto !important;
     padding: 10px 22px 10px 51px !important;
-    border: 1px solid rgba(0, 212, 227, .86) !important;
+    border: 1px solid rgba(0, 160, 227, .86) !important;
     border-radius: 999px !important;
     background: linear-gradient(100deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
     color: var(--oddi-home-muted) !important;
     font-weight: 550 !important;
-    box-shadow: inset 0 0 14px rgba(53, 242, 255, .07), 0 0 12px rgba(22, 239, 255, .16) !important;
+    box-shadow: inset 0 0 14px rgba(53, 213, 255, .07), 0 0 12px rgba(22, 207, 255, .16) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before,
@@ -427,14 +427,14 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     width: 32px !important;
     height: 32px !important;
     transform: translateY(-50%) !important;
-    border-color: rgba(53, 242, 255, .52) !important;
+    border-color: rgba(53, 213, 255, .52) !important;
     border-radius: 50% !important;
-    background: radial-gradient(circle at 35% 30%, var(--oddi-neon-cyan), #0896a0 76%) !important;
+    background: radial-gradient(circle at 35% 30%, var(--oddi-neon-cyan), #087aa0 76%) !important;
     color: var(--oddi-home-text) !important;
     font-size: 18px !important;
     line-height: 1 !important;
-    text-shadow: 0 0 7px rgba(53, 242, 255, .3) !important;
-    box-shadow: 0 0 6px rgba(22, 239, 255, .28), 0 0 12px rgba(22, 239, 255, .12) !important;
+    text-shadow: 0 0 7px rgba(53, 213, 255, .3) !important;
+    box-shadow: 0 0 6px rgba(22, 207, 255, .28), 0 0 12px rgba(22, 207, 255, .12) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards,
@@ -455,12 +455,12 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     min-width: 0 !important;
     min-height: 72px !important;
     padding: 11px 52px 11px 14px !important;
-    border: 1px solid rgba(0, 218, 234, .93) !important;
+    border: 1px solid rgba(0, 166, 234, .93) !important;
     border-radius: 17px !important;
     background: linear-gradient(135deg, var(--oddi-home-raised), var(--oddi-home-card) 56%, var(--oddi-home-surface)) !important;
     color: var(--oddi-home-text) !important;
     text-align: left !important;
-    box-shadow: inset 0 1px 0 rgba(234, 254, 255, .06), 0 0 0 1px rgba(0, 218, 234, .2), 0 0 15px rgba(0, 238, 255, .2), 0 8px 20px rgba(0, 0, 0, .19) !important;
+    box-shadow: inset 0 1px 0 rgba(234, 244, 255, .06), 0 0 0 1px rgba(0, 166, 234, .2), 0 0 15px rgba(0, 154, 255, .2), 0 8px 20px rgba(0, 0, 0, .19) !important;
     transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease, background .18s ease !important;
     isolation: isolate !important;
     overflow: hidden !important;
@@ -475,7 +475,7 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     display: block !important;
     border-radius: inherit !important;
     pointer-events: none !important;
-    background: linear-gradient(115deg, rgba(5, 152, 163, .2), rgba(20, 80, 84, .14) 34%, rgba(16, 53, 56, .04) 68%, rgba(11, 43, 45, .14)) !important;
+    background: linear-gradient(115deg, rgba(5, 102, 163, .2), rgba(20, 57, 84, .14) 34%, rgba(16, 35, 56, .04) 68%, rgba(11, 27, 45, .14)) !important;
     opacity: .9 !important;
   }
 
@@ -497,15 +497,15 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     width: 31px !important;
     height: 31px !important;
     transform: translateY(-50%) !important;
-    border: 1px solid rgba(22, 239, 255, .9) !important;
+    border: 1px solid rgba(22, 207, 255, .9) !important;
     border-radius: 50% !important;
-    background: rgba(4, 53, 57, .92) !important;
+    background: rgba(4, 35, 57, .92) !important;
     color: var(--oddi-neon-cyan) !important;
     font-size: 19px !important;
     font-weight: 500 !important;
     line-height: 1 !important;
     z-index: 2 !important;
-    box-shadow: inset 0 0 10px rgba(53, 242, 255, .14), 0 0 10px rgba(22, 239, 255, .3) !important;
+    box-shadow: inset 0 0 10px rgba(53, 213, 255, .14), 0 0 10px rgba(22, 207, 255, .3) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:not(.oddi-interview-launch) > .oddi-suggestion-icon,
@@ -516,12 +516,12 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     width: 42px !important;
     min-width: 42px !important;
     height: 42px !important;
-    border: 1px solid rgba(22, 239, 255, .52) !important;
+    border: 1px solid rgba(22, 207, 255, .52) !important;
     border-radius: 12px !important;
-    background: radial-gradient(circle at 35% 25%, rgba(53, 242, 255, .1), transparent 53%), linear-gradient(145deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
+    background: radial-gradient(circle at 35% 25%, rgba(53, 213, 255, .1), transparent 53%), linear-gradient(145deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
     color: var(--oddi-neon-cyan) !important;
-    filter: drop-shadow(0 0 5px rgba(53, 242, 255, .15)) !important;
-    box-shadow: inset 0 0 11px rgba(53, 242, 255, .1), 0 0 9px rgba(22, 239, 255, .14) !important;
+    filter: drop-shadow(0 0 5px rgba(53, 213, 255, .15)) !important;
+    box-shadow: inset 0 0 11px rgba(53, 213, 255, .1), 0 0 9px rgba(22, 207, 255, .14) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards .oddi-suggestion-icon svg,
@@ -545,7 +545,7 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
   body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:is(:hover, :focus-visible) {
     border-color: var(--oddi-neon-cyan) !important;
     background: linear-gradient(135deg, var(--oddi-home-raised), var(--oddi-home-card)) !important;
-    box-shadow: inset 0 0 15px rgba(53, 242, 255, .085), 0 0 8px rgba(22, 239, 255, .2), 0 0 15px rgba(22, 239, 255, .1) !important;
+    box-shadow: inset 0 0 15px rgba(53, 213, 255, .085), 0 0 8px rgba(22, 207, 255, .2), 0 0 15px rgba(22, 207, 255, .1) !important;
     transform: translateY(-2px) !important;
   }
 
@@ -553,14 +553,14 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
   body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:active {
     border-color: var(--oddi-neon-cyan-bright) !important;
     background: var(--oddi-home-raised) !important;
-    box-shadow: inset 0 0 12px rgba(22, 239, 255, .1) !important;
+    box-shadow: inset 0 0 12px rgba(22, 207, 255, .1) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:disabled,
   body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:disabled {
     border-color: var(--oddi-home-border) !important;
     background: var(--oddi-home-surface) !important;
-    color: #78a9ad !important;
+    color: #7893ad !important;
     box-shadow: none !important;
   }
 
@@ -571,26 +571,26 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
     width: min(640px, 100%) !important;
     min-height: 76px !important;
     padding: 13px 54px 13px 24px !important;
-    border: 1px solid rgba(0, 218, 234, .93) !important;
+    border: 1px solid rgba(0, 166, 234, .93) !important;
     background: linear-gradient(110deg, var(--oddi-home-raised), var(--oddi-home-surface)) !important;
-    box-shadow: inset 0 1px 0 rgba(234, 254, 255, .06), 0 0 0 1px rgba(0, 211, 226, .16), 0 0 15px rgba(0, 238, 255, .2), 0 8px 18px rgba(0, 0, 0, .17) !important;
+    box-shadow: inset 0 1px 0 rgba(234, 244, 255, .06), 0 0 0 1px rgba(0, 161, 226, .16), 0 0 15px rgba(0, 153, 255, .2), 0 8px 18px rgba(0, 0, 0, .17) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow,
   body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-launch > .oddi-interview-arrow {
-    border: 1px solid rgba(22, 239, 255, .76) !important;
-    background: rgba(20, 61, 64, .85) !important;
+    border: 1px solid rgba(22, 207, 255, .76) !important;
+    background: rgba(20, 43, 64, .85) !important;
     color: var(--oddi-neon-cyan) !important;
-    box-shadow: inset 0 0 8px rgba(53, 242, 255, .07), 0 0 8px rgba(22, 239, 255, .16) !important;
+    box-shadow: inset 0 0 8px rgba(53, 213, 255, .07), 0 0 8px rgba(22, 207, 255, .16) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field,
   body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field {
-    border: 1px solid rgba(0, 218, 234, .86) !important;
+    border: 1px solid rgba(0, 166, 234, .86) !important;
     border-radius: 999px !important;
-    background: linear-gradient(105deg, rgba(11, 43, 45, .97), rgba(7, 31, 33, .98)) !important;
-    background-color: rgba(11, 43, 45, .97) !important;
-    box-shadow: 0 0 18px rgba(0, 238, 255, .17), inset 0 0 15px rgba(53, 242, 255, .06) !important;
+    background: linear-gradient(105deg, rgba(11, 27, 45, .97), rgba(7, 19, 33, .98)) !important;
+    background-color: rgba(11, 27, 45, .97) !important;
+    box-shadow: 0 0 18px rgba(0, 153, 255, .17), inset 0 0 15px rgba(53, 213, 255, .06) !important;
     backdrop-filter: blur(16px) saturate(1.2) !important;
     -webkit-backdrop-filter: blur(16px) saturate(1.2) !important;
   }
@@ -598,7 +598,7 @@ body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within,
   body[data-oddi-palette="cyber-blue"]:is(.oddi-system-theme.dark-mode,[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within {
     border-color: var(--oddi-neon-cyan-bright) !important;
-    box-shadow: 0 0 0 1px rgba(22, 239, 255, .18), 0 0 18px rgba(22, 239, 255, .18), inset 0 0 15px rgba(53, 242, 255, .06) !important;
+    box-shadow: 0 0 0 1px rgba(22, 207, 255, .18), 0 0 18px rgba(22, 207, 255, .18), inset 0 0 15px rgba(53, 213, 255, .06) !important;
   }
 
   body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #oddiComposerShell #userInput,
@@ -937,18 +937,18 @@ html[data-oddi-palette][data-oddi-appearance] body:is([data-oddi-palette="cyber-
 
 /* One vivid, palette-aware canvas for active conversations and the sidebar search. */
 html[data-oddi-palette="cyber-blue"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-blue"]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) {
-  --oddi-theme-bg: #071f21 !important;
-  --oddi-theme-surface: #0b2b2d !important;
-  --oddi-theme-raised: #143d40 !important;
-  --oddi-theme-line: #245b5f !important;
-  --oddi-theme-line-strong: #0bb5c1 !important;
-  --oddi-theme-text: #eafeff !important;
-  --oddi-theme-muted: #a8cdd0 !important;
-  --oddi-theme-dim: #78a9ad !important;
-  --oddi-theme-accent: #35f2ff !important;
-  --oddi-theme-accent-strong: #16efff !important;
-  --oddi-theme-accent-soft: rgba(22, 239, 255, .18) !important;
-  --oddi-theme-glow: rgba(0, 238, 255, .26) !important;
+  --oddi-theme-bg: #071321 !important;
+  --oddi-theme-surface: #0b1b2d !important;
+  --oddi-theme-raised: #142b40 !important;
+  --oddi-theme-line: #24445f !important;
+  --oddi-theme-line-strong: #0b8fc1 !important;
+  --oddi-theme-text: #eaf4ff !important;
+  --oddi-theme-muted: #a8bcd0 !important;
+  --oddi-theme-dim: #7893ad !important;
+  --oddi-theme-accent: #35d5ff !important;
+  --oddi-theme-accent-strong: #16cfff !important;
+  --oddi-theme-accent-soft: rgba(22, 207, 255, .18) !important;
+  --oddi-theme-glow: rgba(0, 153, 255, .26) !important;
 }
 
 html[data-oddi-palette="cyber-green"]:is([data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]) body[data-oddi-palette="cyber-green"]:has(#chatbox.chatbox:not(:has(> #welcomeContainer))) {
@@ -1185,48 +1185,48 @@ html[data-oddi-palette="cyber-green"][data-oddi-appearance="system-light"] body[
 
 /* System-light Cyber Blue uses the same home finish as Green with blue palette colors. */
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) {
-  --oddi-theme-bg: #f4feff !important;
+  --oddi-theme-bg: #f4f8ff !important;
   --oddi-theme-surface: #ffffff !important;
-  --oddi-theme-raised: #e9feff !important;
-  --oddi-theme-line: #d5f6f8 !important;
-  --oddi-theme-line-strong: #a8e9ee !important;
-  --oddi-theme-text: #183f42 !important;
-  --oddi-theme-muted: #58898c !important;
-  --oddi-theme-dim: #84adb0 !important;
-  --oddi-theme-accent: #16dfed !important;
-  --oddi-theme-accent-strong: #08d6e5 !important;
-  --oddi-theme-accent-soft: rgba(22, 223, 237, .12) !important;
-  --oddi-theme-glow: rgba(48, 232, 245, .15) !important;
-  --oddi-neon-cyan: #16dfed !important;
-  --oddi-neon-cyan-bright: #08e1f0 !important;
-  --oddi-home-bg: #f4feff !important;
+  --oddi-theme-raised: #e9f2ff !important;
+  --oddi-theme-line: #d5e5f8 !important;
+  --oddi-theme-line-strong: #a8c9ee !important;
+  --oddi-theme-text: #182b42 !important;
+  --oddi-theme-muted: #586f8c !important;
+  --oddi-theme-dim: #8498b0 !important;
+  --oddi-theme-accent: #1688ed !important;
+  --oddi-theme-accent-strong: #0877e5 !important;
+  --oddi-theme-accent-soft: rgba(22, 136, 237, .12) !important;
+  --oddi-theme-glow: rgba(48, 139, 245, .15) !important;
+  --oddi-neon-cyan: #1688ed !important;
+  --oddi-neon-cyan-bright: #087ff0 !important;
+  --oddi-home-bg: #f4f8ff !important;
   --oddi-home-surface: #ffffff !important;
-  --oddi-home-input: #fbffff !important;
-  --oddi-home-border: #d5f6f8 !important;
-  --oddi-home-text: #183f42 !important;
-  --oddi-home-muted: #58898c !important;
-  --oddi-home-tertiary: #84adb0 !important;
-  --oddi-home-sidebar: #f7feff !important;
+  --oddi-home-input: #fbfdff !important;
+  --oddi-home-border: #d5e5f8 !important;
+  --oddi-home-text: #182b42 !important;
+  --oddi-home-muted: #586f8c !important;
+  --oddi-home-tertiary: #8498b0 !important;
+  --oddi-home-sidebar: #f7faff !important;
   --oddi-home-card: #ffffff !important;
-  --oddi-home-raised: #e9feff !important;
+  --oddi-home-raised: #e9f2ff !important;
 }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) .app {
-  background: radial-gradient(ellipse 32% 52% at 0% 52%, rgba(83, 244, 255, .13), transparent 78%), radial-gradient(ellipse 35% 50% at 100% 80%, rgba(83, 244, 255, .12), transparent 80%), linear-gradient(135deg, #f8ffff, #f1feff 52%, #f9ffff) !important;
+  background: radial-gradient(ellipse 32% 52% at 0% 52%, rgba(83, 164, 255, .13), transparent 78%), radial-gradient(ellipse 35% 50% at 100% 80%, rgba(83, 164, 255, .12), transparent 80%), linear-gradient(135deg, #f8fbff, #f1f7ff 52%, #f9fbff) !important;
   color: var(--oddi-theme-text) !important;
 }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) .app > .header {
-  border-color: rgba(213, 246, 248, .76) !important;
-  background: rgba(248, 255, 255, .84) !important;
-  box-shadow: 0 1px 0 rgba(22, 223, 237, .04) !important;
+  border-color: rgba(213, 229, 248, .76) !important;
+  background: rgba(248, 251, 255, .84) !important;
+  box-shadow: 0 1px 0 rgba(22, 136, 237, .04) !important;
 }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #chatbox.chatbox {
   position: relative !important;
   isolation: isolate !important;
   background-color: var(--oddi-theme-bg) !important;
-  background-image: radial-gradient(ellipse 75% 42% at 50% 0%, rgba(255,255,255,.94), transparent 76%), radial-gradient(circle 180px at 0% 0%, transparent 0 116px, rgba(83, 244, 255,.2) 118px 120px, transparent 122px), radial-gradient(circle 250px at 0% 0%, transparent 0 190px, rgba(83, 244, 255,.14) 192px 194px, transparent 196px), radial-gradient(circle 230px at 100% 100%, transparent 0 168px, rgba(83, 244, 255,.19) 170px 172px, transparent 174px), radial-gradient(circle 310px at 100% 100%, transparent 0 242px, rgba(83, 244, 255,.13) 244px 246px, transparent 248px), linear-gradient(145deg, #f9ffff, #f1feff 58%, #f9ffff) !important;
+  background-image: radial-gradient(ellipse 75% 42% at 50% 0%, rgba(255,255,255,.94), transparent 76%), radial-gradient(circle 180px at 0% 0%, transparent 0 116px, rgba(83,164,255,.2) 118px 120px, transparent 122px), radial-gradient(circle 250px at 0% 0%, transparent 0 190px, rgba(83,164,255,.14) 192px 194px, transparent 196px), radial-gradient(circle 230px at 100% 100%, transparent 0 168px, rgba(83,164,255,.19) 170px 172px, transparent 174px), radial-gradient(circle 310px at 100% 100%, transparent 0 242px, rgba(83,164,255,.13) 244px 246px, transparent 248px), linear-gradient(145deg, #f9fbff, #f1f7ff 58%, #f9fbff) !important;
   color: var(--oddi-theme-text) !important;
 }
 
@@ -1238,7 +1238,7 @@ html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[d
   z-index: 0 !important;
   pointer-events: none !important;
   visibility: visible !important;
-  background: radial-gradient(ellipse 260px 190px at 0% 0%, rgba(77, 243, 255, .13), transparent 77%), radial-gradient(ellipse 270px 205px at 100% 100%, rgba(77, 243, 255, .12), transparent 78%) !important;
+  background: radial-gradient(ellipse 260px 190px at 0% 0%, rgba(77, 166, 255, .13), transparent 77%), radial-gradient(ellipse 270px 205px at 100% 100%, rgba(77, 166, 255, .12), transparent 78%) !important;
 }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #chatbox.chatbox::after {
@@ -1250,7 +1250,7 @@ html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[d
   pointer-events: none !important;
   visibility: visible !important;
   opacity: .72 !important;
-  background: radial-gradient(circle at 1px 1px, rgba(35, 231, 245, .58) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
+  background: radial-gradient(circle at 1px 1px, rgba(35, 132, 245, .58) 1px, transparent 1.6px) 0 0 / 12px 12px repeat !important;
   -webkit-mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0) !important;
   mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0), linear-gradient(#000 0 0) !important;
   -webkit-mask-size: 122px 122px, 132px 132px, 132px 138px, 144px 128px !important;
@@ -1268,36 +1268,36 @@ html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[d
   z-index: 1 !important;
 }
 
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 { color: #183f42 !important; text-shadow: 0 3px 18px rgba(67, 208, 218, .1) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name { color: #16dfed !important; text-shadow: 0 0 18px rgba(55, 233, 246, .18) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle { border-color: #d5f6f8 !important; background: linear-gradient(100deg, #f2feff, #fff) !important; color: #58898c !important; box-shadow: 0 5px 18px rgba(55, 195, 205, .065), inset 0 1px 0 #fff !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before { border-color: rgba(22, 223, 237,.18) !important; background: radial-gradient(circle at 35% 30%, #fff, #dcfdff 74%) !important; color: #16dfed !important; box-shadow: 0 0 0 4px rgba(32, 221, 235,.055), 0 4px 12px rgba(32, 179, 190,.08) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > h2 { color: #182b42 !important; text-shadow: 0 3px 18px rgba(67, 137, 218, .1) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer .welcome-name { color: #1688ed !important; text-shadow: 0 0 18px rgba(55, 148, 246, .18) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle { border-color: #d5e5f8 !important; background: linear-gradient(100deg, #f2f7ff, #fff) !important; color: #586f8c !important; box-shadow: 0 5px 18px rgba(55, 126, 205, .065), inset 0 1px 0 #fff !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #welcomeContainer > .oddi-home-subtitle::before { border-color: rgba(22,136,237,.18) !important; background: radial-gradient(circle at 35% 30%, #fff, #dceeff 74%) !important; color: #1688ed !important; box-shadow: 0 0 0 4px rgba(32,130,235,.055), 0 4px 12px rgba(32,105,190,.08) !important; }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card,
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiRecentSection #oddiLastMessageCard {
-  border-color: #d5f6f8 !important;
-  background: linear-gradient(145deg, #fff, #f9ffff) !important;
-  box-shadow: 0 9px 24px rgba(43, 180, 190, .075), inset 0 1px 0 #fff !important;
+  border-color: #d5e5f8 !important;
+  background: linear-gradient(145deg, #fff, #f9fbff) !important;
+  box-shadow: 0 9px 24px rgba(43, 111, 190, .075), inset 0 1px 0 #fff !important;
 }
 
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:is(:hover,:focus-visible) { border-color: #9ef1f7 !important; background: linear-gradient(145deg, #fff, #f1feff) !important; box-shadow: 0 0 0 2px rgba(32, 221, 235,.09), 0 11px 26px rgba(43, 180, 190,.11) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-icon { background: #e5fdff !important; color: #12b0bb !important; box-shadow: 0 0 0 1px rgba(22, 223, 237,.06) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card::after { border-color: #c6f5f8 !important; background: #edfeff !important; color: #11b9c5 !important; box-shadow: 0 3px 10px rgba(38, 196, 207,.1) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card:is(:hover,:focus-visible) { border-color: #9ec9f7 !important; background: linear-gradient(145deg, #fff, #f1f7ff) !important; box-shadow: 0 0 0 2px rgba(32,130,235,.09), 0 11px 26px rgba(43,111,190,.11) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card > .oddi-suggestion-icon { background: #e5f1ff !important; color: #1267bb !important; box-shadow: 0 0 0 1px rgba(22,136,237,.06) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-suggestion-card::after { border-color: #c6def8 !important; background: #edf5ff !important; color: #116cc5 !important; box-shadow: 0 3px 10px rgba(38,118,207,.1) !important; }
 
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field { border-color: #d1f6f9 !important; background: rgba(255,255,255,.9) !important; box-shadow: 0 10px 26px rgba(43, 180, 190,.08), inset 0 1px 0 #fff !important; backdrop-filter: blur(14px) saturate(1.08) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within { border-color: #7eeaf2 !important; box-shadow: 0 0 0 2px rgba(32, 221, 235,.11), 0 12px 28px rgba(43, 180, 190,.1) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell :is(#attach-btn,#dictation-btn) { border-color: #d8f8fa !important; background: #effeff !important; color: #12b0bb !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell :is(#voice-btn,#send-btn):not(:disabled) { border-color: #16dfed !important; background: linear-gradient(145deg,#45f3ff,#14dae8) !important; color: #fff !important; box-shadow: 0 5px 14px rgba(28, 211, 224,.23) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field { border-color: #d1e3f9 !important; background: rgba(255,255,255,.9) !important; box-shadow: 0 10px 26px rgba(43,111,190,.08), inset 0 1px 0 #fff !important; backdrop-filter: blur(14px) saturate(1.08) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell.input-area > .oddi-composer-field:focus-within { border-color: #7eb6f2 !important; box-shadow: 0 0 0 2px rgba(32,130,235,.11), 0 12px 28px rgba(43,111,190,.1) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell :is(#attach-btn,#dictation-btn) { border-color: #d8e9fa !important; background: #eff6ff !important; color: #1267bb !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddiComposerShell :is(#voice-btn,#send-btn):not(:disabled) { border-color: #1688ed !important; background: linear-gradient(145deg,#45a3ff,#147be8) !important; color: #fff !important; box-shadow: 0 5px 14px rgba(28,122,224,.23) !important; }
 
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-sidebar { border-right-color: #d7f3f5 !important; background: linear-gradient(180deg,#f9ffff,#f3feff) !important; box-shadow: 8px 0 22px rgba(46, 153, 161,.055) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search { border-color: #d8f5f7 !important; background: #fff !important; box-shadow: inset 0 1px 2px rgba(43, 138, 145,.025) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search > svg { color: #3da1a8 !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-sidebar { border-right-color: #d7e5f5 !important; background: linear-gradient(180deg,#f9fbff,#f3f8ff) !important; box-shadow: 8px 0 22px rgba(46,101,161,.055) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search { border-color: #d8e7f7 !important; background: #fff !important; box-shadow: inset 0 1px 2px rgba(43,92,145,.025) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search > svg { color: #3d70a8 !important; }
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search input::placeholder { color: #8194aa !important; opacity: 1 !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search:focus-within { border-color: #4de1ec !important; box-shadow: 0 0 0 2px rgba(32, 221, 235,.1), 0 0 12px rgba(55, 233, 246,.1) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-nav :is(a,button):is(.active,.selected,[aria-current="page"]) { border-color: #c7f7fa !important; background: #eafeff !important; color: #177980 !important; box-shadow: inset 2px 0 #23dfec !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-label { color: #28a0a9 !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-new { border-color: #b8f4f8 !important; background: linear-gradient(105deg,#eafeff,#e0fdff) !important; color: #195256 !important; box-shadow: 0 3px 10px rgba(43, 180, 190,.07) !important; }
-html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-account-footer { border-color: #d5f6f8 !important; background: linear-gradient(110deg,#fff,#f4feff) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-search:focus-within { border-color: #4d96ec !important; box-shadow: 0 0 0 2px rgba(32,130,235,.1), 0 0 12px rgba(55,148,246,.1) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-nav :is(a,button):is(.active,.selected,[aria-current="page"]) { border-color: #c7e0fa !important; background: #eaf4ff !important; color: #174b80 !important; box-shadow: inset 2px 0 #2388ec !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-label { color: #286ba9 !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-new { border-color: #b8d7f8 !important; background: linear-gradient(105deg,#eaf4ff,#e0efff) !important; color: #193956 !important; box-shadow: 0 3px 10px rgba(43,111,190,.07) !important; }
+html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-light"] body[data-oddi-palette="cyber-blue"]:has(#chatbox > #welcomeContainer) #oddi-react-sidebar-root .oddi-rs-account-footer { border-color: #d5e5f8 !important; background: linear-gradient(110deg,#fff,#f4f8ff) !important; }
 
 /* Base dark home canvas; the palette-aware corner treatment follows below. */
 html[data-oddi-palette][data-oddi-appearance] body[data-oddi-palette="cyber-blue"]:is(.dark-mode,[data-oddi-appearance="dark"],[data-oddi-appearance="system-dark"]):has(#chatbox > #welcomeContainer) #chatbox.chatbox,

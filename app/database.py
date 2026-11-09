@@ -2316,8 +2316,6 @@ def get_conversation_summaries(user_id):
     """Return sidebar metadata without loading Drive chat message bodies."""
     if ODDI_DRIVE_CHAT_STORAGE:
         return _chat_file_store().get_conversation_summaries_for_user(user_id)
-    if ODDI_CHAT_FILES_STORAGE:
-        return local_chat_files.get_conversation_summaries_for_user(user_id)
 
     # Local file and database modes are fast; derive the same public response
     # shape while keeping message arrays out of the browser's history payload.

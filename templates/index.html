@@ -6,7 +6,7 @@
         const root = document.documentElement;
         try {
             const palette = localStorage.getItem("oddi_palette_v1");
-            root.dataset.oddiPalette = palette === "cyber-blue" ? palette : "mono";
+            root.dataset.oddiPalette = palette === "cyber-green" || palette === "cyber-blue" ? palette : "mono";
             const preference = localStorage.getItem("oddi_theme_v1");
             const system = preference === "system";
             const dark = preference === "dark" || (system && matchMedia("(prefers-color-scheme: dark)").matches);
@@ -44,7 +44,7 @@
         }
     </style>
     <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#0c0712">
+    <meta name="theme-color" content="#20c76b">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -2882,7 +2882,7 @@ body:not(.dark-mode) .memory-add-close,.body:not(.dark-mode) .memory-add-actions
   }
 }
 </style>
-    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261108-purple-blue-gold-coming-soon-v1">
+    <link rel="stylesheet" href="/static/oddi-sidebar/oddi-sidebar.css?v=20261025-sidebar-profile-hover-v1">
     <link rel="stylesheet" href="/static/oddi-profile.css?v=20261020-profile-inline-v3">
     <link rel="stylesheet" href="/static/oddi-help-feedback.css?v=20261019-3">
     <link rel="stylesheet" href="/static/oddi-shared-workspaces.css?v=20261022-hide-home-actions-v1">
@@ -4173,7 +4173,7 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
   }
 }
 </style>
-<link rel="stylesheet" href="/static/oddi-home-bright-theme.css?v=20261101-bright-theme-v5">
+
 </head>
 <body class="oddi-splash-active" data-logged-in="{{ 'true' if logged_in else 'false' }}" data-username="{{ username if logged_in else '' }}" data-user-id="{{ user_id if logged_in else '' }}" data-browser-local-chats="{{ 'true' if browser_local_chats else 'false' }}" data-library-sync-enabled="{{ 'true' if library_sync_enabled else 'false' }}">
 <!-- ODDI-AI Video Splash Screen -->
@@ -4702,11 +4702,9 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
             <span class="oddi-phone-dot phone-dot-5"></span>
         </div>
         <div class="welcome-message" id="welcomeContainer">
-            <div class="oddi-home-hero-orb" aria-hidden="true"></div>
-            <h2 class="oddi-home-hero-title">
+            <h2>
                 {% if logged_in %}
-                    <span class="welcome-line welcome-desktop-greeting oddi-home-greeting">Good Evening,</span>
-                    <span class="welcome-line welcome-desktop-greeting oddi-home-name-line"><span class="welcome-name">{{ username }}</span></span>
+                    <span class="welcome-line welcome-desktop-greeting">Ready to level up,<br><span class="welcome-name">{{ username }}</span>?<span class="welcome-emoji" aria-hidden="true"> 🚀</span></span>
                 {% else %}
                     <span class="welcome-line welcome-desktop-greeting">What would you like to</span>
                     <span class="welcome-line welcome-desktop-greeting">work on today?</span>
@@ -4714,145 +4712,16 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
                 <span class="welcome-line welcome-phone-greeting">Ready to level up,<br>there?</span>
             </h2>
         
-        <p class="oddi-home-subtitle">Turn your ideas into knowledge, projects and possibilities.</p>
+        <p class="oddi-home-subtitle">Understand, create, plan, and explore — all in one place.</p>
 
-        <div id="oddiHomeQuickActions" class="oddi-home-quick-actions" role="group" aria-label="Quick actions">
-            <button type="button" class="oddi-home-quick-action" data-home-agent="research" data-home-prompt="Research this topic: " aria-label="Research">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg><span>Research</span>
-            </button>
-            <button type="button" class="oddi-home-quick-action" data-home-prompt="Help me brainstorm ideas about: " aria-label="Brainstorm">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 22h4M8.2 14.5A7 7 0 1 1 15.8 14.5c-.9.7-1.3 1.5-1.4 2.5h-4.8c-.1-1-.5-1.8-1.4-2.5Z"/><path d="M12 2v2M4.9 4.9l1.4 1.4M19.1 4.9l-1.4 1.4"/></svg><span>Brainstorm</span>
-            </button>
-            <button type="button" class="oddi-home-quick-action" data-home-prompt="Help me create a clear, actionable plan for: " aria-label="Make a plan">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="m3 6 1.2 1.2L6.5 5M3 12l1.2 1.2L6.5 11M3 18l1.2 1.2L6.5 17"/></svg><span>Make a plan</span>
-            </button>
-            <button type="button" class="oddi-home-quick-action" data-home-prompt="Analyze this: " aria-label="Analyze">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V11M10 20V5M16 20v-8M22 20V8"/></svg><span>Analyze</span>
-            </button>
-            <button type="button" class="oddi-home-quick-action" data-home-agent="coding" data-home-prompt="Help me write or debug code for: " aria-label="Code">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m8 7-5 5 5 5M16 7l5 5-5 5"/></svg><span>Code</span>
-            </button>
-            <button type="button" class="oddi-home-quick-action" data-home-prompt="Summarize this: " aria-label="Summarize">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h8M8 17h6"/></svg><span>Summarize</span>
-            </button>
-            <button type="button" class="oddi-home-quick-action" data-home-prompt="Help me with: " aria-label="More quick actions">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg><span>More</span>
-            </button>
+        <div id="oddiSuggestionCards" class="oddi-suggestion-cards" aria-label="Quick suggestions">
+            <button type="button" class="oddi-suggestion-card suggestion-blue" data-oddi-prompt="Can you help me understand a complex topic? Give me a clear explanation of an idea or subject."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5c3.1-.9 5.8-.4 8 1.2v13c-2.2-1.6-4.9-2.1-8-1.2z"/><path d="M20 5.5c-3.1-.9-5.8-.4-8 1.2v13c2.2-1.6 4.9-2.1 8-1.2z"/></svg></span><span class="oddi-suggestion-copy"><strong>Understand a topic</strong><small>Get a clear explanation of an idea or subject</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-purple" data-oddi-prompt="Help me draft, refine, or polish something I am writing."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span><span class="oddi-suggestion-copy"><strong>Draft or refine writing</strong><small>Create, refine, or polish your writing</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-green" data-oddi-prompt="Help me turn a goal into a clear project plan with actionable steps."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan a project</strong><small>Turn a goal into clear, actionable steps</small></span></button>
+            <button type="button" class="oddi-suggestion-card suggestion-orange" data-oddi-prompt="Help me plan for tomorrow and capture the next steps."><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h5M8 17h4"/><circle cx="17" cy="16" r="2.5"/><path d="m19 18 2 2"/></svg></span><span class="oddi-suggestion-copy"><strong>Plan for tomorrow</strong><small>Capture the next steps</small></span></button>
+            <a href="/interview-studio" class="oddi-suggestion-card oddi-interview-launch" aria-label="Open Interview Studio"><span class="oddi-suggestion-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="8" y="3" width="8" height="13" rx="4"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></svg></span><span class="oddi-suggestion-copy"><strong>Interview Studio</strong><small><span class="interview-desktop-copy">Practice any profession with role-specific questions and ODDI feedback</span><span class="interview-phone-copy">Practice any profession with role-specific questions</span></small></span><span class="oddi-interview-arrow" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span></a>
         </div>
-
-        <!-- Composer Slot (Positioned Cleanly Above Suggestion Cards) -->
-        <div id="oddiComposerSlot" class="oddi-home-composer-slot">
-            <div id="oddiComposerShell" class="input-area oddi-home-composer-mode">
-                <div id="attachmentPreview" class="attachment-preview" style="display:none;">
-                    <div class="attachment-header">
-                        <button id="attachmentToggle" class="attachment-toggle" type="button" aria-label="Toggle attached files" aria-expanded="false" title="Show attached files">
-                            <span id="attachmentArrow">▴</span>
-                        </button>
-                        <span id="attachmentName"></span>
-                        <button id="removeAttachment" type="button" aria-label="Remove all attached files" title="Remove all files">✖</button>
-                    </div>
-                    <div id="attachmentList" class="attachment-list" style="display:none;"></div>
-                    <div id="pastedImagePreview" class="pasted-image-preview" aria-label="Pasted image preview" hidden></div>
-                </div>
-                <input
-                    type="file"
-                    id="fileInput"
-                    multiple
-                    hidden>
-
-                <div class="oddi-composer-field">
-                    <!-- Top Row: Sparkle Squircle + Input -->
-                    <div class="oddi-composer-top-row">
-                        <div class="oddi-composer-sparkle-badge" aria-hidden="true">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2L14.4 8.6L21 11L14.4 13.4L12 20L9.6 13.4L3 11L9.6 8.6L12 2Z"/>
-                            </svg>
-                        </div>
-                        <textarea
-                            id="userInput"
-                            rows="1"
-                            placeholder="Ask Anything..."
-                        ></textarea>
-                    </div>
-
-                    <!-- Bottom Row: Left Tool Chips + Right Controls -->
-                    <div class="oddi-composer-bottom-bar">
-                        <div class="oddi-composer-left-tools">
-                            <button type="button" class="oddi-composer-chip-btn" id="oddiAttachChipBtn" title="Attach files" aria-label="Attach files">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l7.88-7.88"/>
-                                </svg>
-                                <span>Attach</span>
-                            </button>
-                            <button type="button" class="oddi-composer-chip-btn" id="oddiSettingsChipBtn" title="Settings" aria-label="Settings">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="4" y1="21" x2="4" y2="14"/>
-                                    <line x1="4" y1="10" x2="4" y2="3"/>
-                                    <line x1="12" y1="21" x2="12" y2="12"/>
-                                    <line x1="12" y1="8" x2="12" y2="3"/>
-                                    <line x1="20" y1="21" x2="20" y2="16"/>
-                                    <line x1="20" y1="12" x2="20" y2="3"/>
-                                    <line x1="1" y1="14" x2="7" y2="14"/>
-                                    <line x1="9" y1="8" x2="15" y2="8"/>
-                                    <line x1="17" y1="16" x2="23" y2="16"/>
-                                </svg>
-                                <span>Settings</span>
-                            </button>
-                            <button type="button" class="oddi-composer-chip-btn" id="oddiOptionsChipBtn" title="Options" aria-label="Options">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-                                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-                                    <rect x="14" y="14" width="7" height="7" rx="1.5"/>
-                                    <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-                                </svg>
-                                <span>Options</span>
-                            </button>
-                        </div>
-
-                        <div class="oddi-composer-right-tools">
-                            <button id="dictation-btn" class="dictation-btn oddi-composer-mic-btn" type="button" title="Type with your voice" aria-label="Type with your voice">
-                                <svg height="18" viewBox="0 0 24 24" width="18" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
-                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                                    <line x1="12" y1="19" x2="12" y2="22"/>
-                                </svg>
-                            </button>
-                            <div class="action-button-slot">
-                                <button id="voice-btn" class="voice-btn" style="display:none;" title="Start a voice conversation" aria-label="Start a voice conversation" aria-pressed="false">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6a9 9 0 0 1 18 0v6" /><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" /><path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" /></svg>
-                                </button>
-                                <button id="send-btn" class="send-btn oddi-composer-send-btn" aria-label="Send message" title="Send message" style="box-sizing: border-box !important; display: grid !important; place-items: center !important; padding: 0 !important; border: 1px solid var(--oddi-send-button-border, rgba(211, 126, 255, .62)) !important; border-radius: 50% !important; background: var(--oddi-send-button-background, radial-gradient(circle at 34% 24%, #f4e6ff 0%, #d19aff 35%, #ad5af4 72%, #8f37db 100%)) !important; color: var(--oddi-send-button-color, #35104f) !important; box-shadow: var(--oddi-send-button-shadow, 0 0 18px rgba(164, 42, 255, .62), inset 0 1px 0 rgba(255, 255, 255, .22)) !important; opacity: 1 !important; visibility: visible !important;">
-                                    <svg class="oddi-up-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display: block !important; width: clamp(18px, 1.37vw, 26px) !important; height: clamp(18px, 1.37vw, 26px) !important; stroke: var(--oddi-send-button-color, #35104f) !important; color: var(--oddi-send-button-color, #35104f) !important; fill: none !important;">
-                                        <path d="M12 19V5M5 12l7-7 7 7"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <button id="attach-btn" class="attach-btn" type="button" style="display:none;" aria-hidden="true"></button>
-            </div>
-        </div>
-
-        <div id="oddiSuggestionCards" class="oddi-reference-card-grid" aria-label="Quick suggestions" style="grid-template-columns:repeat(4,minmax(0,1fr))!important;grid-template-rows:minmax(0,1fr)!important;grid-auto-flow:column!important">
-            <article class="oddi-reference-card" data-home-card="topic" data-oddi-prompt="Can you help me understand a complex topic? Give me a clear, structured explanation and ask which topic if needed." role="button" tabindex="0">
-                <span class="oddi-reference-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5.5c3.1-.9 5.8-.4 8 1.2v13c-2.2-1.6-4.9-2.1-8-1.2z"/><path d="M20 5.5c-3.1-.9-5.8-.4-8 1.2v13c2.2-1.6 4.9-2.1 8-1.2z"/></svg></span>
-                <span class="oddi-reference-card-copy"><strong>Understand a topic</strong><small>Get a clear explanation of any idea or subject</small></span>
-            </article>
-            <article class="oddi-reference-card" data-home-card="project" data-oddi-prompt="Help me plan a project from start to finish with clear milestones, tasks, and priorities. Ask me about my goal if needed." role="button" tabindex="0">
-                <span class="oddi-reference-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10z"/><path d="M13 3v7h7M8 14h8M8 17h6"/></svg></span>
-                <span class="oddi-reference-card-copy"><strong>Plan a project</strong><small>Turn a goal into clear, actionable steps</small></span>
-            </article>
-            <article class="oddi-reference-card" data-home-card="writing" data-oddi-prompt="Help me draft or refine writing. Ask me to share the text, purpose, and audience if needed." role="button" tabindex="0">
-                <span class="oddi-reference-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m4 16.5-.8 4.3 4.3-.8L20 7.5 16.5 4z"/><path d="m14.8 5.7 3.5 3.5"/></svg></span>
-                <span class="oddi-reference-card-copy"><strong>Draft or refine writing</strong><small>Create, refine, or polish your writing</small></span>
-            </article>
-            <article class="oddi-reference-card" data-home-card="tomorrow" data-oddi-prompt="Help me review my progress and choose my first step for tomorrow. Turn it into a realistic, prioritized plan." role="button" tabindex="0">
-                <span class="oddi-reference-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0-3.9 10.6c.9.7 1.4 1.5 1.5 2.4h4.8c.1-.9.6-1.7 1.5-2.4A6 6 0 0 0 12 3Z"/><path d="M9.5 19h5M10.5 22h3M12 1v1M4.2 4.2l1.4 1.4M19.8 4.2l-1.4 1.4"/></svg></span>
-                <span class="oddi-reference-card-copy"><strong>Plan for tomorrow</strong><small>Capture the next steps and stay on track</small></span>
-            </article>
-        </div>
-        <section id="oddiRecentSection" class="oddi-recent-work" aria-label="Recent work" hidden style="display: none !important;">
+        <section id="oddiRecentSection" class="oddi-recent-work" aria-label="Recent work" hidden>
             <p id="oddiRecentHeadingText" class="oddi-recent-heading">RECENT WORK</p>
             <button type="button" id="oddiLastMessageCard" class="oddi-last-message-card" data-oddi-action="continue" aria-label="Continue where you left off" aria-disabled="true" disabled>
                 <span class="oddi-last-message-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5 7.4 7.4 0 0 1-3.4-.8L4 20l1.5-4A7.4 7.4 0 0 1 4.7 12 7.5 7.5 0 0 1 12.2 4.5h.3A7.5 7.5 0 0 1 20 11.5Z"/><path d="M8.5 10h7M8.5 13.5h4.5"/></svg></span>
@@ -4866,11 +4735,60 @@ body:not(.dark-mode) #accountSettingsModal .app-password-row input { background:
             </button>
         </section>
         <button type="button" id="oddiSayHello" class="oddi-say-hello" aria-label="Get to know ODDI AI" hidden>Get to know ODDI AI</button>
-
-        <div id="oddiAccuracyNote" class="oddi-home-disclaimer" role="note">ODDI-AI can make mistakes. Please double-check important information.</div>
     </div>
     </main>
-
+    <div id="oddiComposerShell" class="input-area">
+        <div id="attachmentPreview" class="attachment-preview" style="display:none;">
+            <div class="attachment-header">
+                <button id="attachmentToggle" class="attachment-toggle" type="button" aria-label="Toggle attached files" aria-expanded="false" title="Show attached files">
+                    <span id="attachmentArrow">▴</span>
+                </button>
+                <span id="attachmentName"></span>
+                <button id="removeAttachment" type="button" aria-label="Remove all attached files" title="Remove all files">✖</button>
+            </div>
+            <div id="attachmentList" class="attachment-list" style="display:none;"></div>
+            <div id="pastedImagePreview" class="pasted-image-preview" aria-label="Pasted image preview" hidden></div>
+        </div>
+        <button id="attach-btn" class="attach-btn" type="button" aria-label="Attach files" title="Attach files"><span aria-hidden="true">+</span></button>
+        <input
+            type="file"
+            id="fileInput"
+            multiple
+            hidden>
+        <textarea
+            id="userInput"
+            rows="1"
+            placeholder="Ask your career AI anything…"
+        ></textarea>
+        <button id="dictation-btn" class="dictation-btn" title="Type with your voice" aria-label="Type with your voice">
+            <svg height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg" fill="currentColor" aria-hidden="true">
+                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5zm6 6c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+            </svg>
+        </button>
+        <div class="action-button-slot">
+            <button id="voice-btn"
+                class="voice-btn"
+                title="Start a voice conversation"
+                aria-label="Start a voice conversation"
+                aria-pressed="false">
+            <svg width="26" height="26" viewBox="0 0 24 24" 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                stroke="currentColor" 
+                stroke-width="2" 
+                stroke-linecap="round" 
+                stroke-linejoin="round">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6" />
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3z" />
+                <path d="M3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z" />
+            </svg>
+    </button>
+            <button id="send-btn" class="send-btn" aria-label="Send message" title="Send message">
+                <span class="send-icon">➤</span>
+            </button>
+        </div>
+    </div>
+    <div id="oddiAccuracyNote" role="note">ODDI-AI can make mistakes. Please double-check important information.</div>
 </div>
 <style id="oddi-say-hello-style">
 .oddi-say-hello{position:fixed;left:50%;bottom:91px;transform:translateX(-50%);z-index:599;border:1px solid rgba(32,199,107,.3);border-radius:999px;padding:8px 14px;background:rgba(32,199,107,.08);color:#16884a;font:600 13px/1.2 inherit;cursor:pointer;transition:background .16s ease,transform .16s ease,border-color .16s ease;}
@@ -6006,10 +5924,6 @@ function oddiUpdateChatFollowState() {
 
 function oddiSmartScroll(forceFollow = false) {
     if (!chat) return;
-    if (document.getElementById('welcomeContainer')) {
-        chat.scrollTop = 0;
-        return;
-    }
     if (!forceFollow && !oddiChatShouldFollow) return;
     if (forceFollow) oddiChatManualFollowLock = false;
     if (oddiChatScrollFrame) return;
@@ -6198,7 +6112,7 @@ function setGenerationUI(active) {
     } else {
         button.disabled = false;
         button.classList.remove("stop-active");
-        button.innerHTML = `<svg class="oddi-up-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block !important;width:clamp(18px,1.37vw,26px) !important;height:clamp(18px,1.37vw,26px) !important;stroke:#35104f !important;color:#35104f !important;fill:none !important;"><path d="M12 19V5M5 12l7-7 7 7"/></svg>`;
+        button.innerHTML = `<span class="send-icon">➤</span>`;
         button.title = "Send message";
         button.setAttribute("aria-label", "Send message");
     }
@@ -7979,21 +7893,6 @@ async function fetchConversationHistory(conversationId) {
     return normalizeConversationObject(await response.json());
 }
 
-async function fetchConversationMessageWindow(conversationId, before = null) {
-    const params = new URLSearchParams({ limit: "60" });
-    if (before) params.set("before", String(before));
-    const response = await fetch(
-        `/api/conversations/${encodeURIComponent(conversationId)}/messages/window?${params.toString()}`,
-        { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } }
-    );
-    if (!response.ok) {
-        let detail = "";
-        try { detail = (await response.json())?.error || ""; } catch (_) {}
-        throw new Error(detail || `Load chat messages failed (${response.status})`);
-    }
-    return normalizeConversationObject(await response.json());
-}
-
 function getOddiChatRecoveryScopePrefix() {
     const userId = String(document.body?.dataset?.userId || "").trim();
     const username = String(document.body?.dataset?.username || "").trim().toLowerCase();
@@ -8369,37 +8268,19 @@ async function loadConversations() {
     try {
         // Fetch the account history first so Drive migration of older browser
         // chats cannot hold the whole chat list behind a sequence of uploads.
+        const localChatMigration = migrateBrowserLocalChatsToAccount().catch(migrationError => {
+            console.error("Could not sync local chats to this account:", migrationError);
+            if (!window.__oddiLocalChatSyncWarningShown) {
+                window.__oddiLocalChatSyncWarningShown = true;
+                showOddiToast("Some chats are still saved only in this browser. They are safe here and will retry syncing later.", "error");
+            }
+        });
         const response = await fetch("/api/conversations/index", { credentials: "same-origin", cache: "no-store", headers: { "Cache-Control": "no-cache" } });
         if (!response.ok) throw new Error(`Load conversations failed (${response.status})`);
         const loadedConversations = await response.json();
         const serverConversations = Array.isArray(loadedConversations) ? loadedConversations.map(item => normalizeConversationObject({ ...item, messages: [], __summaryOnly: true })) : [];
         const serverById = new Map(serverConversations.filter(c => c?.id !== null && c?.id !== undefined).map(c => [String(c.id), c]));
         conversations = serverConversations.slice();
-
-        // Show server history and restore the selected chat before scanning
-        // browser-local recovery copies. Those copies may contain large chat
-        // histories, but they should never hold the first sidebar paint or
-        // the selected conversation behind an IndexedDB walk.
-        const requestedId = String(getConversationIdFromUrl() || "");
-        let lastOpenId = "";
-        try { lastOpenId = sessionStorage.getItem(ODDI_LAST_OPEN_CONVERSATION_KEY) || ""; } catch (_) {}
-        const preserveFreshChat = Boolean(window.__oddiFreshChatActive)
-            || Number(window.__oddiFreshChatLockUntil || 0) > Date.now()
-            || lastOpenId === ODDI_FRESH_CHAT_MARKER;
-        const preferredId = requestedId
-            || String(window.__oddiActiveConversationId || "")
-            || (!preserveFreshChat ? lastOpenId : "");
-        const earlySelectionIndex = preferredId
-            ? conversations.findIndex(item => String(item?.id ?? "") === preferredId && !item.deleted)
-            : -1;
-        if (earlySelectionIndex >= 0) {
-            currentConversation = earlySelectionIndex;
-            window.__oddiActiveConversationId = preferredId;
-            void openConversation(earlySelectionIndex);
-        }
-        renderHistory();
-        publishConversationDataReady();
-
         try {
             const pendingLocalChats = new Map();
             const scopedBackups = getOddiLocalChatBackups();
@@ -8428,6 +8309,10 @@ async function loadConversations() {
         } catch (localReadError) {
             console.error("Could not restore unsynced device chats:", localReadError);
         }
+        // Publish server chats immediately so the React sidebar can show and
+        // open them without waiting for recovery or legacy metadata migration.
+        publishConversationDataReady();
+
         for (const backup of getOddiLocalChatBackups()) {
             const id = String(backup.id);
             const serverConversation = serverById.get(id);
@@ -8471,88 +8356,13 @@ async function loadConversations() {
 
         renderHistory();
         publishConversationDataReady();
-
-        // Keep old pin/archive/bin migration off the initial render path.
-        const scheduleAfterInitialPaint = callback => {
-            const schedule = () => window.setTimeout(callback, 1600);
-            if (typeof window.requestIdleCallback === "function") {
-                window.requestIdleCallback(schedule, { timeout: 3500 });
-            } else {
-                schedule();
-            }
-        };
-        scheduleAfterInitialPaint(() => {
-            void migrateLegacyConversationState().catch(error => {
-                console.warn("Could not finish legacy chat metadata migration yet:", error);
-            });
-        });
-
-        if (serverConversations.some(item => item.__summary_missing)) {
-            let summaryRefreshAttempts = 0;
-            const refreshLocalChatSummaries = async () => {
-                summaryRefreshAttempts += 1;
-                try {
-                    const response = await fetch("/api/conversations/index", {
-                        credentials: "same-origin",
-                        cache: "no-store",
-                        headers: { "Cache-Control": "no-cache" },
-                    });
-                    if (!response.ok) return;
-                    const latest = await response.json();
-                    let needsAnotherRefresh = false;
-                    let changed = false;
-                    for (const summary of Array.isArray(latest) ? latest : []) {
-                        const existing = conversations.find(item => String(item?.id ?? "") === String(summary?.id ?? ""));
-                        if (!existing) continue;
-                        if (summary.__summary_missing) {
-                            needsAnotherRefresh = true;
-                            continue;
-                        }
-                        const fullMessages = Array.isArray(existing.messages) ? existing.messages : [];
-                        const hasFullHistory = existing.__summaryOnly !== true;
-                        Object.assign(existing, summary, { messages: fullMessages });
-                        if (hasFullHistory) delete existing.__summaryOnly;
-                        changed = true;
-                    }
-                    if (changed) {
-                        renderHistory();
-                        publishConversationDataReady();
-                    }
-                    if (needsAnotherRefresh && summaryRefreshAttempts < 3) {
-                        window.setTimeout(refreshLocalChatSummaries, 5000);
-                    }
-                } catch (error) {
-                    console.debug("Chat summary refresh will retry on the next visit:", error);
-                }
-            };
-            scheduleAfterInitialPaint(() => window.setTimeout(refreshLocalChatSummaries, 3500));
-        }
-
+        await migrateLegacyConversationState();
         clearCompletedPendingGeneration(conversations);
         notifyUnseenBackgroundResponses(conversations);
-        const activeId = String(window.__oddiActiveConversationId || "");
-        const activeIndex = activeId
-            ? conversations.findIndex(item => String(item?.id ?? "") === activeId && !item.deleted)
-            : -1;
-        if (activeIndex >= 0) currentConversation = activeIndex;
-        else restoreSelection();
+        restoreSelection();
         renderHistory();
         publishConversationDataReady();
         startConversationSync();
-
-        // Browser-local chat imports are recovery work. Start them only after
-        // the server chat list and current conversation have become usable.
-        const localChatMigration = new Promise(resolve => {
-            scheduleAfterInitialPaint(() => {
-                void migrateBrowserLocalChatsToAccount().catch(migrationError => {
-                    console.error("Could not sync local chats to this account:", migrationError);
-                    if (!window.__oddiLocalChatSyncWarningShown) {
-                        window.__oddiLocalChatSyncWarningShown = true;
-                        showOddiToast("Some chats are still saved only in this browser. They are safe here and will retry syncing later.", "error");
-                    }
-                }).finally(resolve);
-            });
-        });
         localChatMigration.then(() => {
             if (conversationSyncStarted) syncConversationsFromServer({ refreshOpen: false });
         });
@@ -8721,32 +8531,6 @@ async function queueConversationMutation(conversationId, operation) {
     }
 }
 
-function mergePartialHistoryMetadata(conversation, payload) {
-    const saved = payload?.conversation;
-    if (!saved || typeof saved !== "object") return;
-    for (const key of ["title", "created_at", "updated_at", "revision", "pinned", "archived", "deleted", "deleted_at"]) {
-        if (saved[key] !== undefined) conversation[key] = saved[key];
-    }
-}
-
-async function postPartialHistoryMessage(conversation, message) {
-    const persistedIds = conversation.__historyPersistedMessageIds instanceof Set
-        ? conversation.__historyPersistedMessageIds
-        : (conversation.__historyPersistedMessageIds = new Set());
-    const messageId = String(message?.id || "");
-    if (messageId && persistedIds.has(messageId)) return true;
-    const response = await fetch(`/api/conversations/${encodeURIComponent(String(conversation.id))}/messages`, {
-        method: "POST", credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message })
-    });
-    if (!response.ok) throw new Error(`Append message failed (${response.status})`);
-    const payload = await response.json();
-    mergePartialHistoryMetadata(conversation, payload);
-    if (messageId) persistedIds.add(messageId);
-    return true;
-}
-
 // Multiple UI paths can request a save for the same conversation at once
 // (message append, title edits, autosync and recovery). Serialize every cloud
 // mutation per ID so message appends cannot race a revision-checked full save.
@@ -8759,28 +8543,6 @@ async function saveConversation(conversation) {
     }
     if (!await ensureAccountConversationId(conversation)) return false;
     const conversationId = String(conversation.id);
-    if (conversation.__partialHistory && !browserLocalChatStorage) {
-        return queueConversationMutation(conversationId, async () => {
-            const persistedIds = conversation.__historyPersistedMessageIds instanceof Set
-                ? conversation.__historyPersistedMessageIds
-                : (conversation.__historyPersistedMessageIds = new Set());
-            for (const message of Array.isArray(conversation.messages) ? conversation.messages : []) {
-                const id = String(message?.id || "");
-                if (id && !persistedIds.has(id)) await postPartialHistoryMessage(conversation, message);
-            }
-            if (String(conversation.title || "New Chat") !== String(conversation.__historySavedTitle || "New Chat")) {
-                const response = await fetch(`/api/conversations/${encodeURIComponent(conversationId)}/metadata`, {
-                    method: "PUT", credentials: "same-origin",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ title: conversation.title || "New Chat" })
-                });
-                if (!response.ok) throw new Error(`Save chat title failed (${response.status})`);
-                mergePartialHistoryMetadata(conversation, await response.json());
-                conversation.__historySavedTitle = String(conversation.title || "New Chat");
-            }
-            return true;
-        });
-    }
     return queueConversationMutation(conversationId, () => saveConversationNow(conversation));
 }
 
@@ -8788,10 +8550,6 @@ async function appendConversationMessage(conversation, message) {
     if (conversation?.__oddiIncognito) return true;
     if (!conversation?.id || !message) return false;
     normalizeConversationObject(conversation);
-    if (conversation.__partialHistory && !browserLocalChatStorage) {
-        const conversationId = String(conversation.id);
-        return queueConversationMutation(conversationId, () => postPartialHistoryMessage(conversation, message));
-    }
     if (isLoggedIn && String(conversation.id).startsWith("local-")) {
         if (!Array.isArray(conversation.messages)) conversation.messages = [];
         if (!conversation.messages.some(item => String(item?.id) === String(message.id))) {
@@ -9099,9 +8857,7 @@ async function syncConversationsFromServer(options = {}) {
                     }
                 }
                 if (metadataChanged) listChanged = true;
-                if (currentId === id && serverRevision > localRevision && localConversation.__partialHistory !== true) {
-                    openConversationRevision = id;
-                }
+                if (currentId === id && serverRevision > localRevision) openConversationRevision = id;
             }
         }
 
@@ -13893,17 +13649,6 @@ async function sendMessage(
         );
     }
 
-    const composer = document.getElementById("oddiComposerShell");
-    if (composer && app && composer.parentElement !== app) {
-        app.appendChild(composer);
-        composer.classList.remove("oddi-home-composer-mode");
-    }
-    const note = document.getElementById("oddiAccuracyNote");
-    if (note && app && note.parentElement !== app) {
-        app.appendChild(note);
-        note.classList.remove("oddi-home-disclaimer");
-    }
-
     const welcome =
         document.getElementById(
             "welcomeContainer"
@@ -14116,7 +13861,7 @@ async function sendMessage(
         <div class="bot-message">
             <div class="bot-header">
                 <span class="oddi-avatar-mark" role="img" aria-label="ODDI AI" title="ODDI AI">O</span>
-                <button class="message-sound-btn" onclick="speakAIMessage(this)" title="Listen to this response" aria-label="Listen to this response">🔊</button>
+                <button class="message-sound-btn" onclick="speakAIMessage(this)" title="Read this AI message aloud" aria-label="Read this AI message aloud">🔊</button>
                 <b>ODDI-AI:</b>
                 <span class="oddi-thinking-time" aria-live="off">Thinking 0s</span>
             </div>
@@ -17334,15 +17079,6 @@ async function openConversation(index) {
 
     setArchivedPreviewState(isConversationArchived(conversation) || !!conversation.deleted);
 
-    // Keep the one live composer outside #welcomeContainer before the history
-    // renderer replaces that container with conversation messages. Mount it
-    // directly on body so the app/chat scroll layers cannot cover the fixed UI.
-    const liveComposer = document.getElementById("oddiComposerShell");
-    if (liveComposer && liveComposer.parentElement !== document.body) {
-        document.body.appendChild(liveComposer);
-        liveComposer.classList.remove("oddi-home-composer-mode");
-    }
-
     currentConversation = parsedIndex;
     window.__oddiActiveConversationId = openingConversationId;
     persistLastOpenConversation(conversation);
@@ -17351,37 +17087,13 @@ async function openConversation(index) {
     if (conversation.__summaryOnly && !browserLocalChatStorage) {
         chat.innerHTML = '<div class="oddi-history-skeleton" role="status" aria-label="Loading conversation"><span class="oddi-history-skeleton-bubble oddi-skeleton-user"></span><span class="oddi-history-skeleton-bubble oddi-skeleton-ai"></span><span class="oddi-history-skeleton-bubble oddi-skeleton-user short"></span><span class="oddi-history-skeleton-bubble oddi-skeleton-ai medium"></span></div>';
         try {
-            const fullConversation = conversation.__paged_history
-                ? await fetchConversationMessageWindow(conversation.id)
-                : await fetchConversationHistory(conversation.id);
+            const fullConversation = await fetchConversationHistory(conversation.id);
             if (window.__oddiOpenConversationRequestId !== openRequestId || String(conversations[currentConversation]?.id) !== openingConversationId) return false;
             const latestIndex = conversations.findIndex(item => String(item?.id) === openingConversationId);
             if (latestIndex < 0) return false;
             Object.assign(conversation, fullConversation);
-            if (fullConversation.__partial_history === true) {
-                conversation.__partialHistory = true;
-                conversation.__historyHasMore = fullConversation.history_has_more === true;
-                conversation.__historyCursor = fullConversation.history_cursor || null;
-                conversation.__historySavedTitle = String(fullConversation.title || "New Chat");
-                conversation.__historyPersistedMessageIds = new Set(
-                    (Array.isArray(fullConversation.messages) ? fullConversation.messages : [])
-                        .map(message => String(message?.id || ""))
-                        .filter(Boolean)
-                );
-            } else {
-                delete conversation.__partialHistory;
-                delete conversation.__historyHasMore;
-                delete conversation.__historyCursor;
-                delete conversation.__historySavedTitle;
-                delete conversation.__historyPersistedMessageIds;
-            }
             delete conversation.__summaryOnly;
             delete conversation.__summaryMissing;
-            delete conversation.__paged_history;
-            delete conversation.__partial_history;
-            delete conversation.history_has_more;
-            delete conversation.history_cursor;
-            delete conversation.history_page_size;
             currentConversation = latestIndex;
             renderHistory();
         } catch (error) {
@@ -17396,10 +17108,10 @@ async function openConversation(index) {
         conversation.messages = [];
     }
 
-    const repairedMessageOrder = !conversation.__partialHistory && !conversation.deleted && !isConversationArchived(conversation)
+    const repairedMessageOrder = !conversation.deleted && !isConversationArchived(conversation)
         ? repairPairedMessageOrder(conversation)
         : false;
-    if (!conversation.deleted && !conversation.__partialHistory) touchConversation(conversation);
+    if (!conversation.deleted) touchConversation(conversation);
     if (repairedMessageOrder && !conversation.__oddiIncognito) {
         backupOddiConversation(conversation);
         void saveConversation(conversation).catch(error => console.warn("Could not save the repaired message order yet:", error));
@@ -17421,18 +17133,9 @@ async function openConversation(index) {
         if (welcomeSource) {
             const welcome = welcomeSource.cloneNode(true);
             welcome.querySelectorAll("[data-oddi-bound]").forEach(node => node.removeAttribute("data-oddi-bound"));
-            // Drop the stale composer snapshot and reuse the live node so its
-            // event handlers remain connected in blank mobile/project chats.
-            welcome.querySelector("#oddiComposerShell")?.remove();
             chat.appendChild(welcome);
-            const composerSlot = welcome.querySelector("#oddiComposerSlot");
-            if (composerSlot && liveComposer) {
-                composerSlot.appendChild(liveComposer);
-                liveComposer.classList.add("oddi-home-composer-mode");
-            }
             document.querySelector(".app")?.classList.remove("chat-started");
             chat.scrollTop = 0;
-            window.dispatchEvent(new Event("oddi:composer-layout-sync"));
             window.dispatchEvent(new CustomEvent("oddi:new-chat-ready"));
             return true;
         }
@@ -17522,13 +17225,12 @@ async function openConversation(index) {
 
                 const feedback = msg.feedback || "";
                 const isDocumentOutput = isDocumentOutputMessage(conversation, messageIndex);
-                const isCompactAssistantBubble = !isDocumentOutput && String(msg.text || msg.content || "").trim().length <= 68;
                 const documentContent = String(msg.text || "").trim()
                     ? `<p>${msg.stopped ? "A partial draft is saved in Writing. Open it to continue editing or download." : "Your document is ready in Writing. Open it to edit or download."}</p>`
                     : "<p>Document generation stopped before a draft arrived.</p>";
 
                 chat.innerHTML += `
-                    <div class="bot-message ${msg.pinned ? "pinned-message" : ""} ${msg.stopped ? "stopped-message" : ""} ${isDocumentOutput ? "document-output-message" : ""} ${isCompactAssistantBubble ? "compact-assistant-message" : ""}"
+                    <div class="bot-message ${msg.pinned ? "pinned-message" : ""} ${msg.stopped ? "stopped-message" : ""} ${isDocumentOutput ? "document-output-message" : ""}"
                          data-message-index="${messageIndex}">
 
                         <div class="bot-header">
@@ -17538,8 +17240,8 @@ async function openConversation(index) {
                             <button
                                 class="message-sound-btn"
                                 onclick="speakAIMessage(this)"
-                                title="Listen to this response"
-                                aria-label="Listen to this response">
+                                title="Read this AI message aloud"
+                                aria-label="Read this AI message aloud">
                                 🔊
                             </button>
 
@@ -17605,18 +17307,6 @@ async function openConversation(index) {
             }
         }
     );
-
-    if (conversation.__partialHistory && conversation.__historyHasMore) {
-        const loading = conversation.__historyLoading === true;
-        chat.insertAdjacentHTML("afterbegin", `
-            <div class="oddi-history-page-control">
-                <button type="button" onclick="window.__oddiLoadOlderMessages(this)" ${loading ? "disabled" : ""}>
-                    ${loading ? "Loading older messages…" : "Load older messages"}
-                </button>
-                <span>Showing the newest ${conversation.messages.length} messages first</span>
-            </div>
-        `);
-    }
 
     let latestBranchOriginIndex = -1;
     conversation.messages.forEach((message, messageIndex) => {
@@ -17732,77 +17422,9 @@ async function openConversation(index) {
 
     window.__oddiRenderFollowups?.(conversation);
     oddiSmartScroll(false);
-    /* Match the reference's short laptop viewport, where the transcript is
-       scrolled past the top chrome while keeping the composer fixed below. */
-    if (window.matchMedia("(min-width: 1101px) and (max-height: 700px)").matches) {
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-            if (
-                window.__oddiOpenConversationRequestId !== openRequestId ||
-                String(conversations[currentConversation]?.id) !== openingConversationId
-            ) return;
-            const maxScroll = Math.max(0, chat.scrollHeight - chat.clientHeight);
-            chat.scrollTop = Math.min(72, maxScroll);
-            oddiChatShouldFollow = maxScroll - chat.scrollTop <= 64;
-        }));
-    }
     refreshUserMessageNavigator();
-    window.dispatchEvent(new Event("oddi:composer-layout-sync"));
 
 }
-
-window.__oddiLoadOlderMessages = async function (button) {
-    const conversationIndex = currentConversation;
-    const conversation = Number.isInteger(conversationIndex) ? conversations[conversationIndex] : null;
-    if (
-        !conversation || !conversation.__partialHistory || !conversation.__historyHasMore ||
-        conversation.__historyLoading || !conversation.__historyCursor
-    ) return false;
-
-    const conversationId = String(conversation.id);
-    const cursor = conversation.__historyCursor;
-    const previousHeight = chat.scrollHeight;
-    const previousTop = chat.scrollTop;
-    conversation.__historyLoading = true;
-    if (button) {
-        button.disabled = true;
-        button.textContent = "Loading older messages…";
-    }
-
-    try {
-        const page = await fetchConversationMessageWindow(conversationId, cursor);
-        if (String(conversations[currentConversation]?.id || "") !== conversationId) return false;
-        const existing = Array.isArray(conversation.messages) ? conversation.messages : [];
-        const existingIds = new Set(existing.map(message => String(message?.id || "")).filter(Boolean));
-        const older = (Array.isArray(page.messages) ? page.messages : []).filter(message => {
-            const id = String(message?.id || "");
-            if (!id || existingIds.has(id)) return false;
-            existingIds.add(id);
-            return true;
-        });
-        conversation.messages = [...older, ...existing];
-        conversation.__historyCursor = page.history_cursor || null;
-        conversation.__historyHasMore = page.history_has_more === true;
-        conversation.__historyLoading = false;
-        if (!(conversation.__historyPersistedMessageIds instanceof Set)) conversation.__historyPersistedMessageIds = new Set();
-        older.forEach(message => message?.id && conversation.__historyPersistedMessageIds.add(String(message.id)));
-
-        await openConversation(conversationIndex);
-        requestAnimationFrame(() => {
-            if (String(conversations[currentConversation]?.id || "") !== conversationId) return;
-            chat.scrollTop = previousTop + Math.max(0, chat.scrollHeight - previousHeight);
-        });
-        return true;
-    } catch (error) {
-        conversation.__historyLoading = false;
-        console.error("Could not load older chat messages:", error);
-        window.showOddiToast?.(error?.message || "Could not load older messages. Try again.", "error");
-        if (button?.isConnected) {
-            button.disabled = false;
-            button.textContent = "Load older messages";
-        }
-        return false;
-    }
-};
 
 /* 
    OPEN UPLOADED FILES
@@ -17866,12 +17488,9 @@ async function newChat() {
 
     /* Keep the existing welcome UI (including quick actions) as the template. */
     const existingWelcome = document.getElementById("welcomeContainer");
-    const liveComposer = document.getElementById("oddiComposerShell");
     const welcomeTemplate = existingWelcome
         ? existingWelcome.cloneNode(true)
         : (window.__oddiWelcomeTemplate ? window.__oddiWelcomeTemplate.cloneNode(true) : null);
-    // Never leave a duplicate composer ID in a cloned welcome container.
-    welcomeTemplate?.querySelector("#oddiComposerShell")?.remove();
 
     /* New Chat is immediate: the current conversation remains saved and
        the home composer/welcome state is restored without a confirmation. */
@@ -17935,14 +17554,6 @@ async function newChat() {
         }
 
         chat.appendChild(welcome);
-        const slot = welcome.querySelector("#oddiComposerSlot");
-        if (slot && liveComposer && liveComposer.parentElement !== slot) {
-            slot.appendChild(liveComposer);
-            liveComposer.classList.add("oddi-home-composer-mode");
-        } else if (!slot && liveComposer && liveComposer.parentElement !== document.body) {
-            document.body.appendChild(liveComposer);
-            liveComposer.classList.remove("oddi-home-composer-mode");
-        }
         /* Re-bind quick actions and Continue after cloning the welcome screen. */
         window.dispatchEvent(new CustomEvent("oddi:new-chat-ready"));
     }
@@ -18059,9 +17670,6 @@ const ODDI_THEME_KEY = "oddi_theme_v1";
 function applyOddiTheme(theme) {
     const preference = theme === "system" ? "system" : (theme === "dark" ? "dark" : "light");
     const isDark = preference === "dark" || (preference === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    document.documentElement.dataset.oddiAppearance = preference === "system"
-        ? (isDark ? "system-dark" : "system-light")
-        : (isDark ? "dark" : "light");
     const themeLabel = preference === "system"
         ? "System theme active. Switch to light mode"
         : (isDark ? "Switch to light mode" : "Switch to dark mode");
@@ -21245,13 +20853,6 @@ body.dark-mode .user-message-edit-actions .user-message-edit-save{background:#f5
         const hasText = input.value.trim().length > 0;
         const generating =
             sendBtn?.classList.contains("stop-active");
-
-        if (document.querySelector("#chatbox > #welcomeContainer")) {
-            actionSlot.classList.add("has-text");
-            if (voiceBtn) voiceBtn.style.display = "none";
-            if (sendBtn) sendBtn.style.display = "inline-flex";
-            return;
-        }
 
         actionSlot.classList.toggle("has-text", hasText);
 
@@ -25475,7 +25076,7 @@ body.dark-mode .home-goal-chip:focus-visible {
 })();
 </script>
     <script type="module" 
-            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261108-purple-blue-gold-coming-soon-v1"></script>
+            src="/static/oddi-sidebar/oddi-sidebar.js?v=20261022-hide-sidebar-settings-v1"></script>
 <style id="oddi-desktop-height-aware-home-final">
 /* Desktop-only height-aware polish: compact browser windows and spacious fullscreen.
    Phone/tablet rules remain untouched. */
@@ -30732,11 +30333,6 @@ body.dark-mode .home-goal-chip:focus-visible{color:#fff !important;}
         } else if (typeof window.sendMessage === "function") {
           window.sendMessage();
         }
-      });
-      card.addEventListener("keydown", function (event) {
-        if (event.key !== "Enter" && event.key !== " ") return;
-        event.preventDefault();
-        card.click();
       });
     });
 
@@ -37128,45 +36724,13 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
     const desktopFlow=window.matchMedia("(min-width:769px)");
     const chat=document.getElementById("chatbox");
     const greeting=document.getElementById("oddiSayHello");
-    const app=document.querySelector(".app");
-    window.__oddiLiveComposerNode=composer;
-    let composerMountFrame=0;
-    function syncComposerMount(){
-      const welcome=chat?.querySelector("#welcomeContainer");
-      const slot=welcome?.querySelector("#oddiComposerSlot");
-      if(slot){
-        if(composer.parentElement===slot){
-          composer.classList.add("oddi-home-composer-mode");
-          return;
-        }
-        if(!window.__oddiActiveConversationId||window.__oddiFreshChatActive){
-          slot.appendChild(composer);
-          composer.classList.add("oddi-home-composer-mode");
-          return;
-        }
-      }
-      if(document.body.classList.contains("oddi-archived-preview"))return;
-      if(composer.parentElement!==document.body)document.body.appendChild(composer);
-      composer.classList.remove("oddi-home-composer-mode");
-      if(composer.hidden)composer.hidden=false;
-      composer.removeAttribute("aria-hidden");
-      composer.style.removeProperty("display");
-    }
-    function scheduleComposerMountSync(){
-      if(composerMountFrame)return;
-      composerMountFrame=requestAnimationFrame(()=>{
-        composerMountFrame=0;
-        syncComposerMount();
-        alignComposerToChat();
-      });
-    }
     function alignComposerToChat(){
       if(!chat)return;
       const rect=chat.getBoundingClientRect();
       if(rect.width){
         const hasConversation=!!chat.querySelector(".user-message[data-message-index],.bot-message[data-message-index]");
         const gutter=hasConversation
-          ?(phone.matches?16:Math.max(16,Math.min(64,(window.innerWidth||rect.width)*.05)))
+          ?(phone.matches?16:Math.max(16,Math.min(64,(window.innerWidth||rect.width)*.04)))
           :(phone.matches?8:24);
         const widthLimit=phone.matches?768:(hasConversation?780:920);
         const width=Math.min(widthLimit,Math.max(0,rect.width-gutter*2));
@@ -37175,7 +36739,6 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
       }
     }
     function syncHomeCentering(){
-      syncComposerMount();
       alignComposerToChat();
       if(desktopFlow.matches&&!document.body.classList.contains("oddi-fullscreen-home")&&chat){
         const chatRect=chat.getBoundingClientRect();
@@ -37236,9 +36799,6 @@ body.dark-mode #oddiComposerShell.input-area.has-attachments > #attachmentPrevie
     window.addEventListener("oddi:attachments-cleared",resizeByLines);
     window.addEventListener("resize",syncHomeCentering,{passive:true});
     window.addEventListener("oddi:display-mode-changed",syncHomeCentering);
-    window.addEventListener("oddi:composer-layout-sync",syncHomeCentering);
-    const composerHostObserver=window.MutationObserver?new MutationObserver(scheduleComposerMountSync):null;
-    if(composerHostObserver&&app)composerHostObserver.observe(app,{childList:true,subtree:true});
     if(window.visualViewport){
       window.visualViewport.addEventListener("resize",syncHomeCentering,{passive:true});
       window.visualViewport.addEventListener("scroll",syncHomeCentering,{passive:true});
@@ -40147,28 +39707,6 @@ body.dark-mode {
     color: var(--oddi-home-text-primary) !important;
     line-height: 1.55 !important;
   }
-  #chatbox .oddi-history-page-control {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 18px 16px 10px;
-    color: var(--oddi-home-text-muted);
-    font-size: 12px;
-  }
-  #chatbox .oddi-history-page-control button {
-    border: 1px solid var(--oddi-home-border);
-    border-radius: 999px;
-    padding: 8px 14px;
-    background: color-mix(in srgb, var(--oddi-home-surface) 82%, transparent);
-    color: var(--oddi-home-text-primary);
-    font: inherit;
-    cursor: pointer;
-  }
-  #chatbox .oddi-history-page-control button:disabled {
-    cursor: progress;
-    opacity: .72;
-  }
   body.oddi-system-theme #chatbox .oddi-history-skeleton-bubble {
     border-color: var(--os-border) !important;
     background: linear-gradient(105deg,
@@ -42697,8 +42235,8 @@ body:has(#chatbox > #welcomeContainer) #oddiSuggestionCards > .oddi-interview-la
 }
 </style>
 
-<link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261106-purple-cyan-gold-themes-v1">
-<script src="/static/oddi-theme-palette.js?v=20261108-purple-blue-gold-coming-soon-v1" defer></script>
+<link rel="stylesheet" href="/static/oddi-theme-palette.css?v=20261022-project-and-interview-palettes-v1">
+<script src="/static/oddi-theme-palette.js?v=20261020-palette-v1" defer></script>
 <script src="/static/oddi-account-profile.js?v=20261020-profile-modal-2" defer></script>
 
 <style id="oddi-hide-normal-home-recent-work">
@@ -43674,8 +43212,8 @@ html[data-oddi-palette] body[data-oddi-palette] #oddiAccuracyNote {
   color: var(--oddi-theme-dim) !important;
 }
 </style>
-<style id="oddi-cyan-premium-v1">
-/* Cyan: deep teal canvas with bright aqua accents. */
+<style id="oddi-cyber-blue-premium-v1">
+/* Cyber Blue: midnight navy, electric blue, and cool cyan accents. */
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] {
   --oddi-home-canvas: var(--oddi-theme-bg);
   --oddi-home-surface: var(--oddi-theme-surface);
@@ -43703,7 +43241,7 @@ html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palett
   background:
     radial-gradient(ellipse 68% 72% at 0% 100%, color-mix(in srgb, var(--oddi-theme-accent) 7%, transparent), transparent 80%),
     radial-gradient(ellipse 55% 42% at 96% 0%, color-mix(in srgb, var(--oddi-theme-accent-strong) 5%, transparent), transparent 76%),
-    linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-bg) 96%, #17b9c5 4%), var(--oddi-theme-bg)) !important;
+    linear-gradient(145deg, color-mix(in srgb, var(--oddi-theme-bg) 96%, #1763c5 4%), var(--oddi-theme-bg)) !important;
   color: var(--oddi-theme-text) !important;
 }
 
@@ -43726,7 +43264,7 @@ html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palett
     radial-gradient(ellipse 80% 55% at 8% 84%, color-mix(in srgb, var(--oddi-theme-accent-strong) 10%, transparent), transparent 82%),
     radial-gradient(ellipse 67% 48% at 94% 18%, color-mix(in srgb, var(--oddi-theme-accent) 9%, transparent), transparent 83%),
     radial-gradient(ellipse 72% 45% at 50% -8%, color-mix(in srgb, var(--oddi-theme-accent) 8%, transparent), transparent 65%),
-    linear-gradient(150deg, color-mix(in srgb, var(--oddi-theme-bg) 95%, #0b7a82 5%), var(--oddi-theme-bg)) !important;
+    linear-gradient(150deg, color-mix(in srgb, var(--oddi-theme-bg) 95%, #0b4382 5%), var(--oddi-theme-bg)) !important;
   color: var(--oddi-theme-text) !important;
 }
 
@@ -43736,7 +43274,7 @@ html[data-oddi-palette="cyber-blue"][data-oddi-appearance="system-dark"] body[da
     radial-gradient(ellipse 82% 58% at 9% 84%, color-mix(in srgb, var(--oddi-theme-accent-strong) 17%, transparent), transparent 82%),
     radial-gradient(ellipse 69% 48% at 94% 17%, color-mix(in srgb, var(--oddi-theme-accent) 15%, transparent), transparent 82%),
     radial-gradient(ellipse 74% 46% at 51% -8%, color-mix(in srgb, var(--oddi-theme-accent) 18%, transparent), transparent 64%),
-    linear-gradient(148deg, color-mix(in srgb, var(--oddi-theme-bg) 92%, #0b6970 8%), var(--oddi-theme-bg)) !important;
+    linear-gradient(148deg, color-mix(in srgb, var(--oddi-theme-bg) 92%, #0b3970 8%), var(--oddi-theme-bg)) !important;
 }
 
 html[data-oddi-palette="cyber-blue"][data-oddi-appearance] body[data-oddi-palette="cyber-blue"] :is(#sidebar .new-chat-btn, #sidebar .sidebar-nav-btn, #sidebar .sidebar-bottom-btn) {
@@ -44831,11 +44369,9 @@ html[data-oddi-palette] body[data-oddi-palette] #settingsModal.oddi-settings-pag
   }, { once: true });
 })();
 </script>
-<link rel="stylesheet" href="/static/oddi-home-neon.css?v=20261105-cyan-home-palette-v1">
+<link rel="stylesheet" href="/static/oddi-home-neon.css?v=20261024-top-right-clear-bottom-right-dots-v21">
 <link rel="stylesheet" href="/static/oddi-chat-tools.css?v=20261024-agent-typing-inline-group-v10">
-<script src="/static/oddi-chat-tools.js?v=20261101-agent-typing-inline-group-v10"></script>
-<link rel="stylesheet" href="/static/oddi-home-redesign.css?v=20261031-composer-v1">
-<script src="/static/oddi-home-redesign.js?v=20261031-composer-v2"></script>
+<script src="/static/oddi-chat-tools.js?v=20261024-agent-typing-inline-group-v9"></script>
 <style id="oddi-personal-instructions-and-schedules-layout-v1">
 /* These long-form preference screens need a deliberate single-column flow.
    The general laptop settings grid is reserved for short, related controls. */
@@ -46521,412 +46057,5 @@ html[data-oddi-palette] body[data-oddi-palette] #oddiChatLatestButton::before {
   display: none !important;
 }
 </style>
- <link rel="stylesheet" href="/static/oddi-home-reference.css?v=20261101-reference-v24">
-<style id="oddi-sidebar-home-reference-v1">
-@media (min-width: 769px) {
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed) {
-    width: var(--oddi-sidebar-width, 17.1vw) !important;
-    border-right: 1px solid #251b31 !important;
-    background: linear-gradient(180deg, #050407 0%, #08060c 70%, #050407 100%) !important;
-    color: #f7f3fb !important;
-    --rs-bg: #050407 !important;
-    --rs-surface: #100d15 !important;
-    --rs-hover: #19131f !important;
-    --rs-active: #311542 !important;
-    --rs-border: #2b2331 !important;
-    --rs-text: #f7f3fb !important;
-    --rs-muted: #b8b0c1 !important;
-    --rs-dim: #8f8797 !important;
-    --rs-accent: #a63cff !important;
-    --rs-accent-soft: rgba(166, 60, 255, .16) !important;
-    box-shadow: 12px 0 32px rgba(0,0,0,.34) !important;
-  }
-
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-header {
-    box-sizing: border-box !important;
-    height: clamp(58px, 4.1vw, 78px) !important;
-    min-height: clamp(58px, 4.1vw, 78px) !important;
-    flex-basis: clamp(58px, 4.1vw, 78px) !important;
-    gap: clamp(6px, .42vw, 8px) !important;
-    padding: 0 clamp(12px, .95vw, 18px) !important;
-    border-bottom-color: rgba(255,255,255,.11) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-brand {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    gap: clamp(7px, .47vw, 9px) !important;
-    color: #f8f5fb !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-logo-mark {
-    box-sizing: border-box !important;
-    display: grid !important;
-    place-items: center !important;
-    width: clamp(32px, 2.2vw, 42px) !important;
-    min-width: clamp(32px, 2.2vw, 42px) !important;
-    height: clamp(32px, 2.2vw, 42px) !important;
-    border: 1px solid rgba(215,166,255,.28) !important;
-    border-radius: clamp(8px, .58vw, 11px) !important;
-    background: linear-gradient(145deg, #8730df, #5616a9) !important;
-    box-shadow: 0 4px 14px rgba(91,25,151,.35), inset 0 1px 0 rgba(255,255,255,.2) !important;
-    color: #fff !important;
-    font: 750 clamp(21px, 1.37vw, 26px)/1 Inter, system-ui, sans-serif !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-brand > span:not(.oddi-rs-logo-mark) {
-    display: block !important;
-    overflow: hidden !important;
-    color: #f8f5fb !important;
-    font-size: clamp(13px, .9vw, 17px) !important;
-    font-weight: 750 !important;
-    letter-spacing: -.025em !important;
-    text-overflow: ellipsis !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-density,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-collapse {
-    box-sizing: border-box !important;
-    display: inline-flex !important;
-    flex: 0 0 clamp(34px, 2.2vw, 42px) !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: clamp(34px, 2.2vw, 42px) !important;
-    height: clamp(34px, 2.2vw, 42px) !important;
-    padding: 0 !important;
-    border: 1px solid rgba(255,255,255,.06) !important;
-    border-radius: clamp(9px, .63vw, 12px) !important;
-    background: linear-gradient(145deg, #15131b, #0f0d14) !important;
-    color: #f2edf7 !important;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.04) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-density svg,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-collapse svg { width: 19px !important; height: 19px !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-density:hover,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-collapse:hover { background: #21182a !important; border-color: rgba(174,91,255,.38) !important; }
-
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-main {
-    min-height: 0 !important;
-    padding: clamp(5px, .32vw, 6px) clamp(12px, .95vw, 18px) 7px !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-new {
-    box-sizing: border-box !important;
-    height: clamp(34px, 2.52vw, 48px) !important;
-    min-height: clamp(34px, 2.52vw, 48px) !important;
-    flex-basis: clamp(34px, 2.52vw, 48px) !important;
-    gap: clamp(8px, .58vw, 11px) !important;
-    padding: 0 clamp(10px, .74vw, 14px) !important;
-    border: 1px solid #9f2df2 !important;
-    border-radius: clamp(10px, .74vw, 14px) !important;
-    background: linear-gradient(110deg, #55128a 0%, #3b0b65 55%, #2e094f 100%) !important;
-    color: #fff !important;
-    font-size: clamp(12px, .78vw, 15px) !important;
-    font-weight: 650 !important;
-    box-shadow: 0 0 0 1px rgba(151,49,238,.2), 0 4px 16px rgba(92,24,150,.3), inset 0 1px 0 rgba(255,255,255,.14) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-new svg { width: 19px !important; height: 19px !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-new:hover {
-    border-color: #bf65ff !important;
-    background: linear-gradient(110deg, #6b1ca6, #481078) !important;
-    color: #fff !important;
-    box-shadow: 0 0 18px rgba(159,53,239,.34), inset 0 1px 0 rgba(255,255,255,.2) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search {
-    box-sizing: border-box !important;
-    height: clamp(32px, 2.26vw, 43px) !important;
-    min-height: clamp(32px, 2.26vw, 43px) !important;
-    flex-basis: clamp(32px, 2.26vw, 43px) !important;
-    margin: clamp(9px, .63vw, 12px) 0 clamp(10px, .74vw, 14px) !important;
-    gap: clamp(6px, .42vw, 8px) !important;
-    padding: 0 clamp(9px, .63vw, 12px) !important;
-    border: 1px solid #28252e !important;
-    border-radius: clamp(9px, .68vw, 13px) !important;
-    background: linear-gradient(110deg, #111015, #0d0c11) !important;
-    color: #f0ebf5 !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search > svg { width: 18px !important; height: 18px !important; color: #f2edf7 !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search input { font-size: clamp(11px, .74vw, 14px) !important; color: #f8f5fb !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search input::placeholder { color: #aaa4b0 !important; opacity: 1 !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search-shortcut {
-    flex: 0 0 auto !important;
-    padding: 3px 6px !important;
-    border: 1px solid #28242d !important;
-    border-radius: 6px !important;
-    background: #242129 !important;
-    color: #d5cedb !important;
-    font: 500 clamp(9px, .63vw, 12px)/1.15 Inter, system-ui, sans-serif !important;
-    white-space: nowrap !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-search:focus-within { border-color: #8d39c6 !important; box-shadow: 0 0 0 3px rgba(146,55,207,.13) !important; }
-
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-history {
-    min-height: 0 !important;
-    flex: 1 1 auto !important;
-    overflow-y: auto !important;
-    padding: 0 0 8px !important;
-    scrollbar-width: thin !important;
-    scrollbar-color: #3a3042 transparent !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-pinned-group {
-    margin: 0 0 clamp(8px, .74vw, 14px) !important;
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-label {
-    box-sizing: border-box !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: clamp(6px, .42vw, 8px) !important;
-    height: clamp(24px, 1.63vw, 31px) !important;
-    margin: 0 0 clamp(2px, .32vw, 6px) !important;
-    padding: 0 clamp(6px, .42vw, 8px) !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    color: #aaa3b0 !important;
-    font-size: clamp(9px, .66vw, 12.5px) !important;
-    font-weight: 650 !important;
-    letter-spacing: .11em !important;
-    line-height: 1 !important;
-    text-transform: uppercase !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-pinned-group .oddi-rs-label > svg { width: 16px !important; height: 16px !important; color: #e6dfed !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-pinned-count { display: none !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat {
-    box-sizing: border-box !important;
-    min-height: clamp(30px, 2vw, 38px) !important;
-    margin: 1px 0 !important;
-    padding: 4px clamp(7px, .47vw, 9px) !important;
-    gap: clamp(6px, .42vw, 8px) !important;
-    border: 1px solid transparent !important;
-    border-radius: clamp(7px, .53vw, 10px) !important;
-    color: #e9e4ed !important;
-    font-size: clamp(10px, .73vw, 14px) !important;
-    box-shadow: none !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat > svg { width: clamp(14px, .95vw, 18px) !important; height: clamp(14px, .95vw, 18px) !important; color: #ded7e6 !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat .oddi-rs-title-glass > span {
-    overflow: hidden !important;
-    color: inherit !important;
-    font-size: clamp(10px, .73vw, 14px) !important;
-    line-height: 1.3 !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat.pinned { position: relative !important; flex-wrap: nowrap !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat.pinned .oddi-rs-actions {
-    position: absolute !important;
-    top: 50% !important;
-    right: 3px !important;
-    width: auto !important;
-    flex: 0 0 auto !important;
-    justify-content: flex-end !important;
-    margin: 0 !important;
-    padding: 1px 2px !important;
-    border-radius: 7px !important;
-    background: #2a1938 !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    transform: translate(3px, -50%) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat.pinned:is(.active,:hover,:focus-within) .oddi-rs-actions {
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    transform: translate(0, -50%) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat.pinned .oddi-rs-actions button {
-    display: inline-flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    width: clamp(19px, 1.26vw, 24px) !important;
-    height: clamp(19px, 1.26vw, 24px) !important;
-    padding: 0 !important;
-    border: 0 !important;
-    border-radius: 6px !important;
-    background: transparent !important;
-    color: #eee7f5 !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat.pinned.active {
-    border-color: #8526c4 !important;
-    background: linear-gradient(100deg, rgba(87,24,119,.76), rgba(43,16,58,.9)) !important;
-    box-shadow: inset 0 0 0 1px rgba(174,91,255,.12), 0 3px 12px rgba(47,12,74,.18) !important;
-    color: #fff !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-chat:not(.active):hover { background: #17121c !important; color: #fff !important; }
-
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-section-heading {
-    box-sizing: border-box !important;
-    display: flex !important;
-    align-items: flex-end !important;
-    height: clamp(27px, 1.84vw, 35px) !important;
-    margin: 0 0 clamp(2px, .32vw, 6px) !important;
-    padding: 0 clamp(6px, .42vw, 8px) clamp(6px, .42vw, 8px) !important;
-    border-top: 1px solid rgba(255,255,255,.12) !important;
-    color: #aaa3b0 !important;
-    font-size: clamp(9px, .66vw, 12.5px) !important;
-    font-weight: 650 !important;
-    letter-spacing: .11em !important;
-    line-height: 1 !important;
-    text-transform: uppercase !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-nav {
-    display: grid !important;
-    grid-template-columns: 1fr !important;
-    gap: 0 !important;
-    margin: 0 0 clamp(4px, .42vw, 8px) !important;
-    padding: 0 0 clamp(4px, .42vw, 8px) !important;
-    border: 0 !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-nav button {
-    box-sizing: border-box !important;
-    display: flex !important;
-    align-items: center !important;
-    width: 100% !important;
-    height: clamp(28px, 2vw, 38px) !important;
-    min-height: clamp(28px, 2vw, 38px) !important;
-    gap: clamp(7px, .53vw, 10px) !important;
-    padding: 0 clamp(7px, .58vw, 11px) !important;
-    border: 1px solid transparent !important;
-    border-radius: clamp(7px, .53vw, 10px) !important;
-    background: transparent !important;
-    color: #eee9f2 !important;
-    font-size: clamp(10px, .74vw, 14px) !important;
-    font-weight: 500 !important;
-    text-align: left !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-nav button > span:first-child { width: clamp(15px, .95vw, 18px) !important; flex-basis: clamp(15px, .95vw, 18px) !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-nav button > span:first-child svg { width: clamp(15px, .95vw, 18px) !important; height: clamp(15px, .95vw, 18px) !important; color: #d9d2df !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-nav button:hover,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-nav button.oddi-rs-nav-current { border-color: rgba(176,105,231,.22) !important; background: rgba(121,53,166,.16) !important; color: #fff !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-group { margin: 0 0 8px !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-group[aria-label="Recent chats"] {
-    margin-top: 0 !important;
-    padding-top: clamp(8px, .63vw, 12px) !important;
-    border-top: 1px solid rgba(255,255,255,.12) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-profile {
-    box-sizing: border-box !important;
-    flex: 0 0 clamp(48px, 3.2vw, 61px) !important;
-    min-height: clamp(48px, 3.2vw, 61px) !important;
-    margin: 0 clamp(0px, .47vw, 9px) clamp(5px, .42vw, 8px) !important;
-    padding: 0 clamp(8px, .63vw, 12px) !important;
-    border: 1px solid rgba(255,255,255,.13) !important;
-    border-radius: clamp(10px, .74vw, 14px) !important;
-    background: linear-gradient(120deg, #131116, #0d0c10) !important;
-    box-shadow: 0 5px 16px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.04) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-profile-main { gap: clamp(7px, .53vw, 10px) !important; color: #f7f3fb !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-avatar {
-    box-sizing: border-box !important;
-    width: clamp(31px, 2.2vw, 42px) !important;
-    min-width: clamp(31px, 2.2vw, 42px) !important;
-    height: clamp(31px, 2.2vw, 42px) !important;
-    border: 1px solid rgba(194,155,226,.32) !important;
-    background: linear-gradient(145deg, #342641, #201929) !important;
-    color: #fff !important;
-    font-size: clamp(13px, .84vw, 16px) !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-profile-main strong { color: #f7f3fb !important; font-size: clamp(11px, .74vw, 14px) !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-profile-main small { color: #b7b0bd !important; font-size: clamp(9px, .58vw, 11px) !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar:not(.collapsed) .oddi-rs-profile-main::after { content: "›" !important; margin-left: auto !important; color: #f3edf8 !important; font: 400 clamp(21px, 1.32vw, 25px)/1 system-ui, sans-serif !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.collapsed .oddi-rs-header {
-    justify-content: center !important;
-    padding: 0 !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.collapsed .oddi-rs-collapse { display: none !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.collapsed .oddi-rs-brand {
-    flex: 0 0 42px !important;
-    width: 42px !important;
-    height: 42px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    justify-content: center !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-install { display: none !important; }
-}
-
-@media (min-width: 769px) and (max-width: 1100px) {
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed):not(:hover):not(:focus-within) { width: var(--oddi-sidebar-width, 17.1vw) !important; }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-brand > span:not(.oddi-rs-logo-mark),
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-search,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-nav,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-label,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-section-heading,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-profile-copy,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.open:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-new span { display: flex !important; }
-}
-
-/* Keep the collapsed icon rail scrollable without showing a scrollbar. */
-@media (min-width: 769px) {
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.collapsed,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.collapsed .oddi-rs-main {
-    overflow: hidden !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.collapsed .oddi-rs-history {
-    min-height: 0 !important;
-    flex: 1 1 auto !important;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.collapsed::-webkit-scrollbar,
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar.collapsed *::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-  }
-}
-@media (pointer: fine) and (min-width: 769px) and (max-width: 1100px) {
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-history {
-    scrollbar-width: none !important;
-    -ms-overflow-style: none !important;
-  }
-  body:has(#chatbox.chatbox) #oddi-react-sidebar-root .oddi-rs-sidebar:not(.collapsed):not(:hover):not(:focus-within) .oddi-rs-history::-webkit-scrollbar {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-  }
-}
-</style>
-<link rel="stylesheet" href="/static/oddi-home-polish.css?v=20261101-polish-v1">
-<link rel="stylesheet" href="/static/oddi-home-reference-finish.css?v=20261103-home-card-actions-v24-chat-sidebar">
-<link rel="stylesheet" href="/static/oddi-chat-reference-theme.css?v=20261104-chat-glass-v27">
-<link rel="stylesheet" href="/static/oddi-theme-violet-finish.css?v=20261105-violet-theme-finish-v5">
-<link rel="stylesheet" href="/static/oddi-cyan-home-orb.css?v=20261106-cyan-home-chat-v7">
-<link rel="stylesheet" href="/static/oddi-gold-theme.css?v=20261107-gold-chat-sidebar-composer-v10">
-<style id="oddi-hide-latest-jump-on-home">
-  body:has(#chatbox.chatbox > #welcomeContainer) #oddiChatLatestButton {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
-</style>
-<script id="oddi-home-composer-inline-scope">
-(() => {
-  const fields = new WeakMap();
-  const properties = ["background", "border-color", "box-shadow"];
-  const syncHomeComposer = () => {
-    const field = document.querySelector("#oddiComposerShell > .oddi-composer-field");
-    if (!field) return;
-    let original = fields.get(field);
-    if (!original) {
-      original = properties.map((name) => ({ name, value: field.style.getPropertyValue(name), priority: field.style.getPropertyPriority(name) }));
-      fields.set(field, original);
-    }
-    const chat = document.querySelector("#chatbox.chatbox");
-    const isHome = Boolean(chat?.querySelector("#welcomeContainer"));
-    const isConversation = Boolean(chat && !isHome);
-    for (const declaration of original) {
-      if (isHome || isConversation) field.style.removeProperty(declaration.name);
-      else if (declaration.value) field.style.setProperty(declaration.name, declaration.value, declaration.priority);
-      else field.style.removeProperty(declaration.name);
-    }
-  };
-  syncHomeComposer();
-  new MutationObserver(syncHomeComposer).observe(document.body, { childList: true, subtree: true });
-})();
-</script>
 </body>
 </html>
